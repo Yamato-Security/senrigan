@@ -13,8 +13,6 @@
 [![Docker](https://img.shields.io/badge/docker-compose-blue)](docker/docker-compose.yml)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](ingester/Cargo.toml)
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](agent/requirements.txt)
-[![Built-in Hunts](https://img.shields.io/badge/built--in%20hunts-101-brightgreen)](#-built-in-hunts-builtin_huntsyaml----101-queries)
-[![Dashboard Charts](https://img.shields.io/badge/dashboard%20charts-59-blue)](#-dashboard-charts-apache-superset----dashboard----59-charts)
 
 ### Key Features
 ### 🔍 100 Built-in Hunts + AI Chat
