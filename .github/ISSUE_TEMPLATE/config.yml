@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project Documentation
+    url: https://github.com/Yamato-Security/senrigan/blob/main/doc/PRD.md
+    about: Read the Product Requirements Document before opening an issue.
+  - name: TDD Guide
+    url: https://github.com/Yamato-Security/senrigan/blob/main/doc/TDD_GUIDE.md
+    about: Read the TDD Guide before starting any implementation task.
+
