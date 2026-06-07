@@ -5,7 +5,7 @@
 ## What is Senrigan?
 
 ### Hunt AWS threats in minutes — no SIEM required, no Cloud infra needed
-> Drop in your CloudTrail logs and get 101 ready-to-run threat hunts, a BI dashboard, and AI-assisted analysis
+> Drop in your CloudTrail logs and get 100 ready-to-run threat hunts, a BI dashboard, and AI-assisted analysis
 > — all on your laptop with a single `docker compose up`.
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
