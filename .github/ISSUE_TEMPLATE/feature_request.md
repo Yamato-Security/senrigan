@@ -28,15 +28,6 @@ assignees: []
 - [ ] Docker / docker-compose
 - [ ] Documentation
 
-## TDD Test List (draft)
-
-<!-- Before implementation, list the tests that must pass.
-     Following the Red-Green-Refactor cycle, these should be written FIRST. -->
-
-- [ ] Test: 
-- [ ] Test: 
-- [ ] Test: 
-
 ## Alternatives Considered
 
 <!-- Any alternative approaches you considered and why you ruled them out. -->
