@@ -1,0 +1,71 @@
+# DSH-30: Privilege Escalation Events Timeline (Daily)
+# Stacked bar chart of known privilege-escalation API calls per day.
+# Concentrations on a specific date point to a targeted attack campaign;
+# gradual increase over days suggests an insider threat or persistent foothold.
+# MITRE ATT&CK: TA0004 Privilege Escalation
+uuid: 30f2a3b4-c5d6-7890-5678-901234567890
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Privilege Escalation Timeline
+viz_type: echarts_timeseries_bar
+description: >
+  Daily counts of privilege-escalation API calls broken down by event name (DSH-30).
+  A spike on a single day indicates a targeted attack campaign; a slow increase
+  may indicate an insider threat or an attacker with a persistent foothold.
+  MITRE ATT&CK: TA0004 Privilege Escalation.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_priv_esc_count
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_callers
+      hasCustomLabel: true
+      optionName: metric_priv_esc_callers
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN (
+          'PutUserPolicy',       'AttachUserPolicy',
+          'PutRolePolicy',       'AttachRolePolicy',
+          'CreatePolicyVersion', 'SetDefaultPolicyVersion',
+          'AddUserToGroup',      'CreateRole',
+          'UpdateAssumeRolePolicy'
+        )
+      filterOptionName: filter_priv_esc
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('day', event_time)              AS day_bucket,
+#     event_name,
+#     COUNT(*)                                    AS event_count,
+#     COUNT(DISTINCT user_identity_arn)           AS unique_callers
+# FROM cloudtrail_events
+# WHERE event_name IN (
+#     'PutUserPolicy', 'AttachUserPolicy',
+#     'PutRolePolicy', 'AttachRolePolicy',
+#     'CreatePolicyVersion', 'SetDefaultPolicyVersion',
+#     'AddUserToGroup', 'CreateRole', 'UpdateAssumeRolePolicy'
+# )
+# GROUP BY 1, 2
+# ORDER BY event_time DESC, event_count DESC
+

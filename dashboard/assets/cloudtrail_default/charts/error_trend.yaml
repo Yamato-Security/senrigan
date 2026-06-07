@@ -1,0 +1,51 @@
+# DSH-04: Error Event Trend Over Time (by Error Code)
+# Stacked bar chart showing hourly error events broken down by error_code.
+# ThrottlingException spikes indicate scanning; AccessDenied spikes indicate
+# privilege probing; unusual error codes warrant deeper investigation.
+uuid: a7b8c9d0-e1f2-3456-0123-567890123456
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Error Event Trend
+viz_type: echarts_timeseries_bar
+description: >
+  Hourly error events broken down by error_code (DSH-04).
+  ThrottlingException spikes indicate automated scanning or attack tooling;
+  AccessDenied / UnauthorizedAccess spikes indicate privilege probing;
+  sudden appearance of new error codes may indicate novel attack techniques.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: error_count
+      hasCustomLabel: true
+      optionName: metric_error_count_trend
+  groupby:
+    - error_code
+  x_axis: event_time
+  time_grain_sqla: PT1H
+  time_range: "No filter"
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "error_code IS NOT NULL"
+      filterOptionName: filter_error_not_null
+  row_limit: 10000
+  stack: true
+  order_desc: true
+  x_axis_label: "Time (hourly)"
+  y_axis_label: Error Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time)  AS hour_bucket,
+#     error_code,
+#     COUNT(*)                         AS error_count
+# FROM cloudtrail_events
+# WHERE error_code IS NOT NULL
+# GROUP BY 1, 2
+# ORDER BY event_time DESC

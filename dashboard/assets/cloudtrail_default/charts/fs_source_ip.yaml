@@ -1,0 +1,75 @@
+# DSH-32: First / Last Seen per Source IP
+# New source IPs appearing late in the dataset are strong indicators of
+# lateral movement or new attacker infrastructure.
+# MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement
+uuid: 32b3c4d5-e6f7-8901-bcde-f01234567802
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: First / Last Seen per Source IP
+viz_type: table
+description: >
+  Source IPs with first/last seen, distinct identities, distinct APIs,
+  and GeoIP context (DSH-32).  New IPs appearing late in the dataset
+  suggest lateral movement or new attacker infrastructure.
+  MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_fs_ip_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_fs_ip_last
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_events
+      hasCustomLabel: true
+      optionName: metric_fs_ip_total
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: distinct_identities
+      hasCustomLabel: true
+      optionName: metric_fs_ip_identities
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT event_name)"
+      label: distinct_apis
+      hasCustomLabel: true
+      optionName: metric_fs_ip_apis
+  groupby:
+    - source_ip_address
+    - geo_country_name
+    - geo_org
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "source_ip_address IS NOT NULL AND source_ip_address NOT LIKE '%.amazonaws.com'"
+      filterOptionName: filter_fs_ip_notnull
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     source_ip_address,
+#     geo_country_name,
+#     geo_org,
+#     MIN(event_time)                   AS first_seen,
+#     MAX(event_time)                   AS last_seen,
+#     COUNT(*)                          AS total_events,
+#     COUNT(DISTINCT user_identity_arn) AS distinct_identities,
+#     COUNT(DISTINCT event_name)        AS distinct_apis
+# FROM cloudtrail_events
+# WHERE source_ip_address IS NOT NULL
+#   AND source_ip_address NOT LIKE '%.amazonaws.com'
+# GROUP BY source_ip_address, geo_country_name, geo_org
+# ORDER BY first_seen DESC
+# LIMIT 100
+

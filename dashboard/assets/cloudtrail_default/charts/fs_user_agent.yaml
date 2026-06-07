@@ -1,0 +1,70 @@
+# DSH-34: First / Last Seen per User Agent
+# New user agents appearing for the first time reveal attacker tool
+# introduction (e.g., Pacu, ScoutSuite, custom boto3 scripts).
+# MITRE ATT&CK: TA0042 Resource Development / TA0002 Execution
+uuid: 34d5e6f7-a8b9-0123-def0-123456789004
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: First / Last Seen per User Agent
+viz_type: table
+description: >
+  User agents ordered by first appearance (DSH-34).  New tooling appearing
+  for the first time reveals attacker tool introduction (e.g., Pacu,
+  ScoutSuite, custom boto3 scripts).
+  MITRE ATT&CK: TA0042 Resource Development / TA0002 Execution.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_fs_ua_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_fs_ua_last
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_events
+      hasCustomLabel: true
+      optionName: metric_fs_ua_total
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: distinct_identities
+      hasCustomLabel: true
+      optionName: metric_fs_ua_identities
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_fs_ua_ips
+  groupby:
+    - user_agent
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_agent IS NOT NULL"
+      filterOptionName: filter_fs_ua_notnull
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 50
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_agent,
+#     MIN(event_time)                      AS first_seen,
+#     MAX(event_time)                      AS last_seen,
+#     COUNT(*)                             AS total_events,
+#     COUNT(DISTINCT user_identity_arn)    AS distinct_identities,
+#     COUNT(DISTINCT source_ip_address)    AS distinct_ips
+# FROM cloudtrail_events
+# WHERE user_agent IS NOT NULL
+# GROUP BY user_agent
+# ORDER BY first_seen DESC
+# LIMIT 50
+

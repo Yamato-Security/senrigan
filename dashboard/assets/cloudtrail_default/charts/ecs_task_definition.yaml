@@ -1,0 +1,76 @@
+# DSH-49: ECS Task Definition Backdoor
+# Table of ECS task definition and service modification events.
+# Pacu's ecs__backdoor_task_def module registers a new task definition revision
+# that adds a credential-stealing sidecar container, then updates the service
+# to deploy it — without modifying any ECR images.
+# MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0006 Credential Access
+uuid: 49a1b2c3-d4e5-6789-abcd-490000000049
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: ECS Task Definition Backdoor
+viz_type: table
+description: >
+  ECS task definition registration and service modification events (DSH-49).
+  Pacu's ecs__backdoor_task_def registers a new task definition revision that
+  injects a credential-stealing sidecar container, then issues UpdateService
+  to deploy it — bypassing ECR image monitoring entirely.
+  Any unexpected RegisterTaskDefinition or UpdateService from an unfamiliar
+  caller or IP warrants immediate investigation.
+  MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0006 Credential Access.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ecs_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ecs.amazonaws.com'
+        AND event_name IN (
+          'RegisterTaskDefinition',   'DeregisterTaskDefinition',
+          'UpdateService',            'CreateService',            'DeleteService',
+          'RunTask',                  'StartTask',                'StopTask'
+        )
+      filterOptionName: filter_ecs_task_def
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     COALESCE(
+#         json_extract_string(request_parameters, '$.family'),
+#         json_extract_string(request_parameters, '$.taskDefinition')
+#     )                                                                  AS task_family,
+#     json_extract_string(request_parameters, '$.cluster')              AS cluster,
+#     json_extract_string(request_parameters, '$.service')              AS service_name,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ecs.amazonaws.com'
+#   AND event_name IN (
+#       'RegisterTaskDefinition',   'DeregisterTaskDefinition',
+#       'UpdateService',            'CreateService',            'DeleteService',
+#       'RunTask',                  'StartTask',                'StopTask'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100

@@ -1,0 +1,69 @@
+# DSH-24: AWS Organizations / SCP Policy Changes
+# Table listing all management-plane changes to AWS Organizations:
+# policy creation/update/deletion, SCP type enabling/disabling, account moves,
+# and delegated-administrator registration.  A compromised master account can
+# disable service control policies to remove guardrails across the entire org.
+# MITRE ATT&CK: TA0004 Privilege Escalation / TA0005 Defense Evasion
+uuid: 24f6a7b8-c9d0-1234-f012-345678901234
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Organizations / SCP Changes
+viz_type: table
+description: >
+  AWS Organizations management-plane events including SCP policy changes (DSH-24).
+  An attacker with master-account access may disable SCP guardrails to remove
+  preventive controls across the entire AWS organization.
+  MITRE ATT&CK: TA0004 Privilege Escalation / TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_org_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - user_identity_account_id
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'organizations.amazonaws.com'
+        AND event_name IN (
+          'CreatePolicy',    'UpdatePolicy',    'DeletePolicy',
+          'AttachPolicy',    'DetachPolicy',
+          'DisablePolicyType', 'EnablePolicyType',
+          'CreateOrganizationalUnit', 'DeleteOrganizationalUnit',
+          'MoveAccount', 'RemoveAccountFromOrganization',
+          'LeaveOrganization', 'DeleteOrganization',
+          'RegisterDelegatedAdministrator', 'DeregisterDelegatedAdministrator'
+        )
+      filterOptionName: filter_org_events
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     user_identity_account_id,
+#     json_extract_string(request_parameters, '$.policyId')   AS policy_id,
+#     json_extract_string(request_parameters, '$.targetId')   AS target_id,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'organizations.amazonaws.com'
+#   AND event_name IN (...)
+# ORDER BY event_time DESC
+# LIMIT 100
+

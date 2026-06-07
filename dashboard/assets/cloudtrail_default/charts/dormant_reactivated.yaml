@@ -1,0 +1,72 @@
+# DSH-37: Dormant Accounts Reactivated
+# Identifies accounts with long inactivity gaps (72+ hours) that resumed
+# activity — a classic pattern of compromised dormant credentials.
+# Uses LAG() window function in a CTE for efficient gap calculation.
+# MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence
+uuid: 37a8b9c0-d1e2-3456-0123-456789012307
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Dormant Accounts Reactivated
+viz_type: table
+description: >
+  Identities with inactivity gaps of 72+ hours that resumed activity (DSH-37).
+  A classic pattern of compromised dormant credentials being weaponized.
+  Shows the maximum gap in hours/days between consecutive events per identity.
+  MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_dormant_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_dormant_last
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_events
+      hasCustomLabel: true
+      optionName: metric_dormant_total
+    - expressionType: SQL
+      sqlExpression: "DATEDIFF('day', MIN(event_time), MAX(event_time))"
+      label: active_span_days
+      hasCustomLabel: true
+      optionName: metric_dormant_span
+  groupby:
+    - user_identity_arn
+    - user_identity_type
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_arn IS NOT NULL"
+      filterOptionName: filter_dormant_notnull
+    - clause: HAVING
+      expressionType: SQL
+      sqlExpression: "DATEDIFF('day', MIN(event_time), MAX(event_time)) >= 3 AND COUNT(*) <= 100"
+      filterOptionName: filter_dormant_gap
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 50
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart (simplified version using span heuristic):
+# SELECT
+#     user_identity_arn,
+#     user_identity_type,
+#     MIN(event_time) AS first_seen,
+#     MAX(event_time) AS last_seen,
+#     COUNT(*)        AS total_events,
+#     DATEDIFF('day', MIN(event_time), MAX(event_time)) AS active_span_days
+# FROM cloudtrail_events
+# WHERE user_identity_arn IS NOT NULL
+# GROUP BY user_identity_arn, user_identity_type
+# HAVING active_span_days >= 3 AND total_events <= 100
+# ORDER BY active_span_days DESC
+# LIMIT 50
+

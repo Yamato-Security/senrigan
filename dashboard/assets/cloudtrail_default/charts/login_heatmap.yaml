@@ -1,0 +1,89 @@
+# DSH-19: Console Login Activity Heatmap (Hour-of-Day × Day-of-Week, JST)
+# Table showing login counts grouped by day-of-week and hour-of-day (JST).
+# Sorting by login_count DESC immediately reveals off-hours clusters.
+# Off-hours logins (22:00-06:00 JST, weekends) by human users may indicate
+# account compromise or credential sharing.
+# MITRE ATT&CK: TA0001 Initial Access
+uuid: 19a1b2c3-d4e5-6789-abcd-ef0123456789
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Login Activity Heatmap (Hour x Day)
+viz_type: table
+description: >
+  Console login counts grouped by day-of-week and hour-of-day in JST (DSH-19).
+  Off-hours logins — especially late-night (22:00-06:00 JST) or weekend activity
+  — by human principals are a strong indicator of account compromise or
+  credential misuse.  Sort by login_count DESC to surface anomalous time slots.
+  MITRE ATT&CK: TA0001 Initial Access.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: login_count
+      hasCustomLabel: true
+      optionName: metric_heatmap_logins
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event,
+            '$.responseElements.ConsoleLogin') = 'Failure'
+        )
+      label: failure_count
+      hasCustomLabel: true
+      optionName: metric_heatmap_failures
+  groupby:
+    - expressionType: SQL
+      sqlExpression: >-
+        CASE EXTRACT(DOW FROM (event_time AT TIME ZONE 'Asia/Tokyo'))
+          WHEN 0 THEN '0_Sun'
+          WHEN 1 THEN '1_Mon'
+          WHEN 2 THEN '2_Tue'
+          WHEN 3 THEN '3_Wed'
+          WHEN 4 THEN '4_Thu'
+          WHEN 5 THEN '5_Fri'
+          WHEN 6 THEN '6_Sat'
+        END
+      label: day_of_week
+      hasCustomLabel: true
+    - expressionType: SQL
+      sqlExpression: >-
+        LPAD(
+          CAST(EXTRACT(HOUR FROM event_time AT TIME ZONE 'Asia/Tokyo') AS VARCHAR),
+          2, '0'
+        )
+      label: hour_jst
+      hasCustomLabel: true
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'"
+      filterOptionName: filter_heatmap_login
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     CASE EXTRACT(DOW FROM (event_time AT TIME ZONE 'Asia/Tokyo'))
+#       WHEN 0 THEN '0_Sun' WHEN 1 THEN '1_Mon' WHEN 2 THEN '2_Tue'
+#       WHEN 3 THEN '3_Wed' WHEN 4 THEN '4_Thu' WHEN 5 THEN '5_Fri'
+#       WHEN 6 THEN '6_Sat'
+#     END                                                        AS day_of_week,
+#     LPAD(CAST(
+#       EXTRACT(HOUR FROM event_time AT TIME ZONE 'Asia/Tokyo') AS VARCHAR
+#     ), 2, '0')                                                  AS hour_jst,
+#     COUNT(*)                                                    AS login_count,
+#     COUNT(*) FILTER (
+#         WHERE json_extract_string(raw_event,
+#           '$.responseElements.ConsoleLogin') = 'Failure'
+#     )                                                           AS failure_count
+# FROM cloudtrail_events
+# WHERE event_source = 'signin.amazonaws.com'
+#   AND event_name   = 'ConsoleLogin'
+# GROUP BY 1, 2
+# ORDER BY login_count DESC
+# LIMIT 200

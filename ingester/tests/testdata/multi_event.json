@@ -1,0 +1,57 @@
+{
+  "Records": [
+    {
+      "eventTime": "2024-01-15T10:30:00Z",
+      "eventName": "DescribeInstances",
+      "eventSource": "ec2.amazonaws.com",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.1",
+      "userAgent": "aws-cli/2.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "arn": "arn:aws:iam::123456789012:user/testuser",
+        "accountId": "123456789012"
+      },
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "recipientAccountId": "123456789012"
+    },
+    {
+      "eventTime": "2024-01-15T11:00:00Z",
+      "eventName": "CreateBucket",
+      "eventSource": "s3.amazonaws.com",
+      "awsRegion": "us-west-2",
+      "sourceIPAddress": "198.51.100.2",
+      "userAgent": "boto3/1.26.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "arn": "arn:aws:iam::123456789012:user/devuser",
+        "accountId": "123456789012"
+      },
+      "requestParameters": {
+        "bucketName": "my-test-bucket"
+      },
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "recipientAccountId": "123456789012"
+    },
+    {
+      "eventTime": "2024-01-15T11:30:00Z",
+      "eventName": "AssumeRole",
+      "eventSource": "sts.amazonaws.com",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "AWS Internal",
+      "userAgent": "AWS Internal",
+      "userIdentity": {
+        "type": "AWSService",
+        "invokedBy": "lambda.amazonaws.com"
+      },
+      "errorCode": "AccessDenied",
+      "errorMessage": "User is not authorized to perform sts:AssumeRole",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "recipientAccountId": "123456789012"
+    }
+  ]
+}
+

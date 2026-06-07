@@ -1,0 +1,66 @@
+# DSH-15: Top Countries by Request Volume
+# Horizontal bar chart showing the top 20 countries by CloudTrail API call volume.
+# High volume from unexpected countries may indicate credential compromise or
+# access from threat-actor-controlled infrastructure.
+#
+# Note: All geo_* columns are NULL when the ingester was run without a GeoLite2
+# database. In that case this chart will show "No data" until GeoIP enrichment
+# is performed (run: ingester enrich --geoip-city <path> --geoip-asn <path>).
+uuid: 15a6c7d8-e9f0-1234-5678-901234567890
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top Countries by Request Volume
+viz_type: dist_bar
+description: >
+  Top 20 source countries by API call volume, with write-event and unique-caller
+  breakdowns (DSH-15). Countries not normally associated with the organisation's
+  operations may indicate credential theft or attacker-controlled infrastructure.
+  Requires GeoLite2 enrichment — NULL rows are excluded automatically.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_event_count_country
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      label: write_count
+      hasCustomLabel: true
+      optionName: metric_write_count_country
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_callers
+      hasCustomLabel: true
+      optionName: metric_unique_callers_country
+  groupby:
+    - geo_country_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "geo_country_code IS NOT NULL"
+      filterOptionName: filter_geo_country_not_null
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Event Count
+  y_axis_label: Country
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     geo_country_name,
+#     COUNT(*)                                             AS event_count,
+#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_count,
+#     COUNT(DISTINCT user_identity_arn)                    AS unique_callers
+# FROM cloudtrail_events
+# WHERE geo_country_code IS NOT NULL
+# GROUP BY geo_country_name
+# ORDER BY event_count DESC
+# LIMIT 20
+

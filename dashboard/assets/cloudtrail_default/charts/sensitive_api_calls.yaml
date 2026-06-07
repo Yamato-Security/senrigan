@@ -1,0 +1,93 @@
+# DSH-12: Sensitive / High-Risk API Calls
+# Table listing invocations of known security-sensitive AWS API actions.
+# Expanded to cover CloudTrail Lake query sample patterns:
+#   - IAM credential changes and policy modifications
+#   - STS token operations and cross-account access
+#   - S3 bucket policy / encryption / logging changes
+#   - Security service disabling (GuardDuty, Config, SecurityHub)
+#   - Secrets Manager and Parameter Store reads
+#   - KMS key management
+#   - Organizations management
+uuid: a5b6c7d8-e9f0-1234-ef01-234567890123
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Sensitive API Calls
+viz_type: table
+description: >
+  Invocations of known security-sensitive AWS API actions (DSH-12).
+  Covers IAM credential changes, policy modifications, S3 bucket policy changes,
+  security group modifications, key management, STS token operations, security
+  service disabling, Secrets Manager reads, and Organizations management.
+  These calls should be rare in normal operations; unexpected occurrences
+  may indicate privilege escalation, persistence, or data exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: call_count
+      hasCustomLabel: true
+      optionName: metric_call_count
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_callers
+      hasCustomLabel: true
+      optionName: metric_unique_callers
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+      label: error_count
+      hasCustomLabel: true
+      optionName: metric_error_count
+  groupby:
+    - event_name
+    - event_source
+  granularity_sqla: event_time
+  time_range: "No filter"
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      filterOptionName: filter_sensitive_apis
+      sqlExpression: >-
+        event_name IN (
+          'CreateUser', 'CreateAccessKey', 'DeleteAccessKey', 'UpdateAccessKey',
+          'CreateLoginProfile', 'UpdateLoginProfile',
+          'AttachUserPolicy', 'AttachRolePolicy', 'AttachGroupPolicy',
+          'PutUserPolicy', 'PutRolePolicy', 'PutGroupPolicy',
+          'CreateRole', 'UpdateAssumeRolePolicy',
+          'CreatePolicy', 'CreatePolicyVersion', 'SetDefaultPolicyVersion',
+          'AssumeRole', 'AssumeRoleWithSAML', 'AssumeRoleWithWebIdentity',
+          'GetFederationToken', 'GetSessionToken',
+          'PutBucketPolicy', 'PutBucketAcl', 'PutObjectAcl',
+          'DeleteBucketPolicy', 'DeleteBucketEncryption', 'PutPublicAccessBlock',
+          'AuthorizeSecurityGroupIngress', 'AuthorizeSecurityGroupEgress',
+          'CreateSecurityGroup', 'RevokeSecurityGroupIngress',
+          'StopLogging', 'DeleteTrail', 'UpdateTrail',
+          'DisableKey', 'ScheduleKeyDeletion', 'CancelKeyDeletion', 'CreateGrant',
+          'ConsoleLogin', 'RunInstances', 'CreateFunction20150331',
+          'CreateBucket', 'DeleteBucket',
+          'DeactivateMFADevice', 'DeleteVirtualMFADevice',
+          'DisableDetector', 'DeleteDetector',
+          'DeleteConfigRule', 'StopConfigurationRecorder',
+          'DisableSecurityHub', 'DeleteAnalyzer',
+          'GetSecretValue', 'GetParameter', 'GetParametersByPath',
+          'RegisterDelegatedAdministrator', 'LeaveOrganization',
+          'DeleteFlowLogs', 'DeleteLogGroup'
+        )
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     event_source,
+#     COUNT(*)                                             AS call_count,
+#     COUNT(DISTINCT user_identity_arn)                    AS unique_callers,
+#     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)   AS error_count
+# FROM cloudtrail_events
+# WHERE event_name IN (...)
+# GROUP BY event_name, event_source
+# ORDER BY call_count DESC
+# LIMIT 100
+

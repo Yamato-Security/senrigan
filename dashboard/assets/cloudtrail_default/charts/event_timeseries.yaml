@@ -1,0 +1,49 @@
+# DSH-01: CloudTrail Event Time-Series Chart
+# Hourly count of CloudTrail API calls split by Read vs Write operations.
+# Stacked bars make the transition from reconnaissance (read-heavy) to
+# attack execution (write-heavy) immediately visible.
+uuid: d4e5f6a7-b8c9-0123-def0-234567890123
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: CloudTrail Events Over Time
+viz_type: echarts_timeseries_bar
+description: >
+  Hourly Read vs Write event volume over time (DSH-01).
+  Stacked bars show the Read/Write split: a sudden rise in write_events
+  signals that an attacker is transitioning from reconnaissance to active
+  exploitation.  Useful for identifying activity spikes and off-hours operations.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: PT1H
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only = true)"
+      label: read_events
+      hasCustomLabel: true
+      optionName: metric_ts_read
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only = false)"
+      label: write_events
+      hasCustomLabel: true
+      optionName: metric_ts_write
+  adhoc_filters: []
+  row_limit: 10000
+  stack: true
+  x_axis_title: Time
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time)                           AS hour_bucket,
+#     COUNT(*) FILTER (WHERE read_only = true)                 AS read_events,
+#     COUNT(*) FILTER (WHERE read_only = false)                AS write_events
+# FROM cloudtrail_events
+# GROUP BY 1
+# ORDER BY event_time DESC
+

@@ -1,0 +1,53 @@
+# DSH-16: Global Request Origin — World Map
+# World map visualisation showing the geographic distribution of API call origins.
+# Country shade intensity is proportional to event count.
+#
+# Note: All geo_* columns are NULL when the ingester was run without a GeoLite2
+# database. In that case this chart will show "No data" until GeoIP enrichment
+# is performed (run: ingester enrich --geoip-city <path> --geoip-asn <path>).
+#
+# Compatibility: world_map viz_type is available in Superset 4.x as a legacy
+# visualisation. If it is unavailable in your Superset build, use
+# geo_country_requests.yaml (DSH-15) which provides equivalent data as a bar chart.
+uuid: 16b7c8d9-e0f1-2345-6789-012345678901
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Global Request Origin Map
+viz_type: world_map
+description: >
+  World map showing the geographic distribution of CloudTrail API call origins
+  (DSH-16). Country colour intensity is proportional to event count. Countries
+  not normally associated with the organisation's operations may indicate
+  credential theft or attacker-controlled infrastructure.
+  Requires GeoLite2 enrichment — NULL rows are excluded automatically.
+query_context: ""
+params:
+  entity: geo_country_code
+  country_fieldtype: cca2
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(*)"
+    label: event_count
+    hasCustomLabel: true
+    optionName: metric_event_count_worldmap
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "geo_country_code IS NOT NULL"
+      filterOptionName: filter_geo_country_not_null_map
+  granularity_sqla: event_time
+  time_range: No filter
+  show_bubbles: false
+  linear_color_scheme: superset_seq_1
+  max_bubble_size: "25"
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     geo_country_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE geo_country_code IS NOT NULL
+# GROUP BY geo_country_code
+# ORDER BY event_count DESC
+

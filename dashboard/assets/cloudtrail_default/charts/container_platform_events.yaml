@@ -1,0 +1,108 @@
+# DSH-48: EKS / ECR Container Platform Events
+# Combined table of EKS cluster management and ECR image/repository events.
+#
+# Container platforms are an increasingly common attack surface:
+#   EKS: attackers enable public API server access, create malicious Fargate
+#        profiles, or associate rogue OIDC identity providers
+#   ECR: attackers push backdoored images into production registries,
+#        overwrite the 'latest' tag, or grant cross-account repository access
+#
+# These two services are combined in one chart because both relate to
+# container workload compromise and are typically investigated together.
+# MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration
+uuid: 48d9e0f1-a2b3-4567-8901-480000000048
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EKS / ECR Container Platform Events
+viz_type: table
+description: >
+  EKS cluster and ECR container registry events (DSH-48).
+  EKS: UpdateClusterConfig (public API), CreateFargateProfile (malicious workloads),
+  AssociateIdentityProviderConfig (rogue OIDC IdP).
+  ECR: PutImage (backdoored image push), SetRepositoryPolicy (cross-account access),
+  PutRegistryPolicy (org-wide registry exposure).
+  Container platform events are critical for detecting supply-chain attacks
+  and Kubernetes control-plane compromise.
+  MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_container_events
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (
+          event_source = 'eks.amazonaws.com'
+          AND event_name IN (
+            'CreateCluster', 'DeleteCluster',
+            'UpdateClusterConfig', 'UpdateClusterVersion',
+            'CreateNodegroup', 'DeleteNodegroup',
+            'CreateFargateProfile', 'DeleteFargateProfile',
+            'CreateAddon', 'DeleteAddon',
+            'AssociateEncryptionConfig', 'AssociateIdentityProviderConfig'
+          )
+        )
+        OR (
+          event_source = 'ecr.amazonaws.com'
+          AND event_name IN (
+            'CreateRepository', 'DeleteRepository',
+            'PutImage', 'BatchDeleteImage',
+            'SetRepositoryPolicy', 'DeleteRepositoryPolicy',
+            'PutLifecyclePolicy', 'DeleteLifecyclePolicy',
+            'PutRegistryPolicy'
+          )
+        )
+      filterOptionName: filter_container_platform
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     CASE
+#         WHEN event_source = 'eks.amazonaws.com' THEN 'EKS'
+#         WHEN event_source = 'ecr.amazonaws.com' THEN 'ECR'
+#         ELSE event_source
+#     END AS platform,
+#     json_extract_string(request_parameters, '$.name')           AS cluster_name,
+#     json_extract_string(request_parameters, '$.repositoryName') AS repository_name,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE (event_source = 'eks.amazonaws.com'
+#   AND event_name IN ('CreateCluster','DeleteCluster','UpdateClusterConfig',
+#                      'UpdateClusterVersion','CreateNodegroup','DeleteNodegroup',
+#                      'CreateFargateProfile','DeleteFargateProfile',
+#                      'CreateAddon','DeleteAddon',
+#                      'AssociateEncryptionConfig','AssociateIdentityProviderConfig'))
+#    OR (event_source = 'ecr.amazonaws.com'
+#   AND event_name IN ('CreateRepository','DeleteRepository',
+#                      'PutImage','BatchDeleteImage',
+#                      'SetRepositoryPolicy','DeleteRepositoryPolicy',
+#                      'PutLifecyclePolicy','DeleteLifecyclePolicy',
+#                      'PutRegistryPolicy'))
+# ORDER BY event_time DESC
+# LIMIT 200
+

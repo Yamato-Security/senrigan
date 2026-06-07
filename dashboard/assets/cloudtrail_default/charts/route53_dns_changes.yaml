@@ -1,0 +1,69 @@
+# DSH-29: Route 53 DNS Configuration Changes
+# Table listing Route 53 hosted-zone and resolver changes.
+# Attackers can abuse DNS TXT/CNAME records and subdomains to exfiltrate
+# data via DNS tunnelling.  New hosted zones or bulk ChangeResourceRecordSets
+# calls are high-fidelity exfiltration indicators.
+# MITRE ATT&CK: TA0010 Exfiltration
+uuid: 29e1f2a3-b4c5-6789-4567-890123456789
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Route53 DNS Changes
+viz_type: table
+description: >
+  Route 53 hosted-zone and resolver configuration changes (DSH-29).
+  DNS tunnelling uses TXT/CNAME records and large numbers of subdomains to
+  exfiltrate data in DNS query payloads.  New hosted zones and unexpected
+  ChangeResourceRecordSets calls should be investigated immediately.
+  MITRE ATT&CK: TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_r53_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'route53.amazonaws.com'
+        AND event_name IN (
+          'CreateHostedZone',      'DeleteHostedZone',
+          'ChangeResourceRecordSets',
+          'CreateResolverRule',    'DeleteResolverRule',
+          'AssociateResolverRule', 'DisassociateResolverRule',
+          'UpdateResolverRule'
+        )
+      filterOptionName: filter_r53
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     json_extract_string(request_parameters, '$.hostedZoneId')  AS hosted_zone_id,
+#     json_extract_string(request_parameters, '$.name')          AS record_name,
+#     json_extract_string(request_parameters, '$.type')          AS record_type,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'route53.amazonaws.com'
+#   AND event_name IN (...)
+# ORDER BY event_time DESC
+# LIMIT 100
+

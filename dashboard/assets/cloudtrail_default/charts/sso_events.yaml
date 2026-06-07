@@ -1,0 +1,83 @@
+# DSH-44: IAM Identity Center (SSO) Events
+# Table of all AWS IAM Identity Center management events from
+# sso.amazonaws.com, sso-directory.amazonaws.com, and identitystore.amazonaws.com.
+#
+# Key threats:
+#   CreatePermissionSet  — backdoor admin permission set
+#   CreateAccountAssignment — granting attacker account access
+#   AttachManagedPolicyToPermissionSet — escalating permission set
+#   DeleteAccountAssignment — removing audit trail
+#
+# IAM Identity Center is increasingly the primary authentication path in
+# multi-account AWS organizations. Compromise of SSO enables cross-account
+# access to all accounts in the organization silently.
+# MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation
+uuid: 44f5a6b7-c8d9-0123-4567-440000000044
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: IAM Identity Center (SSO) Events
+viz_type: table
+description: >
+  AWS IAM Identity Center management events (DSH-44) from sso.amazonaws.com,
+  sso-directory.amazonaws.com, sso-oauth.amazonaws.com, and
+  identitystore.amazonaws.com.
+  Identity Center is the primary authentication path in multi-account organizations.
+  Key threats: CreatePermissionSet (backdoor admin access), CreateAccountAssignment
+  (assigning accounts to attacker-controlled users), and
+  AttachManagedPolicyToPermissionSet (privilege escalation).
+  MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_sso_event_count
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source IN (
+          'sso.amazonaws.com',
+          'sso-directory.amazonaws.com',
+          'identitystore.amazonaws.com',
+          'sso-oauth.amazonaws.com'
+        )
+      filterOptionName: filter_sso_events
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     request_parameters,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source IN (
+#     'sso.amazonaws.com',
+#     'sso-directory.amazonaws.com',
+#     'identitystore.amazonaws.com',
+#     'sso-oauth.amazonaws.com'
+# )
+# ORDER BY event_time DESC
+# LIMIT 200
+

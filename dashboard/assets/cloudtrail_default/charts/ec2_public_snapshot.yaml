@@ -1,0 +1,73 @@
+# DSH-41: EC2 Public Snapshot / AMI Sharing
+# Table of ModifySnapshotAttribute (createVolumePermission group=all) and
+# ModifyImageAttribute (launchPermission group=all) events.
+# A publicly shared EBS snapshot or AMI allows any AWS account to copy the
+# entire disk image, extracting all plaintext data and secrets stored on the volume.
+# MITRE ATT&CK: TA0010 Exfiltration
+uuid: 41c2d3e4-f5a6-7890-1234-410000000041
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Public Snapshot / AMI Sharing
+viz_type: table
+description: >
+  EC2 EBS snapshot and AMI public-sharing events (DSH-41):
+  ModifySnapshotAttribute with createVolumePermission granted to group 'all',
+  and ModifyImageAttribute with launchPermission granted to group 'all'.
+  A public snapshot or AMI allows any AWS account to copy the disk image and
+  extract sensitive data, credentials, and private keys stored on the volume.
+  MITRE ATT&CK: TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_public_snap
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN ('ModifySnapshotAttribute', 'ModifyImageAttribute')
+        AND (
+          lower(request_parameters) LIKE '%"group":"all"%'
+          OR lower(request_parameters) LIKE '%group=all%'
+          OR lower(request_parameters) LIKE '%"all"%'
+        )
+      filterOptionName: filter_ec2_public_snapshot
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.snapshotId') AS snapshot_id,
+#     json_extract_string(request_parameters, '$.imageId')    AS image_id,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_name IN ('ModifySnapshotAttribute', 'ModifyImageAttribute')
+#   AND (
+#       lower(request_parameters) LIKE '%"group":"all"%'
+#       OR lower(request_parameters) LIKE '%group=all%'
+#       OR lower(request_parameters) LIKE '%"all"%'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100
+

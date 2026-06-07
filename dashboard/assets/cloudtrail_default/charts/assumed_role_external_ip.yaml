@@ -1,0 +1,87 @@
+# DSH-27: AssumedRole Calls from External (Public) IP Addresses
+# Table of AssumedRole-authenticated API calls whose source IP is a routable
+# public address.  EC2 instance roles use IMDS to obtain temporary credentials;
+# if those credentials are stolen via SSRF or a metadata proxy, an attacker
+# can replay them from their own public IP address.
+# MITRE ATT&CK: TA0008 Lateral Movement / TA0006 Credential Access
+uuid: 27c9d0e1-f2a3-4567-2345-678901234567
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AssumedRole from External IP
+viz_type: table
+description: >
+  AssumedRole API calls originating from public (non-private) IP addresses (DSH-27).
+  EC2 instance metadata service (IMDS) credentials are normally used only from
+  within the VPC.  Calls from external IPs indicate that temporary credentials
+  have been leaked — typically via SSRF, container escape, or key export.
+  MITRE ATT&CK: TA0008 Lateral Movement / TA0006 Credential Access.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ext_ip_events
+  groupby:
+    - event_time
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_org
+    - event_name
+    - event_source
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        user_identity_type = 'AssumedRole'
+        AND source_ip_address NOT LIKE '10.%'
+        AND source_ip_address NOT LIKE '172.16.%'
+        AND source_ip_address NOT LIKE '172.17.%'
+        AND source_ip_address NOT LIKE '172.18.%'
+        AND source_ip_address NOT LIKE '172.19.%'
+        AND source_ip_address NOT LIKE '172.20.%'
+        AND source_ip_address NOT LIKE '172.21.%'
+        AND source_ip_address NOT LIKE '172.22.%'
+        AND source_ip_address NOT LIKE '172.23.%'
+        AND source_ip_address NOT LIKE '172.24.%'
+        AND source_ip_address NOT LIKE '172.25.%'
+        AND source_ip_address NOT LIKE '172.26.%'
+        AND source_ip_address NOT LIKE '172.27.%'
+        AND source_ip_address NOT LIKE '172.28.%'
+        AND source_ip_address NOT LIKE '172.29.%'
+        AND source_ip_address NOT LIKE '172.30.%'
+        AND source_ip_address NOT LIKE '172.31.%'
+        AND source_ip_address NOT LIKE '192.168.%'
+        AND source_ip_address NOT LIKE '127.%'
+        AND source_ip_address != 'AWS Internal'
+        AND source_ip_address NOT LIKE '%.amazonaws.com'
+        AND source_ip_address IS NOT NULL
+      filterOptionName: filter_ext_ip
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time, user_identity_arn, source_ip_address,
+#     geo_country_code, geo_org, event_name, event_source,
+#     aws_region, error_code
+# FROM cloudtrail_events
+# WHERE user_identity_type = 'AssumedRole'
+#   AND source_ip_address NOT LIKE '10.%'    -- RFC1918
+#   AND source_ip_address NOT LIKE '172.16.%' ... '172.31.%'
+#   AND source_ip_address NOT LIKE '192.168.%'
+#   AND source_ip_address NOT LIKE '127.%'
+#   AND source_ip_address != 'AWS Internal'
+#   AND source_ip_address NOT LIKE '%.amazonaws.com'
+#   AND source_ip_address IS NOT NULL
+# ORDER BY event_time DESC
+# LIMIT 200
+

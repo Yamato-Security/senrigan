@@ -1,0 +1,155 @@
+
+# DuckDB writers: ingester (READ_WRITE). Readers: agent, config-viz, superset (READ_ONLY).
+#
+# Volume strategy: services use direct bind mounts (not named volumes) so Docker Compose
+# resolves relative paths correctly on macOS, Linux, and WSL2. Named volumes with
+# driver_opts silently mis-resolve relative paths on Linux/WSL2.
+#   Default: ./data/db  |  Override: set DUCKDB_HOST_PATH=/abs/path in .env
+
+x-superset-image: &superset-image senrigan-dashboard:latest
+x-superset-env: &superset-env
+  SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-change-me-in-production}
+  DUCKDB_PATH: /data/db/threat_hunting.db
+x-ca-cert-arg: &ca-cert-arg
+  CUSTOM_CA_CERT_BASE64: ${CUSTOM_CA_CERT_BASE64:-}
+
+services:
+
+  ingester:
+    build:
+      context: ../ingester
+      dockerfile: Dockerfile
+      # runtime (default): compiles from source (Rust + DuckDB C++), first build ~10–30 min.
+      # prebuilt-runtime: downloads pre-built binary from GitHub Releases — fast startup.
+      # Set INGESTER_BUILD_TARGET=prebuilt-runtime to opt in once binaries are published.
+      target: ${INGESTER_BUILD_TARGET:-runtime}
+      args:
+        INGESTER_VERSION: ${INGESTER_VERSION:-v0.0.1}
+        <<: *ca-cert-arg
+    container_name: threat-hunting-ingester
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db
+      - ./logs:/data/logs:ro
+      - ${CONFIG_HOST_PATH:-./data/config-snapshots}:/data/config:ro
+      - ${GEOIP_HOST_PATH:-./data/geoip}:/data/geoip:ro
+    environment:
+      DUCKDB_PATH: /data/db/threat_hunting.db
+      RUST_LOG: ${RUST_LOG:-info}
+      GEOIP_CITY_PATH: ${GEOIP_CITY_PATH:-}
+      GEOIP_COUNTRY_PATH: ${GEOIP_COUNTRY_PATH:-}
+      GEOIP_ASN_PATH: ${GEOIP_ASN_PATH:-}
+    profiles:
+      - ingest
+    # docker compose --profile ingest run --rm ingester ingest --path /data/logs
+    # docker compose --profile ingest run --rm ingester ingest --path /data/logs --geoip-country /data/geoip
+    # docker compose --profile ingest run --rm ingester config-import --path /data/config
+    # docker compose --profile ingest run --rm ingester enrich --geoip-country /data/geoip
+
+  agent:
+    build:
+      context: ../agent
+      dockerfile: Dockerfile
+      args:
+        <<: *ca-cert-arg
+    container_name: threat-hunting-agent
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
+    environment:
+      DUCKDB_PATH: /data/db/threat_hunting.db
+      DUCKDB_READONLY: "true"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
+      OPENAI_MODEL_LITE: ${OPENAI_MODEL_LITE:-gpt-5.4-mini}
+      STREAMLIT_SERVER_HEADLESS: "true"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  config-viz:
+    build:
+      context: ../config_viz
+      dockerfile: Dockerfile
+      args:
+        <<: *ca-cert-arg
+    container_name: threat-hunting-config-viz
+    ports:
+      - "127.0.0.1:8502:8502"
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
+    environment:
+      DUCKDB_PATH: /data/db/threat_hunting.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8502/api/snapshots"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  superset:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+      args:
+        <<: *ca-cert-arg
+    image: *superset-image
+    container_name: threat-hunting-dashboard
+    ports:
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db
+      - superset_home:/app/superset_home
+      - ../dashboard/assets:/app/dashboards:ro
+      - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
+    environment:
+      <<: *superset-env
+    restart: unless-stopped
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+
+  superset-init:
+    image: *superset-image
+    container_name: threat-hunting-superset-init
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db
+      - superset_home:/app/superset_home
+      - ../dashboard/assets:/app/dashboards:ro
+      - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ../dashboard/init/bootstrap.sh:/app/bootstrap.sh:ro
+      - ../dashboard/init/register_duckdb.py:/app/register_duckdb.py:ro
+      - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
+      - ../dashboard/init/import_dashboard.py:/app/import_dashboard.py:ro
+    environment:
+      <<: *superset-env
+      SUPERSET_ADMIN_USERNAME: ${SUPERSET_ADMIN_USERNAME:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
+      SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL:-admin@localhost}
+    entrypoint: ["/bin/bash", "/app/bootstrap.sh"]
+    restart: "no"
+
+  superset-resync:
+    image: *superset-image
+    container_name: threat-hunting-superset-resync
+    volumes:
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
+      - superset_home:/app/superset_home
+      - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
+    environment:
+      <<: *superset-env
+      FORCE_RESYNC: "true"
+    entrypoint: ["python3", "/app/register_dataset.py"]
+    restart: "no"
+    profiles:
+      - resync
+    # Re-sync dataset column metadata after re-ingestion if the dashboard shows no data:
+    #   docker compose --profile resync run --rm superset-resync
+
+volumes:
+  superset_home:
+    name: threat-hunting-superset-home

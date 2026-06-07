@@ -1,0 +1,55 @@
+# DSH-13: Root Account Usage
+# Table showing all API calls made by the AWS Root account.
+# Root usage should be extremely rare; any activity warrants immediate review.
+uuid: b6c7d8e9-f0a1-2345-f012-345678901234
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Root Account Usage
+viz_type: table
+description: >
+  All API calls made by the AWS Root account (DSH-13).
+  Root account usage should be extremely rare in well-governed environments.
+  Any Root activity — especially CreateAccessKey, ConsoleLogin, or
+  StopLogging — is a critical indicator of compromise or policy violation.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: call_count
+      hasCustomLabel: true
+      optionName: metric_call_count_root
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+      label: error_count
+      hasCustomLabel: true
+      optionName: metric_error_count_root
+  groupby:
+    - event_name
+    - event_source
+    - source_ip_address
+  granularity_sqla: event_time
+  time_range: "No filter"
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_type = 'Root'"
+      filterOptionName: filter_root_account
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     event_source,
+#     source_ip_address,
+#     COUNT(*)                                             AS call_count,
+#     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)   AS error_count
+# FROM cloudtrail_events
+# WHERE user_identity_type = 'Root'
+# GROUP BY event_name, event_source, source_ip_address
+# ORDER BY call_count DESC
+# LIMIT 100
+

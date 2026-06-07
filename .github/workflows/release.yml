@@ -1,0 +1,91 @@
+# Release — THuntCloud ingester
+# Triggered on every version tag (v*).
+# Builds the ingester binary for x86_64 and aarch64 Linux (glibc) on native
+# GitHub-hosted runners and publishes them as GitHub Release assets:
+#   ingester-x86_64-linux  / ingester-x86_64-linux.sha256
+#   ingester-aarch64-linux / ingester-aarch64-linux.sha256
+#
+# The pre-built binaries are consumed by the Docker prebuilt-runtime target to
+# skip Rust compilation during `docker compose build`.  Docker selects the
+# correct binary automatically based on the build platform (TARGETARCH).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to release (e.g. v1.2.3). Required for manual runs.'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  release-ingester:
+    name: Release ingester binary (${{ matrix.binary }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            binary: ingester-x86_64-linux
+            cache_key: x86_64
+          - runner: ubuntu-24.04-arm
+            binary: ingester-aarch64-linux
+            cache_key: aarch64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Install build dependencies for DuckDB bundled build
+        run: sudo apt-get update && sudo apt-get install -y cmake g++
+
+      - name: Cache Cargo registry and build artifacts
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: "ingester -> target"
+          key: ${{ matrix.cache_key }}-release
+
+      - name: Build release binary
+        working-directory: ingester
+        run: cargo build --release --locked
+
+      - name: Stage binary with platform-tagged name
+        run: cp ingester/target/release/ingester /tmp/${{ matrix.binary }}
+
+      - name: Generate SHA256 checksum
+        run: |
+          cd /tmp
+          sha256sum ${{ matrix.binary }} > ${{ matrix.binary }}.sha256
+
+      - name: Create GitHub Release and upload binary
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.tag_name || github.ref_name }}
+          files: |
+            /tmp/${{ matrix.binary }}
+            /tmp/${{ matrix.binary }}.sha256
+          generate_release_notes: true

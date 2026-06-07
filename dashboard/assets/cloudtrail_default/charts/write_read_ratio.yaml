@@ -1,0 +1,55 @@
+# DSH-20: Write/Read Ratio Trend (Hourly)
+# Stacked bar chart of read_events vs write_events per hour.
+# When an account moves from reconnaissance (read-heavy) to attack execution
+# (write-heavy), the write ratio spikes — this chart makes that transition
+# visible at a glance.
+# MITRE ATT&CK: TA0040 Impact / TA0007 Discovery
+uuid: 20b2c3d4-e5f6-7890-bcde-f01234567890
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Write/Read Ratio Trend
+viz_type: echarts_timeseries_bar
+description: >
+  Hourly breakdown of read vs write API calls (DSH-20).
+  A sustained increase in write_events relative to read_events indicates
+  that an attacker has moved from reconnaissance to active exploitation.
+  MITRE ATT&CK: TA0040 Impact / TA0007 Discovery.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: PT1H
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only = true)"
+      label: read_events
+      hasCustomLabel: true
+      optionName: metric_read_events
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only = false)"
+      label: write_events
+      hasCustomLabel: true
+      optionName: metric_write_events
+  adhoc_filters: []
+  row_limit: 10000
+  stack: true
+  x_axis_title: Time
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time)                               AS hour_bucket,
+#     COUNT(*) FILTER (WHERE read_only = true)                     AS read_events,
+#     COUNT(*) FILTER (WHERE read_only = false)                    AS write_events,
+#     ROUND(
+#         COUNT(*) FILTER (WHERE read_only = false) * 100.0
+#         / NULLIF(COUNT(*), 0), 1
+#     )                                                            AS write_pct
+# FROM cloudtrail_events
+# GROUP BY 1
+# ORDER BY event_time DESC
+

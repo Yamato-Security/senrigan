@@ -1,0 +1,65 @@
+# DSH-55: S3 Cross-Account Replication
+# Detects PutBucketReplication and DeleteBucketReplication events.
+# Cross-account replication silently and continuously copies every new object
+# written to the bucket into an attacker-controlled bucket in another account,
+# establishing a persistent, ongoing exfiltration channel that is hard to detect
+# because it operates through S3 internal mechanisms without network egress.
+# MITRE ATT&CK: TA0010 Exfiltration / T1537 Transfer Data to Cloud Account
+uuid: 55a7b8c9-d0e1-2345-0123-550000000055
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Cross-Account Replication
+viz_type: table
+description: >
+  S3 cross-account replication configuration events (DSH-55):
+  PutBucketReplication and DeleteBucketReplication.
+  Cross-account replication silently copies every new object into an
+  attacker-controlled bucket, establishing a persistent exfiltration channel
+  that bypasses network DLP controls.  Any PutBucketReplication pointing to
+  an external account ID is a critical incident indicator.
+  MITRE ATT&CK: TA0010 Exfiltration / T1537 Transfer Data to Cloud Account.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_replication
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN ('PutBucketReplication', 'DeleteBucketReplication')
+      filterOptionName: filter_s3_replication
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN ('PutBucketReplication', 'DeleteBucketReplication')
+# ORDER BY event_time DESC
+# LIMIT 100

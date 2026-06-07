@@ -1,0 +1,71 @@
+# DSH-39: SSM Session Manager / Run Command Execution
+# Table of all SSM remote-execution events: StartSession, SendCommand, and
+# StartAutomationExecution.  SSM Session Manager provides an agent-based shell
+# without requiring open SSH/RDP ports, making it the primary lateral-movement
+# path for attackers who have compromised IAM credentials.
+# MITRE ATT&CK: TA0008 Lateral Movement / TA0002 Execution
+uuid: 39a0b1c2-d3e4-5678-f012-390000000039
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: SSM Session / Run Command Execution
+viz_type: table
+description: >
+  AWS Systems Manager remote-execution events (DSH-39): StartSession,
+  TerminateSession, ResumeSession, SendCommand, and StartAutomationExecution.
+  SSM Session Manager provides shell access without open SSH/RDP ports and is
+  the primary lateral-movement mechanism for attackers with stolen IAM credentials.
+  Any unexpected session or command from an unusual IP or identity warrants
+  immediate investigation.
+  MITRE ATT&CK: TA0008 Lateral Movement / TA0002 Execution.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ssm_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ssm.amazonaws.com'
+        AND event_name IN (
+          'StartSession', 'TerminateSession', 'ResumeSession',
+          'SendCommand', 'StartAutomationExecution'
+        )
+      filterOptionName: filter_ssm_exec
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     json_extract_string(request_parameters, '$.target')       AS target_instance,
+#     json_extract_string(request_parameters, '$.documentName') AS document_name,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ssm.amazonaws.com'
+#   AND event_name IN (
+#       'StartSession', 'TerminateSession', 'ResumeSession',
+#       'SendCommand', 'StartAutomationExecution'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200
+

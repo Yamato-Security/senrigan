@@ -1,0 +1,78 @@
+# DSH-40: RDS Snapshot Cross-Account Sharing
+# Table of ModifyDBSnapshotAttribute / ModifyDBClusterSnapshotAttribute events
+# where restore permission was granted to another AWS account.
+# Sharing an RDS snapshot to an attacker-controlled account enables a full
+# database copy without triggering S3/network-based DLP controls.
+# MITRE ATT&CK: TA0010 Exfiltration
+uuid: 40b1c2d3-e4f5-6789-0123-400000000040
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: RDS Snapshot Cross-Account Share
+viz_type: table
+description: >
+  RDS and Aurora snapshot sharing events (DSH-40): ModifyDBSnapshotAttribute
+  and ModifyDBClusterSnapshotAttribute where restore permission was granted
+  to another AWS account (valuesToAdd).  Attackers share snapshots to their
+  own account to exfiltrate an entire database without S3/network-based DLP.
+  Any external account ID in the restore attribute is a critical exfiltration indicator.
+  MITRE ATT&CK: TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_rds_snap_share
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN (
+          'ModifyDBSnapshotAttribute',
+          'ModifyDBClusterSnapshotAttribute'
+        )
+        AND (
+          request_parameters LIKE '%restore%'
+          OR request_parameters LIKE '%valuesToAdd%'
+        )
+      filterOptionName: filter_rds_snapshot_share
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.dBSnapshotIdentifier')        AS snapshot_id,
+#     json_extract_string(request_parameters, '$.dBClusterSnapshotIdentifier') AS cluster_snapshot_id,
+#     json_extract_string(request_parameters, '$.attributeName')               AS attribute_name,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_name IN (
+#     'ModifyDBSnapshotAttribute',
+#     'ModifyDBClusterSnapshotAttribute'
+# )
+#   AND (
+#       request_parameters LIKE '%restore%'
+#       OR request_parameters LIKE '%valuesToAdd%'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100
+

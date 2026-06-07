@@ -1,0 +1,75 @@
+# DSH-45: S3 Bucket Policy / ACL Changes
+# Table of S3 bucket permission modification events:
+# PutBucketPolicy, DeleteBucketPolicy, PutBucketAcl.
+#
+# These events are critical exfiltration precursors — attackers modify bucket
+# permissions to either make data publicly accessible or grant access to an
+# attacker-controlled AWS account, bypassing S3 public-access-block controls
+# at the individual bucket level.
+# MITRE ATT&CK: TA0010 Exfiltration / TA0005 Defense Evasion
+uuid: 45a6b7c8-d9e0-1234-5678-450000000045
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Bucket Policy / ACL Changes
+viz_type: table
+description: >
+  S3 bucket policy and ACL modification events (DSH-45):
+  PutBucketPolicy, DeleteBucketPolicy, PutBucketAcl, PutBucketCors,
+  PutBucketWebsite, and DeleteBucketWebsite.
+  These changes can expose bucket contents publicly or grant access to
+  attacker-controlled accounts. PutBucketPolicy with Principal='*' is
+  an immediate data exposure indicator.
+  MITRE ATT&CK: TA0010 Exfiltration / TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_policy_changes
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN (
+          'PutBucketPolicy',   'DeleteBucketPolicy',
+          'PutBucketAcl',      'PutBucketCors',
+          'PutBucketWebsite',  'DeleteBucketWebsite'
+        )
+      filterOptionName: filter_s3_policy_acl
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN (
+#       'PutBucketPolicy', 'DeleteBucketPolicy',
+#       'PutBucketAcl',    'PutBucketCors',
+#       'PutBucketWebsite', 'DeleteBucketWebsite'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100
+

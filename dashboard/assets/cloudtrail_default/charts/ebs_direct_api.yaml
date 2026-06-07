@@ -1,0 +1,75 @@
+# DSH-51: EBS Direct API Snapshot Exfiltration
+# Table showing EBS Direct API calls used to stream raw snapshot block data.
+# Pacu's ebs__download_snapshots module uses ListSnapshotBlocks + GetSnapshotBlock
+# to download an entire EBS disk image without creating an EC2 instance or
+# requesting a snapshot copy — bypassing the traditional ModifySnapshotAttribute
+# detection path used for snapshot-sharing alerts.
+# MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection
+uuid: 51c3d4e5-f6a7-8901-cdef-510000000051
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EBS Direct API Snapshot Exfiltration
+viz_type: table
+description: >
+  EBS Direct API calls used to exfiltrate snapshot data (DSH-51).
+  Pacu's ebs__download_snapshots uses ListSnapshotBlocks and GetSnapshotBlock
+  to stream a complete EBS disk image block-by-block without creating an EC2
+  instance, requesting a snapshot copy, or triggering a ModifySnapshotAttribute
+  event — making it invisible to traditional snapshot-sharing detection.
+  Any GetSnapshotBlock or ListSnapshotBlocks call from an unexpected identity
+  or IP address is a critical exfiltration indicator.
+  MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ebs_direct_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ebs.amazonaws.com'
+        AND event_name IN (
+          'ListSnapshotBlocks',   'GetSnapshotBlock',
+          'ListChangedBlocks',    'PutSnapshotBlock',
+          'StartSnapshot',        'CompleteSnapshot'
+        )
+      filterOptionName: filter_ebs_direct_api
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     json_extract_string(request_parameters, '$.snapshotId')    AS snapshot_id,
+#     json_extract_string(request_parameters, '$.blockIndex')    AS block_index,
+#     json_extract_string(request_parameters, '$.volumeSize')    AS volume_size_gb,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ebs.amazonaws.com'
+#   AND event_name IN (
+#       'ListSnapshotBlocks',   'GetSnapshotBlock',
+#       'ListChangedBlocks',    'PutSnapshotBlock',
+#       'StartSnapshot',        'CompleteSnapshot'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100

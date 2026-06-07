@@ -1,0 +1,97 @@
+# HRM-39: High-Risk API Events Over Time
+# Stacked bar chart showing daily call volume for APIs commonly abused in attacks.
+# A spike in a normally quiet API (e.g. DeleteTrail, GetSecretValue) is a strong signal.
+# MITRE ATT&CK: multiple tactics (see API list below)
+uuid: 39a1b2c3-d4e5-6789-abcd-ef0123456739
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: High-Risk API Events Over Time
+viz_type: echarts_timeseries_bar
+description: >
+  Daily call volume for APIs commonly observed in attack campaigns (HRM-39).
+  A sudden spike in normally rare actions such as DeleteTrail or GetSecretValue
+  warrants immediate investigation.  Note that many of these APIs are also called
+  in legitimate workflows — use volume anomalies as the primary signal, not mere presence.
+  MITRE ATT&CK: TA0001 / TA0003 / TA0004 / TA0005 / TA0006 / TA0007 / TA0008.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_hrm_ts_count
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SIMPLE
+      subject: event_name
+      operator: IN
+      comparator:
+        - AssumeRole
+        - AssumeRoleWithWebIdentity
+        - AttachUserPolicy
+        - CreateAccessKey
+        - CreateFunction
+        - CreateInstanceProfile
+        - CreateLoginProfile
+        - CreatePolicy
+        - CreateRole
+        - CreateUser
+        - DeletePolicy
+        - DeleteTrail
+        - DescribeInstances
+        - DescribeVpcs
+        - DetachPolicy
+        - GetAccessKeyLastUsed
+        - GetBucketAcl
+        - GetBucketPolicy
+        - GetCallerIdentity
+        - GetParameter
+        - GetParameterHistory
+        - GetSecretValue
+        - InvokeFunction
+        - ListAccessKeys
+        - ListBuckets
+        - ListGroups
+        - ListParameters
+        - ListRoles
+        - ListSecrets
+        - ListUsers
+        - PassRole
+        - PutBucketPolicy
+        - PutEventSelectors
+        - PutRolePolicy
+        - PutUserPolicy
+        - RunInstances
+        - SendCommand
+        - StartInstances
+        - StartSession
+        - StopLogging
+        - UpdateAssumeRolePolicy
+        - UpdateTrail
+      filterOptionName: filter_hrm_ts
+  row_limit: 50000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('day', event_time) AS day_bucket,
+#     event_name,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_name IN ( ... 42 APIs ... )
+# GROUP BY 1, 2
+# ORDER BY event_time DESC, event_count DESC
+

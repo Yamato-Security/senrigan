@@ -1,0 +1,8 @@
+[server]
+headless = true
+
+[client]
+# Hide the developer toolbar (including "Clear caches" button) that appears
+# when text is selected on the page.
+toolbarMode = "minimal"
+

@@ -1,0 +1,60 @@
+# DSH-33: First / Last Seen per API Call (event_name)
+# New API calls appearing for the first time suggest reconnaissance or
+# privilege escalation (e.g., ListBuckets, GetCallerIdentity appearing late).
+# MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation
+uuid: 33c4d5e6-f7a8-9012-cdef-012345678903
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: First / Last Seen per API Call
+viz_type: table
+description: >
+  API actions ordered by first appearance (DSH-33).  New API calls appearing
+  for the first time suggest reconnaissance or privilege escalation attempts.
+  MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_fs_api_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_fs_api_last
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_calls
+      hasCustomLabel: true
+      optionName: metric_fs_api_total
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: distinct_callers
+      hasCustomLabel: true
+      optionName: metric_fs_api_callers
+  groupby:
+    - event_name
+    - event_source
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 50
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     event_source,
+#     MIN(event_time)                   AS first_seen,
+#     MAX(event_time)                   AS last_seen,
+#     COUNT(*)                          AS total_calls,
+#     COUNT(DISTINCT user_identity_arn) AS distinct_callers
+# FROM cloudtrail_events
+# GROUP BY event_name, event_source
+# ORDER BY first_seen DESC
+# LIMIT 50
+

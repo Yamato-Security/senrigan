@@ -1,0 +1,73 @@
+# DSH-03: Activity Aggregation by IAM Entity
+# Table showing top 50 IAM entities ranked by total API calls,
+# with write-event ratio, error-event breakdown, and last-seen timestamp
+# for quick threat prioritisation.
+uuid: f6a7b8c9-d0e1-2345-f012-456789012345
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: IAM Entity Activity
+viz_type: table
+description: >
+  Top 50 IAM entities ranked by total API calls, with write ratio and error
+  breakdowns (DSH-03). Entities with a high write_ratio_pct or error_events
+  relative to total_events may indicate credential abuse or privilege escalation.
+  last_seen shows the most recent activity timestamp for each entity.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_events
+      hasCustomLabel: true
+      optionName: metric_total_events
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      label: write_events
+      hasCustomLabel: true
+      optionName: metric_write_events
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+      label: error_events
+      hasCustomLabel: true
+      optionName: metric_error_events
+    - expressionType: SQL
+      sqlExpression: >-
+        ROUND(
+          COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+          / NULLIF(COUNT(*), 0), 1
+        )
+      label: write_ratio_pct
+      hasCustomLabel: true
+      optionName: metric_write_ratio
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_last_seen
+  groupby:
+    - user_identity_arn
+    - user_identity_type
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 50
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     user_identity_type,
+#     COUNT(*)                                                       AS total_events,
+#     COUNT(CASE WHEN read_only = false THEN 1 END)                  AS write_events,
+#     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)             AS error_events,
+#     ROUND(
+#         COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+#         / NULLIF(COUNT(*), 0), 1
+#     )                                                              AS write_ratio_pct,
+#     MAX(event_time)                                                AS last_seen
+# FROM cloudtrail_events
+# GROUP BY user_identity_arn, user_identity_type
+# ORDER BY total_events DESC
+# LIMIT 50
+

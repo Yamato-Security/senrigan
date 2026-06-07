@@ -1,0 +1,67 @@
+# DSH-28: MFA-less Console Login Trend (Daily)
+# Time-series bar chart showing daily console logins split by MFA usage.
+# A rising mfa_less_logins bar is a direct indicator of phishing or credential
+# compromise — users are signing in without multi-factor authentication.
+# MITRE ATT&CK: TA0001 Initial Access
+uuid: 28d0e1f2-a3b4-5678-3456-789012345678
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: MFA-less Login Trend
+viz_type: echarts_timeseries_bar
+description: >
+  Daily console logins split by MFA usage (DSH-28).
+  mfa_less_logins (MFAUsed = 'No') is a direct indicator of account compromise
+  or phishing; a sustained rise in MFA-less logins should trigger an immediate
+  review of IAM authentication policies.
+  MITRE ATT&CK: TA0001 Initial Access.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+        )
+      label: mfa_less_logins
+      hasCustomLabel: true
+      optionName: metric_mfa_less_logins
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'Yes'
+        )
+      label: mfa_logins
+      hasCustomLabel: true
+      optionName: metric_mfa_logins
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'"
+      filterOptionName: filter_mfa_console_login
+  row_limit: 1000
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Login Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('day', event_time)  AS day_bucket,
+#     COUNT(*) FILTER (
+#         WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+#     )                               AS mfa_less_logins,
+#     COUNT(*) FILTER (
+#         WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'Yes'
+#     )                               AS mfa_logins
+# FROM cloudtrail_events
+# WHERE event_source = 'signin.amazonaws.com'
+#   AND event_name   = 'ConsoleLogin'
+# GROUP BY 1
+# ORDER BY event_time DESC
+

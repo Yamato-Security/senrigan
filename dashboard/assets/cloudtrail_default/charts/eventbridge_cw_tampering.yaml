@@ -1,0 +1,100 @@
+# DSH-47: EventBridge / CloudWatch Rule Tampering
+# Table of EventBridge rule deletion/disabling and malicious scheduler creation.
+#
+# Attackers disable scheduled security notifications, GuardDuty finding exports,
+# and compliance check rules to suppress automated detection.  They also create
+# persistent attacker-controlled cron jobs for C2 beaconing via EventBridge
+# Scheduler — a mechanism that survives EC2 termination and IAM key rotation.
+#
+# Combined with CloudWatch Logs subscription filter changes in the same chart
+# to give defenders a single pane for all "logging/monitoring tampering" events.
+# MITRE ATT&CK: TA0003 Persistence / TA0005 Defense Evasion / TA0011 C2
+uuid: 47c8d9e0-f1a2-3456-7890-470000000047
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EventBridge / CloudWatch Rule Tampering
+viz_type: table
+description: >
+  EventBridge and CloudWatch Events rule tampering (DSH-47):
+  DeleteRule, DisableRule (silencing scheduled detection),
+  CreateSchedule/UpdateSchedule (attacker cron jobs for C2 beaconing),
+  PutSubscriptionFilter (redirecting CloudTrail/VPC logs to attacker account),
+  DeleteLogGroup (destroying VPC Flow Log records).
+  Combined monitoring-layer tampering chart for DFIR.
+  MITRE ATT&CK: TA0003 Persistence / TA0005 Defense Evasion / TA0011 C2.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_eb_cw_tampering
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (
+          event_source IN ('events.amazonaws.com', 'scheduler.amazonaws.com')
+          AND event_name IN (
+            'PutRule', 'DeleteRule', 'DisableRule', 'EnableRule',
+            'PutTargets', 'RemoveTargets', 'PutPermission', 'RemovePermission',
+            'CreateSchedule', 'DeleteSchedule', 'UpdateSchedule'
+          )
+        )
+        OR (
+          event_source = 'logs.amazonaws.com'
+          AND event_name IN (
+            'PutSubscriptionFilter', 'DeleteSubscriptionFilter',
+            'PutDestination', 'DeleteDestination',
+            'DeleteLogGroup', 'DeleteLogStream'
+          )
+        )
+      filterOptionName: filter_eb_cw_tampering
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     CASE
+#         WHEN event_source IN ('events.amazonaws.com','scheduler.amazonaws.com')
+#               THEN 'EventBridge'
+#         WHEN event_source = 'logs.amazonaws.com'
+#               THEN 'CloudWatch Logs'
+#         ELSE event_source
+#     END AS monitoring_layer,
+#     json_extract_string(request_parameters, '$.name')         AS resource_name,
+#     json_extract_string(request_parameters, '$.logGroupName') AS log_group,
+#     json_extract_string(request_parameters, '$.destinationArn') AS destination_arn,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE (event_source IN ('events.amazonaws.com', 'scheduler.amazonaws.com')
+#   AND event_name IN ('PutRule','DeleteRule','DisableRule','EnableRule',
+#                      'PutTargets','RemoveTargets','CreateSchedule',
+#                      'DeleteSchedule','UpdateSchedule'))
+#    OR (event_source = 'logs.amazonaws.com'
+#   AND event_name IN ('PutSubscriptionFilter','DeleteSubscriptionFilter',
+#                      'PutDestination','DeleteDestination',
+#                      'DeleteLogGroup','DeleteLogStream'))
+# ORDER BY event_time DESC
+# LIMIT 200
+

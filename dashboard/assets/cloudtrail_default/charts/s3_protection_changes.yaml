@@ -1,0 +1,67 @@
+# DSH-25: S3 Data Protection Configuration Changes
+# Table listing S3 events that weaken bucket security posture:
+# server-access logging disabling, public-access block removal, encryption
+# disabling, bucket policy deletion, and ACL loosening.
+# MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact
+uuid: 25a7b8c9-d0e1-2345-0123-456789012345
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Protection Config Changes
+viz_type: table
+description: >
+  S3 events that weaken bucket security posture (DSH-25).
+  Disabling server-access logging removes the audit trail; removing the public-
+  access block exposes data to the internet; deleting bucket encryption or
+  replication weakens data-at-rest protection.  These are pre-exfiltration or
+  cover-up actions.
+  MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_prot_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN (
+          'PutBucketLogging',      'DeleteBucketPolicy',
+          'PutBucketPolicy',       'PutPublicAccessBlock',
+          'PutBucketAcl',          'PutBucketVersioning',
+          'PutBucketEncryption',   'DeleteBucketEncryption',
+          'PutBucketReplication',  'DeleteBucketReplication'
+        )
+      filterOptionName: filter_s3_prot
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN (...)
+# ORDER BY event_time DESC
+# LIMIT 200
+

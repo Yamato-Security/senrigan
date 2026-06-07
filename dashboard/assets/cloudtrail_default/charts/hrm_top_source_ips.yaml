@@ -1,0 +1,90 @@
+# HRM-43: Top Source IPs Calling High-Risk APIs
+# Ranks external source IPs by number of high-risk API calls.
+# An unfamiliar public IP performing bulk reconnaissance or credential-access calls is suspicious.
+# MITRE ATT&CK: multiple tactics
+uuid: 43e5f6a7-b8c9-0123-ef01-234567890143
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top Source IPs — High-Risk APIs
+viz_type: bar
+description: >
+  Source IPs ranked by total calls to high-risk watchlist APIs (HRM-43).
+  AWS service endpoints (amazonaws.com) appear as internal service calls.
+  Focus on unexpected public IPs — especially those calling Credential Access
+  or Defense Evasion APIs.  Combine with GeoIP tab for origin context.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_hrm_ip_count
+  groupby:
+    - source_ip_address
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SIMPLE
+      subject: event_name
+      operator: IN
+      comparator:
+        - AssumeRole
+        - AssumeRoleWithWebIdentity
+        - AttachUserPolicy
+        - CreateAccessKey
+        - CreateFunction
+        - CreateInstanceProfile
+        - CreateLoginProfile
+        - CreatePolicy
+        - CreateRole
+        - CreateUser
+        - DeletePolicy
+        - DeleteTrail
+        - DescribeInstances
+        - DescribeVpcs
+        - DetachPolicy
+        - GetAccessKeyLastUsed
+        - GetBucketAcl
+        - GetBucketPolicy
+        - GetCallerIdentity
+        - GetParameter
+        - GetParameterHistory
+        - GetSecretValue
+        - InvokeFunction
+        - ListAccessKeys
+        - ListBuckets
+        - ListGroups
+        - ListParameters
+        - ListRoles
+        - ListSecrets
+        - ListUsers
+        - PassRole
+        - PutBucketPolicy
+        - PutEventSelectors
+        - PutRolePolicy
+        - PutUserPolicy
+        - RunInstances
+        - SendCommand
+        - StartInstances
+        - StartSession
+        - StopLogging
+        - UpdateAssumeRolePolicy
+        - UpdateTrail
+      filterOptionName: filter_hrm_ip
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 20
+  order_desc: true
+  x_axis_title: Source IP Address
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT source_ip_address, COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_name IN ( ... 42 APIs ... )
+# GROUP BY source_ip_address
+# ORDER BY event_count DESC
+# LIMIT 20
+

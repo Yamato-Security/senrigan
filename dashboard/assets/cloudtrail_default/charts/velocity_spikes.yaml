@@ -1,0 +1,58 @@
+# DSH-38: Event Velocity Spikes per Identity
+# Surfaces burst activity per identity — credential stuffing, automated
+# enumeration, or data exfiltration create sharp velocity spikes.
+# MITRE ATT&CK: TA0006 Credential Access / TA0009 Collection / TA0010 Exfiltration
+uuid: 38b9c0d1-e2f3-4567-1234-567890123408
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Event Velocity Spikes per Identity
+viz_type: table
+description: >
+  Identities with 50+ events per hour burst activity periods (DSH-38).
+  Credential stuffing, automated enumeration, or data exfiltration create
+  sharp velocity spikes above normal baselines.  Shows the hour bucket,
+  identity, and event count for each spike.
+  MITRE ATT&CK: TA0006 Credential Access / TA0009 Collection / TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: events_per_hour
+      hasCustomLabel: true
+      optionName: metric_velocity_count
+  groupby:
+    - expressionType: SQL
+      sqlExpression: "DATE_TRUNC('hour', event_time)"
+      label: hour_bucket
+      hasCustomLabel: true
+      optionName: col_velocity_hour
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_arn IS NOT NULL"
+      filterOptionName: filter_velocity_notnull
+    - clause: HAVING
+      expressionType: SQL
+      sqlExpression: "COUNT(*) >= 50"
+      filterOptionName: filter_velocity_threshold
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time) AS hour_bucket,
+#     user_identity_arn,
+#     COUNT(*) AS events_per_hour
+# FROM cloudtrail_events
+# WHERE user_identity_arn IS NOT NULL
+# GROUP BY DATE_TRUNC('hour', event_time), user_identity_arn
+# HAVING COUNT(*) >= 50
+# ORDER BY events_per_hour DESC
+# LIMIT 200
+

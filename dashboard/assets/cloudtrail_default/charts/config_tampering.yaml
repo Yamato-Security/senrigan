@@ -1,0 +1,74 @@
+# DSH-43: AWS Config Recorder / Rule Tampering
+# Table of StopConfigurationRecorder, DeleteConfigurationRecorder,
+# DeleteDeliveryChannel, DeleteConfigRule, and PutConfigRule events.
+# Stopping the AWS Config recorder eliminates compliance evidence and
+# change-tracking for an entire region, allowing attackers to make
+# infrastructure changes that are invisible to audit and compliance tools.
+# MITRE ATT&CK: TA0005 Defense Evasion
+uuid: 43e4f5a6-b7c8-9012-3456-430000000043
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AWS Config Tampering
+viz_type: table
+description: >
+  AWS Config recorder and rule tampering events (DSH-43):
+  StopConfigurationRecorder, DeleteConfigurationRecorder,
+  DeleteDeliveryChannel, DeleteConfigRule, and PutConfigRule.
+  Stopping the Config recorder eliminates compliance evidence and change-tracking
+  for the entire region, allowing subsequent infrastructure changes to go
+  undetected by Config rules and Security Hub standards.
+  MITRE ATT&CK: TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_config_tampering
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'config.amazonaws.com'
+        AND event_name IN (
+          'StopConfigurationRecorder',  'DeleteConfigurationRecorder',
+          'DeleteDeliveryChannel',      'DeleteConfigRule',
+          'PutConfigRule'
+        )
+      filterOptionName: filter_config_tampering
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     json_extract_string(request_parameters, '$.configRuleName')            AS config_rule_name,
+#     json_extract_string(request_parameters, '$.configurationRecorderName') AS recorder_name,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'config.amazonaws.com'
+#   AND event_name IN (
+#       'StopConfigurationRecorder',  'DeleteConfigurationRecorder',
+#       'DeleteDeliveryChannel',      'DeleteConfigRule',
+#       'PutConfigRule'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100
+

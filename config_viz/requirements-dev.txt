@@ -1,0 +1,5 @@
+# Development / test dependencies for config_viz
+-r backend/requirements.txt
+pytest>=8.0.0
+httpx>=0.28.0
+

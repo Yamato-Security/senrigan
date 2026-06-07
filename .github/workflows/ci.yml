@@ -1,0 +1,236 @@
+# CI — THuntCloud
+# Runs on every push and pull request to main / develop branches.
+# Checks: Rust (cargo test + clippy + fmt), Python (pytest + ruff + black),
+#         and frontend (npm audit + vitest + build).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Weekly npm audit every Monday 08:00 UTC — catches CVEs between code changes.
+    - cron: "0 8 * * 1"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ── Rust ingester ──────────────────────────────────────────────────────────
+  ingester:
+    name: ingester (Rust)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Install build dependencies for DuckDB bundled build
+        run: sudo apt-get update && sudo apt-get install -y cmake g++
+
+      - name: Cache Cargo registry and build artifacts
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: "ingester -> target"
+
+      - name: Check formatting (rustfmt)
+        working-directory: ingester
+        run: cargo fmt --all -- --check
+
+      - name: Lint (clippy)
+        working-directory: ingester
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        working-directory: ingester
+        run: cargo test --all
+
+  # ── Python agent ───────────────────────────────────────────────────────────
+  agent:
+    name: agent (Python)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Cache pip packages
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('agent/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install runtime and dev dependencies
+        working-directory: agent
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Check formatting (black)
+        working-directory: agent
+        run: black --check .
+
+      - name: Lint (ruff)
+        working-directory: agent
+        run: ruff check .
+
+      - name: Run tests (pytest)
+        working-directory: agent
+        run: pytest -v --tb=short
+
+  # ── YAML validation ────────────────────────────────────────────────────────
+  dashboard-yaml:
+    name: dashboard YAML validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate all dashboard YAML files are well-formed
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import yaml
+          from pathlib import Path
+
+          errors = []
+          yaml_files = list(Path("dashboard/assets").rglob("*.yaml"))
+          print(f"Validating {len(yaml_files)} YAML file(s)...")
+
+          for f in yaml_files:
+              try:
+                  with open(f) as fh:
+                      yaml.safe_load(fh)
+                  print(f"  OK  {f}")
+              except yaml.YAMLError as exc:
+                  errors.append((f, exc))
+                  print(f"  ERR {f}: {exc}")
+
+          if errors:
+              print(f"\n{len(errors)} YAML file(s) failed validation.")
+              sys.exit(1)
+          else:
+              print(f"\nAll {len(yaml_files)} YAML files are valid.")
+          EOF
+
+      - name: Verify ZIP contains all required files
+        run: |
+          python3 - <<'EOF'
+          import zipfile
+          import sys
+          from pathlib import Path
+
+          zip_path = Path("dashboard/assets/cloudtrail_default.zip")
+          if not zip_path.exists():
+              print("ERROR: cloudtrail_default.zip not found")
+              sys.exit(1)
+
+          required = {
+              "metadata.yaml",
+              "dashboards/cloudtrail_threat_hunting.yaml",
+              "databases/CloudTrail_DuckDB.yaml",
+              "datasets/CloudTrail_DuckDB/cloudtrail_events.yaml",
+              "charts/CloudTrail_Events_Over_Time.yaml",
+              "charts/Top_20_API_Calls.yaml",
+              "charts/IAM_Entity_Activity.yaml",
+              "charts/Error_Event_Trend.yaml",
+              "charts/Top_Source_IP_Addresses.yaml",
+          }
+
+          with zipfile.ZipFile(zip_path) as zf:
+              names = set(zf.namelist())
+
+          missing = required - names
+          if missing:
+              print(f"ERROR: ZIP is missing required files: {missing}")
+              sys.exit(1)
+          else:
+              print(f"ZIP contains all {len(required)} required files. OK")
+          EOF
+
+  # ── Frontend (React / Vite) ────────────────────────────────────────────────
+  frontend:
+    name: frontend (Node / Vite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js 22 (Active LTS)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: config_viz/frontend/package-lock.json
+
+      - name: Install dependencies (lockfile-strict)
+        working-directory: config_viz/frontend
+        run: npm ci
+
+      - name: Security audit (fail on high/critical)
+        working-directory: config_viz/frontend
+        run: npm audit --audit-level=high
+
+      - name: Lint
+        working-directory: config_viz/frontend
+        run: npm run lint || true   # eslint not yet configured as hard failure; remove '|| true' when ready
+
+      - name: Unit tests
+        working-directory: config_viz/frontend
+        run: npm test
+
+      - name: Build (verify static output)
+        working-directory: config_viz/frontend
+        run: npm run build
+
+      - name: Generate SBOM (CycloneDX)
+        working-directory: config_viz/frontend
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm \
+            --output-format JSON \
+            --output-file sbom.json \
+            --mc-type application
+          echo "SBOM size: $(wc -c < sbom.json) bytes"
+
+      - name: Upload SBOM artefact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: frontend-sbom
+          path: config_viz/frontend/sbom.json
+          retention-days: 90
+

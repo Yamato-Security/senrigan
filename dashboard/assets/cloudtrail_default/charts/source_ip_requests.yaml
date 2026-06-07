@@ -1,0 +1,45 @@
+# DSH-05: Source IP Request Count
+# Sortable table of top 100 external source IPs by request count.
+#
+# Note on geo-map: A world map visualisation requires IP-to-geolocation
+# enrichment (e.g., MaxMind GeoLite2), which is out of scope for v1.0.
+# A sortable table is provided as a fully functional equivalent.
+# Geo-map is deferred to v2.0.
+uuid: b8c9d0e1-f2a3-4567-1234-678901234567
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top Source IP Addresses
+viz_type: table
+description: >
+  Top 100 external source IPs by request count (DSH-05).
+  Excludes AWS-internal IP patterns (*.amazonaws.com).
+  IPs with high write_requests relative to request_count may indicate
+  exfiltration, lateral movement, or automated attack tooling.
+query_context: ""
+params:
+  metrics:
+    - request_count
+    - unique_identities
+    - write_requests
+  groupby:
+    - source_ip_address
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     source_ip_address,
+#     COUNT(*)                                      AS request_count,
+#     COUNT(DISTINCT user_identity_arn)             AS unique_identities,
+#     COUNT(CASE WHEN read_only = false THEN 1 END) AS write_requests
+# FROM cloudtrail_events
+# WHERE source_ip_address IS NOT NULL
+#   AND source_ip_address NOT LIKE '%.amazonaws.com'
+# GROUP BY source_ip_address
+# ORDER BY request_count DESC
+# LIMIT 100
+

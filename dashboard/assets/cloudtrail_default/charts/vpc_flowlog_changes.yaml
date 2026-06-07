@@ -1,0 +1,64 @@
+# DSH-42: VPC Flow Log Changes (Defense Evasion)
+# Table of DeleteFlowLogs and CreateFlowLogs events.
+# VPC Flow Logs are the primary network-layer forensic evidence source.
+# Deleting them eliminates all network connection evidence, making it
+# impossible to trace lateral movement, C2 beaconing, or data exfiltration
+# traffic after the fact.
+# MITRE ATT&CK: TA0005 Defense Evasion
+uuid: 42d3e4f5-a6b7-8901-2345-420000000042
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: VPC Flow Log Changes
+viz_type: table
+description: >
+  VPC Flow Log creation and deletion events (DSH-42).
+  DeleteFlowLogs eliminates the primary network forensic evidence source,
+  making post-incident analysis of lateral movement and data exfiltration
+  impossible.  CreateFlowLogs during an incident may indicate log redirection
+  to an attacker-controlled S3 bucket.
+  MITRE ATT&CK: TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_vpc_flowlog_changes
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN ('DeleteFlowLogs', 'CreateFlowLogs')
+      filterOptionName: filter_vpc_flowlog
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN ('DeleteFlowLogs', 'CreateFlowLogs')
+# ORDER BY event_time DESC
+# LIMIT 100
+

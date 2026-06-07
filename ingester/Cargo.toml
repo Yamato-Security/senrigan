@@ -1,0 +1,27 @@
+[package]
+name = "ingester"
+version = "0.0.1"
+edition = "2024"
+license = "AGPL-3.0-only"
+
+[dependencies]
+chrono             = "0.4"
+glob               = "0.3"
+serde              = { version = "1.0", features = ["derive"] }
+serde_json         = { version = "1.0", features = ["raw_value"] }
+flate2             = "1.1"
+duckdb             = { version = "1.1", features = ["bundled"] }
+clap               = { version = "4.6", features = ["derive"] }
+anyhow             = "1.0"
+indicatif          = "0.18"
+walkdir            = "2.5"
+rayon              = "1.12"
+sha2               = "0.11"
+hex                = "0.4"
+# MaxMind GeoIP2 / GeoLite2 .mmdb database reader
+maxminddb          = "0.28"
+
+[dev-dependencies]
+tempfile           = "3.27"
+predicates         = "3.1"
+assert_cmd         = "2.0"

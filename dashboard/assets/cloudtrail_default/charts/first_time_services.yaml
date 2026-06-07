@@ -1,0 +1,72 @@
+# DSH-26: First-Time Service Sources
+# Table showing every distinct event_source ordered by first_seen descending.
+# When an attacker deploys malicious infrastructure, AWS services that have
+# never appeared in the account's CloudTrail logs will show up for the first
+# time.  Monitoring new service sources reveals unexpected resource creation.
+# MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery
+uuid: 26b8c9d0-e1f2-3456-1234-567890123456
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: First-Time Service Sources
+viz_type: table
+description: >
+  All distinct AWS service sources ordered by first appearance date (DSH-26).
+  Services appearing for the first time may represent attacker-deployed
+  infrastructure (e.g., Lambda, EC2 in an unexpected region).
+  Sort by first_seen DESC to see the most recently introduced services.
+  MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_first_seen_svc
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_last_seen_svc
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_calls
+      hasCustomLabel: true
+      optionName: metric_total_calls_svc
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_callers
+      hasCustomLabel: true
+      optionName: metric_unique_callers_svc
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT aws_region)"
+      label: regions_used
+      hasCustomLabel: true
+      optionName: metric_regions_used_svc
+  groupby:
+    - event_source
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_source IS NOT NULL"
+      filterOptionName: filter_svc_not_null
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_source,
+#     MIN(event_time)                   AS first_seen,
+#     MAX(event_time)                   AS last_seen,
+#     COUNT(*)                          AS total_calls,
+#     COUNT(DISTINCT user_identity_arn) AS unique_callers,
+#     COUNT(DISTINCT aws_region)        AS regions_used
+# FROM cloudtrail_events
+# GROUP BY event_source
+# ORDER BY first_seen DESC
+# LIMIT 100
+

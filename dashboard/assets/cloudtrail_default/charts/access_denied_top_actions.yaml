@@ -1,0 +1,49 @@
+# DSH-09: Top Access Denied API Actions
+# Horizontal bar chart of API actions that most frequently returned
+# AccessDenied or UnauthorizedAccess errors.
+uuid: d2e3f4a5-b6c7-8901-bcde-f01234567890
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top Access Denied Actions
+viz_type: dist_bar
+description: >
+  Top 20 API actions that returned AccessDenied or Client.UnauthorizedAccess errors (DSH-09).
+  Repeated access-denied events against sensitive APIs (e.g. AssumeRole, GetSecretValue,
+  PutBucketPolicy) are strong indicators of privilege escalation attempts or lateral movement.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: denied_count
+      hasCustomLabel: true
+      optionName: metric_denied_count
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "error_code IN ('AccessDenied', 'Client.UnauthorizedAccess', 'UnauthorizedAccess', 'AccessDeniedException')"
+      filterOptionName: filter_access_denied
+  groupby:
+    - event_name
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Denied Count
+  y_axis_label: API Action
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     COUNT(*) AS denied_count
+# FROM cloudtrail_events
+# WHERE error_code IN ('AccessDenied', 'Client.UnauthorizedAccess',
+#                       'UnauthorizedAccess', 'AccessDeniedException')
+# GROUP BY event_name
+# ORDER BY denied_count DESC
+# LIMIT 20
+

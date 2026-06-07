@@ -1,0 +1,64 @@
+# DSH-17: Top Cities by Request Volume
+# Table of the top 25 cities by CloudTrail API call volume.
+# City-level granularity helps pinpoint unusual origin locations that country-level
+# analysis would obscure (e.g. specific data centre cities used by threat actors).
+#
+# Note: All geo_* columns are NULL when the ingester was run without a GeoLite2
+# database. In that case this chart will show "No data" until GeoIP enrichment
+# is performed (run: ingester enrich --geoip-city <path> --geoip-asn <path>).
+uuid: 17c8d9e0-f1a2-3456-7890-123456789012
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top Cities by Request Volume
+viz_type: table
+description: >
+  Top 25 cities by API call volume with write-event and unique-caller breakdowns
+  (DSH-17). City-level granularity can reveal specific data centre locations used
+  by threat actors that would be obscured by country-level analysis alone.
+  Requires GeoLite2 enrichment — NULL rows are excluded automatically.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: request_count
+      hasCustomLabel: true
+      optionName: metric_request_count_city
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      label: write_requests
+      hasCustomLabel: true
+      optionName: metric_write_requests_city
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_identities
+      hasCustomLabel: true
+      optionName: metric_unique_identities_city
+  groupby:
+    - geo_city
+    - geo_country_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "geo_city IS NOT NULL"
+      filterOptionName: filter_geo_city_not_null
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     geo_city,
+#     geo_country_name,
+#     COUNT(*)                                             AS request_count,
+#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_requests,
+#     COUNT(DISTINCT user_identity_arn)                    AS unique_identities
+# FROM cloudtrail_events
+# WHERE geo_city IS NOT NULL
+# GROUP BY geo_city, geo_country_name
+# ORDER BY request_count DESC
+# LIMIT 25
+

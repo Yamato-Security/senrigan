@@ -1,0 +1,83 @@
+# DSH-22: Defense Evasion Events
+# Table of all CloudTrail events matching known defense-evasion techniques:
+# CloudTrail tampering, GuardDuty disabling, Config disabling, VPC Flow Log
+# deletion, CloudWatch log deletion, and security service disabling.
+# MITRE ATT&CK: TA0005 Defense Evasion
+uuid: 22d4e5f6-a7b8-9012-def0-123456789012
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Defense Evasion Events
+viz_type: table
+description: >
+  All CloudTrail events matching known defense-evasion techniques (DSH-22).
+  Covers CloudTrail tampering (StopLogging, DeleteTrail), GuardDuty disabling,
+  AWS Config disabling, VPC Flow Log deletion, CloudWatch log deletion, and
+  security service disabling (SecurityHub, IAM Access Analyzer).
+  Any of these events is a critical indicator and warrants immediate investigation.
+  MITRE ATT&CK: TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_event_count_de
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN (
+          'StopLogging', 'DeleteTrail', 'UpdateTrail', 'PutEventSelectors',
+          'DisableDetector', 'DeleteDetector', 'DeletePublishingDestination',
+          'DeleteConfigRule', 'StopConfigurationRecorder', 'DeleteDeliveryChannel',
+          'DeleteFlowLogs',
+          'DeleteLogGroup', 'DeleteLogStream',
+          'DisableSecurityHub', 'DeleteAnalyzer'
+        )
+      filterOptionName: filter_defense_evasion
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     error_code,
+#     CASE
+#         WHEN event_name IN ('StopLogging','DeleteTrail','UpdateTrail','PutEventSelectors')
+#             THEN 'CloudTrail Tampering'
+#         WHEN event_name IN ('DisableDetector','DeleteDetector','DeletePublishingDestination')
+#             THEN 'GuardDuty Disabled'
+#         WHEN event_name IN ('DeleteConfigRule','StopConfigurationRecorder','DeleteDeliveryChannel')
+#             THEN 'Config Disabled'
+#         WHEN event_name = 'DeleteFlowLogs'
+#             THEN 'VPC Flow Logs Deleted'
+#         WHEN event_name IN ('DeleteLogGroup','DeleteLogStream')
+#             THEN 'CW Logs Deleted'
+#         WHEN event_name IN ('DisableSecurityHub','DeleteAnalyzer')
+#             THEN 'Security Service Disabled'
+#         ELSE event_name
+#     END AS threat_category
+# FROM cloudtrail_events
+# WHERE event_name IN (...)
+# ORDER BY event_time DESC
+# LIMIT 200
+

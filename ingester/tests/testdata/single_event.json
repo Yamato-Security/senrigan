@@ -1,0 +1,21 @@
+{
+  "Records": [
+    {
+      "eventTime": "2024-01-15T10:30:00Z",
+      "eventName": "DescribeInstances",
+      "eventSource": "ec2.amazonaws.com",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.1",
+      "userAgent": "aws-cli/2.0",
+      "userIdentity": {
+        "type": "IAMUser",
+        "arn": "arn:aws:iam::123456789012:user/testuser",
+        "accountId": "123456789012"
+      },
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "recipientAccountId": "123456789012"
+    }
+  ]
+}
+

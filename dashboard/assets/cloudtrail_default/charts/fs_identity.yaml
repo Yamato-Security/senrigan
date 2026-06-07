@@ -1,0 +1,80 @@
+# DSH-31: First / Last Seen per IAM Identity
+# Table showing every IAM identity with first/last seen timestamps.
+# Newly appeared identities (sorted by first_seen DESC) are high-priority
+# DFIR leads — they may represent compromised credentials or attacker accounts.
+# MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence
+uuid: 31a2b3c4-d5e6-7890-abcd-ef0123456701
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: First / Last Seen per IAM Identity
+viz_type: table
+description: >
+  IAM identities with first/last seen timestamps, event counts, distinct APIs,
+  distinct IPs, and active span in days (DSH-31).  Sort by first_seen DESC to
+  find newly appeared identities.  Short active spans with high event counts
+  signal compromised credentials or automated attacks.
+  MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_fs_identity_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_fs_identity_last
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_events
+      hasCustomLabel: true
+      optionName: metric_fs_identity_total
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT event_name)"
+      label: distinct_apis
+      hasCustomLabel: true
+      optionName: metric_fs_identity_apis
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_fs_identity_ips
+    - expressionType: SQL
+      sqlExpression: "DATEDIFF('day', MIN(event_time), MAX(event_time))"
+      label: active_span_days
+      hasCustomLabel: true
+      optionName: metric_fs_identity_span
+  groupby:
+    - user_identity_arn
+    - user_identity_type
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_arn IS NOT NULL"
+      filterOptionName: filter_fs_identity_notnull
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     user_identity_type,
+#     MIN(event_time)                          AS first_seen,
+#     MAX(event_time)                          AS last_seen,
+#     COUNT(*)                                 AS total_events,
+#     COUNT(DISTINCT event_name)               AS distinct_apis,
+#     COUNT(DISTINCT source_ip_address)        AS distinct_ips,
+#     DATEDIFF('day', MIN(event_time), MAX(event_time)) AS active_span_days
+# FROM cloudtrail_events
+# WHERE user_identity_arn IS NOT NULL
+# GROUP BY user_identity_arn, user_identity_type
+# ORDER BY first_seen DESC
+# LIMIT 100
+

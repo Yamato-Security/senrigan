@@ -1,0 +1,63 @@
+# DSH-18: Top ASN Organizations by Request Volume
+# Table of the top 25 ASN organizations by CloudTrail API call volume.
+# ASN-level analysis helps identify traffic originating from cloud providers,
+# VPN services, hosting companies, or known malicious ASNs.
+#
+# Note: All geo_* columns are NULL when the ingester was run without a GeoLite2
+# database. In that case this chart will show "No data" until GeoIP enrichment
+# is performed (run: ingester enrich --geoip-asn <path>).
+uuid: 18d9e0f1-a2b3-4567-8901-234567890123
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top ASN Organizations by Request Volume
+viz_type: table
+description: >
+  Top 25 ASN organizations by API call volume with write-event and unique-caller
+  breakdowns (DSH-18). Traffic originating from VPN providers, Tor exit nodes,
+  hosting companies, or cloud providers outside the expected footprint may
+  indicate attacker use of anonymisation infrastructure.
+  Requires GeoLite2 enrichment — NULL rows are excluded automatically.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: request_count
+      hasCustomLabel: true
+      optionName: metric_request_count_asn
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      label: write_requests
+      hasCustomLabel: true
+      optionName: metric_write_requests_asn
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_identities
+      hasCustomLabel: true
+      optionName: metric_unique_identities_asn
+  groupby:
+    - geo_org
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "geo_org IS NOT NULL"
+      filterOptionName: filter_geo_org_not_null
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     geo_org,
+#     COUNT(*)                                             AS request_count,
+#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_requests,
+#     COUNT(DISTINCT user_identity_arn)                    AS unique_identities
+# FROM cloudtrail_events
+# WHERE geo_org IS NOT NULL
+# GROUP BY geo_org
+# ORDER BY request_count DESC
+# LIMIT 25
+

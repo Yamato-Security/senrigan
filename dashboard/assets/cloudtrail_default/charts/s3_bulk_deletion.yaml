@@ -1,0 +1,65 @@
+# DSH-53: S3 Bulk Object Deletion
+# Surfaces identities performing >=50 DeleteObject/DeleteObjects calls per hour.
+# High-volume deletions are the data destruction phase of a ransomware attack —
+# the attacker exfiltrates first, then wipes the source to extort the victim.
+# MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction
+uuid: 53e5f6a7-b8c9-0123-ef01-530000000053
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Bulk Object Deletion
+viz_type: table
+description: >
+  S3 bulk DeleteObject/DeleteObjects calls (DSH-53): identities that deleted
+  >=50 objects in a single hour, grouped by hour bucket, identity, and source IP.
+  High-volume deletions are the data destruction phase of a ransomware attack —
+  the attacker exfiltrates first (see S3 Bulk Download chart), then wipes the
+  source bucket to extort the victim.  Also covers accidental mass-deletion.
+  MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: delete_count
+      hasCustomLabel: true
+      optionName: metric_s3_bulk_deletion
+  groupby:
+    - expressionType: SQL
+      sqlExpression: "DATE_TRUNC('hour', event_time)"
+      label: hour_bucket
+      hasCustomLabel: true
+      optionName: col_s3_del_hour
+    - user_identity_arn
+    - source_ip_address
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN ('DeleteObject', 'DeleteObjects')
+      filterOptionName: filter_s3_bulk_deletion
+    - clause: HAVING
+      expressionType: SQL
+      sqlExpression: "COUNT(*) >= 50"
+      filterOptionName: filter_s3_bulk_deletion_threshold
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time) AS hour_bucket,
+#     user_identity_arn,
+#     source_ip_address,
+#     COUNT(*) AS delete_count
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN ('DeleteObject', 'DeleteObjects')
+# GROUP BY DATE_TRUNC('hour', event_time), user_identity_arn, source_ip_address
+# HAVING COUNT(*) >= 50
+# ORDER BY delete_count DESC
+# LIMIT 200

@@ -1,0 +1,90 @@
+# DSH-46: Network ACL / Route Table Changes
+# Combined table of Network ACL and Route Table modification events.
+#
+# Network ACLs (NACLs) are stateless and apply at the subnet level,
+# overriding security group restrictions. Route table changes can redirect
+# traffic to attacker-controlled hosts for interception (MitM) or
+# establish C2 communication paths invisible to endpoint agents.
+#
+# Combined in one chart because both affect the same network-layer control
+# plane and are typically investigated together.
+# MITRE ATT&CK: TA0005 Defense Evasion / TA0011 C2
+uuid: 46b7c8d9-e0f1-2345-6789-460000000046
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Network ACL / Route Table Changes
+viz_type: table
+description: >
+  Network ACL and route table modification events (DSH-46).
+  NACL changes (CreateNetworkAclEntry, DeleteNetworkAclEntry, ReplaceNetworkAclEntry)
+  can bypass security group restrictions for entire subnets.
+  Route table changes (CreateRoute, ReplaceRoute, DeleteRoute) can redirect
+  traffic to attacker-controlled infrastructure for interception or
+  establish silent C2 communication channels.
+  MITRE ATT&CK: TA0005 Defense Evasion / TA0011 Command and Control.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_nacl_route_changes
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN (
+          'CreateNetworkAcl',        'DeleteNetworkAcl',
+          'CreateNetworkAclEntry',   'DeleteNetworkAclEntry',
+          'ReplaceNetworkAclEntry',  'ReplaceNetworkAclAssociation',
+          'CreateRoute',             'DeleteRoute',
+          'ReplaceRoute',            'CreateRouteTable',
+          'DeleteRouteTable',        'AssociateRouteTable',
+          'DisassociateRouteTable',  'ReplaceRouteTableAssociation'
+        )
+      filterOptionName: filter_nacl_route
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     CASE
+#         WHEN event_name LIKE '%NetworkAcl%'  THEN 'Network ACL'
+#         WHEN event_name LIKE '%Route%'       THEN 'Route Table'
+#         ELSE 'Other'
+#     END AS change_category,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN (
+#       'CreateNetworkAcl', 'DeleteNetworkAcl',
+#       'CreateNetworkAclEntry', 'DeleteNetworkAclEntry',
+#       'ReplaceNetworkAclEntry', 'ReplaceNetworkAclAssociation',
+#       'CreateRoute', 'DeleteRoute', 'ReplaceRoute',
+#       'CreateRouteTable', 'DeleteRouteTable',
+#       'AssociateRouteTable', 'DisassociateRouteTable',
+#       'ReplaceRouteTableAssociation'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200
+

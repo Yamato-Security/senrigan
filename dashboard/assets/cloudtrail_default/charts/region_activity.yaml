@@ -1,0 +1,75 @@
+# DSH-14: AWS Region Activity
+# Bar chart showing event distribution across AWS regions,
+# with write_count and write_ratio_pct for threat prioritisation.
+# Activity in unexpected regions may indicate resource hijacking (e.g. crypto mining).
+uuid: c7d8e9f0-a1b2-3456-0123-456789012345
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Region Activity
+viz_type: dist_bar
+description: >
+  Distribution of CloudTrail events across AWS regions (DSH-14).
+  write_ratio_pct highlights regions with disproportionate write activity —
+  unexpected regions with high write ratios may indicate crypto-mining EC2
+  instances, lateral movement, or data exfiltration to less-monitored regions.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_event_count_region
+    - expressionType: SQL
+      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      label: write_count
+      hasCustomLabel: true
+      optionName: metric_write_count_region
+    - expressionType: SQL
+      sqlExpression: >-
+        ROUND(
+          COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+          / NULLIF(COUNT(*), 0), 1
+        )
+      label: write_ratio_pct
+      hasCustomLabel: true
+      optionName: metric_write_ratio_region
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+      label: unique_callers
+      hasCustomLabel: true
+      optionName: metric_unique_callers_region
+  groupby:
+    - aws_region
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "aws_region IS NOT NULL"
+      filterOptionName: filter_region_not_null
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 30
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Event Count
+  y_axis_label: AWS Region
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     aws_region,
+#     COUNT(*)                                             AS event_count,
+#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_count,
+#     ROUND(
+#         COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+#         / NULLIF(COUNT(*), 0), 1
+#     )                                                    AS write_ratio_pct,
+#     COUNT(DISTINCT user_identity_arn)                    AS unique_callers
+# FROM cloudtrail_events
+# WHERE aws_region IS NOT NULL
+# GROUP BY aws_region
+# ORDER BY event_count DESC
+# LIMIT 30
+

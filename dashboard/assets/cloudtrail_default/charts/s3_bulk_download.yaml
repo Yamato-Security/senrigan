@@ -1,0 +1,65 @@
+# DSH-52: S3 Bulk Download (Exfiltration)
+# Surfaces identities performing >=100 GetObject calls in a single hour.
+# High-volume read activity from S3 is a primary exfiltration indicator —
+# attackers dump bucket contents before destroying or ransoming them.
+# MITRE ATT&CK: TA0010 Exfiltration
+uuid: 52d4e5f6-a7b8-9012-def0-520000000052
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Bulk Download (Exfiltration)
+viz_type: table
+description: >
+  S3 bulk GetObject calls (DSH-52): identities that performed >=100 GetObject
+  requests in a single hour, grouped by hour bucket, identity, and source IP.
+  High-volume reads indicate automated data exfiltration — attackers dump bucket
+  contents before destroying or ransoming them.  Combine with the S3 Bulk Deletion
+  chart to identify the full ransomware chain: exfiltrate then destroy.
+  MITRE ATT&CK: TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: get_object_count
+      hasCustomLabel: true
+      optionName: metric_s3_bulk_download
+  groupby:
+    - expressionType: SQL
+      sqlExpression: "DATE_TRUNC('hour', event_time)"
+      label: hour_bucket
+      hasCustomLabel: true
+      optionName: col_s3_dl_hour
+    - user_identity_arn
+    - source_ip_address
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name = 'GetObject'
+      filterOptionName: filter_s3_bulk_download
+    - clause: HAVING
+      expressionType: SQL
+      sqlExpression: "COUNT(*) >= 100"
+      filterOptionName: filter_s3_bulk_download_threshold
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('hour', event_time) AS hour_bucket,
+#     user_identity_arn,
+#     source_ip_address,
+#     COUNT(*) AS get_object_count
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name = 'GetObject'
+# GROUP BY DATE_TRUNC('hour', event_time), user_identity_arn, source_ip_address
+# HAVING COUNT(*) >= 100
+# ORDER BY get_object_count DESC
+# LIMIT 200

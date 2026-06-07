@@ -1,0 +1,340 @@
+# Superset dataset definition for cloudtrail_events.
+# Linked to the "CloudTrail DuckDB" database connection.
+uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: cloudtrail_events
+main_dttm_col: event_time
+description: AWS CloudTrail events ingested by the Senrigan ingester (Rust).
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: event_time
+    verbose_name: Event Time
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Timestamp of the API call
+
+  - column_name: event_name
+    verbose_name: Event Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Name of the AWS API action (e.g. DescribeInstances, CreateUser)
+
+  - column_name: event_source
+    verbose_name: Event Source
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS service that processed the request (e.g. ec2.amazonaws.com)
+
+  - column_name: aws_region
+    verbose_name: AWS Region
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS region where the request was made
+
+  - column_name: source_ip_address
+    verbose_name: Source IP Address
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: IP address of the requester
+
+  - column_name: user_agent
+    verbose_name: User Agent
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: User agent string of the requester
+
+  - column_name: user_identity_type
+    verbose_name: Identity Type
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Type of the IAM identity (e.g. IAMUser, AssumedRole, Root)
+
+  - column_name: user_identity_arn
+    verbose_name: Identity ARN
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the IAM identity that made the request
+
+  - column_name: user_identity_account_id
+    verbose_name: Account ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS account ID of the calling identity
+
+  - column_name: error_code
+    verbose_name: Error Code
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Error code if the request failed (e.g. AccessDenied)
+
+  - column_name: error_message
+    verbose_name: Error Message
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: Error message if the request failed
+
+  - column_name: read_only
+    verbose_name: Read Only
+    is_dttm: false
+    is_active: true
+    type: BOOLEAN
+    groupby: true
+    filterable: true
+    description: Whether the API call is read-only (true) or mutating (false)
+
+  - column_name: event_type
+    verbose_name: Event Type
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Type of event (e.g. AwsApiCall, AwsConsoleSignIn)
+
+  - column_name: recipient_account_id
+    verbose_name: Recipient Account ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS account ID that received the event
+
+  - column_name: request_parameters
+    verbose_name: Request Parameters
+    is_dttm: false
+    is_active: true
+    type: JSON
+    groupby: false
+    filterable: false
+    description: Parameters sent with the API request (JSON)
+
+  - column_name: response_elements
+    verbose_name: Response Elements
+    is_dttm: false
+    is_active: true
+    type: JSON
+    groupby: false
+    filterable: false
+    description: Response elements returned by the API (JSON)
+
+  - column_name: raw_event
+    verbose_name: Raw Event
+    is_dttm: false
+    is_active: true
+    type: JSON
+    groupby: false
+    filterable: false
+    description: Full original CloudTrail event as JSON
+
+  # GeoIP enrichment columns (7 columns, NULL when ingested without GeoLite2 DB)
+  - column_name: geo_country_code
+    verbose_name: Country Code
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ISO 3166-1 alpha-2 country code derived from source_ip_address (e.g. US, CN). NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_country_name
+    verbose_name: Country Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Full country name derived from source_ip_address (e.g. United States). NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_city
+    verbose_name: City
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: City name derived from source_ip_address. NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_latitude
+    verbose_name: Latitude
+    is_dttm: false
+    is_active: true
+    type: FLOAT
+    groupby: false
+    filterable: false
+    description: Latitude coordinate derived from source_ip_address. NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_longitude
+    verbose_name: Longitude
+    is_dttm: false
+    is_active: true
+    type: FLOAT
+    groupby: false
+    filterable: false
+    description: Longitude coordinate derived from source_ip_address. NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_asn
+    verbose_name: ASN
+    is_dttm: false
+    is_active: true
+    type: INTEGER
+    groupby: false
+    filterable: false
+    description: Autonomous System Number (ASN) derived from source_ip_address. NULL if GeoLite2 DB was not used during ingestion.
+
+  - column_name: geo_org
+    verbose_name: ASN Organization
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ASN organization name derived from source_ip_address (e.g. AS16509 Amazon.com, Inc.). NULL if GeoLite2 DB was not used during ingestion.
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of events
+
+  - metric_name: event_count
+    verbose_name: Event Count
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of events (alias for count)
+
+  - metric_name: call_count
+    verbose_name: Call Count
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of API calls
+
+  - metric_name: request_count
+    verbose_name: Request Count
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of requests
+
+  - metric_name: error_count
+    verbose_name: Error Count
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+    description: Number of events with an error code
+
+  - metric_name: error_requests
+    verbose_name: Error Requests
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+    description: Number of requests that returned an error
+
+  - metric_name: write_count
+    verbose_name: Write Event Count
+    metric_type: count
+    expression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+    description: Number of mutating (non-read-only) API calls
+
+  - metric_name: write_requests
+    verbose_name: Write Requests
+    metric_type: count
+    expression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+    description: Number of mutating (write) requests
+
+  - metric_name: write_events
+    verbose_name: Write Events
+    metric_type: count
+    expression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+    description: Number of write events
+
+  - metric_name: error_events
+    verbose_name: Error Events
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+    description: Number of error events
+
+  - metric_name: total_events
+    verbose_name: Total Events
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of events
+
+  - metric_name: unique_callers
+    verbose_name: Unique Callers
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT user_identity_arn)"
+    description: Number of distinct IAM identities that made API calls
+
+  - metric_name: unique_identities
+    verbose_name: Unique Identities
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT user_identity_arn)"
+    description: Number of distinct IAM identities
+
+  - metric_name: denied_count
+    verbose_name: Denied Count
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IN ('AccessDenied', 'Client.UnauthorizedAccess', 'UnauthorizedAccess', 'AccessDeniedException') THEN 1 END)"
+    description: Number of access-denied errors
+
+  - metric_name: total_logins
+    verbose_name: Total Logins
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Total number of console login attempts
+
+  - metric_name: failed_logins
+    verbose_name: Failed Logins
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+    description: Number of failed login attempts
+
+  - metric_name: success_logins
+    verbose_name: Successful Logins
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NULL THEN 1 END)"
+    description: Number of successful login attempts
+

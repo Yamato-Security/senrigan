@@ -1,0 +1,73 @@
+# DSH-54: S3 Versioning / Logging Disabled
+# Detects PutBucketVersioning (Suspended) and PutBucketLogging (disabled).
+# Disabling versioning removes the ability to recover deleted/overwritten objects;
+# disabling server access logging erases the evidence trail for forensic analysis.
+# Both are classic anti-forensics techniques used ahead of data destruction.
+# MITRE ATT&CK: TA0005 Defense Evasion / T1070 Indicator Removal
+uuid: 54f6a7b8-c9d0-1234-f012-540000000054
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Versioning / Logging Disabled
+viz_type: table
+description: >
+  S3 versioning suspension and logging disable events (DSH-54):
+  PutBucketVersioning with Status=Suspended and PutBucketLogging with an empty
+  BucketLoggingStatus.  Attackers disable versioning to prevent object recovery
+  after deletion, and disable logging to erase the access evidence trail.
+  Both are anti-forensics precursors to data destruction.
+  MITRE ATT&CK: TA0005 Defense Evasion / T1070 Indicator Removal.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_versioning_logging
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN ('PutBucketVersioning', 'PutBucketLogging')
+        AND (
+          request_parameters LIKE '%Suspended%'
+          OR request_parameters LIKE '%"BucketLoggingStatus":{}%'
+          OR request_parameters LIKE '%"LoggingEnabled":{}%'
+        )
+      filterOptionName: filter_s3_versioning_logging
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+#     request_parameters,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN ('PutBucketVersioning', 'PutBucketLogging')
+#   AND (
+#       request_parameters LIKE '%Suspended%'
+#       OR request_parameters LIKE '%"BucketLoggingStatus":{}%'
+#       OR request_parameters LIKE '%"LoggingEnabled":{}%'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100

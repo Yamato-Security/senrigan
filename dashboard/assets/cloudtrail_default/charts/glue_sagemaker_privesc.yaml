@@ -1,0 +1,104 @@
+# DSH-50: Glue DevEndpoint & SageMaker Notebook Privilege Escalation
+# Table showing Glue development endpoint events and SageMaker notebook events
+# used for IAM privilege escalation via iam:PassRole.
+# Both services accept a role via PassRole and provide code-execution environments
+# that run with the passed role's full AWS permissions.
+# MITRE ATT&CK: TA0004 Privilege Escalation
+uuid: 50b2c3d4-e5f6-7890-bcde-500000000050
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Glue & SageMaker Privilege Escalation
+viz_type: table
+description: >
+  Glue DevEndpoint and SageMaker Notebook events used for IAM privilege
+  escalation (DSH-50). iam:PassRole + glue:CreateDevEndpoint creates an
+  SSH-accessible Python/Spark environment with the passed role's full permissions.
+  iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter notebook
+  with the same effect. sagemaker:CreatePresignedNotebookInstanceUrl alone can
+  grant access to an existing notebook without owning the underlying role.
+  Both are documented in the AWS-IAM-Privilege-Escalation repository and
+  implemented in Pacu's iam__privesc_scan module.
+  MITRE ATT&CK: TA0004 Privilege Escalation.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_glue_sm_event_count
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (
+          event_source = 'glue.amazonaws.com'
+          AND event_name IN (
+            'CreateDevEndpoint', 'UpdateDevEndpoint', 'DeleteDevEndpoint',
+            'GetDevEndpoint',    'GetDevEndpoints',
+            'GetConnections',    'GetConnection',
+            'CreateConnection',  'DeleteConnection'
+          )
+        ) OR (
+          event_source = 'sagemaker.amazonaws.com'
+          AND event_name IN (
+            'CreateNotebookInstance',              'UpdateNotebookInstance',
+            'DeleteNotebookInstance',              'StartNotebookInstance',
+            'StopNotebookInstance',
+            'CreatePresignedNotebookInstanceUrl',
+            'CreateTrainingJob',                   'CreateProcessingJob'
+          )
+        )
+      filterOptionName: filter_glue_sm_privesc
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     COALESCE(
+#         json_extract_string(request_parameters, '$.endpointName'),
+#         json_extract_string(request_parameters, '$.notebookInstanceName'),
+#         json_extract_string(request_parameters, '$.connectionName')
+#     )                                                                  AS resource_name,
+#     json_extract_string(request_parameters, '$.roleArn')              AS role_arn,
+#     source_ip_address,
+#     aws_region,
+#     error_code
+# FROM cloudtrail_events
+# WHERE (
+#     event_source = 'glue.amazonaws.com'
+#     AND event_name IN (
+#         'CreateDevEndpoint', 'UpdateDevEndpoint', 'DeleteDevEndpoint',
+#         'GetDevEndpoint',    'GetDevEndpoints',
+#         'GetConnections',    'GetConnection',
+#         'CreateConnection',  'DeleteConnection'
+#     )
+# ) OR (
+#     event_source = 'sagemaker.amazonaws.com'
+#     AND event_name IN (
+#         'CreateNotebookInstance',              'UpdateNotebookInstance',
+#         'DeleteNotebookInstance',              'StartNotebookInstance',
+#         'StopNotebookInstance',
+#         'CreatePresignedNotebookInstanceUrl',
+#         'CreateTrainingJob',                   'CreateProcessingJob'
+#     )
+# )
+# ORDER BY event_time DESC
+# LIMIT 100

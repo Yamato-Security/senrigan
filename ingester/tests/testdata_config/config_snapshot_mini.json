@@ -1,0 +1,57 @@
+{
+  "fileVersion": "1.0",
+  "configSnapshotId": "snap-001",
+  "configurationItems": [
+    {
+      "relatedEvents": [],
+      "relationships": [
+        {
+          "resourceId": "sg-aaaa",
+          "resourceType": "AWS::EC2::SecurityGroup",
+          "name": "Is associated with "
+        }
+      ],
+      "configuration": {
+        "instanceId": "i-12345",
+        "instanceType": "t3.micro"
+      },
+      "supplementaryConfiguration": {},
+      "tags": { "Name": "web-server" },
+      "configurationItemVersion": "1.3",
+      "configurationItemCaptureTime": "2026-01-01T00:00:00.000Z",
+      "configurationStateId": 1000000000000,
+      "awsAccountId": "123456789012",
+      "configurationItemStatus": "OK",
+      "resourceType": "AWS::EC2::Instance",
+      "resourceId": "i-12345",
+      "resourceName": "web-server",
+      "ARN": "arn:aws:ec2:ap-northeast-1:123456789012:instance/i-12345",
+      "awsRegion": "ap-northeast-1",
+      "availabilityZone": "ap-northeast-1a",
+      "configurationStateMd5Hash": ""
+    },
+    {
+      "relatedEvents": [],
+      "relationships": [],
+      "configuration": {
+        "groupId": "sg-aaaa",
+        "groupName": "web-sg"
+      },
+      "supplementaryConfiguration": {},
+      "tags": {},
+      "configurationItemVersion": "1.3",
+      "configurationItemCaptureTime": "2026-01-01T00:00:00.000Z",
+      "configurationStateId": 1000000000001,
+      "awsAccountId": "123456789012",
+      "configurationItemStatus": "OK",
+      "resourceType": "AWS::EC2::SecurityGroup",
+      "resourceId": "sg-aaaa",
+      "resourceName": "web-sg",
+      "ARN": "arn:aws:ec2:ap-northeast-1:123456789012:security-group/sg-aaaa",
+      "awsRegion": "ap-northeast-1",
+      "availabilityZone": "Not Applicable",
+      "configurationStateMd5Hash": ""
+    }
+  ]
+}
+

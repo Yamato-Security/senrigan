@@ -1,0 +1,80 @@
+# DSH-57: AWS Backup Tampering
+# Detects deletion of Backup Vaults, Plans, Recovery Points, and Vault Lock.
+# AWS Backup protects S3, RDS, EBS, DynamoDB, and other services.
+# Destroying backups is the first step in a ransomware campaign — it ensures
+# the victim cannot restore from backups before the ransom demand is made.
+# Vault Lock deletion is especially significant as it removes immutability.
+# MITRE ATT&CK: TA0040 Impact / T1490 Inhibit System Recovery
+uuid: 57c9d0e1-f2a3-4567-2345-570000000057
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AWS Backup Tampering
+viz_type: table
+description: >
+  AWS Backup Vault, Plan, and Recovery Point deletion events (DSH-57):
+  DeleteBackupVault, DeleteBackupPlan, DeleteRecoveryPoint,
+  DeleteBackupSelection, DisassociateRecoveryPoint,
+  PutBackupVaultAccessPolicy, and DeleteBackupVaultLockConfiguration.
+  Destroying backups is the first step in a ransomware campaign — it ensures
+  the victim cannot restore from backups before the ransom demand is made.
+  Vault Lock deletion (DeleteBackupVaultLockConfiguration) is especially critical
+  as it removes WORM immutability from the vault.
+  MITRE ATT&CK: TA0040 Impact / T1490 Inhibit System Recovery.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_backup_tampering
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'backup.amazonaws.com'
+        AND event_name IN (
+          'DeleteBackupVault',
+          'DeleteBackupPlan',
+          'DeleteRecoveryPoint',
+          'DeleteBackupSelection',
+          'DisassociateRecoveryPoint',
+          'PutBackupVaultAccessPolicy',
+          'DeleteBackupVaultLockConfiguration'
+        )
+      filterOptionName: filter_backup_tampering
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.backupVaultName')  AS vault_name,
+#     json_extract_string(request_parameters, '$.backupPlanId')     AS plan_id,
+#     json_extract_string(request_parameters, '$.recoveryPointArn') AS recovery_point_arn,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'backup.amazonaws.com'
+#   AND event_name IN (
+#       'DeleteBackupVault', 'DeleteBackupPlan', 'DeleteRecoveryPoint',
+#       'DeleteBackupSelection', 'DisassociateRecoveryPoint',
+#       'PutBackupVaultAccessPolicy', 'DeleteBackupVaultLockConfiguration'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 100

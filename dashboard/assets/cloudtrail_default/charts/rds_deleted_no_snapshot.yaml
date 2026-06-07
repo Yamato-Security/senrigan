@@ -1,0 +1,64 @@
+# DSH-56: RDS Deleted without Final Snapshot
+# Detects DeleteDBInstance and DeleteDBCluster with skipFinalSnapshot=true.
+# Skipping the final snapshot means the database is irrecoverably destroyed —
+# no point-in-time restore is possible from the deleted instance.
+# In ransomware campaigns, attackers delete RDS instances without snapshots
+# to maximise pressure on victims who have no backup to fall back on.
+# MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction
+uuid: 56b8c9d0-e1f2-3456-1234-560000000056
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: RDS Deleted without Final Snapshot
+viz_type: table
+description: >
+  RDS instance and cluster deletion with skipFinalSnapshot=true (DSH-56):
+  DeleteDBInstance and DeleteDBCluster events where no final snapshot was taken.
+  Skipping the final snapshot makes the database irrecoverable — no restore point
+  exists after deletion.  Ransomware actors use this to maximise victim pressure
+  when AWS Backup has also been disabled.  Any event here is a critical incident.
+  MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_rds_deleted_no_snap
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN ('DeleteDBInstance', 'DeleteDBCluster')
+        AND json_extract_string(request_parameters, '$.skipFinalSnapshot') = 'true'
+      filterOptionName: filter_rds_deleted_no_snapshot
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     user_identity_arn,
+#     aws_region,
+#     event_name,
+#     json_extract_string(request_parameters, '$.dBInstanceIdentifier') AS db_instance,
+#     json_extract_string(request_parameters, '$.dBClusterIdentifier')  AS db_cluster,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_name IN ('DeleteDBInstance', 'DeleteDBCluster')
+#   AND json_extract_string(request_parameters, '$.skipFinalSnapshot') = 'true'
+# ORDER BY event_time DESC
+# LIMIT 100

@@ -1,0 +1,66 @@
+# HRM-44: Defense Evasion API Event Table
+# Detailed table of all calls to APIs used to disable or tamper with logging/auditing.
+# Even a single DeleteTrail or StopLogging event is a critical finding.
+# MITRE ATT&CK: TA0005 Defense Evasion
+uuid: 44f6a7b8-c9d0-1234-f012-345678901244
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Defense Evasion API Events
+viz_type: table
+description: >
+  Detailed event log for APIs used to disable or tamper with audit controls (HRM-44).
+  Covers: DeleteTrail, StopLogging, UpdateTrail, PutEventSelectors (CloudTrail tampering),
+  DeletePolicy and DetachPolicy (removing IAM guardrails).
+  Any occurrence outside a sanctioned change window warrants immediate investigation.
+  MITRE ATT&CK: TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_hrm_de_count
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SIMPLE
+      subject: event_name
+      operator: IN
+      comparator:
+        - DeleteTrail
+        - StopLogging
+        - UpdateTrail
+        - PutEventSelectors
+        - DeletePolicy
+        - DetachPolicy
+      filterOptionName: filter_hrm_de
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 500
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time, event_name, event_source, user_identity_arn,
+#     aws_region, source_ip_address, error_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_name IN (
+#     'DeleteTrail', 'StopLogging', 'UpdateTrail', 'PutEventSelectors',
+#     'DeletePolicy', 'DetachPolicy'
+# )
+# GROUP BY 1,2,3,4,5,6,7
+# ORDER BY event_time DESC
+# LIMIT 500
+

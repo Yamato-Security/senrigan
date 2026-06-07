@@ -1,0 +1,37 @@
+# DSH-02: Top-N API Call Ranking
+# Horizontal bar chart of the 20 most frequently called AWS API actions.
+uuid: e5f6a7b8-c9d0-1234-ef01-345678901234
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Top 20 API Calls
+viz_type: dist_bar
+description: >
+  The 20 most frequently called AWS API actions (DSH-02).
+  High call counts for sensitive actions (e.g. AssumeRole, GetSecretValue)
+  may indicate automated tooling or reconnaissance.
+query_context: ""
+params:
+  metrics:
+    - call_count
+  groupby:
+    - event_name
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Call Count
+  y_axis_label: API Action
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     COUNT(*) AS call_count
+# FROM cloudtrail_events
+# GROUP BY event_name
+# ORDER BY call_count DESC
+# LIMIT 20
+

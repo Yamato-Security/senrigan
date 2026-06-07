@@ -1,0 +1,5 @@
+# Runtime dependencies for config_viz backend
+fastapi>=0.115.0
+uvicorn[standard]>=0.29.0
+duckdb>=1.5.2
+
