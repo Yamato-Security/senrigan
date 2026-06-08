@@ -1,0 +1,66 @@
+# DSH-62: EC2 Mass Stop / Terminate
+# Table of StopInstances and TerminateInstances events.
+# Mass termination is the destructive phase of a ransomware or sabotage attack —
+# taking down production EC2 capacity to maximise business impact.
+# A single StopInstances/TerminateInstances API call can affect dozens of instances
+# simultaneously; CloudTrail records this as one event with multiple instance IDs
+# in request_parameters.  Any bulk stop/terminate from an unfamiliar identity or
+# outside a known maintenance window warrants immediate investigation.
+# MITRE ATT&CK: TA0040 Impact / T1489 Service Stop
+uuid: 621e2536-e7f8-9012-789a-620000000062
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Mass Stop / Terminate
+viz_type: table
+description: >
+  EC2 StopInstances and TerminateInstances events (DSH-62).
+  A single API call can stop or terminate dozens of instances simultaneously.
+  Mass termination is the destructive phase of a ransomware or sabotage attack —
+  taking down production EC2 capacity.  Check the request_parameters field for
+  the full list of affected instanceIds.  Pair with AWS Backup Tampering and
+  S3 Bulk Deletion charts to identify the full ransomware chain.
+  MITRE ATT&CK: TA0040 Impact / T1489 Service Stop.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_mass_stop_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN ('StopInstances', 'TerminateInstances')
+      filterOptionName: filter_ec2_mass_stop
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     request_parameters,   -- contains the full instanceIds array
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN ('StopInstances', 'TerminateInstances')
+# ORDER BY event_time DESC
+# LIMIT 200

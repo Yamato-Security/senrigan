@@ -1,0 +1,78 @@
+# DSH-63: EC2 Spot Fleet / Reserved Instance Abuse
+# Table of Spot Fleet, EC2 Fleet, and Reserved Instance purchase events.
+# Attackers who compromise AWS credentials with ec2:* permissions launch
+# large Spot or GPU fleets for crypto mining — generating significant costs
+# while hiding within EC2 billing noise.  Spot requests are difficult to
+# attribute to a specific instance and are cheaper than on-demand, making
+# them the preferred vehicle for crypto-mining resource hijacking.
+# MITRE ATT&CK: TA0040 Impact / T1496 Resource Hijacking
+uuid: 632f3647-f809-0123-89ab-630000000063
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Spot Fleet / Reserved Instance Abuse
+viz_type: table
+description: >
+  EC2 Spot Fleet, Fleet, and Reserved Instance purchase events (DSH-63):
+  RequestSpotFleet, ModifySpotFleetRequest, CancelSpotFleetRequests,
+  CreateFleet, DeleteFleet, PurchaseReservedInstancesOffering,
+  RequestSpotInstances, CancelSpotInstanceRequests.
+  Attackers use Spot Fleets to launch large GPU/CPU clusters for crypto mining,
+  generating high AWS bills while staying under per-instance detection thresholds.
+  Any unexpected Spot Fleet or Reserved Instance purchase warrants investigation.
+  MITRE ATT&CK: TA0040 Impact / T1496 Resource Hijacking.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_spot_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN (
+          'RequestSpotFleet',               'ModifySpotFleetRequest',
+          'CancelSpotFleetRequests',        'CreateFleet',
+          'DeleteFleet',                    'PurchaseReservedInstancesOffering',
+          'RequestSpotInstances',           'CancelSpotInstanceRequests',
+          'PurchaseScheduledInstances'
+        )
+      filterOptionName: filter_ec2_spot_fleet
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.spotFleetRequestConfig.targetCapacity') AS target_capacity,
+#     json_extract_string(request_parameters, '$.spotFleetRequestConfig.instanceType')   AS instance_type,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN (
+#       'RequestSpotFleet', 'ModifySpotFleetRequest', 'CancelSpotFleetRequests',
+#       'CreateFleet', 'DeleteFleet', 'PurchaseReservedInstancesOffering',
+#       'RequestSpotInstances', 'CancelSpotInstanceRequests',
+#       'PurchaseScheduledInstances'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

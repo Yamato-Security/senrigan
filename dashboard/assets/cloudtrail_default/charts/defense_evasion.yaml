@@ -9,11 +9,13 @@ dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
 slice_name: Defense Evasion Events
 viz_type: table
 description: >
-  All CloudTrail events matching known defense-evasion techniques (DSH-22).
+  Comprehensive catch-all for all defense-evasion events (DSH-22).
   Covers CloudTrail tampering (StopLogging, DeleteTrail), GuardDuty disabling,
   AWS Config disabling, VPC Flow Log deletion, CloudWatch log deletion, and
   security service disabling (SecurityHub, IAM Access Analyzer).
-  Any of these events is a critical indicator and warrants immediate investigation.
+  Any event here warrants immediate investigation.
+  For deeper analysis use dedicated charts: VPC Flow Log Changes (DSH-42),
+  AWS Config Tampering (DSH-43), EventBridge/CW Tampering (DSH-47).
   MITRE ATT&CK: TA0005 Defense Evasion.
 query_context: ""
 params:

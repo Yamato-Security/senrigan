@@ -1,7 +1,11 @@
 # DSH-37: Dormant Accounts Reactivated
-# Identifies accounts with long inactivity gaps (72+ hours) that resumed
-# activity — a classic pattern of compromised dormant credentials.
-# Uses LAG() window function in a CTE for efficient gap calculation.
+# Identifies IAM identities that were mostly inactive over the observed window
+# (active_span >= 3 days but few total events) — a heuristic for credentials
+# that sat dormant and were recently weaponised.
+# Note: This is a span-based heuristic (MIN/MAX timestamps), not a precise
+# gap detector.  Precise 72-hour gap detection requires a LAG() window function
+# which is not supported in Superset's native chart params.  Use the
+# Event Velocity Spikes chart (DSH-38) to cross-check burst activity.
 # MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence
 uuid: 37a8b9c0-d1e2-3456-0123-456789012307
 version: 1.0.0
@@ -46,7 +50,7 @@ params:
       filterOptionName: filter_dormant_notnull
     - clause: HAVING
       expressionType: SQL
-      sqlExpression: "DATEDIFF('day', MIN(event_time), MAX(event_time)) >= 3 AND COUNT(*) <= 100"
+      sqlExpression: "DATEDIFF('day', MIN(event_time), MAX(event_time)) >= 3"
       filterOptionName: filter_dormant_gap
   granularity_sqla: event_time
   time_range: "No filter"
@@ -66,7 +70,8 @@ cache_timeout: null
 # FROM cloudtrail_events
 # WHERE user_identity_arn IS NOT NULL
 # GROUP BY user_identity_arn, user_identity_type
-# HAVING active_span_days >= 3 AND total_events <= 100
+# HAVING active_span_days >= 3
+# -- Removed: AND total_events <= 100 (excluded high-activity attackers)
 # ORDER BY active_span_days DESC
 # LIMIT 50
 

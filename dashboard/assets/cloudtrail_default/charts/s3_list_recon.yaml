@@ -1,0 +1,80 @@
+# DSH-74: S3 List / Enumeration Activity
+# Table of S3 enumeration API calls (ListBuckets, ListObjects*, etc.) grouped
+# by identity and source IP.  Attackers who obtain credentials typically begin
+# with bucket/object enumeration before staging exfiltration.
+# High call counts from a single identity or unusual source IP are key signals.
+# MITRE ATT&CK: TA0007 Discovery
+uuid: 74d4e5f6-a7b8-9012-def0-740000000074
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 List / Enumeration Activity
+viz_type: table
+description: >
+  S3 enumeration API calls grouped by identity and source IP (DSH-74).
+  Covers ListBuckets (full-account discovery), ListObjects / ListObjectsV2
+  (per-bucket enumeration), ListObjectVersions, ListMultipartUploads,
+  HeadBucket, and HeadObject.
+  A sudden spike in list calls from a new identity or external IP strongly
+  suggests reconnaissance following credential compromise.
+  MITRE ATT&CK: TA0007 Discovery.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: call_count
+      hasCustomLabel: true
+      optionName: metric_s3_list_count
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT event_name)"
+      label: distinct_operations
+      hasCustomLabel: true
+      optionName: metric_s3_list_ops
+  groupby:
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN (
+          'ListBuckets',
+          'ListObjects', 'ListObjectsV2',
+          'ListObjectVersions',
+          'ListMultipartUploads',
+          'HeadBucket', 'HeadObject'
+        )
+      filterOptionName: filter_s3_list_recon
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_name,
+#     user_identity_arn,
+#     source_ip_address,
+#     aws_region,
+#     error_code,
+#     COUNT(*)                   AS call_count,
+#     COUNT(DISTINCT event_name) AS distinct_operations
+# FROM cloudtrail_events
+# WHERE event_source = 's3.amazonaws.com'
+#   AND event_name IN (
+#       'ListBuckets',
+#       'ListObjects', 'ListObjectsV2',
+#       'ListObjectVersions',
+#       'ListMultipartUploads',
+#       'HeadBucket', 'HeadObject'
+#   )
+# GROUP BY event_name, user_identity_arn, source_ip_address, aws_region, error_code
+# ORDER BY call_count DESC
+# LIMIT 200

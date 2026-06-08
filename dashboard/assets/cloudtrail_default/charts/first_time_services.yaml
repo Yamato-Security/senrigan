@@ -1,19 +1,20 @@
-# DSH-26: First-Time Service Sources
-# Table showing every distinct event_source ordered by first_seen descending.
+# DSH-26: First / Last Seen per Service Source
+# Table showing every distinct event_source with first_seen and last_seen timestamps.
 # When an attacker deploys malicious infrastructure, AWS services that have
 # never appeared in the account's CloudTrail logs will show up for the first
 # time.  Monitoring new service sources reveals unexpected resource creation.
+# last_seen helps identify services that have gone silent (compromised and cleaned up).
 # MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery
 uuid: 26b8c9d0-e1f2-3456-1234-567890123456
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: First-Time Service Sources
+slice_name: First / Last Seen per Service Source
 viz_type: table
 description: >
-  All distinct AWS service sources ordered by first appearance date (DSH-26).
-  Services appearing for the first time may represent attacker-deployed
-  infrastructure (e.g., Lambda, EC2 in an unexpected region).
-  Sort by first_seen DESC to see the most recently introduced services.
+  First and last seen timestamps for every distinct AWS service source (DSH-26).
+  Sort by first_seen DESC to surface newly introduced services (potential attacker
+  infrastructure).  Sort by last_seen ASC to find services that have gone silent
+  (possible cleanup after compromise).
   MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery.
 query_context: ""
 params:

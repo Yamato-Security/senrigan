@@ -1,0 +1,90 @@
+# DSH-60: EC2 Instance Profile Changes
+# Table of IAM instance profile management events and EC2 profile association events.
+# An EC2 instance profile defines which IAM role the instance assumes — and therefore
+# what AWS permissions all code running on that instance has.
+# Attackers modify instance profiles to escalate from a low-privilege EC2 role to
+# a high-privilege one, or to inject their own role into an existing instance.
+# MITRE ATT&CK: TA0004 Privilege Escalation / TA0003 Persistence
+uuid: 60fc0314-c5d6-789a-5678-600000000060
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Instance Profile Changes
+viz_type: table
+description: >
+  EC2 instance profile and IAM instance profile management events (DSH-60).
+  IAM: CreateInstanceProfile, DeleteInstanceProfile, AddRoleToInstanceProfile,
+  RemoveRoleFromInstanceProfile.
+  EC2: AssociateIamInstanceProfile, DisassociateIamInstanceProfile,
+  ReplaceIamInstanceProfileAssociation.
+  Changing an instance profile replaces the IAM role available to all code on
+  the instance — a common privilege escalation path when the attacker controls
+  an instance but wants a higher-privilege role.
+  MITRE ATT&CK: TA0004 Privilege Escalation / TA0003 Persistence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_profile_count
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (
+          event_source = 'iam.amazonaws.com'
+          AND event_name IN (
+            'CreateInstanceProfile',      'DeleteInstanceProfile',
+            'AddRoleToInstanceProfile',   'RemoveRoleFromInstanceProfile'
+          )
+        ) OR (
+          event_source = 'ec2.amazonaws.com'
+          AND event_name IN (
+            'AssociateIamInstanceProfile',
+            'DisassociateIamInstanceProfile',
+            'ReplaceIamInstanceProfileAssociation'
+          )
+        )
+      filterOptionName: filter_ec2_instance_profile
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     COALESCE(
+#         json_extract_string(request_parameters, '$.instanceProfileName'),
+#         json_extract_string(request_parameters, '$.iamInstanceProfile.name'),
+#         json_extract_string(request_parameters, '$.iamInstanceProfile.arn')
+#     )                                                                     AS profile_name,
+#     json_extract_string(request_parameters, '$.roleName')                AS role_name,
+#     json_extract_string(request_parameters, '$.instanceId')              AS instance_id,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE (event_source = 'iam.amazonaws.com'
+#   AND event_name IN ('CreateInstanceProfile','DeleteInstanceProfile',
+#                      'AddRoleToInstanceProfile','RemoveRoleFromInstanceProfile'))
+#    OR (event_source = 'ec2.amazonaws.com'
+#   AND event_name IN ('AssociateIamInstanceProfile','DisassociateIamInstanceProfile',
+#                      'ReplaceIamInstanceProfileAssociation'))
+# ORDER BY event_time DESC
+# LIMIT 200

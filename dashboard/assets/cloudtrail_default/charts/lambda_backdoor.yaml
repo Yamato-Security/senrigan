@@ -1,0 +1,90 @@
+# DSH-64: Lambda Function Backdoor / Persistence
+# Table of Lambda function creation, code update, and permission modification events.
+# Lambda functions are a powerful persistence mechanism: they execute in AWS context,
+# have no persistent EC2 footprint to detect, and can be triggered by many event sources.
+# Key attack patterns:
+#   UpdateFunctionCode     — replacing legitimate code with malicious payload
+#   AddPermission          — granting cross-account or public invocation access
+#   CreateEventSourceMapping — triggering on S3 puts / DynamoDB streams / SQS
+#   CreateFunctionUrlConfig — creating a public HTTP endpoint for direct C2 access
+#   PublishLayerVersion    — injecting a malicious shared layer used by many functions
+# MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0011 Command and Control
+uuid: 71a1b2c3-d4e5-6789-abcd-710000000071
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Lambda Function Backdoor
+viz_type: table
+description: >
+  Lambda function creation, code update, and permission events (DSH-64).
+  UpdateFunctionCode replaces function code with a malicious payload.
+  AddPermission grants cross-account or public Lambda invocation access.
+  CreateFunctionUrlConfig creates a public HTTP endpoint for direct C2.
+  CreateEventSourceMapping wires the function to trigger on S3/DynamoDB/SQS.
+  PublishLayerVersion injects a malicious shared layer across multiple functions.
+  Any of these from an unexpected identity or IP is a persistence/execution indicator.
+  MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0011 Command and Control.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_lambda_backdoor_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'lambda.amazonaws.com'
+        AND event_name IN (
+          'CreateFunction',               'UpdateFunctionCode',
+          'UpdateFunctionConfiguration',  'DeleteFunction',
+          'AddPermission',                'RemovePermission',
+          'CreateEventSourceMapping',     'DeleteEventSourceMapping',
+          'CreateFunctionUrlConfig',      'UpdateFunctionUrlConfig',
+          'DeleteFunctionUrlConfig',      'PublishLayerVersion',
+          'AddLayerVersionPermission',    'RemoveLayerVersionPermission'
+        )
+      filterOptionName: filter_lambda_backdoor
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     COALESCE(
+#         json_extract_string(request_parameters, '$.functionName'),
+#         json_extract_string(request_parameters, '$.layerName')
+#     )                                                                   AS function_name,
+#     json_extract_string(request_parameters, '$.runtime')               AS runtime,
+#     json_extract_string(request_parameters, '$.role')                  AS role_arn,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'lambda.amazonaws.com'
+#   AND event_name IN (
+#       'CreateFunction',        'UpdateFunctionCode',
+#       'UpdateFunctionConfiguration', 'DeleteFunction',
+#       'AddPermission',         'RemovePermission',
+#       'CreateEventSourceMapping', 'DeleteEventSourceMapping',
+#       'CreateFunctionUrlConfig', 'UpdateFunctionUrlConfig',
+#       'DeleteFunctionUrlConfig', 'PublishLayerVersion',
+#       'AddLayerVersionPermission', 'RemoveLayerVersionPermission'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

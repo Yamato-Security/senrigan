@@ -1,0 +1,89 @@
+# DSH-78: VPC Peering & Transit Gateway Changes
+# Table of VPC peering and Transit Gateway events.
+# Attackers establish VPC peering connections or Transit Gateway attachments
+# between compromised and target accounts to enable lateral movement across
+# account or VPC boundaries without traversing the public internet.
+# MITRE ATT&CK: TA0008 Lateral Movement / TA0010 Exfiltration
+uuid: 78b8c9d0-e1f2-3456-1234-780000000078
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: VPC Peering & Transit Gateway Changes
+viz_type: table
+description: >
+  VPC peering connection and Transit Gateway change events (DSH-78).
+  Covers VPC peering creation/acceptance/deletion and Transit Gateway
+  creation, VPC attachment, and peering attachment management.
+  Cross-account peering requests or new Transit Gateway attachments from
+  unexpected accounts indicate lateral movement between AWS accounts.
+  MITRE ATT&CK: TA0008 Lateral Movement / TA0010 Exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_peering_tgw_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN (
+          'CreateVpcPeeringConnection',
+          'AcceptVpcPeeringConnection',
+          'RejectVpcPeeringConnection',
+          'DeleteVpcPeeringConnection',
+          'ModifyVpcPeeringConnectionOptions',
+          'CreateTransitGateway',
+          'DeleteTransitGateway',
+          'ModifyTransitGateway',
+          'CreateTransitGatewayVpcAttachment',
+          'DeleteTransitGatewayVpcAttachment',
+          'ModifyTransitGatewayVpcAttachment',
+          'AcceptTransitGatewayVpcAttachment',
+          'RejectTransitGatewayVpcAttachment',
+          'CreateTransitGatewayPeeringAttachment',
+          'AcceptTransitGatewayPeeringAttachment',
+          'DeleteTransitGatewayPeeringAttachment'
+        )
+      filterOptionName: filter_peering_tgw
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     error_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN (
+#       'CreateVpcPeeringConnection', 'AcceptVpcPeeringConnection',
+#       'RejectVpcPeeringConnection', 'DeleteVpcPeeringConnection',
+#       'ModifyVpcPeeringConnectionOptions',
+#       'CreateTransitGateway', 'DeleteTransitGateway', 'ModifyTransitGateway',
+#       'CreateTransitGatewayVpcAttachment', 'DeleteTransitGatewayVpcAttachment',
+#       'ModifyTransitGatewayVpcAttachment', 'AcceptTransitGatewayVpcAttachment',
+#       'RejectTransitGatewayVpcAttachment',
+#       'CreateTransitGatewayPeeringAttachment', 'AcceptTransitGatewayPeeringAttachment',
+#       'DeleteTransitGatewayPeeringAttachment'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

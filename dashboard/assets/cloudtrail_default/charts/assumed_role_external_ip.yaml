@@ -38,28 +38,14 @@ params:
       expressionType: SQL
       sqlExpression: >-
         user_identity_type = 'AssumedRole'
-        AND source_ip_address NOT LIKE '10.%'
-        AND source_ip_address NOT LIKE '172.16.%'
-        AND source_ip_address NOT LIKE '172.17.%'
-        AND source_ip_address NOT LIKE '172.18.%'
-        AND source_ip_address NOT LIKE '172.19.%'
-        AND source_ip_address NOT LIKE '172.20.%'
-        AND source_ip_address NOT LIKE '172.21.%'
-        AND source_ip_address NOT LIKE '172.22.%'
-        AND source_ip_address NOT LIKE '172.23.%'
-        AND source_ip_address NOT LIKE '172.24.%'
-        AND source_ip_address NOT LIKE '172.25.%'
-        AND source_ip_address NOT LIKE '172.26.%'
-        AND source_ip_address NOT LIKE '172.27.%'
-        AND source_ip_address NOT LIKE '172.28.%'
-        AND source_ip_address NOT LIKE '172.29.%'
-        AND source_ip_address NOT LIKE '172.30.%'
-        AND source_ip_address NOT LIKE '172.31.%'
-        AND source_ip_address NOT LIKE '192.168.%'
-        AND source_ip_address NOT LIKE '127.%'
+        AND source_ip_address IS NOT NULL
         AND source_ip_address != 'AWS Internal'
         AND source_ip_address NOT LIKE '%.amazonaws.com'
-        AND source_ip_address IS NOT NULL
+        AND source_ip_address NOT LIKE '10.%'
+        AND source_ip_address NOT LIKE '192.168.%'
+        AND source_ip_address NOT LIKE '127.%'
+        AND NOT regexp_matches(source_ip_address,
+              '^172\.(1[6-9]|2[0-9]|3[01])\.')
       filterOptionName: filter_ext_ip
   granularity_sqla: event_time
   time_range: "No filter"
@@ -75,13 +61,14 @@ cache_timeout: null
 #     aws_region, error_code
 # FROM cloudtrail_events
 # WHERE user_identity_type = 'AssumedRole'
-#   AND source_ip_address NOT LIKE '10.%'    -- RFC1918
-#   AND source_ip_address NOT LIKE '172.16.%' ... '172.31.%'
-#   AND source_ip_address NOT LIKE '192.168.%'
-#   AND source_ip_address NOT LIKE '127.%'
+#   AND source_ip_address IS NOT NULL
 #   AND source_ip_address != 'AWS Internal'
 #   AND source_ip_address NOT LIKE '%.amazonaws.com'
-#   AND source_ip_address IS NOT NULL
+#   AND source_ip_address NOT LIKE '10.%'        -- RFC1918 class A
+#   AND source_ip_address NOT LIKE '192.168.%'   -- RFC1918 class C
+#   AND source_ip_address NOT LIKE '127.%'       -- loopback
+#   AND NOT regexp_matches(source_ip_address,
+#         '^172\.(1[6-9]|2[0-9]|3[01])\.')       -- RFC1918 class B (172.16-31)
 # ORDER BY event_time DESC
 # LIMIT 200
 

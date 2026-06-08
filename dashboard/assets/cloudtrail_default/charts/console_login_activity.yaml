@@ -22,12 +22,18 @@ params:
       hasCustomLabel: true
       optionName: metric_total_logins
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Failure'
+        )
       label: failed_logins
       hasCustomLabel: true
       optionName: metric_failed_logins
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN error_code IS NULL THEN 1 END)"
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Success'
+        )
       label: success_logins
       hasCustomLabel: true
       optionName: metric_success_logins
@@ -61,8 +67,8 @@ cache_timeout: null
 #     source_ip_address,
 #     geo_country_code,
 #     COUNT(*)                                 AS total_logins,
-#     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)  AS failed_logins,
-#     COUNT(CASE WHEN error_code IS NULL THEN 1 END)      AS success_logins,
+#     COUNT(*) FILTER (WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Failure') AS failed_logins,
+#     COUNT(*) FILTER (WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Success') AS success_logins,
 #     COUNT(*) FILTER (
 #       WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
 #     )                                        AS mfa_less_count

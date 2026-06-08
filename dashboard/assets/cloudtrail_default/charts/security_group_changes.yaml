@@ -1,0 +1,80 @@
+# DSH-76: Security Group Changes
+# Table of EC2 security group rule changes.
+# Attackers modify security groups to open inbound ports for C2 access,
+# or to allow exfiltration traffic outbound.
+# Authorizing ingress from 0.0.0.0/0 on sensitive ports (22, 3389, etc.)
+# is the most common indicator of compromise or misconfiguration.
+# MITRE ATT&CK: TA0003 Persistence / TA0005 Defense Evasion / T1562.007
+uuid: 76f6a7b8-c9d0-1234-f012-760000000076
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Security Group Changes
+viz_type: table
+description: >
+  EC2 security group rule changes (DSH-76).
+  Covers inbound/outbound rule authorization and revocation,
+  security group creation and deletion, and rule description updates.
+  Ingress rules opened to 0.0.0.0/0 on administrative ports (22, 3389, etc.)
+  are a strong indicator of backdoor access or misconfiguration.
+  MITRE ATT&CK: TA0003 Persistence / TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_sg_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN (
+          'AuthorizeSecurityGroupIngress',
+          'AuthorizeSecurityGroupEgress',
+          'RevokeSecurityGroupIngress',
+          'RevokeSecurityGroupEgress',
+          'CreateSecurityGroup',
+          'DeleteSecurityGroup',
+          'UpdateSecurityGroupRuleDescriptionsIngress',
+          'UpdateSecurityGroupRuleDescriptionsEgress',
+          'ModifySecurityGroupRules'
+        )
+      filterOptionName: filter_sg_changes
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     error_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN (
+#       'AuthorizeSecurityGroupIngress', 'AuthorizeSecurityGroupEgress',
+#       'RevokeSecurityGroupIngress', 'RevokeSecurityGroupEgress',
+#       'CreateSecurityGroup', 'DeleteSecurityGroup',
+#       'UpdateSecurityGroupRuleDescriptionsIngress',
+#       'UpdateSecurityGroupRuleDescriptionsEgress',
+#       'ModifySecurityGroupRules'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

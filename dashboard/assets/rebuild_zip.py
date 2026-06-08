@@ -55,7 +55,7 @@ FILE_MAP = {
     "charts/priv_esc_timeline.yaml": "charts/Privilege_Escalation_Timeline.yaml",
     # New Sprint-4 charts (DSH-25, DSH-26, DSH-29)
     "charts/s3_protection_changes.yaml": "charts/S3_Protection_Config_Changes.yaml",
-    "charts/first_time_services.yaml": "charts/First_Time_Service_Sources.yaml",
+    "charts/first_time_services.yaml": "charts/First_Last_Seen_Service_Source.yaml",
     "charts/route53_dns_changes.yaml": "charts/Route53_DNS_Changes.yaml",
     # Tab 5 — Temporal Analysis charts (DSH-31 to DSH-38)
     "charts/fs_identity.yaml": "charts/First_Last_Seen_IAM_Identity.yaml",
@@ -101,8 +101,19 @@ FILE_MAP = {
     "charts/ec2_key_pair.yaml": "charts/EC2_Key_Pair_Creation.yaml",
     "charts/ec2_instance_profile.yaml": "charts/EC2_Instance_Profile_Changes.yaml",
     "charts/ec2_user_data.yaml": "charts/EC2_User_Data_Modification.yaml",
-    "charts/ec2_mass_stop_terminate.yaml": "charts/EC2_Mass_Stop_Terminate.yaml",
-    "charts/ec2_spot_fleet_abuse.yaml": "charts/EC2_Spot_Fleet_Reserved_Instance_Abuse.yaml",
+    "charts/ec2_mass_stop.yaml": "charts/EC2_Mass_Stop_Terminate.yaml",
+    "charts/ec2_spot_fleet.yaml": "charts/EC2_Spot_Fleet_Reserved_Instance_Abuse.yaml",
+    # Phase-5b: S3 List / Enumeration (DSH-74)
+    "charts/s3_list_recon.yaml": "charts/S3_List_Enumeration_Activity.yaml",
+    # Phase-8 new charts (DSH-75 to DSH-78) — WAF, Network
+    "charts/waf_changes.yaml": "charts/WAF_Configuration_Changes.yaml",
+    "charts/security_group_changes.yaml": "charts/Security_Group_Changes.yaml",
+    "charts/vpc_infrastructure_changes.yaml": "charts/VPC_Infrastructure_Changes.yaml",
+    "charts/vpc_peering_tgw.yaml": "charts/VPC_Peering_Transit_Gateway_Changes.yaml",
+    # Phase-7 new charts (DSH-64 to DSH-66) — Lambda, CloudFormation, KMS
+    "charts/lambda_backdoor.yaml": "charts/Lambda_Function_Backdoor.yaml",
+    "charts/cloudformation_changes.yaml": "charts/CloudFormation_Stack_Changes.yaml",
+    "charts/kms_key_destruction.yaml": "charts/KMS_Key_Destruction.yaml",
 }
 
 if os.path.exists(OUTPUT_ZIP):
