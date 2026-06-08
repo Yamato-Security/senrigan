@@ -63,7 +63,7 @@ params:
           'CreateSecurityGroup', 'RevokeSecurityGroupIngress',
           'StopLogging', 'DeleteTrail', 'UpdateTrail',
           'DisableKey', 'ScheduleKeyDeletion', 'CancelKeyDeletion', 'CreateGrant',
-          'ConsoleLogin', 'RunInstances', 'CreateFunction20150331',
+          'ConsoleLogin', 'RunInstances', 'CreateFunction',
           'CreateBucket', 'DeleteBucket',
           'DeactivateMFADevice', 'DeleteVirtualMFADevice',
           'DisableDetector', 'DeleteDetector',

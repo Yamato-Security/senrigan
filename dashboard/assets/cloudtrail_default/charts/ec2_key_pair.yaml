@@ -1,0 +1,66 @@
+# DSH-59: EC2 Key Pair Creation
+# Table of CreateKeyPair and ImportKeyPair events.
+# Attackers create or import their own SSH key pairs to establish persistent
+# access to EC2 instances — a mechanism that survives IAM credential rotation.
+# CreateKeyPair generates a new key pair whose private key is returned ONLY at
+# creation time; an attacker who creates one has a permanent SSH backdoor.
+# ImportKeyPair injects an attacker-controlled public key directly.
+# MITRE ATT&CK: TA0003 Persistence
+uuid: 59ebf203-b4c5-6789-4567-590000000059
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Key Pair Creation
+viz_type: table
+description: >
+  EC2 key pair creation and import events (DSH-59):
+  CreateKeyPair, ImportKeyPair, DeleteKeyPair.
+  Attackers create new key pairs to establish persistent SSH access to EC2
+  instances that survive IAM credential rotation.  ImportKeyPair injects an
+  attacker-controlled public key directly without AWS generating it.
+  Any CreateKeyPair or ImportKeyPair from an unfamiliar identity or IP is a
+  persistence indicator.
+  MITRE ATT&CK: TA0003 Persistence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_keypair_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN ('CreateKeyPair', 'ImportKeyPair', 'DeleteKeyPair')
+      filterOptionName: filter_ec2_keypair
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.keyName') AS key_name,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN ('CreateKeyPair', 'ImportKeyPair', 'DeleteKeyPair')
+# ORDER BY event_time DESC
+# LIMIT 200

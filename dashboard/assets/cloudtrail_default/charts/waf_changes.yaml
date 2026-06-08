@@ -1,0 +1,83 @@
+# DSH-75: WAF Configuration Changes
+# Table of AWS WAF v2 (and WAF Classic) configuration change events.
+# Attackers who compromise a privileged IAM identity often disable or weaken
+# WAF rules to allow their exploit traffic through, or disable WAF logging to
+# cover their tracks.  Key signals:
+#   - DeleteLoggingConfiguration / PutLoggingConfiguration: logging tampered
+#   - DisassociateWebACL: WAF protection removed from a resource
+#   - UpdateWebACL / DeleteWebACL: rules weakened or ACL removed
+#   - UpdateIPSet / DeleteIPSet: attacker IP added to allowlist or blocklist cleared
+# MITRE ATT&CK: TA0005 Defense Evasion / TA0003 Persistence
+uuid: 75e5f6a7-b8c9-0123-ef01-750000000075
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: WAF Configuration Changes
+viz_type: table
+description: >
+  AWS WAF v2 / WAF Classic configuration change events (DSH-75).
+  Covers WebACL creation/update/deletion, IP set manipulation,
+  rule group changes, logging configuration changes, and
+  WAF association/disassociation with protected resources.
+  Disabling WAF rules or logging while an attack is in progress
+  is a strong defense-evasion indicator.
+  MITRE ATT&CK: TA0005 Defense Evasion / TA0003 Persistence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_waf_events
+  groupby:
+    - event_time
+    - event_name
+    - event_source
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source IN ('wafv2.amazonaws.com', 'waf.amazonaws.com')
+        AND event_name IN (
+          'CreateWebACL', 'UpdateWebACL', 'DeleteWebACL',
+          'CreateIPSet', 'UpdateIPSet', 'DeleteIPSet',
+          'CreateRuleGroup', 'UpdateRuleGroup', 'DeleteRuleGroup',
+          'PutLoggingConfiguration', 'DeleteLoggingConfiguration',
+          'AssociateWebACL', 'DisassociateWebACL',
+          'CreateRegexPatternSet', 'UpdateRegexPatternSet', 'DeleteRegexPatternSet'
+        )
+      filterOptionName: filter_waf_changes
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     event_source,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     error_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_source IN ('wafv2.amazonaws.com', 'waf.amazonaws.com')
+#   AND event_name IN (
+#       'CreateWebACL', 'UpdateWebACL', 'DeleteWebACL',
+#       'CreateIPSet', 'UpdateIPSet', 'DeleteIPSet',
+#       'CreateRuleGroup', 'UpdateRuleGroup', 'DeleteRuleGroup',
+#       'PutLoggingConfiguration', 'DeleteLoggingConfiguration',
+#       'AssociateWebACL', 'DisassociateWebACL',
+#       'CreateRegexPatternSet', 'UpdateRegexPatternSet', 'DeleteRegexPatternSet'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

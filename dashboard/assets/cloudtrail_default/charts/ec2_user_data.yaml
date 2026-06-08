@@ -1,0 +1,64 @@
+# DSH-61: EC2 User Data Modification
+# Table of ModifyInstanceAttribute events that change the userData attribute.
+# EC2 user data is a bootstrap script executed by cloud-init on every instance
+# (re)start.  Injecting a malicious script into user data provides persistent
+# code execution that survives instance reboots and AMI replacement.
+# User data changes require a stop/start cycle to take effect, making this
+# pattern often paired with a StopInstances + StartInstances sequence.
+# MITRE ATT&CK: TA0003 Persistence / TA0002 Execution
+uuid: 610d1425-d6e7-89ab-6789-610000000061
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 User Data Modification
+viz_type: table
+description: >
+  EC2 user data modification events (DSH-61): ModifyInstanceAttribute where
+  the userData attribute is changed.  EC2 user data is executed by cloud-init
+  on every instance (re)start — injecting a malicious script provides persistent
+  code execution that survives reboots.  Often paired with a stop/start sequence
+  (see EC2 Mass Stop / Terminate chart) to trigger execution.
+  MITRE ATT&CK: TA0003 Persistence / TA0002 Execution.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_userdata_count
+  groupby:
+    - event_time
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name = 'ModifyInstanceAttribute'
+        AND request_parameters LIKE '%userData%'
+      filterOptionName: filter_ec2_user_data
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.instanceId') AS instance_id,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name = 'ModifyInstanceAttribute'
+#   AND request_parameters LIKE '%userData%'
+# ORDER BY event_time DESC
+# LIMIT 200

@@ -144,17 +144,19 @@ sequenceDiagram
 
 ## Pre-built Charts
 
-The `cloudtrail_default.zip` import bundle contains **50 charts** across 6 tabs.
+The `cloudtrail_default.zip` import bundle contains **73 charts** across 9 tabs.
 
 | Tab | Charts | Key Content |
 |-----|:------:|-------------|
-| 🔑 Identity & Access | 9 | Root usage · console logins · MFA trend · login heatmap · privilege escalation · SSO · AssumeRole · Organizations |
-| 🎯 Threat Detection | 10 | Defense evasion · Config/EventBridge/CloudWatch tampering · write-read ratio · throttling spikes · NACL/route changes · access denied |
-| 🗄 Data & Infrastructure | 9 | Top API calls · region activity · source IPs · user agents · Secrets Manager · AssumedRole · Route53 · SSM · RDS/EC2 snapshots · S3 policy · EKS/ECR |
+| 🔑 Identity & Access | 11 | Console logins · MFA trend · login heatmap · root usage · IAM entity activity · privilege escalation · Glue/SageMaker privesc · AssumedRole from external IP · secrets access anomaly · sensitive APIs · SSO events |
+| 🎯 Threat Detection | 9 | Defense evasion · VPC flowlog/Config tampering · EventBridge/CloudWatch tampering · WAF changes · Org/SCP changes · error trend · throttling spikes · event timeseries |
+| 📊 API Activity | 5 | Top API calls · access denied actions · region activity · source IPs · user agents |
+| 🌐 Network | 5 | Security group changes · NACL/route table changes · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS changes |
+| 🖥️ Computing | 13 | EC2 launches · mass stop/terminate · key pair · instance profile · user data · public snapshot · spot fleet abuse · ECS task definition backdoor · Lambda backdoor · SSM execution · EBS direct API · EKS/ECR events · CloudFormation changes |
+| 🪣 S3 & RDS | 11 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy · list recon · protection config · AWS Backup tampering · KMS key destruction · RDS snapshot share · RDS deleted without snapshot |
 | 🌍 GeoIP Intelligence | 4 | World map · top countries/cities/ASNs (requires MaxMind GeoLite2) |
-| 🕒 Temporal Analysis | 6 | First/last seen per API/identity/IP/user-agent · dormant accounts · velocity spikes |
-| 🚨 High-Risk API Monitor | 7 | HRM timeseries · top calls/actors/IPs · defense evasion detail · credential access detail · by region |
-
+| 🕒 Temporal Analysis | 7 | Velocity spikes · dormant accounts reactivated · first/last seen per identity/IP/API/user-agent/service source |
+| 🚨 High-Risk API Monitor | 7 | HRM timeseries · top calls/actors/IPs · by region · defense evasion table · credential access table |
 All charts are backed by the `cloudtrail_events` dataset and respect
 Superset's native time-range and filter bar controls.
 
@@ -167,15 +169,15 @@ dashboard/
 ├── Dockerfile                          # Extends apache/superset:6.1.0 + duckdb-engine (uv)
 ├── superset_config.py                  # Superset Flask config (SECRET_KEY, DB URI, dialect registration)
 ├── assets/
-│   ├── cloudtrail_default.zip          # Superset import ZIP (50 charts + dashboard + dataset)
+│   ├── cloudtrail_default.zip          # Superset import ZIP (73 charts + dashboard + dataset)
 │   ├── rebuild_zip.py                  # Regenerate the ZIP from cloudtrail_default/
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions
-│       ├── dashboard.yaml              # 6-tab layout, 50 CHART position entries
+│       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
 │       ├── metadata.yaml
 │       ├── databases/
 │       │   └── CloudTrail_DuckDB.yaml  # duckdb+duckdb_engine:// URI, allow_run_async: false
 │       ├── datasets/
-│       └── charts/                     # 50 chart YAML files (DSH-01 to DSH-48)
+│       └── charts/                     # 73 chart YAML files (DSH-01 to DSH-78)
 ├── init/
 │   ├── bootstrap.sh                    # Idempotent init script (runs in superset-init)
 │   ├── register_duckdb.py              # Register DuckDB connection; auto-migrates old URI/settings

@@ -1,0 +1,65 @@
+# DSH-58: EC2 Instance Launches
+# Table of RunInstances events — every new EC2 instance created in the account.
+# Attackers launch instances for crypto mining, C2 relay, lateral movement staging,
+# or to run their own tools in a trusted AWS context.
+# Unexpected regions, large instance types (GPU/memory-optimized), or launches
+# from unfamiliar identities are all high-fidelity signals.
+# MITRE ATT&CK: TA0002 Execution / TA0040 Impact (Resource Hijacking)
+uuid: 58dae1f2-a3b4-5678-3456-580000000058
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: EC2 Instance Launches
+viz_type: table
+description: >
+  All EC2 RunInstances events (DSH-58).
+  Attackers launch instances for crypto mining (GPU/spot), C2 relay, or lateral
+  movement staging — often in unexpected regions to avoid detection.
+  Filter by aws_region for region-anomaly investigation; filter by user_identity_arn
+  to trace which credential triggered the launch.
+  MITRE ATT&CK: TA0002 Execution / TA0040 Impact (Resource Hijacking).
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_ec2_launch_count
+  groupby:
+    - event_time
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name = 'RunInstances'
+      filterOptionName: filter_ec2_launches
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     user_identity_arn,
+#     aws_region,
+#     json_extract_string(request_parameters, '$.instanceType')           AS instance_type,
+#     json_extract_string(request_parameters, '$.imageId')               AS ami_id,
+#     json_extract_string(request_parameters, '$.minCount')              AS min_count,
+#     json_extract_string(request_parameters, '$.maxCount')              AS max_count,
+#     json_extract_string(request_parameters, '$.subnetId')              AS subnet_id,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name = 'RunInstances'
+# ORDER BY event_time DESC
+# LIMIT 200

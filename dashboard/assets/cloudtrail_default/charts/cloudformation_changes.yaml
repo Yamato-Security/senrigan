@@ -1,0 +1,86 @@
+# DSH-65: CloudFormation Stack Changes
+# Table of CloudFormation stack creation, update, and deletion events.
+# CloudFormation is the primary Infrastructure-as-Code service in AWS and a
+# high-value attack surface: a single UpdateStack call can deploy new EC2
+# instances, modify IAM roles, create S3 buckets, or reconfigure networking
+# across an entire environment — actions that collectively would require
+# dozens of individual API calls and leave a much larger CloudTrail footprint.
+# Key threat patterns:
+#   CreateStack / UpdateStack  — deploy/modify attacker-controlled infrastructure
+#   ExecuteChangeSet           — apply a pre-staged change in a change set
+#   CreateStackSet             — deploy attacker resources across multiple accounts
+#   DeleteStack                — destroy forensic evidence (VPC Flow Logs, Config recorders)
+# MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion
+uuid: 72b2c3d4-e5f6-7890-bcde-720000000072
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: CloudFormation Stack Changes
+viz_type: table
+description: >
+  CloudFormation stack and change-set management events (DSH-65).
+  A single UpdateStack can deploy EC2 instances, modify IAM roles, or reconfigure
+  networking — consolidating dozens of individual API calls into one event.
+  CreateStackSet deploys attacker infrastructure across all accounts in an org.
+  ExecuteChangeSet applies a pre-staged change, hiding the blast radius from
+  initial review.  DeleteStack can destroy forensic evidence resources.
+  MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_cfn_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'cloudformation.amazonaws.com'
+        AND event_name IN (
+          'CreateStack',          'UpdateStack',          'DeleteStack',
+          'CreateChangeSet',      'ExecuteChangeSet',     'DeleteChangeSet',
+          'CreateStackSet',       'UpdateStackSet',       'DeleteStackSet',
+          'CreateStackInstances', 'UpdateStackInstances', 'DeleteStackInstances',
+          'StopStackSetOperation'
+        )
+      filterOptionName: filter_cloudformation
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     COALESCE(
+#         json_extract_string(request_parameters, '$.stackName'),
+#         json_extract_string(request_parameters, '$.stackSetName'),
+#         json_extract_string(request_parameters, '$.changeSetName')
+#     )                                                                   AS stack_name,
+#     source_ip_address,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'cloudformation.amazonaws.com'
+#   AND event_name IN (
+#       'CreateStack',      'UpdateStack',          'DeleteStack',
+#       'CreateChangeSet',  'ExecuteChangeSet',     'DeleteChangeSet',
+#       'CreateStackSet',   'UpdateStackSet',       'DeleteStackSet',
+#       'CreateStackInstances', 'UpdateStackInstances', 'DeleteStackInstances',
+#       'StopStackSetOperation'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

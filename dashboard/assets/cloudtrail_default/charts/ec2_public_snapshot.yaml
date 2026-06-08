@@ -39,7 +39,6 @@ params:
         AND (
           lower(request_parameters) LIKE '%"group":"all"%'
           OR lower(request_parameters) LIKE '%group=all%'
-          OR lower(request_parameters) LIKE '%"all"%'
         )
       filterOptionName: filter_ec2_public_snapshot
   granularity_sqla: event_time
@@ -66,7 +65,6 @@ cache_timeout: null
 #   AND (
 #       lower(request_parameters) LIKE '%"group":"all"%'
 #       OR lower(request_parameters) LIKE '%group=all%'
-#       OR lower(request_parameters) LIKE '%"all"%'
 #   )
 # ORDER BY event_time DESC
 # LIMIT 100

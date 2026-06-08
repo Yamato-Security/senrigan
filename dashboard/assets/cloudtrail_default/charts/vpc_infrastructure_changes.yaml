@@ -1,0 +1,79 @@
+# DSH-77: VPC Infrastructure Changes
+# Table of VPC topology change events: VPC, subnet, internet gateway,
+# NAT gateway, VPC endpoint, and Elastic IP changes.
+# Attackers create rogue VPCs/subnets or attach internet gateways to
+# existing VPCs to establish covert exfiltration paths.
+# MITRE ATT&CK: TA0010 Exfiltration / TA0003 Persistence / TA0011 C2
+uuid: 77a7b8c9-d0e1-2345-0123-770000000077
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: VPC Infrastructure Changes
+viz_type: table
+description: >
+  VPC topology change events (DSH-77).
+  Covers VPC creation/deletion/modification, subnet changes, internet gateway
+  attachment, NAT gateway creation/deletion, VPC endpoint changes, and
+  Elastic IP allocation/association.
+  Unexpected IGW attachments or new NAT gateways in unused regions are
+  strong indicators of attacker-controlled exfiltration infrastructure.
+  MITRE ATT&CK: TA0010 Exfiltration / TA0003 Persistence / TA0011 C2.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_vpc_infra_events
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'ec2.amazonaws.com'
+        AND event_name IN (
+          'CreateVpc', 'DeleteVpc', 'ModifyVpcAttribute',
+          'CreateSubnet', 'DeleteSubnet', 'ModifySubnetAttribute',
+          'CreateInternetGateway', 'AttachInternetGateway',
+          'DetachInternetGateway', 'DeleteInternetGateway',
+          'CreateNatGateway', 'DeleteNatGateway',
+          'CreateVpcEndpoint', 'ModifyVpcEndpoint', 'DeleteVpcEndpoints',
+          'AllocateAddress', 'AssociateAddress', 'DisassociateAddress', 'ReleaseAddress'
+        )
+      filterOptionName: filter_vpc_infra
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     error_code,
+#     COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_source = 'ec2.amazonaws.com'
+#   AND event_name IN (
+#       'CreateVpc', 'DeleteVpc', 'ModifyVpcAttribute',
+#       'CreateSubnet', 'DeleteSubnet', 'ModifySubnetAttribute',
+#       'CreateInternetGateway', 'AttachInternetGateway',
+#       'DetachInternetGateway', 'DeleteInternetGateway',
+#       'CreateNatGateway', 'DeleteNatGateway',
+#       'CreateVpcEndpoint', 'ModifyVpcEndpoint', 'DeleteVpcEndpoints',
+#       'AllocateAddress', 'AssociateAddress', 'DisassociateAddress', 'ReleaseAddress'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200
