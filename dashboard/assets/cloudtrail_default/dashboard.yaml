@@ -1,5 +1,5 @@
 # CloudTrail Threat Hunting — Dashboard Definition (v3)
-# 8-tab layout: Identity & Access | Threat Detection |
+# 9-tab layout: Identity & Access | Threat Detection |
 # API Activity | Computing | S3 & RDS | GeoIP Intelligence |
 # Temporal Analysis | High-Risk API Monitor.
 # 74 charts total:
@@ -276,11 +276,11 @@ position:
     type: TAB
     id: TAB-computing
     children:
-      - ROW-di-12   # EC2 Instance Launches [MEDIUM]        ← 起動
-      - ROW-di-16   # EC2 Mass Stop / Terminate [CRITICAL] ← 停止/削除
-      - ROW-di-13   # EC2 Key Pair Creation [HIGH]         ← 鍵作成/削除
-      - ROW-di-14   # EC2 Instance Profile Changes [HIGH]  ← IAMロール付与
-      - ROW-di-15   # EC2 User Data Modification [HIGH]    ← 起動スクリプト改ざん
+      - ROW-di-12   # EC2 Instance Launches [MEDIUM]
+      - ROW-di-16   # EC2 Mass Stop / Terminate [CRITICAL]
+      - ROW-di-13   # EC2 Key Pair Creation [HIGH]
+      - ROW-di-14   # EC2 Instance Profile Changes [HIGH]
+      - ROW-di-15   # EC2 User Data Modification [HIGH]
       - ROW-di-7b   # EC2 Public Snapshot / AMI Sharing [HIGH]
       - ROW-di-17   # EC2 Spot Fleet Abuse [MEDIUM]
       - ROW-di-10   # ECS Task Definition Backdoor [HIGH]

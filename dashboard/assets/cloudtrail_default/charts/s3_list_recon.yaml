@@ -31,7 +31,6 @@ params:
       hasCustomLabel: true
       optionName: metric_s3_list_ops
   groupby:
-    - event_name
     - user_identity_arn
     - source_ip_address
     - aws_region

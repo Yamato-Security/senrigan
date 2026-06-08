@@ -1,7 +1,7 @@
 # DSH-37: Dormant Accounts Reactivated
-# Identifies IAM identities that were mostly inactive over the observed window
-# (active_span >= 3 days but few total events) — a heuristic for credentials
-# that sat dormant and were recently weaponised.
+# Identifies IAM identities that have a long active span (>= 3 days between first/last event) —
+# a span-based heuristic for credentials that may have been dormant and later weaponised.
+# (This chart no longer applies a total-event-count threshold.)
 # Note: This is a span-based heuristic (MIN/MAX timestamps), not a precise
 # gap detector.  Precise 72-hour gap detection requires a LAG() window function
 # which is not supported in Superset's native chart params.  Use the
