@@ -5,7 +5,7 @@
 ## What is Senrigan?
 
 ### Hunt AWS threats in minutes — no SIEM required, no Cloud infra needed
-> Drop in your CloudTrail logs and get 100 ready-to-run threat hunts, a BI dashboard, and AI-assisted analysis
+> Drop in your CloudTrail logs and get 107 ready-to-run threat hunts, a BI dashboard, and AI-assisted analysis
 > — all on your laptop with a single `docker compose up`.
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
@@ -15,7 +15,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](agent/requirements.txt)
 
 ### Key Features
-### 🔍 100 Built-in Hunts + AI Chat
+### 🔍 107 Built-in Hunts + AI Chat
 
 <img src="doc/img-agent.png" width="800" alt="AI Chat UI">
 
@@ -107,172 +107,180 @@ If you are behind a TLS-inspecting corporate proxy, see [doc/DEVELOPMENT.md](doc
 
 > 💡 No SQL or deep AWS knowledge required — just select a hunt from the dropdown and get results instantly.
 
-### 🎯 Built-in Hunts (`builtin_hunts.yaml`) — 100 queries
+### 🎯 Built-in Hunts (`builtin_hunts.yaml`) — 107 queries
+
+Categories are ordered by DFIR triage priority — check detection-tool tampering first, then identity abuse, then data impact.
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
-| 🔑 Identity & Access | 26 | Root usage · console login/MFA · privilege escalation (incl. AttachGroupPolicy/PutGroupPolicy) · AssumeRole · PassRole · Cognito · SSO · Glue DevEndpoint · SageMaker notebook · Data Pipeline · CodeStar · Step Functions · cross-account · credential enumeration |
-| 🛡 Detection & Response | 10 | GuardDuty/Config/CloudTrail/Macie tampering · GuardDuty findings read (attacker recon) · WAF · Security Hub · CloudWatch Logs exfiltration · budget deletion |
-| 🪣 Data & Storage | 18 | S3 bulk download/deletion · RDS/EBS snapshot sharing · EBS Direct API exfiltration · KMS key ops · S3 public access · backup tampering · DynamoDB export · Kinesis exfiltration · Secrets Manager |
-| 🌐 Network & Infrastructure | 15 | SG open to internet · NACL · route table · VPC flow log deletion · Elastic IP / C2 · CloudFront · Network Firewall · ACM certs · VPN/TGW · API Gateway key creation |
-| ⚡ Compute & Serverless | 13 | Lambda tampering/layers · SSM lateral movement · EKS · ECR supply chain · ECS task definition backdoor · EventBridge persistence · EC2 user data · mass terminate · Spot Fleet · Lightsail abuse |
-| 🕵 Threat Patterns | 5 | Off-hours writes · reconnaissance burst (10+ APIs/hour) · multi-region spread · unusual user agents |
-| 📊 Activity & Baseline | 2 | Error spikes · recent errors (24h) |
-| ☁ IaC & Platform | 2 | CloudFormation / IaC abuse · CI/CD supply chain |
-| 🌍 GeoIP Analysis ✦ | 10 | Country/city/ASN ranking · impossible travel · multi-country credentials · access denied by country |
+| 🛡 Detection & Response | 12 | CloudTrail/GuardDuty/Config/SecurityHub/Macie tampering · SCP deletion · CloudWatch alarm suppression · CW Logs subscription exfiltration · WAF · GuardDuty findings read (attacker recon) · budget deletion |
+| 🔑 Identity & Access | 26 | Root usage · console login / MFA · privilege escalation (PutUserPolicy, AttachRolePolicy, etc.) · trust policy backdoor · permission boundary removal · PassRole via compute services · AssumeRole cross-account · SSO · SAML/OIDC · Glue / SageMaker / Step Functions / Data Pipeline privesc · cross-account · credential enumeration |
+| 🪣 Data & Storage | 21 | S3 bulk deletion / download · Secrets Manager / SSM Parameter Store bulk read · backup tampering · KMS key ops · S3 public access · RDS/EBS snapshot sharing · EBS Direct API exfiltration · DynamoDB export · Kinesis exfiltration · S3 cross-account replication · SES forwarding config |
+| ⚡ Compute & Serverless | 14 | EC2 mass stop/terminate (ransomware) · SSM lateral movement · EC2 Instance Connect / Serial Console · EC2 user data (root exec at boot) · Lambda tampering/layers · ECS task definition backdoor · EKS · ECR supply chain · EventBridge persistence · Spot Fleet / cryptomining · Lightsail abuse |
+| 🌐 Network & Infrastructure | 14 | SG open to internet · NACL / route table · VPC flow log deletion · CloudFront origin hijack · Network Firewall / Shield · ACM certs · VPN / TGW covert tunnels · Elastic IP C2 · API Gateway key creation |
+| 🕵 Threat Patterns | 5 | Off-hours writes (JST 22:00–06:00) · reconnaissance burst (10+ APIs/hour) · multi-region spread · unusual user agents · first-time API calls |
+| 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors (24h) |
+| 🌍 GeoIP Analysis ✦ | 10 | Impossible travel · multi-country credentials · console logins by country · access denied by country · country/city/ASN ranking |
+| ☁ IaC & Platform | 2 | CI/CD supply chain (CodeBuild/CodePipeline) · CloudFormation / IaC abuse |
 
 <details>
-<summary>📋 Full list — all 101 queries (click to expand)</summary>
+<summary>📋 Full list — all 107 queries (click to expand)</summary>
 
 ### Built-in Hunts (Streamlit UI — `builtin_hunts.yaml`)
 
-#### 🔑 Identity & Access
-
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🔑 Root Account Activity | Detects any API call made by the root account | ✅ |
-| 2 | 👤 New IAM Users / Keys | Identifies IAM user and access key creation events | ✅ |
-| 3 | 🌐 Console Logins | Lists all console login attempts (brute force detection) | ✅ |
-| 4 | 🔓 Console Login without MFA | Detects console logins where MFA was not used | ✅ |
-| 5 | 🔄 Privilege Escalation (IAM) | Detects IAM policy attachment and role manipulation events (incl. AttachGroupPolicy / PutGroupPolicy) | ✅ |
-| 6 | 🔐 AssumeRole Cross-Account | Shows AssumeRole events across different AWS accounts | ✅ |
-| 7 | 🚧 IAM Permission Boundary Changes | Detects permission boundary put/delete events | ✅ |
-| 8 | 🆔 IAM Identity Center (SSO) Events | Detects AWS IAM Identity Center management actions | ✅ |
-| 9 | 🔗 SAML / OIDC Provider Updates | Detects SAML/OIDC identity provider changes (backdoor creation) | ✅ |
-| 10 | 🔑 STS Federation Token Issuance | Detects GetFederationToken and GetSessionToken calls | ✅ |
-| 11 | 🔄 IAM Role Trust Policy Changes | Detects UpdateAssumeRolePolicy calls (trust backdoor) | ✅ |
-| 12 | 👑 User Added to Admin Group | Detects users added to groups with 'admin' in the name | ✅ |
-| 13 | 🔐 MFA & Password Changes | Detects MFA deactivation and password resets | ✅ |
-| 14 | 🗝 Access Key Abuse | Detects access keys used from 3+ distinct source IPs in 7 days | ✅ |
-| 15 | 🔄 Credential Report & Enumeration | Detects IAM enumeration activity (GenerateCredentialReport, ListUsers, etc.) | ✅ |
-| 16 | 🏢 Cross-Account Access | Finds events where caller account differs from recipient account | ✅ |
-| 17 | 📰 AWS Organizations Account Creation | Detects Organizations account creation and delegated admin changes | ✅ |
-| 18 | 👥 Cognito Unauthenticated Access | Detects Cognito Identity Pools with unauthenticated access enabled | ✅ |
-| 19 | 🧐 IAM Access Analyzer Calls | Detects any use of IAM Access Analyzer (attacker recon) | ✅ |
-| 20 | 🧩 STS AssumeRoleWithWebIdentity | Detects OIDC trust abuse via AssumeRoleWithWebIdentity | ✅ |
-| 21 | 🎯 IAM PassRole Abuse | Detects iam:PassRole calls used to escalate privilege via compute services | ✅ |
-| 22 | 👥 IAM Group Membership Changes | Detects all AddUserToGroup / RemoveUserFromGroup / CreateGroup events regardless of group name | ✅ |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | Detects Glue development endpoint creation (iam:PassRole + glue:CreateDevEndpoint) and connection enumeration for credential harvest | ✅ |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | Detects SageMaker notebook creation and presigned URL generation (iam:PassRole + sagemaker:CreateNotebookInstance) | ✅ |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | Detects Data Pipeline and CodeStar resource creation used for iam:PassRole escalation | ✅ |
-| 26 | 🧩 Step Functions Privilege Escalation | Detects Step Functions state machine creation (iam:PassRole + states:CreateStateMachine) | ✅ |
-
 #### 🛡 Detection & Response
 
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🚫 Access Denied Errors | Groups AccessDenied errors by identity and API | ✅ |
-| 2 | 🛡️ GuardDuty Detector Tampering | Detects GuardDuty disable, delete, and threat-intel manipulation | ✅ |
-| 3 | ⚙️ AWS Config Tampering | Detects AWS Config recorder/rule deletion | ✅ |
-| 4 | 🛑 CloudTrail Tampering | Detects any attempt to stop or modify CloudTrail | ✅ |
-| 5 | 📜 CloudWatch Logs Subscription Changes | Detects CW Logs subscription filter creation/deletion (log exfiltration) | ✅ |
-| 6 | 🏹 WAF WebACL Changes | Detects WAF WebACL creation, update, and deletion | ✅ |
-| 7 | 💰 Budget / Cost Anomaly Changes | Detects deletion or modification of AWS Budgets (hiding cryptomining) | ✅ |
-| 8 | ⛔ Security Hub Tampering | Detects Security Hub disable, standard disable, and finding suppression | ✅ |
-| 9 | 🚫 AWS Macie Tampering | Detects Macie disable and finding-filter creation (pre-exfiltration evasion) | ✅ |
-| 10 | 🔍 GuardDuty Findings Read (Attacker Recon) | Detects read-only GuardDuty calls (ListFindings / GetFindings) — attacker checks what the SOC has already detected | ✅ |
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🛑 CloudTrail Tampering | timeseries | Detects any attempt to stop or modify CloudTrail — the most critical cover-up indicator | ✅ |
+| 2 | 🛡️ GuardDuty Detector Tampering | timeseries | Detects GuardDuty disable, delete, and threat-intel manipulation | ✅ |
+| 3 | ⛔ Security Hub Tampering | timeseries | Detects Security Hub disable, standard disable, and finding suppression | ✅ |
+| 4 | ⚙️ AWS Config Tampering | timeseries | Detects AWS Config recorder/rule deletion (eliminates compliance evidence) | ✅ |
+| 5 | 🛡 Organizations SCP Changes | timeseries | Detects SCP creation, update, and deletion — removing a Deny SCP eliminates guardrails across every account in the OU | ✅ |
+| 6 | 🚫 AWS Macie Tampering | timeseries | Detects Macie disable and finding-filter creation (pre-exfiltration defense evasion) | ✅ |
+| 7 | 🚨 CloudWatch Alarm Deletion / Disable | timeseries | Detects alarm deletion and DisableAlarmActions — silences security alerting without deleting the alarm | ✅ |
+| 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | Detects CW Logs subscription filter creation/deletion (real-time log exfiltration to attacker Kinesis/Lambda) | ✅ |
+| 9 | 🏹 WAF WebACL Changes | timeseries | Detects WAF WebACL creation, update, and deletion across WAFv2/WAF Classic | ✅ |
+| 10 | 🔍 GuardDuty Findings Read (Attacker Recon) | timeseries | Detects ListFindings / GetFindings — attacker reads active findings to understand what the SOC has already detected | ✅ |
+| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Detects Budget/AnomalyMonitor deletion (hiding cryptomining costs) | ✅ |
+| 12 | 🚫 Access Denied Errors | bar | Groups AccessDenied errors by identity and API — top offenders indicate credential misuse | ✅ |
+
+#### 🔑 Identity & Access
+
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🔑 Root Account Activity | timeseries | Detects any API call made by the root account — root should never be used in production | ✅ |
+| 2 | 🔓 Console Login without MFA | timeseries | Detects console logins where MFA was not used — high-risk indicator of account compromise | ✅ |
+| 3 | 🌐 Console Logins | timeseries | Lists all console login attempts including successes and failures (brute force detection) | ✅ |
+| 4 | 🔐 MFA & Password Changes | timeseries | Detects MFA deactivation and password resets — strong indicator of account takeover | ✅ |
+| 5 | 🔄 Privilege Escalation (IAM) | timeseries | Detects IAM policy attachment and role manipulation (PutUserPolicy, AttachRolePolicy, CreatePolicyVersion, etc.) | ✅ |
+| 6 | 🔄 IAM Role Trust Policy Changes | timeseries | Detects UpdateAssumeRolePolicy — adding external principals to a trust policy creates a persistent backdoor | ✅ |
+| 7 | 🚧 IAM Permission Boundary Changes | timeseries | Detects permission boundary put/delete events — removing a boundary immediately expands effective permissions | ✅ |
+| 8 | 👑 User Added to Admin Group | timeseries | Detects users added to groups with 'admin' in the name — classic privilege escalation | ✅ |
+| 9 | 👥 IAM Group Membership Changes | timeseries | Detects all AddUserToGroup / RemoveUserFromGroup / CreateGroup / DeleteGroup events regardless of group name | ✅ |
+| 10 | 👤 New IAM Users / Keys | timeseries | Identifies IAM user and access key creation events — unexpected creation may indicate persistence | ✅ |
+| 11 | 🎯 IAM PassRole Abuse | timeseries | Detects iam:PassRole usage by inspecting receiving-service events (RunInstances, CreateFunction, CreateNotebookInstance, etc.) where a role ARN is passed | ✅ |
+| 12 | 🔐 AssumeRole Cross-Account | timeseries | Shows AssumeRole events where caller and target are in different AWS accounts (lateral movement) | ✅ |
+| 13 | 🏢 Cross-Account Access | timeseries | Finds all events where caller account differs from recipient account | ✅ |
+| 14 | 🔑 STS Federation Token Issuance | timeseries | Detects GetFederationToken and GetSessionToken — converts long-lived keys into persistent temporary credentials | ✅ |
+| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Detects OIDC trust abuse (misconfigured sub claim / GitHub Actions without repo condition) | ✅ |
+| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detects AWS IAM Identity Center management actions (CreatePermissionSet, CreateAccountAssignment, etc.) | ✅ |
+| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | Detects SAML/OIDC identity provider changes — updating SAML metadata with attacker-controlled IdP creates a persistent authentication backdoor | ✅ |
+| 18 | 🧐 IAM Access Analyzer Calls | timeseries | Detects any use of IAM Access Analyzer — attackers leverage the native analyzer to enumerate externally accessible resources without custom recon scripts | ✅ |
+| 19 | 🔄 Credential Report & Enumeration | timeseries | Detects IAM enumeration (GenerateCredentialReport, ListUsers, ListRoles, GetAccountAuthorizationDetails, etc.) | ✅ |
+| 20 | 🗝 Access Key Abuse | bar | Detects access keys used from 3+ distinct source IPs in 7 days — strong indicator of key leak | ✅ |
+| 21 | 📰 AWS Organizations Account Creation | timeseries | Detects Organizations account creation and delegated administrator changes (shadow account persistence) | ✅ |
+| 22 | 👥 Cognito Unauthenticated Access | timeseries | Detects Cognito Identity Pools with allowUnauthenticatedIdentities=true | ✅ |
+| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Detects Glue DevEndpoint creation (iam:PassRole + glue:CreateDevEndpoint = SSH-accessible endpoint running with the passed role's full permissions) and connection enumeration for credential harvest | ✅ |
+| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detects SageMaker notebook creation and presigned URL generation — iam:PassRole + sagemaker:CreateNotebookInstance launches a Jupyter environment with the passed role's full AWS permissions | ✅ |
+| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Detects Data Pipeline and CodeStar resource creation used for iam:PassRole escalation (CreateProjectFromTemplate creates an admin IAM role as a side effect) | ✅ |
+| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Detects Step Functions state machine creation (iam:PassRole + states:CreateStateMachine executes Lambda/ECS tasks under the passed role) | ✅ |
 
 #### 🪣 Data & Storage
 
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🪣 S3 Data Access Anomalies | Detects bulk GetObject calls (≥100/hour) indicating exfiltration | ✅ |
-| 2 | 📸 EC2 Public Snapshot / AMI Sharing | Detects EBS snapshots or AMIs shared publicly (group=all) | ✅ |
-| 3 | 🪣 S3 Bucket Policy / ACL Changes | Detects S3 bucket policy and ACL modifications | ✅ |
-| 4 | 📂 S3 Versioning / Logging Disabled | Detects S3 versioning suspension and server access logging disable | ✅ |
-| 5 | 🔁 S3 Cross-Account Replication | Detects PutBucketReplication (silent object copy to attacker account) | ✅ |
-| 6 | 💾 RDS Snapshot Cross-Account Share | Detects RDS/Aurora snapshots shared to external AWS accounts | ✅ |
-| 7 | 💣 RDS Deleted without Final Snapshot | Detects RDS deletion with skipFinalSnapshot=true (data destruction) | ✅ |
-| 8 | 🔓 S3 Public Access Block Disabled | Detects S3 public access block settings being disabled | ✅ |
-| 9 | 🔓 KMS Key Operations | Flags sensitive KMS operations (DisableKey, ScheduleKeyDeletion, Decrypt) | ✅ |
-| 10 | 📧 Data Exfiltration Channels | Detects high-volume SNS/SQS/SES/S3 PutObject calls (≥50/hour) | ✅ |
-| 11 | 💽 RDS Public Accessibility Enabled | Detects RDS instances with PubliclyAccessible=true | ✅ |
-| 12 | 🔥 AWS Backup Tampering | Detects Backup Vault/Plan/RecoveryPoint deletion (ransomware indicator) | ✅ |
-| 13 | 💣 S3 Bulk Object Deletion | Detects high-volume DeleteObject calls (≥50/hour) — data destruction pattern | ✅ |
-| 14 | 🗄 DynamoDB Export / Bulk Exfiltration | Detects DynamoDB ExportTableToPointInTime and table deletion | ✅ |
-| 15 | 🌊 Kinesis Firehose / Stream Exfiltration Channel | Detects Firehose delivery stream creation/update pointing to external S3 | ✅ |
-| 16 | 🗝 Secrets Manager Deletion & Cross-Account Policy | Detects Secrets Manager secret deletion and cross-account resource policy changes | ✅ |
-| 17 | 📡 SQS / SNS Cross-Account Policy Changes | Detects SQS/SNS policy changes granting access to external accounts | ✅ |
-| 18 | 💾 EBS Direct API Snapshot Exfiltration | Detects EBS Direct API (ListSnapshotBlocks / GetSnapshotBlock) — Pacu ebs__download_snapshots bypasses snapshot-sharing detection | ✅ |
-
-#### 🌐 Network & Infrastructure
-
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🗝️ EC2 Key Pair Creation | Detects CreateKeyPair and ImportKeyPair events (SSH persistence) | ✅ |
-| 2 | 🧱 Network ACL Changes | Detects NACL entry creation, deletion, and replacement | ✅ |
-| 3 | 🛣️ Route Table Changes | Detects route table modifications (traffic hijacking / MitM) | ✅ |
-| 4 | 🌊 VPC Flow Log Changes | Detects deletion of VPC Flow Logs (evidence destruction) | ✅ |
-| 5 | 🔥 Security Group Modifications | Detects security group rule changes (port 22/3389, 0.0.0.0/0) | ✅ |
-| 6 | 🌍 Security Group Opened to Internet | Finds security group rules allowing traffic from 0.0.0.0/0 | ✅ |
-| 7 | 📡 Network Infrastructure Changes | Detects VPC / subnet / IGW / NAT Gateway / peering changes | ✅ |
-| 8 | 🖥 Write Events from Management Console | Identifies mutating API calls made via the AWS console | ✅ |
-| 9 | 🚧 VPC Endpoint Access Denied | Detects access denied errors via VPC endpoints | ✅ |
-| 10 | 📡 Elastic IP Allocation / Association | Detects Elastic IP allocation/association (C2 stable endpoint) | ✅ |
-| 11 | 🌐 CloudFront Distribution Tampering | Detects CloudFront origin changes that redirect CDN traffic (MitM) | ✅ |
-| 12 | 🛡 Network Firewall / Shield Tampering | Detects Network Firewall and Shield protection removal | ✅ |
-| 13 | 🏷 ACM Certificate Operations | Detects ACM certificate requests and deletions (phishing infrastructure) | ✅ |
-| 14 | 🧱 VPN / Direct Connect / Transit Gateway | Detects new VPN connections and Transit Gateway attachments (covert tunnels) | ✅ |
-| 15 | 🔑 API Gateway Key Creation & Management | Detects API Gateway key creation (Pacu api_gateway__create_api_keys) and authorizer changes that weaken access controls | ✅ |
-
-#### 🕵 Threat Patterns
-
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🕵 First-Time API Calls (24h) | Finds API calls seen in the last 24h but never before (novel operations) | 🤖 |
-| 2 | 🌙 Off-Hours Activity | Flags mutating API calls outside business hours (JST 22:00–06:00) | ✅ |
-| 3 | 🔍 Reconnaissance Pattern | Identifies callers who ran 10+ distinct read-only APIs in one hour | ✅ |
-| 4 | 🌍 Multi-Region Activity | Detects identities performing writes in 3+ regions in one day | ✅ |
-| 5 | 🤖 Unusual User Agents | Lists rare user agents (<5 events) — may indicate attack tooling | ✅ |
-
-#### 📊 Activity & Baseline
-
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | ❌ Error Spike Detection | Finds 1-hour windows where error count exceeds daily average by 3× | 🤖 |
-| 2 | 🔍 Events with Errors (24h) | Lists all error events in the past 24 hours | ✅ |
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 💣 S3 Bulk Object Deletion | bar | Detects identities performing ≥50 DeleteObject/DeleteObjects calls per hour — ransomware / wiper data destruction pattern | ✅ |
+| 2 | 🔥 AWS Backup Tampering | timeseries | Detects Backup Vault / Plan / RecoveryPoint deletion and Vault Lock removal — ransomware first step to eliminate recovery options | ✅ |
+| 3 | 🔓 KMS Key Operations | timeseries | Flags sensitive KMS operations (DisableKey, ScheduleKeyDeletion, CreateGrant, PutKeyPolicy, high-volume Decrypt) | ✅ |
+| 4 | 🔓 S3 Public Access Block Disabled | — | Detects S3 public access block settings being disabled — immediate data exposure risk | ✅ |
+| 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | Detects S3 bucket policy and ACL modifications (PutBucketPolicy with Principal='*' is especially critical) | ✅ |
+| 6 | 🪣 S3 Data Access Anomalies | bar | Detects bulk GetObject calls (≥100/hour) — automated data exfiltration pattern | ✅ |
+| 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Detects identities retrieving ≥10 distinct secrets in one hour — credential harvesting signal | ✅ |
+| 8 | 🗝 Secrets Manager Deletion & Cross-Account Policy | timeseries | Detects secret deletion, PutResourcePolicy (cross-account sharing), and CancelRotateSecret | ✅ |
+| 9 | 🔐 SSM Parameter Store Bulk Read | bar | Detects identities reading ≥20 parameters in one hour — an often-overlooked exfiltration channel | ✅ |
+| 10 | 💾 RDS Snapshot Cross-Account Share | timeseries | Detects RDS/Aurora snapshots shared to external AWS accounts (database exfiltration via snapshot) | ✅ |
+| 11 | 💣 RDS Deleted without Final Snapshot | — | Detects RDS deletion with skipFinalSnapshot=true — potential data destruction | ✅ |
+| 12 | 💽 RDS Public Accessibility Enabled | timeseries | Detects RDS instances created or modified with publiclyAccessible=true | ✅ |
+| 13 | 🗄 DynamoDB Export / Bulk Exfiltration | timeseries | Detects ExportTableToPointInTime (server-side full-table export bypassing GetItem DLP), DeleteTable, and PITR disable | ✅ |
+| 14 | 💾 EBS Direct API Snapshot Exfiltration | timeseries | Detects EBS Direct API (ListSnapshotBlocks / GetSnapshotBlock) — Pacu ebs__download_snapshots streams raw snapshot data without EC2, bypassing ModifySnapshotAttribute detection | ✅ |
+| 15 | 🌊 Kinesis Firehose / Stream Exfiltration Channel | timeseries | Detects Firehose delivery stream creation/update pointing to external S3 — real-time data pipeline invisible to network DLP | ✅ |
+| 16 | 🔁 S3 Cross-Account Replication | timeseries | Detects PutBucketReplication — silently copies all new objects to attacker-controlled bucket without generating additional GetObject events | ✅ |
+| 17 | 📂 S3 Versioning / Logging Disabled | timeseries | Detects versioning suspension (enables permanent deletion) and server-access logging disable (removes evidence trail) | ✅ |
+| 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | Detects SES receipt rule and identity configuration changes — forwarding rules relay all inbound mail to attacker addresses; verified identities enable phishing campaigns | ✅ |
+| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Detects SQS/SNS policy changes granting access to external accounts (silent message streaming to attacker endpoints) | ✅ |
+| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Detects EBS snapshots or AMIs shared publicly (group=all) — allows anyone to copy disk images and extract data | ✅ |
+| 21 | 📧 Data Exfiltration Channels | bar | Detects high-volume SNS/SQS/SES/S3 PutObject calls (≥50/hour) from a single identity | ✅ |
 
 #### ⚡ Compute & Serverless
 
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 👤 EC2 Instance Profile Changes | Detects IAM instance profile association and replacement | ✅ |
-| 2 | 🖥️ SSM Session / Run Command | Detects SSM StartSession, SendCommand (lateral movement) | ✅ |
-| 3 | 🖥 EC2 Instance Launches | Lists all RunInstances events (cryptomining detection) | ✅ |
-| 4 | ⚡ Lambda Function Tampering | Detects Lambda creation, code updates, and permission changes | ✅ |
-| 5 | 📅 EventBridge / CloudWatch Rule Changes | Detects EventBridge rule and Scheduler modifications (persistence) | ✅ |
-| 6 | ⚙️ EKS Cluster API Calls | Detects EKS cluster control-plane modifications (public API endpoint) | ✅ |
-| 7 | 🐳 ECR Repository / Image Changes | Detects ECR repository/image events (supply-chain persistence) | ✅ |
-| 8 | 📦 Lambda Layer Addition | Detects Lambda layer publication and permission changes | ✅ |
-| 9 | 📝 EC2 User Data Modification | Detects ModifyInstanceAttribute with userData change (root exec at boot) | ✅ |
-| 10 | 💥 EC2 Mass Stop / Terminate | Detects high-volume StopInstances/TerminateInstances (≥5/hour) — ransomware indicator | ✅ |
-| 11 | 💰 EC2 Spot Fleet / Reserved Instance Abuse | Detects large Spot Fleet requests and Reserved Instance purchases (cryptomining) | ✅ |
-| 12 | 📦 ECS Task Definition Backdoor | Detects RegisterTaskDefinition / UpdateService — Pacu ecs__backdoor_task_def injects a malicious sidecar without touching ECR | ✅ |
-| 13 | 💡 Lightsail Instance & Key Abuse | Detects Lightsail key retrieval, port exposure, and instance access (Pacu lightsail__download_ssh_keys / lightsail__generate_temp_access) | ✅ |
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 💥 EC2 Mass Stop / Terminate | timeseries | Detects identities performing ≥5 StopInstances/TerminateInstances in one hour — ransomware / wiper indicator | ✅ |
+| 2 | 🖥️ SSM Session / Run Command | timeseries | Detects SSM StartSession, SendCommand, and StartAutomationExecution — primary lateral movement path via managed instances | ✅ |
+| 3 | 🔑 EC2 Instance Connect / Serial Console Access | timeseries | Detects SendSSHPublicKey and SendSerialConsoleSSHPublicKey — bypasses EC2 key pairs (valid 60 seconds, leaves no SSH key artifacts) | ✅ |
+| 4 | 📝 EC2 User Data Modification | timeseries | Detects ModifyInstanceAttribute with userData change — script runs as root on next boot | ✅ |
+| 5 | ⚡ Lambda Function Tampering | timeseries | Detects Lambda creation, code updates (UpdateFunctionCode), and permission changes (AddPermission) | ✅ |
+| 6 | 📦 Lambda Layer Addition | timeseries | Detects Lambda layer publication and AddLayerVersionPermission with wildcard principal (public supply-chain attack) | ✅ |
+| 7 | 📦 ECS Task Definition Backdoor | timeseries | Detects RegisterTaskDefinition / UpdateService — Pacu ecs__backdoor_task_def injects a malicious sidecar container without touching ECR | ✅ |
+| 8 | 👤 EC2 Instance Profile Changes | timeseries | Detects AssociateIamInstanceProfile / ReplaceIamInstanceProfileAssociation — attaches a privileged profile enabling lateral movement | ✅ |
+| 9 | 🖥 EC2 Instance Launches | timeseries | Lists all RunInstances events including instance type, count, key name, and AMI (cryptomining detection) | ✅ |
+| 10 | 💰 EC2 Spot Fleet / Reserved Instance Abuse | timeseries | Detects large Spot Fleet requests (ec2) and Auto Scaling group creation with high capacity (autoscaling) — cryptomining financial-impact indicator | ✅ |
+| 11 | ☸️ EKS Cluster API Calls | timeseries | Detects EKS cluster control-plane modifications (public API server exposure, rogue Fargate profiles) | ✅ |
+| 12 | 🐳 ECR Repository / Image Changes | timeseries | Detects ECR repository/image events (PutImage tagged 'latest' poisons all subsequent deployments) | ✅ |
+| 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | Detects EventBridge rule and Scheduler modifications (PutRule, CreateSchedule) — establishes persistence without a running process | ✅ |
+| 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Detects Lightsail key retrieval, port exposure, and instance access — Pacu lightsail__download_ssh_keys / lightsail__generate_temp_access | ✅ |
 
-#### ☁ IaC & Platform
+#### 🌐 Network & Infrastructure
 
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🏗 CloudFormation / IaC Abuse | Detects CloudFormation stack operations (malicious infra deployment) | ✅ |
-| 2 | 🛠 CodeBuild / CodePipeline Supply Chain Attack | Detects CI/CD pipeline creation and modification (supply chain attack) | ✅ |
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🌍 Security Group Opened to Internet | timeseries | Finds security group rules allowing traffic from 0.0.0.0/0 — direct public exposure risk | ✅ |
+| 2 | 🔥 Security Group Modifications | timeseries | Detects all security group rule changes (AuthorizeSecurityGroupIngress, ModifySecurityGroupRules, etc.) | ✅ |
+| 3 | 🌊 VPC Flow Log Changes | timeseries | Detects deletion of VPC Flow Logs — removing flow logs eliminates primary network forensic evidence | ✅ |
+| 4 | 🌐 CloudFront Distribution Tampering | timeseries | Detects CloudFront origin changes that redirect all CDN traffic to attacker-controlled servers (MitM) | ✅ |
+| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Detects Network Firewall and Shield protection removal — exposes entire subnet ranges to attack traffic | ✅ |
+| 6 | 🧱 Network ACL Changes | timeseries | Detects NACL entry creation, deletion, and replacement — NACLs override security groups at the subnet level | ✅ |
+| 7 | 🛣️ Route Table Changes | timeseries | Detects route table modifications — attackers redirect traffic to malicious gateways for interception or C2 | ✅ |
+| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Detects new VPN connections and Transit Gateway attachments — creates persistent Layer-3 network paths for C2 or exfiltration | ✅ |
+| 9 | 📡 Elastic IP Allocation / Association | timeseries | Detects Elastic IP allocation/association — assigns a fixed public IP to compromised instances for stable C2 infrastructure | ✅ |
+| 10 | 🗝️ EC2 Key Pair Creation | timeseries | Detects CreateKeyPair and ImportKeyPair — attacker creates SSH keys for persistent instance access | ✅ |
+| 11 | 📡 Network Infrastructure Changes | timeseries | Detects VPC / subnet / IGW / NAT Gateway / peering changes that may establish attacker-controlled infrastructure | ✅ |
+| 12 | 🏷 ACM Certificate Operations | timeseries | Detects ACM certificate requests and deletions — compromised accounts can issue TLS certs for phishing domains | ✅ |
+| 13 | 🔑 API Gateway Key Creation & Management | timeseries | Detects API Gateway key creation and authorizer changes — Pacu api_gateway__create_api_keys generates persistent credentials that survive IAM key rotation | ✅ |
+| 14 | 🚧 VPC Endpoint Access Denied | timeseries | Detects access denied errors via VPC endpoints — may indicate misconfigured endpoint policy | ✅ |
+
+#### 🕵 Threat Patterns
+
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🌙 Off-Hours Activity | timeseries | Flags mutating API calls outside business hours (JST 22:00–06:00) — human logins at night may be compromised | ✅ |
+| 2 | 🔍 Reconnaissance Pattern | bar | Identifies callers who ran 10+ distinct Describe*/List*/Get* APIs in one hour — common early attack phase | ✅ |
+| 3 | 🤖 Unusual User Agents | bar | Lists rare user agents (<5 events) or known attacker tools (Pacu, curl, wget) — may indicate attack tooling | ✅ |
+| 4 | 🌍 Multi-Region Activity | bar | Detects identities performing writes in 3+ regions in one day — geographic spread may indicate compromise | ✅ |
+| 5 | 🕵 First-Time API Calls (24h) | — | Finds API calls seen in the last 24h but never before — novel operations may indicate attacker tooling | 🤖 |
+
+#### 📊 Activity & Baseline
+
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🖥 Write Events from Management Console | timeseries | Identifies mutating API calls made via the AWS console — useful when CLI-only access is expected | ✅ |
+| 2 | 🔍 Events with Errors (24h) | timeseries | Lists all error events in the past 24 hours — quick overview of what is failing or being probed | ✅ |
+| 3 | ❌ Error Spike Detection | — | Finds 1-hour windows where error count exceeds daily average by 3× | 🤖 |
 
 #### 🌍 GeoIP Analysis
 
 > Requires GeoLite2 `.mmdb` files for population (columns are NULL if ingested without GeoIP).
 
-| # | Label | Description | SQL |
-|---|-------|-------------|-----|
-| 1 | 🌍 Top Source Countries | Ranks source countries by API call volume | ✅ |
-| 2 | 🚨 Unusual Country Access | Detects rare country/identity combinations (<10 events) | ✅ |
-| 3 | 🏢 Top ASN / Organizations | Lists autonomous systems (ISPs/cloud) by API call volume | ✅ |
-| 4 | ⚠ Identity Multi-Country Access | Finds identities calling APIs from 2+ countries (credential theft) | ✅ |
-| 5 | 🕵 Impossible Travel Detection | Detects same identity from distant cities within 2 hours | ✅ |
-| 6 | 🗺 Console Logins by Country | Maps console login events to their geographic origin | ✅ |
-| 7 | 🌐 Private / Internal IP Summary | Summarises events from private/loopback/AWS-internal IPs | ✅ |
-| 8 | 🔍 Write Events by Country | Shows mutating API calls grouped by source country | ✅ |
-| 9 | 🚫 Access Denied by Country | Groups access denied errors by source country | ✅ |
-| 10 | 📍 Top Source Cities | Ranks source cities by event volume | ✅ |
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🕵 Impossible Travel Detection | — | Detects same identity calling APIs from distant cities within 2 hours — strong credential compromise indicator | ✅ |
+| 2 | ⚠ Identity Multi-Country Access | bar | Finds identities making API calls from 2+ countries — legitimate users rarely operate from multiple countries simultaneously | ✅ |
+| 3 | 🗺 Console Logins by Country | timeseries | Maps console login events to their geographic origin — logins from unexpected countries are high-risk | ✅ |
+| 4 | 🚨 Unusual Country Access | bar | Detects rare country/identity combinations (<10 events) — low-volume foreign access may be attacker infrastructure | ✅ |
+| 5 | 🚫 Access Denied by Country | bar | Groups access denied errors by source country — concentrated denials from one country may signal an attack | ✅ |
+| 6 | 🔍 Write Events by Country | bar | Shows mutating API calls grouped by source country — writes from unexpected countries are a stronger signal than reads | ✅ |
+| 7 | 🌍 Top Source Countries | bar | Ranks source countries by API call volume with write-event and unique-identity breakdowns | ✅ |
+| 8 | 🏢 Top ASN / Organizations | bar | Lists autonomous systems (ISPs/cloud providers) by API call volume — VPN/hosting ASNs may indicate attacker infrastructure | ✅ |
+| 9 | 📍 Top Source Cities | bar | Ranks source cities by event volume — city-level data pinpoints specific attacker infrastructure or office locations | ✅ |
+| 10 | 🌐 Private / Internal IP Summary | bar | Summarises events from private/loopback/AWS-internal IPs — baseline for expected internal traffic | ✅ |
+
+#### ☁ IaC & Platform
+
+| # | Label | Chart | Description | SQL |
+|---|-------|:-----:|-------------|:---:|
+| 1 | 🛠 CodeBuild / CodePipeline Supply Chain Attack | timeseries | Detects CI/CD pipeline creation and modification (UpdateProject injects malicious build steps into every subsequent build) | ✅ |
+| 2 | 🏗 CloudFormation / IaC Abuse | timeseries | Detects CloudFormation stack operations — attackers may use IaC to rapidly deploy malicious infrastructure | ✅ |
 
 </details>
 
