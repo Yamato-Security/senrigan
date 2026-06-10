@@ -1,4 +1,4 @@
-# DSH-63: EC2 Spot Fleet / Reserved Instance Abuse
+# DSH-63: EC2 Spot Fleet & Reserved Instance Purchases
 # Table of Spot Fleet, EC2 Fleet, and Reserved Instance purchase events.
 # Attackers who compromise AWS credentials with ec2:* permissions launch
 # large Spot or GPU fleets for crypto mining — generating significant costs
@@ -9,7 +9,7 @@
 uuid: 632f3647-f809-0123-89ab-630000000063
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: EC2 Spot Fleet / Reserved Instance Abuse
+slice_name: EC2 Spot Fleet & Reserved Instance Purchases
 viz_type: table
 description: >
   EC2 Spot Fleet, Fleet, and Reserved Instance purchase events (DSH-63):

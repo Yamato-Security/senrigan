@@ -1,12 +1,12 @@
-# DSH-22: Defense Evasion Events
-# Table of all CloudTrail events matching known defense-evasion techniques:
-# CloudTrail tampering, GuardDuty disabling, Config disabling, VPC Flow Log
+# DSH-22: Security Monitoring & Control Changes
+# Table of all CloudTrail events covering security monitoring control changes:
+# CloudTrail configuration changes, GuardDuty disabling, Config disabling, VPC Flow Log
 # deletion, CloudWatch log deletion, and security service disabling.
 # MITRE ATT&CK: TA0005 Defense Evasion
 uuid: 22d4e5f6-a7b8-9012-def0-123456789012
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Defense Evasion Events
+slice_name: Security Monitoring & Control Changes
 viz_type: table
 description: >
   Comprehensive catch-all for all defense-evasion events (DSH-22).

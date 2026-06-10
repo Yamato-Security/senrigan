@@ -5,15 +5,15 @@
 # 74 charts total:
 #   Phase-1  DSH-01 to DSH-43   (43 charts — baseline, identity, data, network, compute)
 #   Phase-2  DSH-44 to DSH-46   ( 3 charts — SSO, S3 policy, NACL/route)
-#   Phase-3  DSH-47 to DSH-48   ( 2 charts — EventBridge/CW tampering, EKS/ECR events)
-#   Phase-4  DSH-49 to DSH-51   ( 3 charts — ECS task definition, Glue/SageMaker privesc, EBS Direct API)
-#   Phase-5  DSH-52 to DSH-57   ( 6 charts — S3 & RDS DFIR: bulk download, bulk deletion,
+#   Phase-3  DSH-47 to DSH-48   ( 2 charts — EventBridge/CW rule changes, EKS/ECR events)
+#   Phase-4  DSH-49 to DSH-51   ( 3 charts — ECS task definition, Glue/SageMaker IAM role, EBS Direct API)
+#   Phase-5  DSH-52 to DSH-57   ( 6 charts — S3 & RDS DFIR: high-volume downloads, bulk deletion,
 #                                             versioning/logging disabled, cross-account replication,
-#                                             RDS deleted without snapshot, AWS Backup tampering)
+#                                             RDS deleted without snapshot, AWS Backup vault deletion)
 #   Phase-6  DSH-58 to DSH-63   ( 6 charts — EC2 DFIR: instance launches, key pair creation,
 #                                             instance profile changes, user data modification,
-#                                             mass stop/terminate, spot fleet abuse)
-#   Phase-7  DSH-64 to DSH-66   ( 3 charts — Lambda backdoor, CloudFormation changes, KMS key destruction)
+#                                             mass stop/terminate, spot fleet purchases)
+#   Phase-7  DSH-64 to DSH-66   ( 3 charts — Lambda config changes, CloudFormation changes, KMS key deletion)
 # Import via: superset import-dashboards -p cloudtrail_default.zip -u admin
 uuid: c3d4e5f6-a7b8-9012-cdef-123456789012
 version: 1.0.0
@@ -22,9 +22,9 @@ description: >
   Pre-built threat hunting dashboard for AWS CloudTrail logs stored in DuckDB.
   5-tab layout: Identity & Access | Threat Detection | Data & Infrastructure |
   GeoIP Intelligence | Temporal Analysis.  Covers event volume trends, Read/Write
-  ratio, top API calls, IAM entity activity, error patterns, defense evasion,
-  privilege escalation timelines, secrets access anomalies, SSRF/IMDS detection,
-  DNS exfiltration, geographic source analysis, and first/last seen temporal
+  ratio, top API calls, IAM entity activity, error patterns, security monitoring control changes,
+  IAM privilege change timelines, secrets access anomalies, SSRF/IMDS detection,
+  DNS record changes, geographic source analysis, and first/last seen temporal
   hunting for DFIR.
 published: true
 css: ""
@@ -64,16 +64,16 @@ position:
       - ROW-ia-1    # Console Login + MFA-less Login Trend [HIGH]
       - ROW-ia-2    # Login Activity Heatmap [MEDIUM]
       - ROW-ia-4    # Root Account Usage + IAM Entity Activity [CRITICAL]
-      - ROW-ia-5    # Privilege Escalation Timeline [CRITICAL]
-      - ROW-ia-7    # Glue/SageMaker Privilege Escalation [CRITICAL]
+      - ROW-ia-5    # IAM Privilege Change Timeline [CRITICAL]
+      - ROW-ia-7    # Glue/SageMaker IAM Role Pass Events [CRITICAL]
       - ROW-di-4    # AssumedRole from External IP [CRITICAL]
       - ROW-di-3    # Secrets Access Anomaly [CRITICAL]
-      - ROW-ia-3    # Sensitive API Calls [MEDIUM]
+      - ROW-ia-3    # Security-Relevant API Calls [MEDIUM]
       - ROW-ia-6    # SSO Events [LOW]
     meta:
       text: "\U0001f511 Identity & Access"
       defaultText: "Tab 1"
-      tooltip: "Login monitoring, privilege escalation, and sensitive API tracking"
+      tooltip: "Login monitoring, IAM privilege changes, and security-relevant API tracking"
   ROW-ia-1:
     type: ROW
     id: ROW-ia-1
@@ -119,7 +119,7 @@ position:
       - CHART-sso-events
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: Glue & SageMaker privilege escalation (DSH-50)
+  # Phase-4 new row: Glue & SageMaker IAM role pass events (DSH-50)
   ROW-ia-7:
     type: ROW
     id: ROW-ia-7
@@ -133,9 +133,9 @@ position:
     type: TAB
     id: TAB-threat
     children:
-      - ROW-td-3    # Defense Evasion [CRITICAL]
-      - ROW-td-7    # VPC Flow Log Changes + Config Tampering [CRITICAL]
-      - ROW-td-9    # EventBridge/CW Rule Tampering [CRITICAL]
+      - ROW-td-3    # Security Monitoring Control Changes [CRITICAL]
+      - ROW-td-7    # VPC Flow Log Changes + Config Recorder Changes [CRITICAL]
+      - ROW-td-9    # EventBridge/CW Rule Modifications [CRITICAL]
       - ROW-td-10   # WAF Configuration Changes [HIGH]
       - ROW-td-5    # Org/SCP Changes [HIGH]
       - ROW-td-4    # Error Trend [MEDIUM]
@@ -144,7 +144,7 @@ position:
     meta:
       text: "\U0001f3af Threat Detection"
       defaultText: "Tab 2"
-      tooltip: "Defense evasion, anomalous patterns, and baseline deviations"
+      tooltip: "Security monitoring control changes, anomalous patterns, and baseline deviations"
   ROW-td-1:
     type: ROW
     id: ROW-td-1
@@ -187,7 +187,7 @@ position:
       - CHART-first-time-svc
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-1 new rows: Defense Evasion additions (DSH-42, DSH-43)
+  # Phase-1 new rows: Security monitoring control additions (DSH-42, DSH-43)
   ROW-td-7:
     type: ROW
     id: ROW-td-7
@@ -204,7 +204,7 @@ position:
       - CHART-nacl-route
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-3 new row: EventBridge / CloudWatch rule tampering (DSH-47)
+  # Phase-3 new row: EventBridge / CloudWatch rule modifications (DSH-47)
   ROW-td-9:
     type: ROW
     id: ROW-td-9
@@ -282,11 +282,11 @@ position:
       - ROW-di-14   # EC2 Instance Profile Changes [HIGH]
       - ROW-di-15   # EC2 User Data Modification [HIGH]
       - ROW-di-7b   # EC2 Public Snapshot / AMI Sharing [HIGH]
-      - ROW-di-17   # EC2 Spot Fleet Abuse [MEDIUM]
-      - ROW-di-10   # ECS Task Definition Backdoor [HIGH]
-      - ROW-di-18   # Lambda Function Backdoor [HIGH]
+      - ROW-di-17   # EC2 Spot Fleet Purchases [MEDIUM]
+      - ROW-di-10   # ECS Task Definition Changes [HIGH]
+      - ROW-di-18   # Lambda Function Config Changes [HIGH]
       - ROW-di-6    # SSM Session / Run Command [HIGH]
-      - ROW-di-11   # EBS Direct API Exfiltration [HIGH]
+      - ROW-di-11   # EBS Direct API Snapshot Access [HIGH]
       - ROW-di-9    # Container Platform Events [MEDIUM]
       - ROW-di-19   # CloudFormation Stack Changes [MEDIUM]
     meta:
@@ -304,16 +304,16 @@ position:
       - ROW-s3-5    # S3 Versioning/Logging Disabled [CRITICAL]
       - ROW-s3-6    # S3 Cross-Account Replication [HIGH]
       - ROW-s3-2    # S3 Bucket Policy/ACL Changes [MEDIUM]
-      - ROW-s3-8    # S3 List / Enumeration Activity [MEDIUM]
+      - ROW-s3-8    # S3 List Activity [MEDIUM]
       - ROW-s3-1    # S3 Protection Config Changes [MEDIUM]
-      - ROW-s3-7    # AWS Backup Tampering [CRITICAL]
-      - ROW-kms-1   # KMS Key Destruction [CRITICAL]
+      - ROW-s3-7    # AWS Backup Vault Deletion [CRITICAL]
+      - ROW-kms-1   # KMS Key Deletion [CRITICAL]
       - ROW-rds-2   # RDS Deleted without Final Snapshot [HIGH]
       - ROW-rds-1   # RDS Snapshot Cross-Account Share [HIGH]
     meta:
       text: "\U0001faa3 S3 & RDS"
       defaultText: "Tab 6"
-      tooltip: "S3 & RDS DFIR: exfiltration, data destruction, anti-forensics, and backup tampering"
+      tooltip: "S3 & RDS DFIR: high-volume downloads, bulk deletion, anti-forensics, and backup vault deletion"
   ROW-di-1:
     type: ROW
     id: ROW-di-1
@@ -364,7 +364,7 @@ position:
       - CHART-route53
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-1 new rows: Exfiltration additions (DSH-39, DSH-40, DSH-41)
+  # Phase-1 new rows: Direct API access additions (DSH-39, DSH-40, DSH-41)
   ROW-di-6:
     type: ROW
     id: ROW-di-6
@@ -387,7 +387,7 @@ position:
       - CHART-container-platform
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: ECS Task Definition Backdoor (DSH-49)
+  # Phase-4 new row: ECS Task Definition Changes (DSH-49)
   ROW-di-10:
     type: ROW
     id: ROW-di-10
@@ -395,7 +395,7 @@ position:
       - CHART-ecs-task-def
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: EBS Direct API Exfiltration (DSH-51)
+  # Phase-4 new row: EBS Direct API Snapshot Access (DSH-51)
   ROW-di-11:
     type: ROW
     id: ROW-di-11
@@ -536,7 +536,7 @@ position:
       - CHART-s3-list-recon
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-7 new row: KMS key destruction (DSH-66)
+  # Phase-7 new row: KMS key deletion (DSH-66)
   ROW-kms-1:
     type: ROW
     id: ROW-kms-1
@@ -672,7 +672,7 @@ position:
       uuid: a5b6c7d8-e9f0-1234-ef01-234567890123
       width: 12
       height: 50
-      sliceName: Sensitive API Calls
+      sliceName: Security-Relevant API Calls
   CHART-root-usage:
     type: CHART
     id: CHART-root-usage
@@ -702,7 +702,7 @@ position:
       uuid: 30f2a3b4-c5d6-7890-5678-901234567890
       width: 12
       height: 50
-      sliceName: Privilege Escalation Timeline
+      sliceName: IAM Privilege Change Event Timeline
 
   # Chart entries — Tab 2: Threat Detection
   CHART-timeseries:
@@ -734,7 +734,7 @@ position:
       uuid: 22d4e5f6-a7b8-9012-def0-123456789012
       width: 12
       height: 50
-      sliceName: Defense Evasion Events
+      sliceName: Security Monitoring & Control Changes
   CHART-access-denied:
     type: CHART
     id: CHART-access-denied
@@ -967,14 +967,14 @@ position:
     type: TAB
     id: TAB-hrm
     children:
-      - ROW-hrm-4   # Defense Evasion + Credential Access (table) [CRITICAL]
+      - ROW-hrm-4   # Security Service Modifications + Credential Retrieval (table) [CRITICAL]
       - ROW-hrm-2   # Top High-Risk API Calls [HIGH]
       - ROW-hrm-3   # Top Actors + Source IPs + By Region [MEDIUM]
       - ROW-hrm-1   # High-Risk API Timeseries [CONTEXT]
     meta:
       text: "\U0001f6a8 High-Risk API Monitor"
       defaultText: "Tab 9"
-      tooltip: "APIs commonly abused in attacks — volume anomalies are the key signal"
+      tooltip: "APIs frequently used in attacks — volume anomalies are the key signal"
   ROW-hrm-1:
     type: ROW
     id: ROW-hrm-1
@@ -1067,7 +1067,7 @@ position:
       uuid: 44f6a7b8-c9d0-1234-f012-345678901244
       width: 6
       height: 50
-      sliceName: Defense Evasion API Events
+      sliceName: Security Service Modification API Events
   CHART-hrm-credential-access:
     type: CHART
     id: CHART-hrm-credential-access
@@ -1077,7 +1077,7 @@ position:
       uuid: 45a7b8c9-d0e1-2345-0123-456789012345
       width: 6
       height: 50
-      sliceName: Credential Access API Events
+      sliceName: Credential Retrieval API Events
 
   # Phase-1 new charts (DSH-39 to DSH-43)
   CHART-ssm-execution:
@@ -1133,7 +1133,7 @@ position:
       uuid: 43e4f5a6-b7c8-9012-3456-430000000043
       width: 6
       height: 50
-      sliceName: AWS Config Tampering
+      sliceName: AWS Config Recorder & Rule Changes
 
   # Phase-2 new charts (DSH-44 to DSH-46)
   CHART-sso-events:
@@ -1157,7 +1157,7 @@ position:
       uuid: 50b2c3d4-e5f6-7890-bcde-500000000050
       width: 12
       height: 50
-      sliceName: Glue & SageMaker Privilege Escalation
+      sliceName: Glue & SageMaker IAM Role Pass Events
 
   CHART-ecs-task-def:
     type: CHART
@@ -1168,7 +1168,7 @@ position:
       uuid: 49a1b2c3-d4e5-6789-abcd-490000000049
       width: 12
       height: 50
-      sliceName: ECS Task Definition Backdoor
+      sliceName: ECS Task Definition & Service Changes
 
   CHART-ebs-direct-api:
     type: CHART
@@ -1179,7 +1179,7 @@ position:
       uuid: 51c3d4e5-f6a7-8901-cdef-510000000051
       width: 12
       height: 50
-      sliceName: EBS Direct API Snapshot Exfiltration
+      sliceName: EBS Direct API Snapshot Block Access
 
   CHART-s3-policy-changes:
     type: CHART
@@ -1202,7 +1202,7 @@ position:
       uuid: 52d4e5f6-a7b8-9012-def0-520000000052
       width: 12
       height: 50
-      sliceName: S3 Bulk Download (Exfiltration)
+      sliceName: S3 High-Volume Object Downloads
 
   CHART-s3-bulk-deletion:
     type: CHART
@@ -1257,7 +1257,7 @@ position:
       uuid: 57c9d0e1-f2a3-4567-2345-570000000057
       width: 12
       height: 50
-      sliceName: AWS Backup Tampering
+      sliceName: AWS Backup Vault & Plan Deletion Events
 
   CHART-s3-list-recon:
     type: CHART
@@ -1268,7 +1268,7 @@ position:
       uuid: 74d4e5f6-a7b8-9012-def0-740000000074
       width: 12
       height: 50
-      sliceName: S3 List / Enumeration Activity
+      sliceName: S3 Bucket & Object List Activity
 
   CHART-nacl-route:
     type: CHART
@@ -1291,7 +1291,7 @@ position:
       uuid: 47c8d9e0-f1a2-3456-7890-470000000047
       width: 12
       height: 50
-      sliceName: EventBridge / CloudWatch Rule Tampering
+      sliceName: EventBridge & CloudWatch Rule Modifications
 
   CHART-container-platform:
     type: CHART
@@ -1414,7 +1414,7 @@ position:
       uuid: 632f3647-f809-0123-89ab-630000000063
       width: 12
       height: 50
-      sliceName: EC2 Spot Fleet / Reserved Instance Abuse
+      sliceName: EC2 Spot Fleet & Reserved Instance Purchases
 
   # Phase-7 new charts (DSH-64 to DSH-66) — Lambda, CloudFormation, KMS
   CHART-lambda-backdoor:
@@ -1426,7 +1426,7 @@ position:
       uuid: 71a1b2c3-d4e5-6789-abcd-710000000071
       width: 12
       height: 50
-      sliceName: Lambda Function Backdoor
+      sliceName: Lambda Function Configuration & Permission Changes
 
   CHART-cloudformation:
     type: CHART
@@ -1448,7 +1448,7 @@ position:
       uuid: 73c3d4e5-f6a7-8901-cdef-730000000073
       width: 12
       height: 50
-      sliceName: KMS Key Destruction
+      sliceName: KMS Key Deletion & Disable Events
 
 metadata:
   native_filter_configuration:
@@ -2171,9 +2171,9 @@ metadata:
     - slice_name: User Agent Analysis
       viz_type: table
       description: DSH-11 - Top user agents by request count.
-    - slice_name: Sensitive API Calls
+    - slice_name: Security-Relevant API Calls
       viz_type: table
-      description: DSH-12 - Expanded list of high-risk API invocations.
+      description: DSH-12 - Expanded list of security-relevant API invocations.
     - slice_name: Root Account Usage
       viz_type: table
       description: DSH-13 - All API calls made by the Root account.
@@ -2199,9 +2199,9 @@ metadata:
     - slice_name: Throttling Exception Spikes
       viz_type: echarts_timeseries_bar
       description: DSH-21 - Throttling errors per service per hour.
-    - slice_name: Defense Evasion Events
+    - slice_name: Security Monitoring & Control Changes
       viz_type: table
-      description: DSH-22 - CloudTrail/GuardDuty/Config/VPC tampering events.
+      description: DSH-22 - CloudTrail/GuardDuty/Config/VPC security monitoring control changes.
     - slice_name: Secrets Access Anomaly
       viz_type: table
       description: DSH-23 - Bulk Secrets Manager / SSM Parameter Store reads.
@@ -2223,9 +2223,9 @@ metadata:
     - slice_name: Route53 DNS Changes
       viz_type: table
       description: DSH-29 - Route 53 hosted-zone and resolver changes.
-    - slice_name: Privilege Escalation Timeline
+    - slice_name: IAM Privilege Change Event Timeline
       viz_type: echarts_timeseries_bar
-      description: DSH-30 - Daily privilege-escalation API calls by event name.
+      description: DSH-30 - Daily IAM privilege change API calls by event name.
     - slice_name: First / Last Seen per IAM Identity
       viz_type: table
       description: DSH-31 - IAM identities with first/last seen timestamps, event counts, and active span.
@@ -2234,7 +2234,7 @@ metadata:
       description: DSH-32 - Source IPs with first/last seen, identity count, and GeoIP context.
     - slice_name: First / Last Seen per API Call
       viz_type: table
-      description: DSH-33 - API actions ordered by first appearance for recon detection.
+      description: DSH-33 - API actions ordered by first appearance for new activity detection.
     - slice_name: First / Last Seen per User Agent
       viz_type: table
       description: DSH-34 - User agents ordered by first appearance for tool introduction detection.
@@ -2246,7 +2246,7 @@ metadata:
       description: DSH-38 - Identities with 50+ events/hour burst activity periods.
     - slice_name: High-Risk API Events Over Time
       viz_type: echarts_timeseries_bar
-      description: HRM-39 - Daily volume of calls to 42 abuse-prone APIs stacked by event name.
+      description: HRM-39 - Daily volume of calls to 42 security-monitored APIs stacked by event name.
     - slice_name: Top High-Risk API Calls
       viz_type: bar
       description: HRM-40 - APIs from the high-risk watchlist ranked by total call count.
@@ -2256,39 +2256,39 @@ metadata:
     - slice_name: Top Source IPs — High-Risk APIs
       viz_type: bar
       description: HRM-43 - Source IPs ranked by calls to high-risk watchlist APIs.
-    - slice_name: Defense Evasion API Events
+    - slice_name: Security Service Modification API Events
       viz_type: table
       description: HRM-44 - Detailed log of DeleteTrail / StopLogging / UpdateTrail / PutEventSelectors / DeletePolicy / DetachPolicy calls.
-    - slice_name: Credential Access API Events
+    - slice_name: Credential Retrieval API Events
       viz_type: table
       description: HRM-45 - Detailed log of GetSecretValue / GetParameter / GetParameterHistory calls.
     - slice_name: High-Risk API Calls by Region
       viz_type: bar
       description: HRM-46 - High-risk watchlist API calls distributed by AWS region.
-    - slice_name: Glue & SageMaker Privilege Escalation
+    - slice_name: Glue & SageMaker IAM Role Pass Events
       viz_type: table
-      description: DSH-50 - Glue DevEndpoint and SageMaker Notebook events used for IAM privilege escalation via iam:PassRole.
-    - slice_name: ECS Task Definition Backdoor
+      description: DSH-50 - Glue DevEndpoint and SageMaker Notebook events involving iam:PassRole.
+    - slice_name: ECS Task Definition & Service Changes
       viz_type: table
-      description: DSH-49 - ECS task definition registration and service update events (Pacu ecs__backdoor_task_def pattern).
-    - slice_name: EBS Direct API Snapshot Exfiltration
+      description: DSH-49 - ECS task definition registration and service update events.
+    - slice_name: EBS Direct API Snapshot Block Access
       viz_type: table
-      description: DSH-51 - EBS Direct API calls (ListSnapshotBlocks/GetSnapshotBlock) used to exfiltrate snapshot data without creating EC2 instances.
-    - slice_name: S3 Bulk Download (Exfiltration)
+      description: DSH-51 - EBS Direct API calls (ListSnapshotBlocks/GetSnapshotBlock) to access snapshot block data without creating EC2 instances.
+    - slice_name: S3 High-Volume Object Downloads
       viz_type: table
-      description: DSH-52 - Identities performing >=100 GetObject calls per hour — automated S3 data exfiltration pattern.
+      description: DSH-52 - Identities performing >=100 GetObject calls per hour.
     - slice_name: S3 Bulk Object Deletion
       viz_type: table
-      description: DSH-53 - Identities performing >=50 DeleteObject/DeleteObjects calls per hour — ransomware data destruction pattern.
+      description: DSH-53 - Identities performing >=50 DeleteObject/DeleteObjects calls per hour.
     - slice_name: S3 Versioning / Logging Disabled
       viz_type: table
-      description: DSH-54 - PutBucketVersioning (Suspended) and PutBucketLogging (disabled) — anti-forensics precursor to data destruction.
+      description: DSH-54 - PutBucketVersioning (Suspended) and PutBucketLogging (disabled).
     - slice_name: S3 Cross-Account Replication
       viz_type: table
-      description: DSH-55 - PutBucketReplication/DeleteBucketReplication — persistent silent exfiltration channel to attacker-controlled account.
+      description: DSH-55 - PutBucketReplication/DeleteBucketReplication — cross-account data replication changes.
     - slice_name: RDS Deleted without Final Snapshot
       viz_type: table
-      description: DSH-56 - DeleteDBInstance/DeleteDBCluster with skipFinalSnapshot=true — irrecoverable data destruction.
-    - slice_name: AWS Backup Tampering
+      description: DSH-56 - DeleteDBInstance/DeleteDBCluster with skipFinalSnapshot=true.
+    - slice_name: AWS Backup Vault & Plan Deletion Events
       viz_type: table
-      description: DSH-57 - Backup Vault/Plan/RecoveryPoint deletion and Vault Lock removal — ransomware first step to eliminate recovery options.
+      description: DSH-57 - Backup Vault/Plan/RecoveryPoint deletion and Vault Lock removal.

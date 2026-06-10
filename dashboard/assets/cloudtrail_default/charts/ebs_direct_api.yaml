@@ -1,4 +1,4 @@
-# DSH-51: EBS Direct API Snapshot Exfiltration
+# DSH-51: EBS Direct API Snapshot Block Access
 # Table showing EBS Direct API calls used to stream raw snapshot block data.
 # Pacu's ebs__download_snapshots module uses ListSnapshotBlocks + GetSnapshotBlock
 # to download an entire EBS disk image without creating an EC2 instance or
@@ -8,7 +8,7 @@
 uuid: 51c3d4e5-f6a7-8901-cdef-510000000051
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: EBS Direct API Snapshot Exfiltration
+slice_name: EBS Direct API Snapshot Block Access
 viz_type: table
 description: >
   EBS Direct API calls used to exfiltrate snapshot data (DSH-51).
