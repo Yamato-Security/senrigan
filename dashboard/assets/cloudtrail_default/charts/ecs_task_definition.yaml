@@ -1,4 +1,4 @@
-# DSH-49: ECS Task Definition Backdoor
+# DSH-49: ECS Task Definition & Service Changes
 # Table of ECS task definition and service modification events.
 # Pacu's ecs__backdoor_task_def module registers a new task definition revision
 # that adds a credential-stealing sidecar container, then updates the service
@@ -7,7 +7,7 @@
 uuid: 49a1b2c3-d4e5-6789-abcd-490000000049
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: ECS Task Definition Backdoor
+slice_name: ECS Task Definition & Service Changes
 viz_type: table
 description: >
   ECS task definition registration and service modification events (DSH-49).

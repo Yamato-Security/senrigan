@@ -1,4 +1,4 @@
-# DSH-52: S3 Bulk Download (Exfiltration)
+# DSH-52: S3 High-Volume Object Downloads
 # Surfaces identities performing >=100 GetObject calls in a single hour.
 # High-volume read activity from S3 is a primary exfiltration indicator —
 # attackers dump bucket contents before destroying or ransoming them.
@@ -6,7 +6,7 @@
 uuid: 52d4e5f6-a7b8-9012-def0-520000000052
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: S3 Bulk Download (Exfiltration)
+slice_name: S3 High-Volume Object Downloads
 viz_type: table
 description: >
   S3 bulk GetObject calls (DSH-52): identities that performed >=100 GetObject

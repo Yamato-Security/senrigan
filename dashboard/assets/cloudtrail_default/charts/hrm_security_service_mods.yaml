@@ -1,11 +1,11 @@
-# HRM-44: Defense Evasion API Event Table
-# Detailed table of all calls to APIs used to disable or tamper with logging/auditing.
+# HRM-44: Security Service Modification API Event Table
+# Detailed table of all calls to APIs used to disable or modify logging/auditing.
 # Even a single DeleteTrail or StopLogging event is a critical finding.
 # MITRE ATT&CK: TA0005 Defense Evasion
 uuid: 44f6a7b8-c9d0-1234-f012-345678901244
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Defense Evasion API Events
+slice_name: Security Service Modification API Events
 viz_type: table
 description: >
   Detailed event log for APIs used to disable or tamper with audit controls (HRM-44).

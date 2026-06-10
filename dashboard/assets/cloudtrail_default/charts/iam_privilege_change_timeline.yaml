@@ -1,12 +1,12 @@
-# DSH-30: Privilege Escalation Events Timeline (Daily)
-# Stacked bar chart of known privilege-escalation API calls per day.
+# DSH-30: IAM Privilege Change Event Timeline (Daily)
+# Stacked bar chart of IAM privilege change API calls per day.
 # Concentrations on a specific date point to a targeted attack campaign;
 # gradual increase over days suggests an insider threat or persistent foothold.
 # MITRE ATT&CK: TA0004 Privilege Escalation
 uuid: 30f2a3b4-c5d6-7890-5678-901234567890
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Privilege Escalation Timeline
+slice_name: IAM Privilege Change Event Timeline
 viz_type: echarts_timeseries_bar
 description: >
   Daily counts of privilege-escalation API calls broken down by event name (DSH-30).

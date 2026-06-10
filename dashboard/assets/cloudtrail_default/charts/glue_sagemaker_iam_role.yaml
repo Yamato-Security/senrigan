@@ -1,4 +1,4 @@
-# DSH-50: Glue DevEndpoint & SageMaker Notebook Privilege Escalation
+# DSH-50: Glue & SageMaker IAM Role Pass Events
 # Table showing Glue development endpoint events and SageMaker notebook events
 # used for IAM privilege escalation via iam:PassRole.
 # Both services accept a role via PassRole and provide code-execution environments
@@ -7,7 +7,7 @@
 uuid: 50b2c3d4-e5f6-7890-bcde-500000000050
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Glue & SageMaker Privilege Escalation
+slice_name: Glue & SageMaker IAM Role Pass Events
 viz_type: table
 description: >
   Glue DevEndpoint and SageMaker Notebook events used for IAM privilege

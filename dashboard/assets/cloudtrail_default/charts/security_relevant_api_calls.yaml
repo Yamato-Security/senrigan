@@ -1,5 +1,5 @@
-# DSH-12: Sensitive / High-Risk API Calls
-# Table listing invocations of known security-sensitive AWS API actions.
+# DSH-12: Security-Relevant API Calls
+# Table listing invocations of known security-relevant AWS API actions.
 # Expanded to cover CloudTrail Lake query sample patterns:
 #   - IAM credential changes and policy modifications
 #   - STS token operations and cross-account access
@@ -11,7 +11,7 @@
 uuid: a5b6c7d8-e9f0-1234-ef01-234567890123
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Sensitive API Calls
+slice_name: Security-Relevant API Calls
 viz_type: table
 description: >
   Invocations of known security-sensitive AWS API actions (DSH-12).

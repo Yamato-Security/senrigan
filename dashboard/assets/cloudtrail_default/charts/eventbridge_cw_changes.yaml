@@ -1,5 +1,5 @@
-# DSH-47: EventBridge / CloudWatch Rule Tampering
-# Table of EventBridge rule deletion/disabling and malicious scheduler creation.
+# DSH-47: EventBridge & CloudWatch Rule Modifications
+# Table of EventBridge rule deletion/disabling and scheduler creation/modification events.
 #
 # Attackers disable scheduled security notifications, GuardDuty finding exports,
 # and compliance check rules to suppress automated detection.  They also create
@@ -12,7 +12,7 @@
 uuid: 47c8d9e0-f1a2-3456-7890-470000000047
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: EventBridge / CloudWatch Rule Tampering
+slice_name: EventBridge & CloudWatch Rule Modifications
 viz_type: table
 description: >
   EventBridge and CloudWatch Events rule tampering (DSH-47):

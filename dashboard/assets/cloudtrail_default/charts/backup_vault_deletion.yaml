@@ -1,4 +1,4 @@
-# DSH-57: AWS Backup Tampering
+# DSH-57: AWS Backup Vault & Plan Deletion Events
 # Detects deletion of Backup Vaults, Plans, Recovery Points, and Vault Lock.
 # AWS Backup protects S3, RDS, EBS, DynamoDB, and other services.
 # Destroying backups is the first step in a ransomware campaign — it ensures
@@ -8,7 +8,7 @@
 uuid: 57c9d0e1-f2a3-4567-2345-570000000057
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: AWS Backup Tampering
+slice_name: AWS Backup Vault & Plan Deletion Events
 viz_type: table
 description: >
   AWS Backup Vault, Plan, and Recovery Point deletion events (DSH-57):

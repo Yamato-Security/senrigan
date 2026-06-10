@@ -1,4 +1,4 @@
-# DSH-64: Lambda Function Backdoor / Persistence
+# DSH-64: Lambda Function Configuration & Permission Changes
 # Table of Lambda function creation, code update, and permission modification events.
 # Lambda functions are a powerful persistence mechanism: they execute in AWS context,
 # have no persistent EC2 footprint to detect, and can be triggered by many event sources.
@@ -12,7 +12,7 @@
 uuid: 71a1b2c3-d4e5-6789-abcd-710000000071
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: Lambda Function Backdoor
+slice_name: Lambda Function Configuration & Permission Changes
 viz_type: table
 description: >
   Lambda function creation, code update, and permission events (DSH-64).

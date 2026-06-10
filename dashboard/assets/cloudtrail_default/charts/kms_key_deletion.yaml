@@ -1,4 +1,4 @@
-# DSH-66: KMS Key Destruction / Disabling
+# DSH-66: KMS Key Deletion & Disable Events
 # Table of KMS key deletion scheduling, disabling, and rotation disabling events.
 # AWS KMS keys protect virtually all encrypted data in an account:
 # S3 server-side encryption, RDS storage encryption, EBS volume encryption,
@@ -12,7 +12,7 @@
 uuid: 73c3d4e5-f6a7-8901-cdef-730000000073
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: KMS Key Destruction
+slice_name: KMS Key Deletion & Disable Events
 viz_type: table
 description: >
   KMS key deletion, disabling, and rotation management events (DSH-66).

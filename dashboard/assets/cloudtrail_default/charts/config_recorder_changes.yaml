@@ -1,4 +1,4 @@
-# DSH-43: AWS Config Recorder / Rule Tampering
+# DSH-43: AWS Config Recorder & Rule Changes
 # Table of StopConfigurationRecorder, DeleteConfigurationRecorder,
 # DeleteDeliveryChannel, DeleteConfigRule, and PutConfigRule events.
 # Stopping the AWS Config recorder eliminates compliance evidence and
@@ -8,7 +8,7 @@
 uuid: 43e4f5a6-b7c8-9012-3456-430000000043
 version: 1.0.0
 dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-slice_name: AWS Config Tampering
+slice_name: AWS Config Recorder & Rule Changes
 viz_type: table
 description: >
   AWS Config recorder and rule tampering events (DSH-43):
