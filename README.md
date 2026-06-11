@@ -212,7 +212,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 4 | 📝 EC2 User Data Modification | timeseries | Detects ModifyInstanceAttribute with userData change — script runs as root on next boot | ✅ |
 | 5 | ⚡ Lambda Function Tampering | timeseries | Detects Lambda creation, code updates (UpdateFunctionCode), and permission changes (AddPermission) | ✅ |
 | 6 | 📦 Lambda Layer Addition | timeseries | Detects Lambda layer publication and AddLayerVersionPermission with wildcard principal (public supply-chain attack) | ✅ |
-| 7 | 📦 ECS Task Definition Backdoor | timeseries | Detects RegisterTaskDefinition / UpdateService — Pacu ecs__backdoor_task_def injects a malicious sidecar container without touching ECR | ✅ |
+| 7 | 📦 ECS Task Definition  | timeseries | Detects RegisterTaskDefinition / UpdateService — Pacu ecs__backdoor_task_def injects a malicious sidecar container without touching ECR | ✅ |
 | 8 | 👤 EC2 Instance Profile Changes | timeseries | Detects AssociateIamInstanceProfile / ReplaceIamInstanceProfileAssociation — attaches a privileged profile enabling lateral movement | ✅ |
 | 9 | 🖥 EC2 Instance Launches | timeseries | Lists all RunInstances events including instance type, count, key name, and AMI (cryptomining detection) | ✅ |
 | 10 | 💰 EC2 Spot Fleet / Reserved Instance Abuse | timeseries | Detects large Spot Fleet requests (ec2) and Auto Scaling group creation with high capacity (autoscaling) — cryptomining financial-impact indicator | ✅ |
@@ -354,7 +354,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 1 | SSM Session / Run Command Execution | AWS Systems Manager remote-execution events (DSH-39) |
 | 2 | EC2 Public Snapshot / AMI Sharing | EBS snapshot and AMI public-sharing events (DSH-41) |
 | 3 | EKS / ECR Container Platform Events | EKS cluster and ECR container registry events (DSH-48) |
-| 4 | ECS Task Definition Backdoor | ECS task definition registration and service update events — Pacu ecs__backdoor_task_def pattern (DSH-49) |
+| 4 | ECS Task Definition | ECS task definition registration and service update events — Pacu ecs__backdoor_task_def pattern (DSH-49) |
 | 5 | EBS Direct API Snapshot Exfiltration | EBS Direct API calls (ListSnapshotBlocks / GetSnapshotBlock) used to stream snapshot data without EC2 (DSH-51) |
 
 #### 🪣 S3 & RDS

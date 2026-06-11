@@ -32,17 +32,18 @@ ps:              ## Show container status
 # ── Ingest ───────────────────────────────────────────────
 ingest:          ## Ingest CloudTrail logs (strip-raw-event, lean DB)
 	$(DC) --profile ingest run --rm ingester ingest \
-	    --path /data/logs --strip-raw-event
+	    --path /data/logs --strip-raw-event --strip-fields
 
 ingest-full:     ## Ingest CloudTrail logs (keep raw_event column)
 	$(DC) --profile ingest run --rm ingester ingest \
-	    --path /data/logs
+	    --path /data/logs --strip-fields
 
 ingest-geoip:    ## Ingest CloudTrail logs with GeoIP enrichment
 	$(DC) --profile ingest run --rm ingester ingest \
 	    --path /data/logs \
 	    --geoip-city $(GEOIP_CITY) \
-	    --geoip-asn $(GEOIP_ASN)
+	    --geoip-asn $(GEOIP_ASN) \
+	    --strip-raw-event --strip-fields
 
 enrich:          ## Back-fill GeoIP on existing DB rows
 	$(DC) --profile ingest run --rm ingester enrich \

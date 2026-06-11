@@ -226,7 +226,7 @@ fn ingest_core(
     let mut stats = IngestStats::default();
 
     // Collect candidate file paths, applying filters before any I/O.
-    let files: Vec<PathBuf> = WalkDir::new(path)
+    let mut files: Vec<PathBuf> = WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
@@ -235,6 +235,7 @@ fn ingest_core(
         .filter(|e| path_filter.matches(e.path()))
         .map(|e| e.path().to_path_buf())
         .collect();
+    files.sort();
 
     let reporter = if show_progress {
         ProgressReporter::new(files.len() as u64)
