@@ -2159,7 +2159,7 @@
     LIMIT 100
 
 - category: "⚡ Compute & Serverless"
-  label: "\U0001f4e6 ECS Task Definition Backdoor"
+  label: "\U0001f4e6 ECS Task Definition"
   description: "Detects ECS task definition registration and service updates. Pacu's ecs__backdoor_task_def registers a new task definition version pointing to a malicious container image, then updates the service to deploy it — all without touching ECR."
   chart:
     type: timeseries
