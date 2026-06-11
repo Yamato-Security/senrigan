@@ -15,7 +15,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](agent/requirements.txt)
 
 ### Key Features
-### 🔍 107 Built-in Hunts + AI Chat
+### 🔍 100+ Built-in Hunts + AI Chat
 
 <img src="doc/img-agent.png" width="800" alt="AI Chat UI">
 
@@ -107,7 +107,7 @@ If you are behind a TLS-inspecting corporate proxy, see [doc/DEVELOPMENT.md](doc
 
 > 💡 No SQL or deep AWS knowledge required — just select a hunt from the dropdown and get results instantly.
 
-### 🎯 Built-in Hunts (`builtin_hunts.yaml`) — 107 queries
+### 🎯 Built-in Hunts — 100+ queries
 
 Categories are ordered by DFIR triage priority — check detection-tool tampering first, then identity abuse, then data impact.
 
@@ -126,7 +126,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 <details>
 <summary>📋 Full list — all 107 queries (click to expand)</summary>
 
-### Built-in Hunts (Streamlit UI — `builtin_hunts.yaml`)
+### Built-in Hunts
 
 #### 🛡 Detection & Response
 
@@ -286,7 +286,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 ---
 
-### 📊 Dashboard Charts (Apache Superset — `dashboard/`) — 60 charts
+### 📊 Dashboard Charts — 60+ charts
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
