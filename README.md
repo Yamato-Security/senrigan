@@ -113,15 +113,15 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | CloudTrail/GuardDuty/Config/SecurityHub/Macie tampering · SCP deletion · CloudWatch alarm suppression · CW Logs subscription exfiltration · WAF · GuardDuty findings read (attacker recon) · budget deletion |
-| 🔑 Identity & Access | 26 | Root usage · console login / MFA · privilege escalation (PutUserPolicy, AttachRolePolicy, etc.) · trust policy backdoor · permission boundary removal · PassRole via compute services · AssumeRole cross-account · SSO · SAML/OIDC · Glue / SageMaker / Step Functions / Data Pipeline privesc · cross-account · credential enumeration |
-| 🪣 Data & Storage | 21 | S3 bulk deletion / download · Secrets Manager / SSM Parameter Store bulk read · backup tampering · KMS key ops · S3 public access · RDS/EBS snapshot sharing · EBS Direct API exfiltration · DynamoDB export · Kinesis exfiltration · S3 cross-account replication · SES forwarding config |
-| ⚡ Compute & Serverless | 14 | EC2 mass stop/terminate (ransomware) · SSM lateral movement · EC2 Instance Connect / Serial Console · EC2 user data (root exec at boot) · Lambda tampering/layers · ECS task definition backdoor · EKS · ECR supply chain · EventBridge persistence · Spot Fleet / cryptomining · Lightsail abuse |
-| 🌐 Network & Infrastructure | 14 | SG open to internet · NACL / route table · VPC flow log deletion · CloudFront origin hijack · Network Firewall / Shield · ACM certs · VPN / TGW covert tunnels · Elastic IP C2 · API Gateway key creation |
-| 🕵 Threat Patterns | 5 | Off-hours writes (JST 22:00–06:00) · reconnaissance burst (10+ APIs/hour) · multi-region spread · unusual user agents · first-time API calls |
-| 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors (24h) |
-| 🌍 GeoIP Analysis ✦ | 10 | Impossible travel · multi-country credentials · console logins by country · access denied by country · country/city/ASN ranking |
-| ☁ IaC & Platform | 2 | CI/CD supply chain (CodeBuild/CodePipeline) · CloudFormation / IaC abuse |
+| 🛡 Detection & Response | 12 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP deletion · alarm suppression · log exfiltration |
+| 🔑 Identity & Access | 26 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration |
+| 🪣 Data & Storage | 21 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication |
+| ⚡ Compute & Serverless | 14 | EC2 mass stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail abuse |
+| 🌐 Network & Infrastructure | 14 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys |
+| 🕵 Threat Patterns | 5 | Off-hours writes · recon burst · multi-region spread · unusual user agents · first-time API calls |
+| 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors |
+| 🌍 GeoIP Analysis ✦ | 10 | Impossible travel · multi-country credentials · geo-ranked logins/denials/writes · country/city/ASN breakdown |
+| ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
 <details>
 <summary>📋 Full list — all 107 queries (click to expand)</summary>
@@ -290,14 +290,14 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
-| 🔑 Identity & Access | 9 | Console logins · MFA trend · login heatmap (JST) · sensitive APIs · root usage · IAM entity activity · privilege escalation · SSO · Glue/SageMaker privesc |
-| 🎯 Threat Detection | 12 | Event volume trend · read/write ratio · throttling · defense evasion · access denied · error trend · Organizations/SCP · first-time services · VPC flow log · Config tampering · NACL/route · EventBridge/CW tampering |
-| 📊 API Activity | 7 | Top API calls · region distribution · source IPs · user agents · secrets anomaly · AssumeRole from external IP · Route53 DNS changes |
-| 🖥️ Computing | 5 | SSM remote execution · EC2 public snapshot · EKS/ECR container events · ECS task definition backdoor · EBS Direct API exfiltration |
-| 🪣 S3 & RDS | 9 | S3 protection config · S3 policy / ACL changes · bulk download · bulk deletion · versioning/logging disabled · cross-account replication · RDS snapshot share · RDS deleted without snapshot · AWS Backup tampering |
+| 🔑 Identity & Access | 9 | Console logins · MFA trend · login heatmap · sensitive APIs · root usage · IAM entity activity · privilege escalation · SSO/privesc |
+| 🎯 Threat Detection | 12 | Event volume · read/write ratio · defense evasion · access denied · error trend · SCP/Config/NACL/EventBridge tampering |
+| 📊 API Activity | 7 | Top APIs · region distribution · source IPs · user agents · secrets anomaly · external AssumeRole · Route53 changes |
+| 🖥️ Computing | 5 | SSM execution · EC2 public snapshot · EKS/ECR events · ECS backdoor · EBS Direct API exfiltration |
+| 🪣 S3 & RDS | 9 | S3 policy/ACL · bulk download/deletion · versioning/logging disabled · cross-account replication · RDS snapshot share · Backup tampering |
 | 🌍 GeoIP Intelligence | 4 | World map · top countries / cities / ASNs by request volume |
-| 🕒 Temporal Analysis | 6 | First/last seen per IAM identity / source IP / API call / user agent · dormant accounts reactivated · velocity spikes |
-| 🚨 High-Risk API Monitor | 7 | HRM time series · top calls / actors / IPs · defense evasion detail · credential access detail · by region |
+| 🕒 Temporal Analysis | 6 | First/last seen by identity/IP/API/agent · dormant accounts reactivated · velocity spikes |
+| 🚨 High-Risk API Monitor | 7 | HRM time series · top calls/actors/IPs · defense evasion/credential detail · by region |
 
 <details>
 <summary>📋 Full list — all 59 charts (click to expand)</summary>
