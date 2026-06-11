@@ -26,7 +26,6 @@ assignees: []
 - [ ] `config_viz` (FastAPI + React)
 - [ ] `dashboard` (Apache Superset)
 - [ ] Docker / docker-compose
-- [ ] Documentation
 
 ## Alternatives Considered
 
