@@ -235,6 +235,7 @@ fn ingest_core(
         .filter(|e| path_filter.matches(e.path()))
         .map(|e| e.path().to_path_buf())
         .collect();
+    files.sort();
 
     let reporter = if show_progress {
         ProgressReporter::new(files.len() as u64)
