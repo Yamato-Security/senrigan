@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
       # runtime : compiles from source (Rust + DuckDB C++), first build ~10–30 min.
       # prebuilt-runtime (default): downloads pre-built binary from GitHub Releases — fast startup.
-      # Set INGESTER_BUILD_TARGET=prebuilt-runtime to opt in once binaries are published.
+      # Set INGESTER_BUILD_TARGET=runtime to compile from source (useful for local development / debugging).
       target: ${INGESTER_BUILD_TARGET:-prebuilt-runtime}
       args:
         INGESTER_VERSION: ${INGESTER_VERSION:-v0.1.0}
