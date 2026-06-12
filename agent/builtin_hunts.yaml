@@ -3311,6 +3311,60 @@
     LIMIT 30
 
 - category: "\U0001f30d GeoIP Analysis"
+  label: "\U0001f4cb API Calls by Country (Event Name)"
+  description: "Shows which API operations are called from each country. Write events from unexpected countries indicate credential compromise."
+  chart:
+    type: table
+  prompt: |
+    Show the top (event_name, country) pairs by API call volume.
+    Include write event count and unique caller count per pair.
+    Focus on write operations from countries not normally associated
+    with the organisation's operations — these are high-confidence
+    indicators of credential compromise.
+  sql: |
+    SELECT
+        event_name,
+        geo_country_name,
+        geo_country_code,
+        COUNT(*)                            AS event_count,
+        COUNT(CASE WHEN read_only = false THEN 1 END) AS write_count,
+        COUNT(DISTINCT user_identity_arn)   AS unique_callers
+    FROM cloudtrail_events
+    WHERE geo_country_code IS NOT NULL
+      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
+    GROUP BY event_name, geo_country_name, geo_country_code
+    ORDER BY event_count DESC
+    LIMIT 50
+
+- category: "\U0001f30d GeoIP Analysis"
+  label: "\U0001f464 Identities by Country (user_identity_arn)"
+  description: "Shows which IAM identities are active from each country. An identity appearing from a new country is a high-confidence compromise indicator."
+  chart:
+    type: table
+  prompt: |
+    Show the top (user_identity_arn, country) pairs by API call volume.
+    Include write event count and distinct API count per pair.
+    An IAM identity that suddenly appears from a foreign country —
+    especially performing write operations — is a strong signal of
+    compromised credentials or unauthorised access.
+  sql: |
+    SELECT
+        user_identity_arn,
+        geo_country_name,
+        geo_country_code,
+        COUNT(*)                            AS event_count,
+        COUNT(CASE WHEN read_only = false THEN 1 END) AS write_count,
+        COUNT(DISTINCT event_name)          AS distinct_apis,
+        MIN(event_time)                     AS first_seen,
+        MAX(event_time)                     AS last_seen
+    FROM cloudtrail_events
+    WHERE geo_country_code IS NOT NULL
+      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
+    GROUP BY user_identity_arn, geo_country_name, geo_country_code
+    ORDER BY event_count DESC
+    LIMIT 50
+
+- category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f310 Private / Internal IP Summary"
   description: "Summarizes events from private, loopback, and AWS-internal IPs. Baseline for expected internal traffic."
   chart:

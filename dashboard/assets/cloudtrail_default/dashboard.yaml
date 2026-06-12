@@ -552,6 +552,8 @@ position:
     children:
       - ROW-geo-1
       - ROW-geo-2
+      - ROW-geo-3
+      - ROW-geo-4
     meta:
       text: "\U0001f30d GeoIP Intelligence"
       defaultText: "Tab 7"
@@ -570,6 +572,20 @@ position:
     children:
       - CHART-geo-city
       - CHART-geo-world-map
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-geo-3:
+    type: ROW
+    id: ROW-geo-3
+    children:
+      - CHART-geo-event-name
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-geo-4:
+    type: ROW
+    id: ROW-geo-4
+    children:
+      - CHART-geo-identity
     meta:
       background: BACKGROUND_TRANSPARENT
 
@@ -899,6 +915,26 @@ position:
       width: 6
       height: 50
       sliceName: Top ASN Organizations by Request Volume
+  CHART-geo-event-name:
+    type: CHART
+    id: CHART-geo-event-name
+    children: []
+    meta:
+      chartId: 79
+      uuid: 79a0b1c2-d3e4-5678-9012-345678901234
+      width: 12
+      height: 75
+      sliceName: "API Calls by Country (Event Name \xD7 GeoIP)"
+  CHART-geo-identity:
+    type: CHART
+    id: CHART-geo-identity
+    children: []
+    meta:
+      chartId: 80
+      uuid: 80b1c2d3-e4f5-6789-0123-456789012345
+      width: 12
+      height: 75
+      sliceName: "Identities by Country (user_identity_arn \xD7 GeoIP)"
 
   # Chart entries — Tab 5: Temporal Analysis
   CHART-fs-identity:
@@ -2292,3 +2328,9 @@ metadata:
     - slice_name: AWS Backup Vault & Plan Deletion Events
       viz_type: table
       description: DSH-57 - Backup Vault/Plan/RecoveryPoint deletion and Vault Lock removal.
+    - slice_name: "API Calls by Country (Event Name \xD7 GeoIP)"
+      viz_type: table
+      description: DSH-79 - Top (event_name, country) pairs by API call volume (GeoIP enrichment required).
+    - slice_name: "Identities by Country (user_identity_arn \xD7 GeoIP)"
+      viz_type: table
+      description: DSH-80 - Top (user_identity_arn, country) pairs by API call volume (GeoIP enrichment required).
