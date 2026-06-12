@@ -41,15 +41,15 @@
 
 ## Prerequisites
 
-| Requirement                           | Details                                           |
-|---------------------------------------|---------------------------------------------------|
-| **Docker**                            | Docker Desktop or Docker Engine + Compose v2      |
-| **make**                              | GNU Make (pre-installed on macOS)            |
-| **Resources**                         | 8 GB RAM minimum, SSD recommended                 |
-| **CloudTrail logs**                   | `.json` or `.json.gz` files exported from AWS     |
+| Requirement                           | Details                                            |
+|---------------------------------------|----------------------------------------------------|
+| **Docker**                            | Docker Desktop or Docker Engine + Compose v2       |
+| **make**                              | GNU Make (pre-installed on macOS)                  |
+| **Resources**                         | 16 GB RAM minimum, SSD recommended                 |
+| **CloudTrail logs**                   | `.json` or `.json.gz` files exported from AWS      |
 | *(Optional)* **AWS Config snapshots** | `.json` or `.json.gz` files for AWS resource graph |
-| *(Optional)* **OpenAI API key**       | Required for AI query generation                  |
-| *(Optional)* **MaxMind GeoLite2**     | `.mmdb` files for GeoIP enrichment                |
+| *(Optional)* **OpenAI API key**       | Required for AI query generation                   |
+| *(Optional)* **MaxMind GeoLite2**     | `.mmdb` files for GeoIP enrichment                 |
 
 ---
 

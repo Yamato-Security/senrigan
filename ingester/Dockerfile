@@ -1,6 +1,6 @@
 # INGESTER_VERSION: release tag used to download a pre-built binary (prebuilt-runtime target).
 # Set INGESTER_BUILD_TARGET=prebuilt-runtime in docker-compose to use a pre-built binary instead of compiling from source.
-# ARG INGESTER_VERSION="v0.0.1"
+# ARG INGESTER_VERSION="v0.1.0"
 
 # Global ARG — must be redeclared in each stage that requires network access.
 ARG CUSTOM_CA_CERT_BASE64=""
