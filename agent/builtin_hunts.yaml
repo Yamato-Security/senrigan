@@ -3314,7 +3314,11 @@
   label: "\U0001f4cb API Calls by Country (Event Name)"
   description: "Shows which API operations are called from each country. Write events from unexpected countries indicate credential compromise."
   chart:
-    type: table
+    type: bar
+    x: geo_country_name
+    y:
+      - event_count
+      - write_count
   prompt: |
     Show the top (event_name, country) pairs by API call volume.
     Include write event count and unique caller count per pair.
@@ -3340,7 +3344,11 @@
   label: "\U0001f464 Identities by Country (user_identity_arn)"
   description: "Shows which IAM identities are active from each country. An identity appearing from a new country is a high-confidence compromise indicator."
   chart:
-    type: table
+    type: bar
+    x: geo_country_name
+    y:
+      - event_count
+      - write_count
   prompt: |
     Show the top (user_identity_arn, country) pairs by API call volume.
     Include write event count and distinct API count per pair.
