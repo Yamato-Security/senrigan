@@ -36,11 +36,13 @@ FILE_MAP = {
     "charts/security_relevant_api_calls.yaml": "charts/Security_Relevant_API_Calls.yaml",
     "charts/root_account_usage.yaml": "charts/Root_Account_Usage.yaml",
     "charts/region_activity.yaml": "charts/Region_Activity.yaml",
-    # GeoIP charts (DSH-15 to DSH-18)
+    # GeoIP charts (DSH-15 to DSH-18, DSH-79 to DSH-80)
     "charts/geo_country_requests.yaml": "charts/Geo_Country_Requests.yaml",
     "charts/geo_world_map.yaml": "charts/Geo_World_Map.yaml",
     "charts/geo_city_requests.yaml": "charts/Geo_City_Requests.yaml",
     "charts/geo_asn_org_requests.yaml": "charts/Geo_ASN_Org_Requests.yaml",
+    "charts/geo_event_name_by_country.yaml": "charts/Geo_Event_Name_By_Country.yaml",
+    "charts/geo_identity_by_country.yaml": "charts/Geo_Identity_By_Country.yaml",
     # New Sprint-1 charts (DSH-22, DSH-28)
     "charts/security_monitoring_changes.yaml": "charts/Security_Monitoring_Control_Changes.yaml",
     "charts/mfa_less_login_trend.yaml": "charts/MFA_Less_Login_Trend.yaml",

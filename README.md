@@ -120,7 +120,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 🌐 Network & Infrastructure | 14 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys |
 | 🕵 Threat Patterns | 5 | Off-hours writes · recon burst · multi-region spread · unusual user agents · first-time API calls |
 | 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors |
-| 🌍 GeoIP Analysis ✦ | 10 | Impossible travel · multi-country credentials · geo-ranked logins/denials/writes · country/city/ASN breakdown |
+| 🌍 GeoIP Analysis ✦ | 12 | Impossible travel · multi-country credentials · geo-ranked logins/denials/writes · country/city/ASN breakdown · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
 <details>
@@ -273,6 +273,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 8 | 🏢 Top ASN / Organizations | bar | Lists autonomous systems (ISPs/cloud providers) by API call volume — VPN/hosting ASNs may indicate attacker infrastructure |
 | 9 | 📍 Top Source Cities | bar | Ranks source cities by event volume — city-level data pinpoints specific attacker infrastructure or office locations |
 | 10 | 🌐 Private / Internal IP Summary | bar | Summarises events from private/loopback/AWS-internal IPs — baseline for expected internal traffic |
+| 11 | 📋 API Calls by Country (Event Name) | table | Top (event_name, country) pairs by call volume — reveals which API operations originate from unexpected geographic regions |
+| 12 | 👤 Identities by Country (user_identity_arn) | table | Top (user_identity_arn, country) pairs by call volume — surfaces IAM identities active from unexpected countries with first/last seen |
 
 #### ☁ IaC & Platform
 
@@ -294,7 +296,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 📊 API Activity | 7 | Top APIs · region distribution · source IPs · user agents · secrets anomaly · external AssumeRole · Route53 changes |
 | 🖥️ Computing | 5 | SSM execution · EC2 public snapshot · EKS/ECR events · ECS backdoor · EBS Direct API exfiltration |
 | 🪣 S3 & RDS | 9 | S3 policy/ACL · bulk download/deletion · versioning/logging disabled · cross-account replication · RDS snapshot share · Backup tampering |
-| 🌍 GeoIP Intelligence | 4 | World map · top countries / cities / ASNs by request volume |
+| 🌍 GeoIP Intelligence | 6 | World map · top countries / cities / ASNs by request volume · event_name × country · identity × country |
 | 🕒 Temporal Analysis | 6 | First/last seen by identity/IP/API/agent · dormant accounts reactivated · velocity spikes |
 | 🚨 High-Risk API Monitor | 7 | HRM time series · top calls/actors/IPs · defense evasion/credential detail · by region |
 
@@ -380,6 +382,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 2 | Top Countries by Request Volume | Top 20 source countries by API call volume with write-event and unique-caller breakdowns |
 | 3 | Top Cities by Request Volume | Top 25 cities by API call volume with write-event and unique-caller breakdowns |
 | 4 | Top ASN Organizations by Request Volume | Top 25 ASN organizations by API call volume |
+| 5 | API Calls by Country (Event Name × GeoIP) | Top 50 (event_name, country) pairs — reveals which API operations are called from each geographic region (DSH-79) |
+| 6 | Identities by Country (user_identity_arn × GeoIP) | Top 50 (user_identity_arn, country) pairs — surfaces IAM identities active from unexpected countries with write count and first/last seen (DSH-80) |
 
 #### 🕒 Temporal Analysis
 
