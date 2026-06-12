@@ -338,7 +338,7 @@
     LIMIT 100
 
 - category: "\U0001f6e1 Detection & Response"
-  label: "\U0001f50d GuardDuty Findings Read (Attacker Recon)"
+  label: "\U0001f50d GuardDuty Findings Read"
   description: "Detects read-only GuardDuty API calls. Pacu's guardduty__list_findings module reads active findings to understand what the defender has already detected, allowing the attacker to adapt their tactics and avoid triggering new alerts."
   chart:
     type: timeseries
@@ -2944,34 +2944,6 @@
 # ===========================================================================
 
 - category: "\U0001f575 Threat Patterns"
-  label: "\U0001f319 Off-Hours Activity"
-  description: "Flags mutating API calls outside business hours (JST 22:00-06:00). Human logins at night may be compromised."
-  chart:
-    type: timeseries
-    bucket: hour
-  prompt: |
-    Find API calls made between 10 PM and 6 AM local time (UTC 13:00–23:00 JST).
-    Filter for write/mutating operations (read_only = false).
-    Off-hours activity by human users may indicate compromise.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        event_source,
-        user_identity_arn,
-        source_ip_address,
-        aws_region
-    FROM cloudtrail_events
-    WHERE read_only = false
-      AND (
-          -- Add UTC+9 (JST) offset manually; DuckDB does not support EXTRACT(...AT TIME ZONE...) directly.
-          (EXTRACT(HOUR FROM event_time) + 9) % 24 >= 22
-          OR (EXTRACT(HOUR FROM event_time) + 9) % 24 < 6
-      )
-    ORDER BY event_time DESC
-    LIMIT 200
-
-- category: "\U0001f575 Threat Patterns"
   label: "\U0001f50d Reconnaissance Pattern"
   description: "Identifies callers who ran 10+ distinct read-only API calls in one hour. Common early attack phase."
   chart:
@@ -3142,82 +3114,6 @@
 # ===========================================================================
 # GeoIP Analysis
 # ===========================================================================
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f575 Impossible Travel Detection"
-  description: "Detects the same identity calling APIs from distant cities within a short time window."
-  chart:
-    type: none
-  prompt: |
-    Find cases where the same user_identity_arn made API calls from
-    geographically distant locations (different cities or countries)
-    within a short time window (e.g., less than 2 hours apart).
-    This "impossible travel" pattern strongly indicates credential compromise.
-    Use geo_city and geo_country_code columns.
-  sql: |
-    WITH geo_sessions AS (
-        SELECT
-            user_identity_arn,
-            event_time,
-            source_ip_address,
-            geo_country_code,
-            geo_city,
-            LAG(event_time)        OVER w AS prev_time,
-            LAG(geo_country_code)  OVER w AS prev_country,
-            LAG(geo_city)          OVER w AS prev_city,
-            LAG(source_ip_address) OVER w AS prev_ip
-        FROM cloudtrail_events
-        WHERE user_identity_arn IS NOT NULL
-          AND geo_country_code IS NOT NULL
-          AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-        WINDOW w AS (PARTITION BY user_identity_arn ORDER BY event_time)
-    )
-    SELECT
-        user_identity_arn,
-        prev_time               AS from_time,
-        event_time              AS to_time,
-        prev_ip                 AS from_ip,
-        source_ip_address       AS to_ip,
-        prev_country            AS from_country,
-        prev_city               AS from_city,
-        geo_country_code        AS to_country,
-        geo_city                AS to_city,
-        EXTRACT(EPOCH FROM (event_time - prev_time)) / 60 AS minutes_apart
-    FROM geo_sessions
-    WHERE prev_country IS NOT NULL
-      AND (prev_country != geo_country_code OR prev_city != geo_city)
-      AND event_time - prev_time < INTERVAL '2 hours'
-    ORDER BY minutes_apart ASC
-    LIMIT 50
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\u26a0 Identity Multi-Country Access"
-  description: "Finds identities calling APIs from 2+ countries. May indicate credential theft used from different locations."
-  chart:
-    type: bar
-    x: user_identity_arn
-    y:
-      - distinct_countries
-  prompt: |
-    Identify user identities that made API calls from two or more distinct
-    countries. This is a strong indicator of credential compromise —
-    legitimate users rarely operate from multiple countries simultaneously.
-  sql: |
-    SELECT
-        user_identity_arn,
-        COUNT(DISTINCT geo_country_code)     AS distinct_countries,
-        array_agg(DISTINCT geo_country_code) AS countries,
-        COUNT(*)                             AS total_events,
-        MIN(event_time)                      AS first_seen,
-        MAX(event_time)                      AS last_seen
-    FROM cloudtrail_events
-    WHERE geo_country_code IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-      AND user_identity_arn IS NOT NULL
-    GROUP BY user_identity_arn
-    HAVING COUNT(DISTINCT geo_country_code) >= 2
-    ORDER BY distinct_countries DESC
-    LIMIT 50
 
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f5fa Console Logins by Country"
@@ -3413,9 +3309,6 @@
     GROUP BY geo_country_code, geo_city
     ORDER BY event_count DESC
     LIMIT 30
-
-# ===========================================================================
-# ===========================================================================
 
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f310 Private / Internal IP Summary"
