@@ -24,7 +24,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Failure'
+          WHERE json_extract_string(response_elements, '$.ConsoleLogin') = 'Failure'
         )
       label: failed_logins
       hasCustomLabel: true
@@ -32,7 +32,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Success'
+          WHERE json_extract_string(response_elements, '$.ConsoleLogin') = 'Success'
         )
       label: success_logins
       hasCustomLabel: true
@@ -40,7 +40,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+          WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'No'
         )
       label: mfa_less_count
       hasCustomLabel: true
@@ -67,13 +67,13 @@ cache_timeout: null
 #     source_ip_address,
 #     geo_country_code,
 #     COUNT(*)                                 AS total_logins,
-#     COUNT(*) FILTER (WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Failure') AS failed_logins,
-#     COUNT(*) FILTER (WHERE json_extract_string(raw_event, '$.responseElements.ConsoleLogin') = 'Success') AS success_logins,
+#     COUNT(*) FILTER (WHERE json_extract_string(response_elements, '$.ConsoleLogin') = 'Failure') AS failed_logins,
+#     COUNT(*) FILTER (WHERE json_extract_string(response_elements, '$.ConsoleLogin') = 'Success') AS success_logins,
 #     COUNT(*) FILTER (
-#       WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+#       WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'No'
 #     )                                        AS mfa_less_count
 # FROM cloudtrail_events
-# WHERE event_type = 'AwsConsoleSignIn'
+# WHERE event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'
 # GROUP BY 1, 2, 3
 # ORDER BY failed_logins DESC
 # LIMIT 50
