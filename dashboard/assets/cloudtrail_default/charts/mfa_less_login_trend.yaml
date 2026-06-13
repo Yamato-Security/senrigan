@@ -23,7 +23,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+          WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'No'
         )
       label: mfa_less_logins
       hasCustomLabel: true
@@ -31,7 +31,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'Yes'
+          WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'Yes'
         )
       label: mfa_logins
       hasCustomLabel: true
@@ -54,10 +54,10 @@ cache_timeout: null
 # SELECT
 #     DATE_TRUNC('day', event_time)  AS day_bucket,
 #     COUNT(*) FILTER (
-#         WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'No'
+#         WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'No'
 #     )                               AS mfa_less_logins,
 #     COUNT(*) FILTER (
-#         WHERE json_extract_string(raw_event, '$.additionalEventData.MFAUsed') = 'Yes'
+#         WHERE json_extract_string(additional_event_data, '$.MFAUsed') = 'Yes'
 #     )                               AS mfa_logins
 # FROM cloudtrail_events
 # WHERE event_source = 'signin.amazonaws.com'
