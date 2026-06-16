@@ -395,8 +395,9 @@ mod tests {
         ensure_table(&conn).unwrap();
 
         let event = full_event();
-        let inserted =
-            insert_events_with_geo(&conn, &[event], None, false).expect("insert should succeed").0;
+        let inserted = insert_events_with_geo(&conn, &[event], None, false)
+            .expect("insert should succeed")
+            .0;
 
         assert_eq!(inserted, 1);
 
@@ -426,7 +427,8 @@ mod tests {
 
         let events: Vec<CloudTrailEvent> = (0..100).map(|_| full_event()).collect();
         let inserted = insert_events_with_geo(&conn, &events, None, false)
-            .expect("batch insert should succeed").0;
+            .expect("batch insert should succeed")
+            .0;
 
         assert_eq!(inserted, 100);
 
@@ -446,7 +448,8 @@ mod tests {
 
         let event = minimal_event();
         let inserted = insert_events_with_geo(&conn, &[event], None, false)
-            .expect("insert with null fields should succeed").0;
+            .expect("insert with null fields should succeed")
+            .0;
         assert_eq!(inserted, 1);
 
         // Verify the NULL columns are actually NULL in the database.

@@ -81,7 +81,7 @@ test-config-viz: ## Run config_viz (Python) tests
 test-frontend:   ## Run config_viz frontend (Vitest) tests
 	cd config_viz/frontend && npm test
 
-# ── 開発: Lint / Format ──────────────────────────────────
+# ── Lint / Format ──────────────────────────────────
 lint:            ## Run all linters (clippy + ruff)
 	cd ingester && cargo clippy --all-targets --all-features -- -D warnings
 	cd agent && ruff check .
