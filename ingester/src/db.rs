@@ -5,6 +5,8 @@
 
 use std::collections::HashMap;
 
+use std::time::Instant;
+
 use anyhow::{Context, Result};
 use duckdb::{Appender, Connection, ToSql};
 
@@ -259,32 +261,39 @@ fn append_event_row(
 /// `NULL` (rather than the original JSON) — used by the
 /// `--strip-raw-event` CLI flag to produce a much smaller DB after
 /// Step-A field hoisting.
-/// Returns the number of rows inserted.
+///
+/// Returns `(rows_inserted, geoip_ns)` where `geoip_ns` is the total
+/// nanoseconds spent in GeoIP lookups (0 when `geoip` is `None`).
 pub fn insert_events_with_geo(
     conn: &Connection,
     events: &[CloudTrailEvent],
     geoip: Option<&GeoipEnricher>,
     strip_raw_event: bool,
-) -> Result<usize> {
+) -> Result<(usize, u64)> {
     if events.is_empty() {
-        return Ok(0);
+        return Ok((0, 0));
     }
 
     let mut appender = conn
         .appender("cloudtrail_events")
         .context("Failed to create appender for cloudtrail_events")?;
 
+    let mut geoip_ns: u64 = 0;
     for event in events {
-        // Look up geo info for the source IP (or return all-None when no enricher).
         let geo: GeoInfo = match (geoip, &event.source_ip_address) {
-            (Some(enricher), Some(ip)) => enricher.lookup(ip),
+            (Some(enricher), Some(ip)) => {
+                let t = Instant::now();
+                let info = enricher.lookup(ip);
+                geoip_ns += t.elapsed().as_nanos() as u64;
+                info
+            }
             _ => GeoInfo::all_none(),
         };
         append_event_row(&mut appender, event, &geo, strip_raw_event)?;
     }
 
     appender.flush().context("Failed to flush appender")?;
-    Ok(events.len())
+    Ok((events.len(), geoip_ns))
 }
 
 /// Record a batch of ingested files in a single Appender flush.
@@ -387,7 +396,7 @@ mod tests {
 
         let event = full_event();
         let inserted =
-            insert_events_with_geo(&conn, &[event], None, false).expect("insert should succeed");
+            insert_events_with_geo(&conn, &[event], None, false).expect("insert should succeed").0;
 
         assert_eq!(inserted, 1);
 
@@ -417,7 +426,7 @@ mod tests {
 
         let events: Vec<CloudTrailEvent> = (0..100).map(|_| full_event()).collect();
         let inserted = insert_events_with_geo(&conn, &events, None, false)
-            .expect("batch insert should succeed");
+            .expect("batch insert should succeed").0;
 
         assert_eq!(inserted, 100);
 
@@ -435,10 +444,9 @@ mod tests {
         let conn = temp_db();
         ensure_table(&conn).unwrap();
 
-        // minimal_event() has all optional fields set to None.
         let event = minimal_event();
         let inserted = insert_events_with_geo(&conn, &[event], None, false)
-            .expect("insert with null fields should succeed");
+            .expect("insert with null fields should succeed").0;
         assert_eq!(inserted, 1);
 
         // Verify the NULL columns are actually NULL in the database.
