@@ -1,5 +1,6 @@
 FROM python:3.14-slim
 
+ENV PIP_INDEX_URL=https://pypi.flatt.tech/simple/
 WORKDIR /app
 
 ARG CUSTOM_CA_CERT_BASE64=""

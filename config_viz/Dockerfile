@@ -36,6 +36,7 @@ RUN npm run build
 
 FROM python:3.14-slim AS runtime
 
+ENV PIP_INDEX_URL=https://pypi.flatt.tech/simple/
 ARG CUSTOM_CA_CERT_BASE64=""
 RUN if [ -n "$CUSTOM_CA_CERT_BASE64" ]; then \
         apt-get update \
