@@ -5,6 +5,8 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
@@ -53,6 +55,35 @@ const PIPELINE_BUFFER_DEPTH: usize = 2;
 /// the `Vec` collected from the parallel phase.
 type ParseOutcome = (PathBuf, Result<(String, Vec<CloudTrailEvent>)>);
 
+/// Per-phase timing breakdown for a completed ingestion run.
+///
+/// Populated only when `IngestOptions::perf_log` is `true`; all fields
+/// default to `0.0` otherwise.
+///
+/// `parse_active_secs` is the sum of CPU time across all rayon worker
+/// threads, so it can exceed wall-clock `elapsed_secs` on multi-core
+/// machines.  `recv_wait_secs` measures how long the main thread was
+/// blocked waiting for the parser — a high value indicates the insert
+/// path is the bottleneck; a near-zero value means parsing is the
+/// bottleneck.
+#[derive(Debug, Default)]
+pub struct PhaseTimings {
+    /// WalkDir + filter chain + sort.
+    pub discovery_secs: f64,
+    /// `fetch_ingested_files_map` — single bulk DB query.
+    pub dedup_map_load_secs: f64,
+    /// Parser thread active CPU time (sum across rayon threads, may exceed wall clock).
+    pub parse_active_secs: f64,
+    /// Main thread blocked on `rx.recv()` — pipeline idle time.
+    pub recv_wait_secs: f64,
+    /// Main thread active insert time (GeoIP + DuckDB Appender + batch mark).
+    pub insert_active_secs: f64,
+    /// Time spent in GeoIP lookups (subset of `insert_active_secs`).
+    pub geoip_secs: f64,
+    /// Time spent in `batch_mark_ingested` calls (subset of `insert_active_secs`).
+    pub batch_mark_secs: f64,
+}
+
 /// Statistics returned after a completed ingestion run.
 #[derive(Debug, Default)]
 pub struct IngestStats {
@@ -64,6 +95,8 @@ pub struct IngestStats {
     pub errors: usize,
     /// Wall-clock time for the entire run in seconds.
     pub elapsed_secs: f64,
+    /// Per-phase timing breakdown (populated when `IngestOptions::perf_log` is `true`).
+    pub phase_timings: PhaseTimings,
 }
 
 /// Options controlling the ingestion pipeline.
@@ -99,6 +132,10 @@ pub struct IngestOptions<'a> {
     /// original JSON). Use only after Step-A field hoisting has made the
     /// raw blob unnecessary for routine investigation. Default `false`.
     pub strip_raw_event: bool,
+    /// Collect per-phase timing breakdowns into `IngestStats::phase_timings`.
+    /// When `false` (default), `PhaseTimings` fields remain `0.0` to avoid
+    /// any overhead from timing instrumentation.
+    pub perf_log: bool,
 }
 
 /// Ingest CloudTrail log files from `path` into `conn` using the given `options`.
@@ -120,6 +157,7 @@ pub fn ingest(path: &Path, conn: &Connection, options: IngestOptions<'_>) -> Res
         options.geoip,
         &options.field_filter,
         options.strip_raw_event,
+        options.perf_log,
     )
 }
 
@@ -219,13 +257,15 @@ fn ingest_core(
     geoip: Option<&GeoipEnricher>,
     field_filter: &FieldFilter,
     strip_raw_event: bool,
+    perf_log: bool,
 ) -> Result<IngestStats> {
     ensure_table(conn)?;
 
     let start = Instant::now();
     let mut stats = IngestStats::default();
 
-    // Collect candidate file paths, applying filters before any I/O.
+    // ── Phase 1: file discovery ───────────────────────────────────────────────
+    let t_discovery = Instant::now();
     let mut files: Vec<PathBuf> = WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -236,6 +276,9 @@ fn ingest_core(
         .map(|e| e.path().to_path_buf())
         .collect();
     files.sort();
+    if perf_log {
+        stats.phase_timings.discovery_secs = t_discovery.elapsed().as_secs_f64();
+    }
 
     let reporter = if show_progress {
         ProgressReporter::new(files.len() as u64)
@@ -244,54 +287,48 @@ fn ingest_core(
     };
 
     // ── Phase 0: single bulk query instead of N per-file SELECT statements ─
-    // Loading the entire ingested_files table into memory is cheap (VARCHAR
-    // pairs) and eliminates the dominant per-file DB round-trip latency.
+    let t_dedup = Instant::now();
     let mut ingested_map: HashMap<String, String> = fetch_ingested_files_map(conn)?;
+    if perf_log {
+        stats.phase_timings.dedup_map_load_secs = t_dedup.elapsed().as_secs_f64();
+    }
 
     // ── Pipelined parse/insert ─────────────────────────────────────────────
-    // A bounded sync_channel provides backpressure: the parser thread blocks
-    // when PIPELINE_BUFFER_DEPTH chunks are awaiting insertion, preventing
-    // unbounded memory growth.
     let (tx, rx) = mpsc::sync_channel::<Vec<ParseOutcome>>(PIPELINE_BUFFER_DEPTH);
 
-    // Parser thread: owns `files`, chunks it, runs par_iter() per chunk, and
-    // sends Vec<ParseOutcome> through the channel.  It never touches DuckDB
-    // (Connection is !Send), so the !Send constraint is satisfied.
-    //
-    // The field filter is cloned into the parser thread so that JSON
-    // stripping (when enabled) runs in parallel with the file-read /
-    // decompression / parse phases. When the filter is empty
-    // (`is_empty()` is true) the call is a zero-cost no-op.
+    // Accumulates parser thread active CPU time (nanoseconds) across chunks.
+    // Only written when perf_log is true; read after join().
+    let parse_ns = Arc::new(AtomicU64::new(0));
+    let parse_ns_clone = Arc::clone(&parse_ns);
+
     let parser_filter = field_filter.clone();
     let parser_handle = thread::spawn(move || {
         for chunk in files.chunks(PARSE_CHUNK_SIZE) {
-            // Parallel phase: read bytes → SHA-256 → decompress → parse JSON.
+            let t_chunk = Instant::now();
             let results: Vec<ParseOutcome> = chunk
                 .par_iter()
                 .map(|p| (p.clone(), parse_file_content(p, &parser_filter)))
                 .collect();
+            parse_ns_clone.fetch_add(t_chunk.elapsed().as_nanos() as u64, Ordering::Relaxed);
             if tx.send(results).is_err() {
-                // Receiver dropped (main thread error-exited) — stop silently.
                 break;
             }
         }
-        // tx dropped here → rx.recv() returns Err → insertion loop exits.
     });
 
     // Main thread: receive parsed chunks and insert into DuckDB serially.
-    // A labelled loop allows an insertion error to break both the inner
-    // (per-file) and outer (per-chunk) loops cleanly before cleanup.
     let mut insert_result: Result<()> = Ok(());
+    let mut t_recv = Instant::now();
     'recv: while let Ok(parse_results) = rx.recv() {
-        // Accumulate (file_path, sha256) pairs for chunk-level batch marking.
-        // Replacing N individual `INSERT OR REPLACE` SQL statements (one per
-        // file) with a single Appender flush at the end of the chunk.
+        if perf_log {
+            stats.phase_timings.recv_wait_secs += t_recv.elapsed().as_secs_f64();
+        }
+        let t_insert = Instant::now();
+
         let mut chunk_new_files: Vec<(String, String)> = Vec::new();
 
         for (file_path, result) in parse_results {
             let path_key = file_path.to_string_lossy().to_string();
-            // Capture any insertion error separately so that reporter.inc()
-            // is always called — even for the file that triggers a DB error.
             let insert_error: Option<anyhow::Error> = match result {
                 Err(_e) => {
                     stats.errors += 1;
@@ -299,18 +336,18 @@ fn ingest_core(
                 }
                 Ok((sha256, records)) => {
                     if ingested_map.get(&path_key).map(String::as_str) == Some(sha256.as_str()) {
-                        // Already ingested with the same checksum — skip.
                         stats.files_processed += 1;
                         None
                     } else {
                         match insert_events_with_geo(conn, &records, geoip, strip_raw_event) {
-                            Ok(inserted) => {
+                            Ok((inserted, geoip_ns)) => {
                                 stats.files_processed += 1;
                                 stats.records_inserted += inserted;
-                                // Keep the in-memory map current so within-run
-                                // duplicates are caught without extra DB queries.
+                                if perf_log {
+                                    stats.phase_timings.geoip_secs +=
+                                        geoip_ns as f64 / 1_000_000_000.0;
+                                }
                                 ingested_map.insert(path_key.clone(), sha256.clone());
-                                // Queue for chunk-level batch marking.
                                 chunk_new_files.push((path_key, sha256));
                                 None
                             }
@@ -319,8 +356,6 @@ fn ingest_core(
                     }
                 }
             };
-            // Always advance the bar — regardless of whether the file
-            // succeeded, was a dedup-skip, or triggered a DB error.
             reporter.inc(stats.records_inserted);
             if let Some(e) = insert_error {
                 insert_result = Err(e);
@@ -328,12 +363,17 @@ fn ingest_core(
             }
         }
 
-        // Batch-mark all new files in this chunk with a single Appender flush
-        // instead of N individual `INSERT OR REPLACE` SQL statements.
+        let t_mark = Instant::now();
         if let Err(e) = batch_mark_ingested(conn, &chunk_new_files) {
             insert_result = Err(e);
             break 'recv;
         }
+        if perf_log {
+            stats.phase_timings.batch_mark_secs += t_mark.elapsed().as_secs_f64();
+            stats.phase_timings.insert_active_secs += t_insert.elapsed().as_secs_f64();
+        }
+
+        t_recv = Instant::now();
     }
 
     // Drop rx before joining to unblock a parser thread that may be blocked
@@ -341,8 +381,11 @@ fn ingest_core(
     // Without this explicit drop, join() would deadlock forever.
     drop(rx);
 
-    // Propagate any parser thread panic (logic bugs, not parse errors).
     parser_handle.join().expect("parser thread must not panic");
+    if perf_log {
+        stats.phase_timings.parse_active_secs =
+            parse_ns.load(Ordering::Relaxed) as f64 / 1_000_000_000.0;
+    }
 
     // Always finalize the progress bar BEFORE propagating a potential insertion
     // error.  Previously `insert_result?` came first, so `reporter.finish()` was

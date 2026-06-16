@@ -35,9 +35,7 @@ _STATIC_DIR = Path(__file__).parent.parent / "static"
 
 _ASSETS_DIR = _STATIC_DIR / "assets"
 if _ASSETS_DIR.is_dir():
-    app.mount(
-        "/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets"
-    )
+    app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
 
 _ICONS_DIR = _STATIC_DIR / "icons"
 if _ICONS_DIR.is_dir():

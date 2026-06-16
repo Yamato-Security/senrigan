@@ -163,6 +163,13 @@ enum Commands {
         /// the smallest possible DB for high-volume CloudTrail data.
         #[arg(long)]
         strip_raw_event: bool,
+
+        /// Print a per-phase performance breakdown to stderr after ingestion
+        /// completes. Shows time spent in file discovery, dedup-map load,
+        /// parallel parsing, DuckDB insertion, GeoIP lookups, and batch
+        /// marking. Useful for identifying pipeline bottlenecks.
+        #[arg(long)]
+        perf_log: bool,
     },
 
     /// Enrich existing cloudtrail_events rows with GeoIP data.
@@ -232,6 +239,7 @@ fn run() -> Result<()> {
             geoip_asn,
             strip_fields,
             strip_raw_event,
+            perf_log,
         } => {
             // Optionally cap the rayon thread pool before any parallel work.
             if let Some(n) = workers {
@@ -284,6 +292,7 @@ fn run() -> Result<()> {
                     geoip: enricher.as_ref(),
                     field_filter,
                     strip_raw_event,
+                    perf_log,
                 },
             )?;
 
@@ -291,6 +300,25 @@ fn run() -> Result<()> {
                 "Ingestion complete: files_processed={} records_inserted={} errors={} elapsed_secs={:.2}",
                 stats.files_processed, stats.records_inserted, stats.errors, stats.elapsed_secs,
             );
+            if perf_log {
+                let pt = &stats.phase_timings;
+                eprintln!(
+                    "[perf] discovery={:.3}s dedup_load={:.3}s parse={:.3}s recv_wait={:.3}s insert={:.3}s (geoip={:.3}s batch_mark={:.3}s)",
+                    pt.discovery_secs,
+                    pt.dedup_map_load_secs,
+                    pt.parse_active_secs,
+                    pt.recv_wait_secs,
+                    pt.insert_active_secs,
+                    pt.geoip_secs,
+                    pt.batch_mark_secs,
+                );
+                if stats.elapsed_secs > 0.0 {
+                    eprintln!(
+                        "[perf] throughput: {:.0} events/s (wall clock)",
+                        stats.records_inserted as f64 / stats.elapsed_secs,
+                    );
+                }
+            }
             Ok(())
         }
 
