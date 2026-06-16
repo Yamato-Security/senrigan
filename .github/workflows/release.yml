@@ -1,4 +1,3 @@
-# Release — THuntCloud ingester
 # Triggered on every version tag (v*).
 # Builds the ingester binary for x86_64 and aarch64 Linux (glibc) on native
 # GitHub-hosted runners and publishes them as GitHub Release assets:
@@ -82,7 +81,7 @@ jobs:
           sha256sum ${{ matrix.binary }} > ${{ matrix.binary }}.sha256
 
       - name: Create GitHub Release and upload binary
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           tag_name: ${{ inputs.tag_name || github.ref_name }}
           files: |
