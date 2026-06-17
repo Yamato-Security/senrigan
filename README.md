@@ -1,6 +1,6 @@
 # Senrigan
 
-<img src="doc/logo.png" alt="Senrigan Logo" width="250">
+<img src="doc/logo.png" alt="Senrigan Logo" width="300">
 
 ## What is Senrigan?
 
