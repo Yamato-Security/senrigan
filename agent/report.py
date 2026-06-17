@@ -580,6 +580,21 @@ hr { border: none; border-top: 1px solid #ccc; margin: 2em 0; }
 
     js = """
 (function () {
+  // Make event_time columns non-wrapping so timestamps display on one line.
+  document.querySelectorAll('table').forEach(function (tbl) {
+    tbl.querySelectorAll('th').forEach(function (th, idx) {
+      if (th.textContent.trim() === 'event_time') {
+        th.style.whiteSpace = 'nowrap';
+        tbl.querySelectorAll('tr').forEach(function (row) {
+          var cell = row.cells[idx];
+          if (cell) { cell.style.whiteSpace = 'nowrap'; }
+        });
+      }
+    });
+  });
+}());
+
+(function () {
   var SIDEBAR_WIDTH_KEY = 'thuntcloud-sidebar-width';
   var DEFAULT_WIDTH = 320;
   var MIN_WIDTH = 120;
