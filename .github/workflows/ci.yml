@@ -117,7 +117,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install PyYAML
-        run: pip install --uploaded-prior-to P30D pyyaml
+        run:  pip install --upgrade pip && pip install --uploaded-prior-to P30D pyyaml
 
       - name: Validate all dashboard YAML files are well-formed
         run: |

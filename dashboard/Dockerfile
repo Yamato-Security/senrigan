@@ -18,6 +18,7 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
 # Superset 6.x uses uv to manage /app/.venv (no pip in the venv by default).
 # --break-system-packages is not needed because uv targets the isolated venv, not system Python.
 ENV PIP_INDEX_URL=https://pypi.flatt.tech/simple/
+RUN pip install --upgrade pip
 RUN uv pip install --python /app/.venv --no-cache-dir \
     "duckdb-engine==0.14.0"
 

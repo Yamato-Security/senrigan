@@ -58,6 +58,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir --uploaded-prior-to P30D -r backend/requirements.txt
 
 COPY backend/ ./backend/
