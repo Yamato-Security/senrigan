@@ -88,7 +88,7 @@ jobs:
         working-directory: agent
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install --uploaded-prior-to P30D -r requirements.txt -r requirements-dev.txt
 
       - name: Check formatting (black)
         working-directory: agent
@@ -117,7 +117,7 @@ jobs:
           python-version: "3.14"
 
       - name: Install PyYAML
-        run: pip install pyyaml
+        run: pip install --uploaded-prior-to P30D pyyaml
 
       - name: Validate all dashboard YAML files are well-formed
         run: |

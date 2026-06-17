@@ -113,6 +113,11 @@ services:
         condition: service_completed_successfully
 
   superset-init:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+      args:
+        <<: *ca-cert-arg
     image: *superset-image
     container_name: threat-hunting-superset-init
     volumes:
@@ -133,6 +138,11 @@ services:
     restart: "no"
 
   superset-resync:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+      args:
+        <<: *ca-cert-arg
     image: *superset-image
     container_name: threat-hunting-superset-resync
     volumes:

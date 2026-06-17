@@ -19,7 +19,7 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
 # --break-system-packages is not needed because uv targets the isolated venv, not system Python.
 ENV PIP_INDEX_URL=https://pypi.flatt.tech/simple/
 RUN uv pip install --python /app/.venv --no-cache-dir \
-    "duckdb-engine>=0.14.0"
+    "duckdb-engine==0.14.0"
 
 # Verify dialect is importable at build time to catch missing-module errors early.
 RUN python3 -c 'import duckdb_engine'
