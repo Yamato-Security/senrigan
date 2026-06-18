@@ -7,7 +7,7 @@
         build-ingester \
         clean
 
-DC         := cd docker && docker compose
+DC         := cd docker && DOCKER_CLI_HINTS=false docker compose
 GEOIP_CITY ?= /data/geoip/GeoLite2-City.mmdb
 GEOIP_ASN  ?= /data/geoip/GeoLite2-ASN.mmdb
 

@@ -924,8 +924,8 @@ def render_chat() -> None:
 def main() -> None:
     """Configure and render the Streamlit application."""
     st.set_page_config(
-        page_title="Senrigan(千里眼)",
-        page_icon="👁️‍🗨️ ",
+        page_title="Senrigan",
+        page_icon="🔭",
         layout="wide",
         initial_sidebar_state="expanded",
     )
