@@ -4,7 +4,8 @@
         logs-agent logs-config-viz logs-superset \
         test lint fmt-check \
         test-ingester test-agent test-config-viz test-frontend \
-        build-ingester
+        build-ingester \
+        clean
 
 DC         := cd docker && docker compose
 GEOIP_CITY ?= /data/geoip/GeoLite2-City.mmdb
@@ -22,6 +23,10 @@ up:              ## Start all services
 
 down:            ## Stop all services
 	$(DC) down
+
+clean:           ## Stop containers, remove volumes + images + build cache
+	$(DC) down -v --rmi all
+	docker builder prune -f
 
 build:           ## Build all Docker images (no start)
 	$(DC) build
