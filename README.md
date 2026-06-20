@@ -19,17 +19,17 @@
 
 <img src="doc/img-agent.png" width="800" alt="AI Chat UI">
 
-### 📄 HTML Threat Hunting Report
-
-<img src="doc/img-html.png" width="800" alt="HTML Threat Hunting Report">
-
 ### 📊 60 Pre-built Dashboard Charts
 
 <img src="doc/img-dashboard.png" width="800" alt="Superset Dashboard">
 
-### 🦅️ Suzaku results visualization
+### 🦅️ Suzaku Results visualization
 
 <img src="doc/img-suzaku-summary.png" width="800" alt="Suzaku results visualization">
+
+### 📄 HTML Threat Hunting Report
+
+<img src="doc/img-html.png" width="800" alt="HTML Threat Hunting Report">
 
 ### 🗺 AWS Config Resource Graph
 
