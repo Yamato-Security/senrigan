@@ -1,0 +1,202 @@
+"""Streamlit page: visualize a Suzaku ``aws-ct-summary`` JSON.
+
+Self-contained, read-only page. It does not touch DuckDB or the OpenAI
+integration and works without an API key. The summary JSON is supplied by the
+analyst via file upload (no mounted path, no docker-compose change).
+
+Rendered as a page of the ``st.navigation`` app defined in ``app.py``; page
+chrome (``st.set_page_config``) is owned by the entry point, not this file.
+"""
+
+import plotly.express as px
+import streamlit as st
+
+from suzaku_summary import (
+    SuzakuSummaryError,
+    activity_timeline,
+    api_entries_df,
+    build_triage_table,
+    country_counts,
+    find_identity,
+    parse_summary,
+    top_n,
+    value_entries_df,
+)
+
+TOP_N = 10
+
+
+@st.cache_data(show_spinner=False)
+def _parse_cached(raw: bytes) -> list[dict]:
+    """Parse uploaded bytes once; cached on file content."""
+    return parse_summary(raw)
+
+
+def _render_top_section(
+    title: str, df, *, label_col: str, count_col: str = "count"
+) -> None:
+    """Render a Top-N horizontal bar chart plus the full table for an entry list."""
+    st.markdown(f"#### {title}")
+    if df.empty:
+        st.caption("No data.")
+        return
+
+    chart_df = top_n(df, TOP_N)
+    fig = px.bar(
+        chart_df.iloc[::-1],  # reverse so the largest bar sits on top
+        x=count_col,
+        y=label_col,
+        orientation="h",
+    )
+    fig.update_layout(height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    st.plotly_chart(fig, use_container_width=True)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def _render_detail(summary: dict) -> None:
+    """Render the per-identity detail view (F3)."""
+    st.subheader(summary.get("user_arn", ""))
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Type", summary.get("user_types", "-"))
+    c2.metric("Total events", f"{summary.get('num_of_events', 0):,}")
+    c3.metric("First seen", summary.get("first_timestamp", "-"))
+    c4.metric("Last seen", summary.get("last_timestamp", "-"))
+
+    # --- Abused APIs (primary threat signal) ---------------------------------
+    st.markdown("### 🔴 Abused APIs")
+    a1, a2 = st.columns(2)
+    with a1:
+        _render_api_block("✅ Succeeded", summary.get("abused_apis_success"))
+    with a2:
+        _render_api_block("❌ Failed", summary.get("abused_apis_failed"))
+
+    # --- Activity timeline ---------------------------------------------------
+    tl = activity_timeline(summary)
+    if not tl.empty:
+        st.markdown("### 🕒 Abused-API Activity Timeline")
+        fig = px.timeline(
+            tl, x_start="start", x_end="end", y="api", color="status",
+            color_discrete_map={"success": "#d62728", "failed": "#7f7f7f"},
+            hover_data=["count"],
+        )
+        fig.update_yaxes(autorange="reversed")
+        fig.update_layout(height=max(220, 32 * len(tl)), margin=dict(l=0, r=0, t=10, b=0))
+        st.plotly_chart(fig, use_container_width=True)
+
+    # --- Source IPs / Regions / User agents / Access keys --------------------
+    st.markdown("### 🌐 Source & Identity Breakdown")
+    b1, b2 = st.columns(2)
+    with b1:
+        _render_top_section(
+            "Source IPs", value_entries_df(summary.get("src_ips")), label_col="value"
+        )
+        _render_country_section(summary.get("src_ips"))
+    with b2:
+        _render_top_section(
+            "AWS Regions", value_entries_df(summary.get("aws_regions")), label_col="value"
+        )
+        _render_top_section(
+            "User Agents", value_entries_df(summary.get("user_agents")), label_col="value"
+        )
+    _render_top_section(
+        "Access Key IDs",
+        value_entries_df(summary.get("user_access_key_ids")),
+        label_col="value",
+    )
+
+    # --- Other (non-flagged) APIs --------------------------------------------
+    with st.expander("Other APIs (non-flagged)"):
+        o1, o2 = st.columns(2)
+        with o1:
+            _render_api_block("✅ Succeeded", summary.get("other_apis_success"))
+        with o2:
+            _render_api_block("❌ Failed", summary.get("other_apis_failed"))
+
+
+def _render_api_block(title: str, entries) -> None:
+    """Render an ApiEntry block: a count bar chart plus the full table."""
+    st.markdown(f"**{title}**")
+    df = api_entries_df(entries)
+    if df.empty:
+        st.caption("None.")
+        return
+    chart_df = top_n(df, TOP_N)
+    fig = px.bar(chart_df.iloc[::-1], x="count", y="api", orientation="h")
+    fig.update_layout(height=max(160, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    st.plotly_chart(fig, use_container_width=True)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+    _download_csv(df, f"{title}-apis.csv")
+
+
+def _render_country_section(src_ips) -> None:
+    """Render the per-country aggregation of source-IP activity (F3 / §7 GeoIP)."""
+    df = country_counts(src_ips)
+    st.markdown("#### Source Countries")
+    if df.empty:
+        st.caption("No data.")
+        return
+    chart_df = df.head(TOP_N)
+    fig = px.bar(chart_df.iloc[::-1], x="count", y="country", orientation="h")
+    fig.update_layout(height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def _download_csv(df, filename: str) -> None:
+    """Render a CSV download button for ``df`` (F4)."""
+    st.download_button(
+        "⬇️ CSV",
+        df.to_csv(index=False).encode("utf-8"),
+        file_name=filename,
+        mime="text/csv",
+        key=f"dl-{filename}-{id(df)}",
+    )
+
+
+def main() -> None:
+    st.title("☁️ Suzaku CloudTrail Summary")
+    st.caption(
+        "Upload a Suzaku `aws-ct-summary` JSON to triage AWS identities by "
+        "suspicious activity."
+    )
+
+    uploaded = st.file_uploader("aws-ct-summary JSON", type=["json"])
+    if uploaded is None:
+        st.info("Upload an `aws-ct-summary` JSON file to begin.")
+        return
+
+    try:
+        summaries = _parse_cached(uploaded.getvalue())
+    except SuzakuSummaryError as exc:
+        st.error(f"Could not read summary: {exc}")
+        return
+
+    triage = build_triage_table(summaries)
+
+    st.markdown("### 🎯 Identity Triage")
+    st.caption(
+        "Sorted by abused-API count, then event count. Select a row to drill down."
+    )
+    event = st.dataframe(
+        triage,
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
+    )
+    _download_csv(triage, "suzaku-triage.csv")
+
+    selected_rows = event.selection.rows if event and event.selection else []
+    selected_arn = (
+        triage.iloc[selected_rows[0]]["user_arn"]
+        if selected_rows
+        else triage.iloc[0]["user_arn"]
+    )
+
+    st.divider()
+    summary = find_identity(summaries, selected_arn)
+    if summary is not None:
+        _render_detail(summary)
+
+
+main()
