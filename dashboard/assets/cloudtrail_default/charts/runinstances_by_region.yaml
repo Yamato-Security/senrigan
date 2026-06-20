@@ -1,0 +1,48 @@
+# R2-8 / DSH-97: RunInstances Spike by Region (Cryptomining / Resource Abuse)
+# Daily stacked bar of EC2 RunInstances calls grouped by region. A burst of
+# instance launches — especially in regions a workload never uses — is the
+# signature of cryptomining or other resource-abuse following compromise.
+# MITRE ATT&CK: T1496 Resource Hijacking
+uuid: 97a1b2c3-d4e5-6f70-8123-456789000097
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: RunInstances Spike by Region
+viz_type: echarts_timeseries_bar
+description: >
+  Daily EC2 RunInstances volume, stacked by AWS region (DSH-97).  A sudden spike
+  — particularly in regions outside normal operation — indicates cryptomining or
+  resource abuse.  Cross-reference the acting principal and source IP.
+  MITRE ATT&CK: T1496 Resource Hijacking.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: run_instances
+      hasCustomLabel: true
+      optionName: metric_runinstances_count
+  groupby:
+    - aws_region
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_name = 'RunInstances'"
+      filterOptionName: filter_runinstances
+  row_limit: 10000
+  stack: true
+  x_axis_title: Date
+  y_axis_title: RunInstances Calls
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('day', event_time) AS day_bucket, aws_region, COUNT(*)
+# FROM cloudtrail_events
+# WHERE event_name = 'RunInstances'
+# GROUP BY 1, 2
+# ORDER BY day_bucket

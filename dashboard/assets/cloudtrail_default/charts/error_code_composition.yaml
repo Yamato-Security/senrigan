@@ -1,0 +1,49 @@
+# R2-9 / DSH-96: Error-Code Composition Over Time
+# Daily stacked bar of CloudTrail error codes (AccessDenied, UnauthorizedOperation,
+# ThrottlingException, etc.). A rising AccessDenied/Unauthorized band marks
+# reconnaissance or privilege probing; a Throttling spike can indicate
+# brute-force / enumeration at scale.
+# MITRE ATT&CK: TA0007 Discovery
+uuid: 96a1b2c3-d4e5-6f70-8123-456789000096
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Error-Code Composition Over Time
+viz_type: echarts_timeseries_bar
+description: >
+  Daily CloudTrail error volume, stacked by error_code (DSH-96).  A rising
+  AccessDenied / UnauthorizedOperation band indicates reconnaissance or privilege
+  probing; Throttling spikes suggest enumeration at scale.
+  MITRE ATT&CK: TA0007 Discovery.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: error_events
+      hasCustomLabel: true
+      optionName: metric_error_code_count
+  groupby:
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "error_code IS NOT NULL AND error_code <> ''"
+      filterOptionName: filter_has_error_code
+  row_limit: 10000
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Error Events
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('day', event_time) AS day_bucket, error_code, COUNT(*)
+# FROM cloudtrail_events
+# WHERE error_code IS NOT NULL AND error_code <> ''
+# GROUP BY 1, 2
+# ORDER BY day_bucket

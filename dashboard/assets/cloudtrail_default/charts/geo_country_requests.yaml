@@ -43,7 +43,7 @@ params:
       filterOptionName: filter_geo_country_not_null
   granularity_sqla: event_time
   time_range: No filter
-  row_limit: 20
+  row_limit: 50
   order_desc: true
   orientation: horizontal
   x_axis_label: Event Count

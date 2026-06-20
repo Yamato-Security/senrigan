@@ -1,0 +1,30 @@
+# KPI-84: Root Account Events (Triage KPI card)
+# Count of events performed by the account root identity. Root usage should be
+# near-zero in a well-run account; any non-zero value is an immediate triage
+# trigger.
+# MITRE ATT&CK: TA0004 Privilege Escalation
+uuid: 84a1b2c3-d4e5-6f70-8123-456789000084
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Root Account Events
+viz_type: big_number_total
+description: >
+  Number of events performed by the account root identity (KPI-84).
+  Root activity should be near-zero — any non-zero value warrants investigation.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(*) FILTER (WHERE user_identity_type = 'Root')"
+    label: root_events
+    hasCustomLabel: true
+    optionName: metric_kpi_root_events
+  adhoc_filters: []
+  subheader: "Root usage — expect 0"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(*) FILTER (WHERE user_identity_type = 'Root') FROM cloudtrail_events

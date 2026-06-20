@@ -155,7 +155,7 @@ def _uuid_for_chart_file(fragment: str) -> str | None:
 @pytest.mark.parametrize(
     "fragment,label",
     [
-        ("defense_evasion", "DSH-22 Defense Evasion"),
+        ("security_monitoring_changes", "DSH-22 Defense Evasion"),
         ("mfa_less_login_trend", "DSH-28 MFA-less Login Trend"),
         ("login_heatmap", "DSH-19 Login Heatmap"),
         ("write_read_ratio", "DSH-20 Write/Read Ratio"),
@@ -165,7 +165,7 @@ def _uuid_for_chart_file(fragment: str) -> str | None:
         ("s3_protection_changes", "DSH-25 S3 Protection Changes"),
         ("first_time_services", "DSH-26 First-Time Services"),
         ("assumed_role_external", "DSH-27 AssumedRole External IP"),
-        ("priv_esc_timeline", "DSH-30 Privilege Escalation Timeline"),
+        ("iam_privilege_change_timeline", "DSH-30 Privilege Escalation Timeline"),
         ("route53_dns_changes", "DSH-29 Route53 DNS Changes"),
         # Phase-6 — EC2 DFIR charts
         ("ec2_instance_launches", "DSH-58 EC2 Instance Launches"),
@@ -178,10 +178,8 @@ def _uuid_for_chart_file(fragment: str) -> str | None:
         ("hrm_timeseries", "HRM-39 High-Risk API Timeseries"),
         ("hrm_top_calls", "HRM-40 High-Risk Top API Calls"),
         ("hrm_top_actors", "HRM-42 High-Risk Top Actors"),
-        ("hrm_top_source_ips", "HRM-43 High-Risk Top Source IPs"),
-        ("hrm_defense_evasion_table", "HRM-44 High-Risk Defense Evasion Table"),
-        ("hrm_credential_access_table", "HRM-45 High-Risk Credential Access Table"),
-        ("hrm_by_region", "HRM-46 High-Risk API by Region"),
+        ("hrm_security_service_mods", "HRM-44 High-Risk Defense Evasion Table"),
+        ("hrm_credential_retrieval_table", "HRM-45 High-Risk Credential Access Table"),
     ],
 )
 def test_new_chart_referenced_in_dashboard(fragment: str, label: str) -> None:

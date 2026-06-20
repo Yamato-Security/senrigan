@@ -22,7 +22,7 @@ REQUIRED_ZIP_PATHS = [
 ]
 # Chart arc-name fragments that must appear in the ZIP (Sprint 1–4 new charts)
 NEW_CHART_FRAGMENTS = [
-    "Defense_Evasion",
+    "Security_Monitoring_Control_Changes",
     "MFA_Less_Login_Trend",
     "Login_Activity_Heatmap",
     "Write_Read_Ratio_Trend",
@@ -30,9 +30,9 @@ NEW_CHART_FRAGMENTS = [
     "Secrets_Access_Anomaly",
     "Organizations_SCP_Changes",
     "S3_Protection_Config_Changes",
-    "First_Time_Service_Sources",
+    "First_Last_Seen_Service_Source",
     "AssumedRole_External_IP",
-    "Privilege_Escalation_Timeline",
+    "IAM_Privilege_Change_Event_Timeline",
     "Route53_DNS_Changes",
 ]
 

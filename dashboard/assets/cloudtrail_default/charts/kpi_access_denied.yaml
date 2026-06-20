@@ -1,0 +1,37 @@
+# KPI-86: Access Denied Events (Triage KPI card)
+# Count of authorization failures (AccessDenied / Unauthorized). A spike often
+# marks reconnaissance or privilege-probing by a compromised principal.
+# MITRE ATT&CK: TA0007 Discovery
+uuid: 86a1b2c3-d4e5-6f70-8123-456789000086
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Access Denied Events
+viz_type: big_number_total
+description: >
+  Number of authorization-failure events in the selected range (KPI-86).
+  A spike suggests reconnaissance or privilege probing — pivot by principal/IP.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE error_code ILIKE '%AccessDenied%'
+           OR error_code ILIKE '%UnauthorizedOperation%'
+           OR error_code ILIKE '%Forbidden%'
+      )
+    label: access_denied_events
+    hasCustomLabel: true
+    optionName: metric_kpi_access_denied
+  adhoc_filters: []
+  subheader: "Possible recon/probing"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(*) FILTER (
+#        WHERE error_code ILIKE '%AccessDenied%'
+#           OR error_code ILIKE '%UnauthorizedOperation%'
+#           OR error_code ILIKE '%Forbidden%') FROM cloudtrail_events

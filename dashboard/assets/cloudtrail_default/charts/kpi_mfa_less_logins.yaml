@@ -1,0 +1,38 @@
+# KPI-85: MFA-less Console Logins (Triage KPI card)
+# Count of console logins performed without MFA. A direct indicator of phishing
+# or credential compromise; pairs with the MFA-less Login Trend chart.
+# MITRE ATT&CK: TA0001 Initial Access
+uuid: 85a1b2c3-d4e5-6f70-8123-456789000085
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: MFA-less Console Logins
+viz_type: big_number_total
+description: >
+  Number of console logins without MFA in the selected range (KPI-85).
+  A direct indicator of credential compromise — drill into MFA-less Login Trend.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE event_source = 'signin.amazonaws.com'
+          AND event_name = 'ConsoleLogin'
+          AND json_extract_string(additional_event_data, '$.MFAUsed') = 'No'
+      )
+    label: mfa_less_logins
+    hasCustomLabel: true
+    optionName: metric_kpi_mfa_less_logins
+  adhoc_filters: []
+  subheader: "Logins without MFA"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(*) FILTER (
+#        WHERE event_source = 'signin.amazonaws.com'
+#          AND event_name = 'ConsoleLogin'
+#          AND json_extract_string(additional_event_data, '$.MFAUsed') = 'No')
+#      FROM cloudtrail_events

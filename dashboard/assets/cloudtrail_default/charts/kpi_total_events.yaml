@@ -1,0 +1,29 @@
+# KPI-81: Total Events (Triage KPI card)
+# Single-number card showing the total CloudTrail event count in the active
+# filter range. Establishes the size of the dataset under investigation and
+# anchors every other ratio an analyst computes during triage.
+uuid: 81a1b2c3-d4e5-6f70-8123-456789000081
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Total Events
+viz_type: big_number_total
+description: >
+  Total number of CloudTrail events in the selected range (KPI-81).
+  The denominator for triage — anchor for every per-principal or per-IP ratio.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(*)"
+    label: total_events
+    hasCustomLabel: true
+    optionName: metric_kpi_total_events
+  adhoc_filters: []
+  subheader: "CloudTrail events in range"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(*) FROM cloudtrail_events

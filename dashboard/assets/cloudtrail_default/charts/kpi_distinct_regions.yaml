@@ -1,0 +1,30 @@
+# KPI-89: Active Regions (Triage KPI card)
+# Number of distinct AWS regions touched in the range. Activity in regions a
+# workload never uses is a classic sign of resource abuse (e.g. cryptomining)
+# or attacker staging in low-monitoring regions.
+# MITRE ATT&CK: TA0040 Impact
+uuid: 89a1b2c3-d4e5-6f70-8123-456789000089
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Active Regions
+viz_type: big_number_total
+description: >
+  Count of distinct AWS regions with activity in the selected range (KPI-89).
+  Activity in unused regions can indicate resource abuse or attacker staging.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT aws_region)"
+    label: active_regions
+    hasCustomLabel: true
+    optionName: metric_kpi_active_regions
+  adhoc_filters: []
+  subheader: "AWS regions touched"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(DISTINCT aws_region) FROM cloudtrail_events

@@ -1,0 +1,29 @@
+# KPI-83: Distinct Source IPs (Triage KPI card)
+# Number of unique caller source IP addresses in the range. A spike relative to
+# baseline can indicate distributed access, proxy/VPN rotation, or compromise.
+# MITRE ATT&CK: TA0001 Initial Access
+uuid: 83a1b2c3-d4e5-6f70-8123-456789000083
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Distinct Source IPs
+viz_type: big_number_total
+description: >
+  Count of unique caller source IP addresses in the selected range (KPI-83).
+  A jump versus baseline suggests proxy/VPN rotation or distributed access.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT source_ip_address)"
+    label: distinct_source_ips
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_source_ips
+  adhoc_filters: []
+  subheader: "Unique caller IPs"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(DISTINCT source_ip_address) FROM cloudtrail_events

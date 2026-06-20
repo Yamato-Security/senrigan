@@ -73,7 +73,7 @@ params:
       filterOptionName: filter_hrm_actor
   granularity_sqla: event_time
   time_range: "No filter"
-  row_limit: 20
+  row_limit: 50
   order_desc: true
   x_axis_title: IAM Principal ARN
   y_axis_title: Event Count

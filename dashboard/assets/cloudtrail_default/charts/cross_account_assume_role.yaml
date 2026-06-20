@@ -1,0 +1,58 @@
+# R2-6 / DSH-94: Cross-Account AssumeRole (External Account Access)
+# AssumeRole calls where the recipient account differs from the caller's
+# account — a principal in account A assuming a role that lands in account B.
+# Legitimate for known trust relationships; unexpected external account IDs are
+# a lateral-movement / trusted-relationship-abuse signal.
+# MITRE ATT&CK: T1199 Trusted Relationship / TA0008 Lateral Movement
+uuid: 94a1b2c3-d4e5-6f70-8123-456789000094
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Cross-Account AssumeRole
+viz_type: table
+description: >
+  AssumeRole / AssumeRoleWithWebIdentity calls where recipient_account_id differs
+  from the caller's account (DSH-94).  Unexpected external account IDs indicate
+  trusted-relationship abuse or lateral movement across accounts — verify each
+  destination account is an approved trust.
+  MITRE ATT&CK: T1199 Trusted Relationship / TA0008 Lateral Movement.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_xacct_count
+  groupby:
+    - user_identity_arn
+    - user_identity_account_id
+    - recipient_account_id
+    - source_ip_address
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN ('AssumeRole', 'AssumeRoleWithWebIdentity', 'AssumeRoleWithSAML')
+        AND recipient_account_id IS NOT NULL
+        AND user_identity_account_id IS NOT NULL
+        AND recipient_account_id <> user_identity_account_id
+      filterOptionName: filter_cross_account_assume
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_identity_arn, user_identity_account_id, recipient_account_id,
+#        source_ip_address, COUNT(*) AS event_count
+# FROM cloudtrail_events
+# WHERE event_name IN ('AssumeRole','AssumeRoleWithWebIdentity','AssumeRoleWithSAML')
+#   AND recipient_account_id IS NOT NULL
+#   AND user_identity_account_id IS NOT NULL
+#   AND recipient_account_id <> user_identity_account_id
+# GROUP BY 1, 2, 3, 4
+# ORDER BY event_count DESC
+# LIMIT 100

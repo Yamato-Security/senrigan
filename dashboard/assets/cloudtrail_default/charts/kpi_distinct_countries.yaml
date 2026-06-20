@@ -1,0 +1,31 @@
+# KPI-88: Distinct Countries (Triage KPI card)
+# Number of unique source countries (requires GeoIP enrichment). A larger-than-
+# expected geographic spread is an early indicator of credential abuse from
+# unexpected origins. Renders 0 / blank when GeoIP is not ingested.
+# MITRE ATT&CK: TA0001 Initial Access
+uuid: 88a1b2c3-d4e5-6f70-8123-456789000088
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Distinct Countries
+viz_type: big_number_total
+description: >
+  Count of unique source countries in the selected range (KPI-88).
+  Requires GeoIP enrichment (make ingest-geoip). A wide spread suggests access
+  from unexpected geographic origins.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT geo_country_code)"
+    label: distinct_countries
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_countries
+  adhoc_filters: []
+  subheader: "Source countries (needs GeoIP)"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(DISTINCT geo_country_code) FROM cloudtrail_events

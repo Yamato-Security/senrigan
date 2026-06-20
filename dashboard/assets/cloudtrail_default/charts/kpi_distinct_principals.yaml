@@ -1,0 +1,30 @@
+# KPI-82: Distinct Principals (Triage KPI card)
+# Number of unique IAM principal ARNs seen in the range. A sudden jump in the
+# count of acting identities is an early scoping signal for lateral movement
+# or credential sharing.
+# MITRE ATT&CK: TA0008 Lateral Movement
+uuid: 82a1b2c3-d4e5-6f70-8123-456789000082
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Distinct Principals
+viz_type: big_number_total
+description: >
+  Count of unique IAM principal ARNs active in the selected range (KPI-82).
+  Use to scope how many identities are involved in the activity under review.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT user_identity_arn)"
+    label: distinct_principals
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_principals
+  adhoc_filters: []
+  subheader: "Unique IAM identities"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(DISTINCT user_identity_arn) FROM cloudtrail_events
