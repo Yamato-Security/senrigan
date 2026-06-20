@@ -233,6 +233,7 @@ agent/
 ├── schema.py              # CloudTrail table schema description for the system prompt
 ├── config.py              # Configuration management (env vars)
 ├── suzaku_summary.py      # Parsing + aggregation for Suzaku aws-ct-summary JSON (pure functions)
+├── suzaku_report.py       # Markdown / HTML report generation for the Suzaku summary (pure functions)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised)
 ├── views/
 │   └── suzaku_ct_summary.py    # st.navigation page: Suzaku aws-ct-summary viewer (upload + triage)
@@ -249,6 +250,7 @@ agent/
     ├── test_llm.py
     ├── test_report.py
     ├── test_suzaku_summary.py
+    ├── test_suzaku_report.py
     └── test_app.py
 ```
 
@@ -268,9 +270,16 @@ without an API key.
 - **Identity detail** — abused APIs (success/failed) with descriptions, an
   activity timeline, and Top-N breakdowns of source IPs, source countries,
   regions, user agents, and access-key IDs, with CSV export.
+- **Report export** — download the whole summary as a **Markdown** or
+  self-contained **HTML** report (one section per identity, ordered by triage
+  rank). High-cardinality lists are capped at the top 20 rows per identity.
+  Access-key IDs and source IPs are kept verbatim — in this view they are the
+  indicators of compromise being reported (the summary holds no secret keys).
 
-Parsing and aggregation live in `suzaku_summary.py` as pure functions
-(unit-tested in `tests/test_suzaku_summary.py`); the page keeps only rendering.
+Parsing/aggregation live in `suzaku_summary.py` and report rendering in
+`suzaku_report.py`, both as pure functions (unit-tested in
+`tests/test_suzaku_summary.py` and `tests/test_suzaku_report.py`); the page
+keeps only Streamlit rendering.
 
 ---
 

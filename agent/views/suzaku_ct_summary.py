@@ -11,6 +11,7 @@ chrome (``st.set_page_config``) is owned by the entry point, not this file.
 import plotly.express as px
 import streamlit as st
 
+from suzaku_report import generate_html_report, generate_markdown_report
 from suzaku_summary import (
     SuzakuSummaryError,
     activity_timeline,
@@ -153,6 +154,33 @@ def _download_csv(df, filename: str) -> None:
     )
 
 
+@st.cache_data(show_spinner=False)
+def _build_reports(summaries: list[dict]) -> tuple[str, str]:
+    """Build the Markdown and HTML reports once, cached on the parsed summaries."""
+    return generate_markdown_report(summaries), generate_html_report(summaries)
+
+
+def _render_report_downloads(summaries: list[dict]) -> None:
+    """Render Markdown / HTML report download buttons for the whole summary."""
+    markdown_report, html_report = _build_reports(summaries)
+    st.markdown("### 📄 Report")
+    c1, c2 = st.columns(2)
+    c1.download_button(
+        "⬇️ Markdown report",
+        markdown_report.encode("utf-8"),
+        file_name="suzaku-summary-report.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
+    c2.download_button(
+        "⬇️ HTML report",
+        html_report.encode("utf-8"),
+        file_name="suzaku-summary-report.html",
+        mime="text/html",
+        use_container_width=True,
+    )
+
+
 def main() -> None:
     st.title("☁️ Suzaku CloudTrail Summary")
     st.caption(
@@ -172,6 +200,8 @@ def main() -> None:
         return
 
     triage = build_triage_table(summaries)
+
+    _render_report_downloads(summaries)
 
     st.markdown("### 🎯 Identity Triage")
     st.caption(
