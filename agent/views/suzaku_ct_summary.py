@@ -52,8 +52,8 @@ def _render_top_section(
     fig.update_layout(
         height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
     )
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.plotly_chart(fig, use_container_width=True, key=f"chart-top-{title}")
+    st.dataframe(df, use_container_width=True, hide_index=True, key=f"df-top-{title}")
 
 
 def _render_detail(summary: dict) -> None:
@@ -70,9 +70,13 @@ def _render_detail(summary: dict) -> None:
     st.markdown("### 🔴 Abused APIs")
     a1, a2 = st.columns(2)
     with a1:
-        _render_api_block("✅ Succeeded", summary.get("abused_apis_success"))
+        _render_api_block(
+            "✅ Succeeded", summary.get("abused_apis_success"), key="abused-success"
+        )
     with a2:
-        _render_api_block("❌ Failed", summary.get("abused_apis_failed"))
+        _render_api_block(
+            "❌ Failed", summary.get("abused_apis_failed"), key="abused-failed"
+        )
 
     # --- Activity timeline ---------------------------------------------------
     tl = activity_timeline(summary)
@@ -91,7 +95,7 @@ def _render_detail(summary: dict) -> None:
         fig.update_layout(
             height=max(220, 32 * len(tl)), margin=dict(l=0, r=0, t=10, b=0)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="chart-timeline")
 
     # --- Source IPs / Regions / User agents / Access keys --------------------
     st.markdown("### 🌐 Source & Identity Breakdown")
@@ -122,13 +126,21 @@ def _render_detail(summary: dict) -> None:
     with st.expander("Other APIs (non-flagged)"):
         o1, o2 = st.columns(2)
         with o1:
-            _render_api_block("✅ Succeeded", summary.get("other_apis_success"))
+            _render_api_block(
+                "✅ Succeeded", summary.get("other_apis_success"), key="other-success"
+            )
         with o2:
-            _render_api_block("❌ Failed", summary.get("other_apis_failed"))
+            _render_api_block(
+                "❌ Failed", summary.get("other_apis_failed"), key="other-failed"
+            )
 
 
-def _render_api_block(title: str, entries) -> None:
-    """Render an ApiEntry block: a count bar chart plus the full table."""
+def _render_api_block(title: str, entries, *, key: str) -> None:
+    """Render an ApiEntry block: a count bar chart plus the full table.
+
+    ``key`` must be unique per call site so the chart/table/download widgets do
+    not collide (the same ✅/❌ titles are reused for abused and other APIs).
+    """
     st.markdown(f"**{title}**")
     df = api_entries_df(entries)
     if df.empty:
@@ -139,9 +151,9 @@ def _render_api_block(title: str, entries) -> None:
     fig.update_layout(
         height=max(160, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
     )
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    _download_csv(df, f"{title}-apis.csv")
+    st.plotly_chart(fig, use_container_width=True, key=f"chart-api-{key}")
+    st.dataframe(df, use_container_width=True, hide_index=True, key=f"df-api-{key}")
+    _download_csv(df, f"{key}-apis.csv")
 
 
 def _render_country_section(src_ips) -> None:
@@ -156,7 +168,7 @@ def _render_country_section(src_ips) -> None:
     fig.update_layout(
         height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="chart-country")
 
 
 def _download_csv(df, filename: str) -> None:
@@ -267,26 +279,31 @@ def main() -> None:
     _render_sidebar(summaries, raw)
 
     st.markdown("### 🎯 Identity Triage")
-    st.caption(
-        "Sorted by abused-API count, then event count. Select a row to drill down."
-    )
-    event = st.dataframe(
-        triage,
-        use_container_width=True,
-        hide_index=True,
-        on_select="rerun",
-        selection_mode="single-row",
-    )
+    st.caption("Sorted by abused-API count, then event count.")
+    st.dataframe(triage, use_container_width=True, hide_index=True)
     _download_csv(triage, "suzaku-triage.csv")
 
-    selected_rows = event.selection.rows if event and event.selection else []
-    selected_arn = (
-        triage.iloc[selected_rows[0]]["user_arn"]
-        if selected_rows
-        else triage.iloc[0]["user_arn"]
+    st.divider()
+
+    # Identity drill-down: pick which user_arn to inspect (defaults to the most
+    # suspicious one, i.e. the first triage row).
+    arns = triage["user_arn"].tolist()
+    labels = {
+        row.user_arn: (
+            f"{row.user_arn}  —  {row.user_type} · "
+            f"{row.total_events:,} events · "
+            f"abused {row.abused_success}✅/{row.abused_failed}❌"
+        )
+        for row in triage.itertuples()
+    }
+    st.markdown("### 👤 Inspect identity")
+    selected_arn = st.selectbox(
+        "Inspect identity",
+        options=arns,
+        format_func=lambda a: labels.get(a, a),
+        label_visibility="collapsed",
     )
 
-    st.divider()
     summary = find_identity(summaries, selected_arn)
     if summary is not None:
         _render_detail(summary)
