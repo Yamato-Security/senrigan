@@ -27,6 +27,10 @@
 
 <img src="doc/img-dashboard.png" width="800" alt="Superset Dashboard">
 
+### 🦅️ Suzaku results visualization
+
+<img src="doc/img-suzaku-summary.png" width="800" alt="Suzaku results visualization">
+
 ### 🗺 AWS Config Resource Graph
 
 <img src="doc/img-config.png" width="800" alt="AWS Config Resource Graph">

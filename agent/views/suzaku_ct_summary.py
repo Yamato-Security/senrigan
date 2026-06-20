@@ -257,10 +257,6 @@ def _render_sidebar(summaries: list[dict], raw: bytes) -> None:
 
 def main() -> None:
     st.title("☁️ Suzaku CloudTrail Summary")
-    st.caption(
-        "Upload a Suzaku `aws-ct-summary` JSON to triage AWS identities by "
-        "suspicious activity."
-    )
 
     uploaded = _render_uploader()
     if uploaded is None:
