@@ -20,6 +20,7 @@ DuckDB is always opened in **`READ_ONLY`** mode.
 - [Built-in Hunts](#built-in-hunts)
 - [Report Generation](#report-generation)
 - [Module Structure](#module-structure)
+- [Suzaku CloudTrail Summary Page](#suzaku-cloudtrail-summary-page)
 - [Configuration](#configuration)
 - [Development](#development)
 
@@ -231,7 +232,11 @@ agent/
 ├── report.py              # Report generation (Markdown + sensitive data redaction)
 ├── schema.py              # CloudTrail table schema description for the system prompt
 ├── config.py              # Configuration management (env vars)
+├── suzaku_summary.py      # Parsing + aggregation for Suzaku aws-ct-summary JSON (pure functions)
+├── suzaku_report.py       # Markdown / HTML report generation for the Suzaku summary (pure functions)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised)
+├── views/
+│   └── suzaku_ct_summary.py    # st.navigation page: Suzaku aws-ct-summary viewer (upload + triage)
 ├── prompts/
 │   └── system_prompt.py   # System prompt template for SQL generation
 ├── requirements.txt
@@ -244,8 +249,37 @@ agent/
     ├── test_query.py
     ├── test_llm.py
     ├── test_report.py
+    ├── test_suzaku_summary.py
+    ├── test_suzaku_report.py
     └── test_app.py
 ```
+
+## Suzaku CloudTrail Summary Page
+
+The app uses `st.navigation` (defined in `app.py`): the sidebar shows
+**🔭 Senrigan** (the chat page) and **☁️ Suzaku CT Summary**. The latter
+visualizes the JSON output of Suzaku's
+[`aws-ct-summary`](https://github.com/Yamato-Security/suzaku) command. It is
+self-contained and read-only: it does not touch DuckDB or OpenAI, and works
+without an API key.
+
+- **Upload** the `aws-ct-summary` JSON via the in-page file uploader (no mounted
+  path or `docker-compose` change required).
+- **Triage table** — one row per identity (`user_arn`), sorted by abused-API
+  count then event count. Select a row to drill down.
+- **Identity detail** — abused APIs (success/failed) with descriptions, an
+  activity timeline, and Top-N breakdowns of source IPs, source countries,
+  regions, user agents, and access-key IDs, with CSV export.
+- **Report export** — download the whole summary as a **Markdown** or
+  self-contained **HTML** report (one section per identity, ordered by triage
+  rank). High-cardinality lists are capped at the top 20 rows per identity.
+  Access-key IDs and source IPs are kept verbatim — in this view they are the
+  indicators of compromise being reported (the summary holds no secret keys).
+
+Parsing/aggregation live in `suzaku_summary.py` and report rendering in
+`suzaku_report.py`, both as pure functions (unit-tested in
+`tests/test_suzaku_summary.py` and `tests/test_suzaku_report.py`); the page
+keeps only Streamlit rendering.
 
 ---
 

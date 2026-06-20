@@ -921,17 +921,34 @@ def render_chat() -> None:
 # ---------------------------------------------------------------------------
 
 
+def _chat_page() -> None:
+    """Render the AI threat-hunting chat page (the default page)."""
+    _init_session_state()
+    render_sidebar()
+    render_chat()
+
+
 def main() -> None:
-    """Configure and render the Streamlit application."""
+    """Configure page chrome and dispatch to the selected page.
+
+    Uses ``st.navigation`` so the sidebar entries have explicit titles and
+    icons (e.g. the default page is labelled "Senrigan", not "app").
+    """
     st.set_page_config(
         page_title="Senrigan",
         page_icon="🔭",
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    _init_session_state()
-    render_sidebar()
-    render_chat()
+    pages = [
+        st.Page(_chat_page, title="Senrigan", icon="🔭", default=True),
+        st.Page(
+            "views/suzaku_ct_summary.py",
+            title="Suzaku CT Summary",
+            icon="☁️",
+        ),
+    ]
+    st.navigation(pages).run()
 
 
 if __name__ == "__main__":
