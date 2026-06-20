@@ -160,25 +160,71 @@ def _build_reports(summaries: list[dict]) -> tuple[str, str]:
     return generate_markdown_report(summaries), generate_html_report(summaries)
 
 
-def _render_report_downloads(summaries: list[dict]) -> None:
-    """Render Markdown / HTML report download buttons for the whole summary."""
-    markdown_report, html_report = _build_reports(summaries)
-    st.markdown("### 📄 Report")
-    c1, c2 = st.columns(2)
-    c1.download_button(
-        "⬇️ Markdown report",
-        markdown_report.encode("utf-8"),
-        file_name="suzaku-summary-report.md",
-        mime="text/markdown",
-        use_container_width=True,
-    )
-    c2.download_button(
-        "⬇️ HTML report",
-        html_report.encode("utf-8"),
-        file_name="suzaku-summary-report.html",
-        mime="text/html",
-        use_container_width=True,
-    )
+def _render_uploader():
+    """Render the file uploader in the left menu and return the uploaded file.
+
+    Kept separate from the Report/Session sections so the uploader is always
+    visible in the sidebar, even before a file has been loaded.
+    """
+    with st.sidebar:
+        st.subheader("📁 Summary File")
+        st.session_state.setdefault("suzaku_uploader_key", 0)
+        return st.file_uploader(
+            "aws-ct-summary JSON",
+            type=["json"],
+            key=f"suzaku_upload_{st.session_state.suzaku_uploader_key}",
+        )
+
+
+def _render_sidebar(summaries: list[dict], raw: bytes) -> None:
+    """Render the left-menu Report and Session sections.
+
+    Mirrors the chat page's sidebar (📄 Report / 💾 Session) so both pages share
+    the same layout. ``raw`` is the original uploaded JSON, re-offered verbatim
+    as the session export.
+    """
+    with st.sidebar:
+        st.divider()
+
+        # --- Report ----------------------------------------------------------
+        st.subheader("📄 Report")
+        markdown_report, html_report = _build_reports(summaries)
+        dl1, dl2 = st.columns(2)
+        with dl1:
+            st.download_button(
+                label="⬇ Markdown",
+                data=markdown_report,
+                file_name="suzaku-summary-report.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        with dl2:
+            st.download_button(
+                label="⬇ HTML",
+                data=html_report,
+                file_name="suzaku-summary-report.html",
+                mime="text/html",
+                use_container_width=True,
+            )
+
+        st.divider()
+
+        # --- Session ---------------------------------------------------------
+        st.subheader("💾 Session")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="Export JSON",
+                data=raw,
+                file_name="suzaku-summary.json",
+                mime="application/json",
+                use_container_width=True,
+            )
+        with col2:
+            if st.button("🗑 Clear", use_container_width=True):
+                # Reset the file_uploader by rotating its widget key.
+                st.session_state.suzaku_uploader_key += 1
+                st.rerun()
 
 
 def main() -> None:
@@ -188,20 +234,21 @@ def main() -> None:
         "suspicious activity."
     )
 
-    uploaded = st.file_uploader("aws-ct-summary JSON", type=["json"])
+    uploaded = _render_uploader()
     if uploaded is None:
-        st.info("Upload an `aws-ct-summary` JSON file to begin.")
+        st.info("Upload an `aws-ct-summary` JSON file in the sidebar to begin.")
         return
 
+    raw = uploaded.getvalue()
     try:
-        summaries = _parse_cached(uploaded.getvalue())
+        summaries = _parse_cached(raw)
     except SuzakuSummaryError as exc:
         st.error(f"Could not read summary: {exc}")
         return
 
     triage = build_triage_table(summaries)
 
-    _render_report_downloads(summaries)
+    _render_sidebar(summaries, raw)
 
     st.markdown("### 🎯 Identity Triage")
     st.caption(
