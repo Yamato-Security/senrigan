@@ -1,0 +1,43 @@
+# R2-5 / DSH-91: CloudTrail Logging Gap (Hourly Event Volume)
+# Hourly bar of total CloudTrail events. Empty or near-empty buckets between
+# otherwise-active periods indicate that logging was stopped (StopLogging /
+# DeleteTrail) or that a delivery gap / blind spot exists — a classic
+# anti-forensics signal. Pair with the Defense-Evasion Hits KPI and the
+# Security Monitoring & Control Changes table.
+# MITRE ATT&CK: T1562.008 Impair Defenses — Disable Cloud Logs
+uuid: 91a1b2c3-d4e5-6f70-8123-456789000091
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: CloudTrail Logging Gap (Hourly Volume)
+viz_type: echarts_timeseries_bar
+description: >
+  Hourly CloudTrail event volume (DSH-91).  A sudden drop to zero between active
+  periods suggests logging was disabled (StopLogging/DeleteTrail) or a delivery
+  blind spot exists.  Investigate any unexpected gap against the Security
+  Monitoring & Control Changes table.
+  MITRE ATT&CK: T1562.008 Impair Defenses — Disable Cloud Logs.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: PT1H
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_logging_gap_count
+  adhoc_filters: []
+  row_limit: 10000
+  x_axis_title: Time (hourly)
+  y_axis_title: Event Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('hour', event_time) AS hour_bucket, COUNT(*) AS event_count
+# FROM cloudtrail_events
+# GROUP BY 1
+# ORDER BY hour_bucket

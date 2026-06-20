@@ -1,0 +1,73 @@
+# R2-2 / DSH-92: Impossible Travel (Principals Active From Multiple Countries)
+# Ranks IAM principals by the number of distinct source countries they called
+# from. A single human principal acting from two or more countries — especially
+# in a short window — is a strong credential-compromise signal. Requires GeoIP
+# enrichment (make ingest-geoip).
+# MITRE ATT&CK: TA0001 Initial Access / T1078 Valid Accounts
+uuid: 92a1b2c3-d4e5-6f70-8123-456789000092
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Impossible Travel (Multi-Country Principals)
+viz_type: table
+description: >
+  IAM principals ranked by distinct source countries, with distinct source IPs,
+  total events, and first/last seen (DSH-92).  distinct_countries >= 2 for a
+  human principal is a strong account-compromise signal — cross-reference the
+  time window and source IPs.  Requires GeoIP enrichment.
+  MITRE ATT&CK: TA0001 Initial Access / T1078 Valid Accounts.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT geo_country_code)"
+      label: distinct_countries
+      hasCustomLabel: true
+      optionName: metric_it_distinct_countries
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_source_ips
+      hasCustomLabel: true
+      optionName: metric_it_distinct_ips
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_it_event_count
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_it_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_it_last_seen
+  groupby:
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "geo_country_code IS NOT NULL"
+      filterOptionName: filter_it_has_geo
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     COUNT(DISTINCT geo_country_code)  AS distinct_countries,
+#     COUNT(DISTINCT source_ip_address) AS distinct_source_ips,
+#     COUNT(*)                          AS event_count,
+#     MIN(event_time)                   AS first_seen,
+#     MAX(event_time)                   AS last_seen
+# FROM cloudtrail_events
+# WHERE geo_country_code IS NOT NULL
+# GROUP BY user_identity_arn
+# ORDER BY distinct_countries DESC
+# LIMIT 100

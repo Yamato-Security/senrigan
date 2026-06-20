@@ -160,12 +160,12 @@ def _find_chart_by_filename(fragment: str) -> tuple[str, dict] | None:
 
 
 def test_dsh22_defense_evasion_exists() -> None:
-    """DSH-22: defense_evasion.yaml must exist with correct metadata."""
-    result = _find_chart_by_filename("defense_evasion")
-    assert result is not None, "charts/defense_evasion.yaml not found"
+    """DSH-22: security_monitoring_changes.yaml (defense-evasion catch-all) must exist."""
+    result = _find_chart_by_filename("security_monitoring_changes")
+    assert result is not None, "charts/security_monitoring_changes.yaml not found"
     _, chart = result
     assert chart["viz_type"] == "table"
-    assert "Defense Evasion" in chart["slice_name"]
+    assert "Security Monitoring" in chart["slice_name"]
 
 
 def test_dsh28_mfa_less_login_trend_exists() -> None:
@@ -187,7 +187,7 @@ def test_dsh19_login_heatmap_exists() -> None:
     result = _find_chart_by_filename("login_heatmap")
     assert result is not None, "charts/login_heatmap.yaml not found"
     _, chart = result
-    assert chart["viz_type"] in ("pivot_table_v2", "table")
+    assert chart["viz_type"] in ("heatmap", "pivot_table_v2", "table")
 
 
 def test_dsh20_write_read_ratio_exists() -> None:
@@ -227,8 +227,8 @@ def test_dsh27_assumed_role_external_ip_exists() -> None:
 
 
 def test_dsh30_priv_esc_timeline_exists() -> None:
-    """DSH-30: priv_esc_timeline.yaml must exist."""
-    assert _find_chart_by_filename("priv_esc_timeline") is not None
+    """DSH-30: iam_privilege_change_timeline.yaml must exist."""
+    assert _find_chart_by_filename("iam_privilege_change_timeline") is not None
 
 
 # ---------------------------------------------------------------------------
@@ -281,36 +281,20 @@ def test_hrm_top_calls_exists() -> None:
     assert chart["viz_type"] == "bar"
 
 
-def test_hrm_top_source_ips_exists() -> None:
-    """HRM-43: hrm_top_source_ips.yaml must exist with bar viz."""
-    result = _find_chart_by_filename("hrm_top_source_ips")
-    assert result is not None, "charts/hrm_top_source_ips.yaml not found"
-    _, chart = result
-    assert chart["viz_type"] == "bar"
-
-
 def test_hrm_defense_evasion_table_exists() -> None:
-    """HRM-44: hrm_defense_evasion_table.yaml must exist with table viz."""
-    result = _find_chart_by_filename("hrm_defense_evasion_table")
-    assert result is not None, "charts/hrm_defense_evasion_table.yaml not found"
+    """HRM-44: hrm_security_service_mods.yaml must exist with table viz."""
+    result = _find_chart_by_filename("hrm_security_service_mods")
+    assert result is not None, "charts/hrm_security_service_mods.yaml not found"
     _, chart = result
     assert chart["viz_type"] == "table"
 
 
 def test_hrm_credential_access_table_exists() -> None:
-    """HRM-45: hrm_credential_access_table.yaml must exist with table viz."""
-    result = _find_chart_by_filename("hrm_credential_access_table")
-    assert result is not None, "charts/hrm_credential_access_table.yaml not found"
+    """HRM-45: hrm_credential_retrieval_table.yaml must exist with table viz."""
+    result = _find_chart_by_filename("hrm_credential_retrieval_table")
+    assert result is not None, "charts/hrm_credential_retrieval_table.yaml not found"
     _, chart = result
     assert chart["viz_type"] == "table"
-
-
-def test_hrm_by_region_exists() -> None:
-    """HRM-46: hrm_by_region.yaml must exist with bar viz."""
-    result = _find_chart_by_filename("hrm_by_region")
-    assert result is not None, "charts/hrm_by_region.yaml not found"
-    _, chart = result
-    assert chart["viz_type"] == "bar"
 
 
 def test_all_groupby_columns_exist_in_dataset() -> None:

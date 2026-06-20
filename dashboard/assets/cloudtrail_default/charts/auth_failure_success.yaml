@@ -1,0 +1,79 @@
+# R2-4 / DSH-93: Failed -> Success Auth Sequence (Console Login)
+# Ranks principal + source IP pairs by failed console logins alongside their
+# successful logins. A high failure count followed by a success is the signature
+# of password spraying or brute force that eventually worked — the success row
+# is the moment of compromise.
+# MITRE ATT&CK: T1110 Brute Force
+uuid: 93a1b2c3-d4e5-6f70-8123-456789000093
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Failed -> Success Auth Sequence
+viz_type: table
+description: >
+  Console login failures and successes per principal + source IP (DSH-93).
+  A large failure_count paired with a non-zero success_count indicates a brute
+  force / password spray that eventually succeeded — treat the success as the
+  compromise point and pivot on the source IP.
+  MITRE ATT&CK: T1110 Brute Force.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event,
+            '$.responseElements.ConsoleLogin') = 'Failure'
+        )
+      label: failure_count
+      hasCustomLabel: true
+      optionName: metric_auth_failures
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(*) FILTER (
+          WHERE json_extract_string(raw_event,
+            '$.responseElements.ConsoleLogin') = 'Success'
+        )
+      label: success_count
+      hasCustomLabel: true
+      optionName: metric_auth_successes
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_auth_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_auth_last_seen
+  groupby:
+    - user_identity_arn
+    - source_ip_address
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'"
+      filterOptionName: filter_auth_console_login
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     source_ip_address,
+#     COUNT(*) FILTER (WHERE json_extract_string(raw_event,
+#         '$.responseElements.ConsoleLogin') = 'Failure') AS failure_count,
+#     COUNT(*) FILTER (WHERE json_extract_string(raw_event,
+#         '$.responseElements.ConsoleLogin') = 'Success') AS success_count,
+#     MIN(event_time) AS first_seen,
+#     MAX(event_time) AS last_seen
+# FROM cloudtrail_events
+# WHERE event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'
+# GROUP BY user_identity_arn, source_ip_address
+# ORDER BY failure_count DESC
+# LIMIT 100

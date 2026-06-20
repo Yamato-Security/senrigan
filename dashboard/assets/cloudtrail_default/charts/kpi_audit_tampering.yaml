@@ -1,0 +1,43 @@
+# KPI-87: Defense-Evasion Hits (Triage KPI card)
+# Count of audit/monitoring tampering events (CloudTrail/GuardDuty/Config/Flow
+# Log/SecurityHub disabling). The single highest-priority triage number — any
+# non-zero value means detection capability may have been degraded.
+# Event list mirrors the Security Monitoring & Control Changes chart (DSH-22).
+# MITRE ATT&CK: TA0005 Defense Evasion
+uuid: 87a1b2c3-d4e5-6f70-8123-456789000087
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Defense-Evasion Hits
+viz_type: big_number_total
+description: >
+  Number of audit/monitoring tampering events in the selected range (KPI-87).
+  Highest-priority triage signal — any non-zero value means detection may have
+  been disabled. Drill into Security Monitoring & Control Changes.
+  MITRE ATT&CK: TA0005 Defense Evasion.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE event_name IN (
+          'StopLogging', 'DeleteTrail', 'UpdateTrail', 'PutEventSelectors',
+          'DisableDetector', 'DeleteDetector', 'DeletePublishingDestination',
+          'DeleteConfigRule', 'StopConfigurationRecorder', 'DeleteDeliveryChannel',
+          'DeleteFlowLogs', 'DeleteLogGroup', 'DeleteLogStream',
+          'DisableSecurityHub', 'DeleteAnalyzer'
+        )
+      )
+    label: defense_evasion_hits
+    hasCustomLabel: true
+    optionName: metric_kpi_defense_evasion
+  adhoc_filters: []
+  subheader: "Audit/monitoring tampering"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL: SELECT COUNT(*) FILTER (WHERE event_name IN ( ...15 tampering APIs... ))
+#      FROM cloudtrail_events

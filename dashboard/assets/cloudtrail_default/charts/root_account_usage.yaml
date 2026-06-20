@@ -38,6 +38,12 @@ params:
   row_limit: 100
   order_desc: true
   page_size: 25
+  # R1-3: root usage should be zero — flag any call_count red.
+  conditional_formatting:
+    - column: call_count
+      operator: ">"
+      targetValue: 0
+      colorScheme: "#E04355"
 cache_timeout: null
 
 # SQL used to power this chart:

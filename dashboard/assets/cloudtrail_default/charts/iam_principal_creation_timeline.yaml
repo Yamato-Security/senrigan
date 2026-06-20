@@ -1,0 +1,55 @@
+# R2-7 / DSH-95: New IAM Principal Creation Timeline (Persistence)
+# Daily count of IAM principal/credential creation events, split by event type:
+# CreateUser, CreateRole, CreateAccessKey, CreateLoginProfile, CreateInstanceProfile.
+# A burst of these — especially CreateAccessKey / CreateLoginProfile on existing
+# users — is a classic persistence move after initial compromise.
+# MITRE ATT&CK: T1136 Create Account / T1098 Account Manipulation
+uuid: 95a1b2c3-d4e5-6f70-8123-456789000095
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: New IAM Principal Creation Timeline
+viz_type: echarts_timeseries_bar
+description: >
+  Daily IAM principal and credential creation events, stacked by event type
+  (DSH-95).  A spike in CreateAccessKey / CreateLoginProfile / CreateUser is a
+  persistence indicator following initial access — correlate with the acting
+  principal and source IP.
+  MITRE ATT&CK: T1136 Create Account / T1098 Account Manipulation.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: creation_events
+      hasCustomLabel: true
+      optionName: metric_iam_creation_count
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN (
+          'CreateUser', 'CreateRole', 'CreateAccessKey',
+          'CreateLoginProfile', 'CreateInstanceProfile'
+        )
+      filterOptionName: filter_iam_creation
+  row_limit: 10000
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Creation Events
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('day', event_time) AS day_bucket, event_name, COUNT(*)
+# FROM cloudtrail_events
+# WHERE event_name IN ('CreateUser','CreateRole','CreateAccessKey',
+#                      'CreateLoginProfile','CreateInstanceProfile')
+# GROUP BY 1, 2
+# ORDER BY day_bucket

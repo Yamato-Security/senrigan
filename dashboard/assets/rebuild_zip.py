@@ -23,6 +23,26 @@ FILE_MAP = {
     "dashboard.yaml": "dashboards/cloudtrail_threat_hunting.yaml",
     "databases/CloudTrail_DuckDB.yaml": "databases/CloudTrail_DuckDB.yaml",
     "datasets/cloudtrail_events.yaml": "datasets/CloudTrail_DuckDB/cloudtrail_events.yaml",
+    # Overview / Triage KPI cards (KPI-81 to KPI-89)
+    "charts/kpi_total_events.yaml": "charts/KPI_Total_Events.yaml",
+    "charts/kpi_distinct_principals.yaml": "charts/KPI_Distinct_Principals.yaml",
+    "charts/kpi_distinct_source_ips.yaml": "charts/KPI_Distinct_Source_IPs.yaml",
+    "charts/kpi_root_events.yaml": "charts/KPI_Root_Account_Events.yaml",
+    "charts/kpi_mfa_less_logins.yaml": "charts/KPI_MFA_Less_Console_Logins.yaml",
+    "charts/kpi_access_denied.yaml": "charts/KPI_Access_Denied_Events.yaml",
+    "charts/kpi_audit_tampering.yaml": "charts/KPI_Defense_Evasion_Hits.yaml",
+    "charts/kpi_distinct_countries.yaml": "charts/KPI_Distinct_Countries.yaml",
+    "charts/kpi_distinct_regions.yaml": "charts/KPI_Active_Regions.yaml",
+    # Phase-2 DFIR hunts (R2-2, R2-4, R2-5)
+    "charts/cloudtrail_logging_gap.yaml": "charts/CloudTrail_Logging_Gap.yaml",
+    "charts/impossible_travel.yaml": "charts/Impossible_Travel.yaml",
+    "charts/auth_failure_success.yaml": "charts/Failed_Success_Auth_Sequence.yaml",
+    # Phase-3 DFIR hunts (R2-6, R2-7)
+    "charts/cross_account_assume_role.yaml": "charts/Cross_Account_AssumeRole.yaml",
+    "charts/iam_principal_creation_timeline.yaml": "charts/New_IAM_Principal_Creation_Timeline.yaml",
+    # Phase-4 DFIR hunts (R2-8, R2-9)
+    "charts/error_code_composition.yaml": "charts/Error_Code_Composition.yaml",
+    "charts/runinstances_by_region.yaml": "charts/RunInstances_Spike_By_Region.yaml",
     # Original charts (DSH-01 to DSH-05)
     "charts/event_timeseries.yaml": "charts/CloudTrail_Events_Over_Time.yaml",
     "charts/top_api_calls.yaml": "charts/Top_20_API_Calls.yaml",
@@ -42,7 +62,6 @@ FILE_MAP = {
     "charts/geo_city_requests.yaml": "charts/Geo_City_Requests.yaml",
     "charts/geo_asn_org_requests.yaml": "charts/Geo_ASN_Org_Requests.yaml",
     "charts/geo_event_name_by_country.yaml": "charts/Geo_Event_Name_By_Country.yaml",
-    "charts/geo_identity_by_country.yaml": "charts/Geo_Identity_By_Country.yaml",
     # New Sprint-1 charts (DSH-22, DSH-28)
     "charts/security_monitoring_changes.yaml": "charts/Security_Monitoring_Control_Changes.yaml",
     "charts/mfa_less_login_trend.yaml": "charts/MFA_Less_Login_Trend.yaml",
@@ -63,17 +82,14 @@ FILE_MAP = {
     "charts/fs_identity.yaml": "charts/First_Last_Seen_IAM_Identity.yaml",
     "charts/fs_source_ip.yaml": "charts/First_Last_Seen_Source_IP.yaml",
     "charts/fs_event_name.yaml": "charts/First_Last_Seen_API_Call.yaml",
-    "charts/fs_user_agent.yaml": "charts/First_Last_Seen_User_Agent.yaml",
     "charts/dormant_reactivated.yaml": "charts/Dormant_Accounts_Reactivated.yaml",
     "charts/velocity_spikes.yaml": "charts/Event_Velocity_Spikes.yaml",
     # Tab 6 — High-Risk API Monitor charts (HRM-39 to HRM-46)
     "charts/hrm_timeseries.yaml": "charts/HRM_High_Risk_API_Timeseries.yaml",
     "charts/hrm_top_calls.yaml": "charts/HRM_Top_High_Risk_API_Calls.yaml",
     "charts/hrm_top_actors.yaml": "charts/HRM_Top_Actors_High_Risk.yaml",
-    "charts/hrm_top_source_ips.yaml": "charts/HRM_Top_Source_IPs_High_Risk.yaml",
     "charts/hrm_security_service_mods.yaml": "charts/HRM_Security_Service_Modification_API_Events.yaml",
     "charts/hrm_credential_retrieval_table.yaml": "charts/HRM_Credential_Retrieval_API_Events.yaml",
-    "charts/hrm_by_region.yaml": "charts/HRM_High_Risk_API_By_Region.yaml",
     # Phase-1 new charts (DSH-39 to DSH-43) — Critical DFIR gaps
     "charts/ssm_execution.yaml": "charts/SSM_Session_Run_Command_Execution.yaml",
     "charts/rds_snapshot_share.yaml": "charts/RDS_Snapshot_Cross_Account_Share.yaml",

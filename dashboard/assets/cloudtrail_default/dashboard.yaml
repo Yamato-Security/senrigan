@@ -1,8 +1,15 @@
-# CloudTrail Threat Hunting — Dashboard Definition (v3)
-# 9-tab layout: Identity & Access | Threat Detection |
-# API Activity | Computing | S3 & RDS | GeoIP Intelligence |
-# Temporal Analysis | High-Risk API Monitor.
-# 74 charts total:
+# CloudTrail Threat Hunting — Dashboard Definition (v4)
+# 10-tab triage-first layout:
+#   Overview | Identity & Access | Threat Detection | High-Risk API Monitor |
+#   API Activity | S3 & RDS | Computing | Network | Temporal Analysis | GeoIP Intelligence.
+# 87 charts total (71 themed + 9 Overview KPI cards + 7 Phase-2/3/4 DFIR hunts;
+#   4 low-value/redundant charts removed in R3: HRM top source IPs, HRM by region,
+#   identities-by-country, first/last-seen user agent):
+#   Overview KPI-81 to KPI-89   ( 9 big_number triage cards — total events, distinct
+#                                 principals/IPs, root events, MFA-less logins, access denied,
+#                                 defense-evasion hits, distinct countries, active regions)
+#   Phase-2  DSH-91 to DSH-93   ( 3 DFIR hunts — CloudTrail logging gap, impossible travel,
+#                                 failed->success auth sequence)
 #   Phase-1  DSH-01 to DSH-43   (43 charts — baseline, identity, data, network, compute)
 #   Phase-2  DSH-44 to DSH-46   ( 3 charts — SSO, S3 policy, NACL/route)
 #   Phase-3  DSH-47 to DSH-48   ( 2 charts — EventBridge/CW rule changes, EKS/ECR events)
@@ -20,12 +27,13 @@ version: 1.0.0
 dashboard_title: CloudTrail Threat Hunting
 description: >
   Pre-built threat hunting dashboard for AWS CloudTrail logs stored in DuckDB.
-  5-tab layout: Identity & Access | Threat Detection | Data & Infrastructure |
-  GeoIP Intelligence | Temporal Analysis.  Covers event volume trends, Read/Write
-  ratio, top API calls, IAM entity activity, error patterns, security monitoring control changes,
-  IAM privilege change timelines, secrets access anomalies, SSRF/IMDS detection,
-  DNS record changes, geographic source analysis, and first/last seen temporal
-  hunting for DFIR.
+  Triage-first 10-tab layout led by an Overview tab of at-a-glance KPI cards, then
+  Threat Detection, Identity & Access, High-Risk API Monitor, API Activity, S3 & RDS,
+  Computing, Network, Temporal Analysis, and GeoIP Intelligence.  Covers event volume
+  trends, top API calls, IAM entity activity, error patterns, security monitoring
+  control changes, IAM privilege change timelines, secrets access anomalies, SSRF/IMDS
+  detection, DNS record changes, geographic source analysis, and first/last seen
+  temporal hunting for DFIR.
 published: true
 css: ""
 slug: cloudtrail-threat-hunting
@@ -46,33 +54,90 @@ position:
     type: TABS
     id: TABS_ID
     children:
-      - TAB-identity
+      # Triage-first ordering (DFIR): start with the at-a-glance overview, then
+      # detection-tampering, identity, high-risk APIs, data impact, compute,
+      # network, temporal, and finally GeoIP (enrichment-dependent).
+      - TAB-overview
       - TAB-threat
-      - TAB-data
-      - TAB-network
-      - TAB-computing
-      - TAB-s3-rds
-      - TAB-geoip
-      - TAB-temporal
+      - TAB-identity
       - TAB-hrm
+      - TAB-data
+      - TAB-s3-rds
+      - TAB-computing
+      - TAB-network
+      - TAB-temporal
+      - TAB-geoip
 
-  # Tab 1 — Identity & Access
+  # Tab 1 — Overview (KPI summary cards + global context)
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+      - ROW-hdr-overview
+      - ROW-ov-1    # KPI cards: Total Events | Distinct Principals | Distinct Source IPs
+      - ROW-ov-2    # KPI cards: Root Events | MFA-less Logins | Access Denied
+      - ROW-ov-3    # KPI cards: Defense-Evasion Hits | Distinct Countries | Active Regions
+      - ROW-ov-4    # Global event volume over time [CONTEXT]
+    meta:
+      text: "\U0001f6a6 Overview"
+      defaultText: "Overview"
+      tooltip: "At-a-glance triage KPIs — start here, then drill into the themed tabs"
+  ROW-ov-1:
+    type: ROW
+    id: ROW-ov-1
+    children:
+      - CHART-kpi-total-events
+      - CHART-kpi-distinct-principals
+      - CHART-kpi-distinct-source-ips
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-ov-2:
+    type: ROW
+    id: ROW-ov-2
+    children:
+      - CHART-kpi-root-events
+      - CHART-kpi-mfa-less-logins
+      - CHART-kpi-access-denied
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-ov-3:
+    type: ROW
+    id: ROW-ov-3
+    children:
+      - CHART-kpi-defense-evasion
+      - CHART-kpi-distinct-countries
+      - CHART-kpi-distinct-regions
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-ov-4:
+    type: ROW
+    id: ROW-ov-4
+    children:
+      - CHART-kpi-timeseries
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # Tab 2 — Identity & Access
   TAB-identity:
     type: TAB
     id: TAB-identity
     children:
+      - ROW-hdr-identity
       - ROW-ia-1    # Console Login + MFA-less Login Trend [HIGH]
+      - ROW-ia-8    # Failed -> Success Auth Sequence [HIGH]
       - ROW-ia-2    # Login Activity Heatmap [MEDIUM]
       - ROW-ia-4    # Root Account Usage + IAM Entity Activity [CRITICAL]
       - ROW-ia-5    # IAM Privilege Change Timeline [CRITICAL]
+      - ROW-ia-9    # New IAM Principal Creation Timeline [HIGH]
       - ROW-ia-7    # Glue/SageMaker IAM Role Pass Events [CRITICAL]
       - ROW-di-4    # AssumedRole from External IP [CRITICAL]
+      - ROW-ia-10   # Cross-Account AssumeRole [HIGH]
       - ROW-di-3    # Secrets Access Anomaly [CRITICAL]
       - ROW-ia-3    # Security-Relevant API Calls [MEDIUM]
       - ROW-ia-6    # SSO Events [LOW]
     meta:
       text: "\U0001f511 Identity & Access"
-      defaultText: "Tab 1"
+      defaultText: "Identity & Access"
       tooltip: "Login monitoring, IAM privilege changes, and security-relevant API tracking"
   ROW-ia-1:
     type: ROW
@@ -127,29 +192,72 @@ position:
       - CHART-glue-sagemaker-privesc
     meta:
       background: BACKGROUND_TRANSPARENT
+  # Phase-2 new row: Failed -> Success auth sequence (brute force / spray)
+  ROW-ia-8:
+    type: ROW
+    id: ROW-ia-8
+    children:
+      - CHART-auth-failure-success
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  # Phase-3 new row: New IAM principal creation timeline (persistence)
+  ROW-ia-9:
+    type: ROW
+    id: ROW-ia-9
+    children:
+      - CHART-iam-principal-creation
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  # Phase-3 new row: Cross-account AssumeRole (trusted-relationship abuse)
+  ROW-ia-10:
+    type: ROW
+    id: ROW-ia-10
+    children:
+      - CHART-cross-account-assume
+    meta:
+      background: BACKGROUND_TRANSPARENT
 
   # Tab 2 — Threat Detection
   TAB-threat:
     type: TAB
     id: TAB-threat
     children:
+      - ROW-hdr-threat
       - ROW-td-3    # Security Monitoring Control Changes [CRITICAL]
+      - ROW-td-12   # CloudTrail Logging Gap [CRITICAL]
       - ROW-td-7    # VPC Flow Log Changes + Config Recorder Changes [CRITICAL]
       - ROW-td-9    # EventBridge/CW Rule Modifications [CRITICAL]
       - ROW-td-10   # WAF Configuration Changes [HIGH]
       - ROW-td-5    # Org/SCP Changes [HIGH]
       - ROW-td-4    # Error Trend [MEDIUM]
       - ROW-td-2    # Throttling Spikes [MEDIUM]
+      - ROW-td-11   # Write/Read Ratio Trend [CONTEXT]
       - ROW-td-1    # Event Timeseries [CONTEXT]
     meta:
       text: "\U0001f3af Threat Detection"
-      defaultText: "Tab 2"
+      defaultText: "Threat Detection"
       tooltip: "Security monitoring control changes, anomalous patterns, and baseline deviations"
   ROW-td-1:
     type: ROW
     id: ROW-td-1
     children:
       - CHART-timeseries
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  # Phase-2 row: CloudTrail logging gap (anti-forensics blind-spot detection)
+  ROW-td-12:
+    type: ROW
+    id: ROW-td-12
+    children:
+      - CHART-logging-gap
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  # Context row: read-vs-write ratio (recon -> attack-execution transition)
+  ROW-td-11:
+    type: ROW
+    id: ROW-td-11
+    children:
+      - CHART-write-read-ratio
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-2:
@@ -226,13 +334,15 @@ position:
     type: TAB
     id: TAB-data
     children:
+      - ROW-hdr-data
       - ROW-di-1    # Top API Calls + Access Denied [graph]
       - ROW-di-1b   # Region Activity [graph]
+      - ROW-di-20   # Error-Code Composition Over Time [MEDIUM]
       - ROW-di-2    # Source IP [table]
       - ROW-di-2b   # User Agent [table]
     meta:
       text: "\U0001f4ca API Activity"
-      defaultText: "Tab 3"
+      defaultText: "API Activity"
       tooltip: "API call volume, regional distribution, caller attribution (IP/UserAgent), and suspicious access patterns"
 
   # Tab 4 — Network
@@ -240,6 +350,7 @@ position:
     type: TAB
     id: TAB-network
     children:
+      - ROW-hdr-network
       - ROW-net-1   # Security Group Changes [CRITICAL]
       - ROW-td-8    # NACL/Route Table Changes [HIGH]
       - ROW-net-2   # VPC Infrastructure Changes [HIGH]
@@ -247,7 +358,7 @@ position:
       - ROW-di-5    # Route53 DNS Changes [MEDIUM]
     meta:
       text: "\U0001f310 Network"
-      defaultText: "Tab 4"
+      defaultText: "Network"
       tooltip: "Security group changes, VPC topology, peering/Transit Gateway, and DNS"
   ROW-net-1:
     type: ROW
@@ -276,7 +387,9 @@ position:
     type: TAB
     id: TAB-computing
     children:
+      - ROW-hdr-computing
       - ROW-di-12   # EC2 Instance Launches [MEDIUM]
+      - ROW-di-21   # RunInstances Spike by Region [HIGH]
       - ROW-di-16   # EC2 Mass Stop / Terminate [CRITICAL]
       - ROW-di-13   # EC2 Key Pair Creation [HIGH]
       - ROW-di-14   # EC2 Instance Profile Changes [HIGH]
@@ -291,7 +404,7 @@ position:
       - ROW-di-19   # CloudFormation Stack Changes [MEDIUM]
     meta:
       text: "\U0001f5a5️ Computing"
-      defaultText: "Tab 5"
+      defaultText: "Computing"
       tooltip: "EC2, ECS, EKS, SSM, and EBS compute platform events"
 
   # Tab 5 — S3 & RDS Security
@@ -299,6 +412,7 @@ position:
     type: TAB
     id: TAB-s3-rds
     children:
+      - ROW-hdr-s3rds
       - ROW-s3-3    # S3 Bulk Download [CRITICAL]
       - ROW-s3-4    # S3 Bulk Deletion [CRITICAL]
       - ROW-s3-5    # S3 Versioning/Logging Disabled [CRITICAL]
@@ -312,7 +426,7 @@ position:
       - ROW-rds-1   # RDS Snapshot Cross-Account Share [HIGH]
     meta:
       text: "\U0001faa3 S3 & RDS"
-      defaultText: "Tab 6"
+      defaultText: "S3 & RDS"
       tooltip: "S3 & RDS DFIR: high-volume downloads, bulk deletion, anti-forensics, and backup vault deletion"
   ROW-di-1:
     type: ROW
@@ -461,6 +575,22 @@ position:
       - CHART-cloudformation
     meta:
       background: BACKGROUND_TRANSPARENT
+  # Phase-4 new row: Error-code composition over time (API Activity)
+  ROW-di-20:
+    type: ROW
+    id: ROW-di-20
+    children:
+      - CHART-error-code-composition
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  # Phase-4 new row: RunInstances spike by region (Computing)
+  ROW-di-21:
+    type: ROW
+    id: ROW-di-21
+    children:
+      - CHART-runinstances-region
+    meta:
+      background: BACKGROUND_TRANSPARENT
   # S3 sub-tab rows
   ROW-s3-1:
     type: ROW
@@ -550,14 +680,45 @@ position:
     type: TAB
     id: TAB-geoip
     children:
+      - ROW-geo-note  # Empty-state guidance for GeoIP enrichment
+      - ROW-geo-5   # Impossible Travel — multi-country principals [CRITICAL]
       - ROW-geo-1
       - ROW-geo-2
       - ROW-geo-3
-      - ROW-geo-4
     meta:
       text: "\U0001f30d GeoIP Intelligence"
-      defaultText: "Tab 7"
+      defaultText: "GeoIP Intelligence"
       tooltip: "Geographic origin of API calls (requires GeoIP enrichment)"
+  # R1-8: empty-state note — these charts are blank without GeoIP enrichment
+  ROW-geo-note:
+    type: ROW
+    id: ROW-geo-note
+    children:
+      - MARKDOWN-geoip-note
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-geoip-note:
+    type: MARKDOWN
+    id: MARKDOWN-geoip-note
+    children: []
+    meta:
+      width: 12
+      height: 18
+      code: >-
+        ### 🌍 GeoIP enrichment required
+
+        The charts on this tab are **blank unless CloudTrail events have been
+        enriched with GeoIP data**. If you see no data, run
+        `make ingest-geoip` after placing the MaxMind GeoLite2 `.mmdb` files in
+        `docker/data/geoip/`, then re-open this dashboard.
+  # Phase-2 new row: impossible travel (same principal, multiple countries)
+  ROW-geo-5:
+    type: ROW
+    id: ROW-geo-5
+    children:
+      - CHART-impossible-travel
+    meta:
+      background: BACKGROUND_TRANSPARENT
   ROW-geo-1:
     type: ROW
     id: ROW-geo-1
@@ -581,29 +742,22 @@ position:
       - CHART-geo-event-name
     meta:
       background: BACKGROUND_TRANSPARENT
-  ROW-geo-4:
-    type: ROW
-    id: ROW-geo-4
-    children:
-      - CHART-geo-identity
-    meta:
-      background: BACKGROUND_TRANSPARENT
 
   # Tab 5 — Temporal Analysis (DFIR)
   TAB-temporal:
     type: TAB
     id: TAB-temporal
     children:
+      - ROW-hdr-temporal
       - ROW-ta-7    # Event Velocity Spikes [CRITICAL]
       - ROW-ta-6    # Dormant Accounts Reactivated [CRITICAL]
       - ROW-ta-1    # First/Last Seen IAM Identity [HIGH]
       - ROW-ta-2    # First/Last Seen Source IP [HIGH]
       - ROW-ta-3    # First/Last Seen API Call [HIGH]
-      - ROW-ta-5    # First/Last Seen User Agent [MEDIUM]
       - ROW-td-6    # First / Last Seen per Service Source [MEDIUM]
     meta:
       text: "\U0001f552 Temporal Analysis"
-      defaultText: "Tab 8"
+      defaultText: "Temporal Analysis"
       tooltip: "First/Last seen tracking, temporal anomalies, and activity velocity for DFIR"
   ROW-ta-1:
     type: ROW
@@ -626,13 +780,6 @@ position:
       - CHART-fs-event-name
     meta:
       background: BACKGROUND_TRANSPARENT
-  ROW-ta-5:
-    type: ROW
-    id: ROW-ta-5
-    children:
-      - CHART-fs-user-agent
-    meta:
-      background: BACKGROUND_TRANSPARENT
   ROW-ta-6:
     type: ROW
     id: ROW-ta-6
@@ -647,6 +794,181 @@ position:
       - CHART-velocity-spikes
     meta:
       background: BACKGROUND_TRANSPARENT
+
+  # Chart entries — Overview (KPI big_number cards, height 30, width 4)
+  CHART-kpi-total-events:
+    type: CHART
+    id: CHART-kpi-total-events
+    children: []
+    meta:
+      chartId: 81
+      uuid: 81a1b2c3-d4e5-6f70-8123-456789000081
+      width: 4
+      height: 30
+      sliceName: Total Events
+  CHART-kpi-distinct-principals:
+    type: CHART
+    id: CHART-kpi-distinct-principals
+    children: []
+    meta:
+      chartId: 82
+      uuid: 82a1b2c3-d4e5-6f70-8123-456789000082
+      width: 4
+      height: 30
+      sliceName: Distinct Principals
+  CHART-kpi-distinct-source-ips:
+    type: CHART
+    id: CHART-kpi-distinct-source-ips
+    children: []
+    meta:
+      chartId: 83
+      uuid: 83a1b2c3-d4e5-6f70-8123-456789000083
+      width: 4
+      height: 30
+      sliceName: Distinct Source IPs
+  CHART-kpi-root-events:
+    type: CHART
+    id: CHART-kpi-root-events
+    children: []
+    meta:
+      chartId: 84
+      uuid: 84a1b2c3-d4e5-6f70-8123-456789000084
+      width: 4
+      height: 30
+      sliceName: Root Account Events
+  CHART-kpi-mfa-less-logins:
+    type: CHART
+    id: CHART-kpi-mfa-less-logins
+    children: []
+    meta:
+      chartId: 85
+      uuid: 85a1b2c3-d4e5-6f70-8123-456789000085
+      width: 4
+      height: 30
+      sliceName: MFA-less Console Logins
+  CHART-kpi-access-denied:
+    type: CHART
+    id: CHART-kpi-access-denied
+    children: []
+    meta:
+      chartId: 86
+      uuid: 86a1b2c3-d4e5-6f70-8123-456789000086
+      width: 4
+      height: 30
+      sliceName: Access Denied Events
+  CHART-kpi-defense-evasion:
+    type: CHART
+    id: CHART-kpi-defense-evasion
+    children: []
+    meta:
+      chartId: 87
+      uuid: 87a1b2c3-d4e5-6f70-8123-456789000087
+      width: 4
+      height: 30
+      sliceName: Defense-Evasion Hits
+  CHART-kpi-distinct-countries:
+    type: CHART
+    id: CHART-kpi-distinct-countries
+    children: []
+    meta:
+      chartId: 88
+      uuid: 88a1b2c3-d4e5-6f70-8123-456789000088
+      width: 4
+      height: 30
+      sliceName: Distinct Countries
+  CHART-kpi-distinct-regions:
+    type: CHART
+    id: CHART-kpi-distinct-regions
+    children: []
+    meta:
+      chartId: 89
+      uuid: 89a1b2c3-d4e5-6f70-8123-456789000089
+      width: 4
+      height: 30
+      sliceName: Active Regions
+  # Overview context chart — reuses the existing CloudTrail Events Over Time slice
+  CHART-kpi-timeseries:
+    type: CHART
+    id: CHART-kpi-timeseries
+    children: []
+    meta:
+      chartId: 1
+      uuid: d4e5f6a7-b8c9-0123-def0-234567890123
+      width: 12
+      height: 50
+      sliceName: CloudTrail Events Over Time
+
+  # Chart entries — Phase-2 DFIR hunts (R2-2, R2-4, R2-5)
+  CHART-logging-gap:
+    type: CHART
+    id: CHART-logging-gap
+    children: []
+    meta:
+      chartId: 91
+      uuid: 91a1b2c3-d4e5-6f70-8123-456789000091
+      width: 12
+      height: 50
+      sliceName: CloudTrail Logging Gap (Hourly Volume)
+  CHART-impossible-travel:
+    type: CHART
+    id: CHART-impossible-travel
+    children: []
+    meta:
+      chartId: 92
+      uuid: 92a1b2c3-d4e5-6f70-8123-456789000092
+      width: 12
+      height: 50
+      sliceName: Impossible Travel (Multi-Country Principals)
+  CHART-auth-failure-success:
+    type: CHART
+    id: CHART-auth-failure-success
+    children: []
+    meta:
+      chartId: 93
+      uuid: 93a1b2c3-d4e5-6f70-8123-456789000093
+      width: 12
+      height: 50
+      sliceName: Failed -> Success Auth Sequence
+  CHART-iam-principal-creation:
+    type: CHART
+    id: CHART-iam-principal-creation
+    children: []
+    meta:
+      chartId: 95
+      uuid: 95a1b2c3-d4e5-6f70-8123-456789000095
+      width: 12
+      height: 50
+      sliceName: New IAM Principal Creation Timeline
+  CHART-cross-account-assume:
+    type: CHART
+    id: CHART-cross-account-assume
+    children: []
+    meta:
+      chartId: 94
+      uuid: 94a1b2c3-d4e5-6f70-8123-456789000094
+      width: 12
+      height: 50
+      sliceName: Cross-Account AssumeRole
+  CHART-error-code-composition:
+    type: CHART
+    id: CHART-error-code-composition
+    children: []
+    meta:
+      chartId: 96
+      uuid: 96a1b2c3-d4e5-6f70-8123-456789000096
+      width: 12
+      height: 50
+      sliceName: Error-Code Composition Over Time
+  CHART-runinstances-region:
+    type: CHART
+    id: CHART-runinstances-region
+    children: []
+    meta:
+      chartId: 97
+      uuid: 97a1b2c3-d4e5-6f70-8123-456789000097
+      width: 12
+      height: 50
+      sliceName: RunInstances Spike by Region
 
   # Chart entries — Tab 1: Identity & Access
   CHART-console-login:
@@ -731,6 +1053,16 @@ position:
       width: 12
       height: 50
       sliceName: CloudTrail Events Over Time
+  CHART-write-read-ratio:
+    type: CHART
+    id: CHART-write-read-ratio
+    children: []
+    meta:
+      chartId: 90
+      uuid: 20b2c3d4-e5f6-7890-bcde-f01234567890
+      width: 12
+      height: 50
+      sliceName: Write/Read Ratio Trend
   CHART-throttling-spikes:
     type: CHART
     id: CHART-throttling-spikes
@@ -925,17 +1257,6 @@ position:
       width: 12
       height: 75
       sliceName: "API Calls by Country (Event Name \xD7 GeoIP)"
-  CHART-geo-identity:
-    type: CHART
-    id: CHART-geo-identity
-    children: []
-    meta:
-      chartId: 80
-      uuid: 80b1c2d3-e4f5-6789-0123-456789012345
-      width: 12
-      height: 75
-      sliceName: "Identities by Country (user_identity_arn \xD7 GeoIP)"
-
   # Chart entries — Tab 5: Temporal Analysis
   CHART-fs-identity:
     type: CHART
@@ -967,16 +1288,6 @@ position:
       width: 12
       height: 50
       sliceName: First / Last Seen per API Call
-  CHART-fs-user-agent:
-    type: CHART
-    id: CHART-fs-user-agent
-    children: []
-    meta:
-      chartId: 34
-      uuid: 34d5e6f7-a8b9-0123-def0-123456789004
-      width: 12
-      height: 50
-      sliceName: First / Last Seen per User Agent
   CHART-dormant-reactivated:
     type: CHART
     id: CHART-dormant-reactivated
@@ -1003,13 +1314,14 @@ position:
     type: TAB
     id: TAB-hrm
     children:
+      - ROW-hdr-hrm
       - ROW-hrm-4   # Security Service Modifications + Credential Retrieval (table) [CRITICAL]
       - ROW-hrm-2   # Top High-Risk API Calls [HIGH]
-      - ROW-hrm-3   # Top Actors + Source IPs + By Region [MEDIUM]
+      - ROW-hrm-3   # Top Actors — High-Risk APIs [MEDIUM]
       - ROW-hrm-1   # High-Risk API Timeseries [CONTEXT]
     meta:
       text: "\U0001f6a8 High-Risk API Monitor"
-      defaultText: "Tab 9"
+      defaultText: "High-Risk API Monitor"
       tooltip: "APIs frequently used in attacks — volume anomalies are the key signal"
   ROW-hrm-1:
     type: ROW
@@ -1030,8 +1342,6 @@ position:
     id: ROW-hrm-3
     children:
       - CHART-hrm-top-actors
-      - CHART-hrm-top-source-ips
-      - CHART-hrm-by-region
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-hrm-4:
@@ -1071,29 +1381,9 @@ position:
     meta:
       chartId: 42
       uuid: 42d4e5f6-a7b8-9012-def0-123456789042
-      width: 4
+      width: 12
       height: 50
       sliceName: Top Actors — High-Risk APIs
-  CHART-hrm-top-source-ips:
-    type: CHART
-    id: CHART-hrm-top-source-ips
-    children: []
-    meta:
-      chartId: 43
-      uuid: 43e5f6a7-b8c9-0123-ef01-234567890143
-      width: 4
-      height: 50
-      sliceName: Top Source IPs — High-Risk APIs
-  CHART-hrm-by-region:
-    type: CHART
-    id: CHART-hrm-by-region
-    children: []
-    meta:
-      chartId: 46
-      uuid: 46b8c9d0-e1f2-3456-1234-567890123446
-      width: 4
-      height: 50
-      sliceName: High-Risk API Calls by Region
   CHART-hrm-defense-evasion:
     type: CHART
     id: CHART-hrm-defense-evasion
@@ -1486,7 +1776,176 @@ position:
       height: 50
       sliceName: KMS Key Deletion & Disable Events
 
+  # R4-4: per-tab context headers — hunting question + relevant MITRE tactics.
+  ROW-hdr-overview:
+    type: ROW
+    id: ROW-hdr-overview
+    children: [MARKDOWN-hdr-overview]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-overview:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-overview
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🚦 Triage — start here
+
+        Scan the KPI cards for anomalies (**root usage**, **MFA-less logins**,
+        **defense-evasion hits** should all be near zero), then drill into the
+        themed tabs. Use the filter bar to scope by principal, IP, region, or time.
+  ROW-hdr-threat:
+    type: ROW
+    id: ROW-hdr-threat
+    children: [MARKDOWN-hdr-threat]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-threat:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-threat
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🎯 Was detection or logging tampered with?
+
+        Audit-service disabling, logging gaps, and baseline deviations — the first
+        DFIR triage question. **MITRE: TA0005 Defense Evasion (T1562 Impair Defenses).**
+  ROW-hdr-identity:
+    type: ROW
+    id: ROW-hdr-identity
+    children: [MARKDOWN-hdr-identity]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-identity:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-identity
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🔑 Who acted, and how did they authenticate?
+
+        Logins, IAM privilege changes, new principals/credentials, and cross-account
+        roles. **MITRE: TA0001 Initial Access · TA0003 Persistence · TA0004 Privilege Escalation.**
+  ROW-hdr-hrm:
+    type: ROW
+    id: ROW-hdr-hrm
+    children: [MARKDOWN-hdr-hrm]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-hrm:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-hrm
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🚨 High-risk API watchlist
+
+        Volume of the 42 APIs most frequently abused in attacks. An unfamiliar
+        principal at the top of these charts is the key signal. **MITRE: multiple tactics.**
+  ROW-hdr-data:
+    type: ROW
+    id: ROW-hdr-data
+    children: [MARKDOWN-hdr-data]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-data:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-data
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 📊 What is the call volume, and who is calling?
+
+        Top APIs, access-denied patterns, regional distribution, and caller
+        attribution (IP / user agent). **MITRE: TA0007 Discovery.**
+  ROW-hdr-s3rds:
+    type: ROW
+    id: ROW-hdr-s3rds
+    children: [MARKDOWN-hdr-s3rds]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-s3rds:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-s3rds
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🪣 Data impact — exfiltration & anti-forensics
+
+        High-volume downloads, bulk deletion, versioning/logging disabled, and
+        backup/KMS destruction. **MITRE: TA0010 Exfiltration · TA0040 Impact.**
+  ROW-hdr-computing:
+    type: ROW
+    id: ROW-hdr-computing
+    children: [MARKDOWN-hdr-computing]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-computing:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-computing
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🖥️ Compute abuse & execution
+
+        EC2 / ECS / SSM / EBS / Lambda activity — resource abuse (e.g. cryptomining)
+        and remote execution. **MITRE: TA0002 Execution · TA0040 Impact.**
+  ROW-hdr-network:
+    type: ROW
+    id: ROW-hdr-network
+    children: [MARKDOWN-hdr-network]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-network:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-network
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🌐 Network exposure & egress
+
+        Security group / NACL / route changes, VPC topology, peering, and DNS.
+        **MITRE: TA0011 Command & Control · TA0010 Exfiltration.**
+  ROW-hdr-temporal:
+    type: ROW
+    id: ROW-hdr-temporal
+    children: [MARKDOWN-hdr-temporal]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-temporal:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-temporal
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🕒 What is new or anomalous in time?
+
+        First/last-seen tracking, dormant-account reactivation, and activity-velocity
+        spikes. **MITRE: TA0001 Initial Access · TA0040 Impact.**
+
 metadata:
+  # R1-6: clicking a value (principal / IP / region / country) in any chart
+  # scopes the whole dashboard — the core DFIR pivot workflow.
+  cross_filters_enabled: true
+  color_scheme: supersetColors
   native_filter_configuration:
     - id: NATIVE_FILTER-timerange
       name: Date Range
@@ -2331,6 +2790,3 @@ metadata:
     - slice_name: "API Calls by Country (Event Name \xD7 GeoIP)"
       viz_type: table
       description: DSH-79 - Top (event_name, country) pairs by API call volume (GeoIP enrichment required).
-    - slice_name: "Identities by Country (user_identity_arn \xD7 GeoIP)"
-      viz_type: table
-      description: DSH-80 - Top (user_identity_arn, country) pairs by API call volume (GeoIP enrichment required).
