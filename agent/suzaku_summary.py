@@ -32,7 +32,13 @@ REQUIRED_KEYS: tuple[str, ...] = (
 )
 
 # Columns produced for an ``ApiEntry`` array (abused_/other_apis_*).
-API_COLUMNS: tuple[str, ...] = ("api", "description", "count", "first_seen", "last_seen")
+API_COLUMNS: tuple[str, ...] = (
+    "api",
+    "description",
+    "count",
+    "first_seen",
+    "last_seen",
+)
 # Columns produced for a ``ValueEntry`` array (regions, src_ips, keys, user_agents).
 VALUE_COLUMNS: tuple[str, ...] = ("value", "count", "first_seen", "last_seen")
 
@@ -221,7 +227,10 @@ def activity_timeline(summary: dict) -> pd.DataFrame:
         timestamps.
     """
     rows = []
-    for status, key in (("success", "abused_apis_success"), ("failed", "abused_apis_failed")):
+    for status, key in (
+        ("success", "abused_apis_success"),
+        ("failed", "abused_apis_failed"),
+    ):
         for entry in summary.get(key) or []:
             rows.append(
                 {

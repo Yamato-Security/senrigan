@@ -49,7 +49,9 @@ def _render_top_section(
         y=label_col,
         orientation="h",
     )
-    fig.update_layout(height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_layout(
+        height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
+    )
     st.plotly_chart(fig, use_container_width=True)
     st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -77,12 +79,18 @@ def _render_detail(summary: dict) -> None:
     if not tl.empty:
         st.markdown("### 🕒 Abused-API Activity Timeline")
         fig = px.timeline(
-            tl, x_start="start", x_end="end", y="api", color="status",
+            tl,
+            x_start="start",
+            x_end="end",
+            y="api",
+            color="status",
             color_discrete_map={"success": "#d62728", "failed": "#7f7f7f"},
             hover_data=["count"],
         )
         fig.update_yaxes(autorange="reversed")
-        fig.update_layout(height=max(220, 32 * len(tl)), margin=dict(l=0, r=0, t=10, b=0))
+        fig.update_layout(
+            height=max(220, 32 * len(tl)), margin=dict(l=0, r=0, t=10, b=0)
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     # --- Source IPs / Regions / User agents / Access keys --------------------
@@ -95,10 +103,14 @@ def _render_detail(summary: dict) -> None:
         _render_country_section(summary.get("src_ips"))
     with b2:
         _render_top_section(
-            "AWS Regions", value_entries_df(summary.get("aws_regions")), label_col="value"
+            "AWS Regions",
+            value_entries_df(summary.get("aws_regions")),
+            label_col="value",
         )
         _render_top_section(
-            "User Agents", value_entries_df(summary.get("user_agents")), label_col="value"
+            "User Agents",
+            value_entries_df(summary.get("user_agents")),
+            label_col="value",
         )
     _render_top_section(
         "Access Key IDs",
@@ -124,7 +136,9 @@ def _render_api_block(title: str, entries) -> None:
         return
     chart_df = top_n(df, TOP_N)
     fig = px.bar(chart_df.iloc[::-1], x="count", y="api", orientation="h")
-    fig.update_layout(height=max(160, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_layout(
+        height=max(160, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
+    )
     st.plotly_chart(fig, use_container_width=True)
     st.dataframe(df, use_container_width=True, hide_index=True)
     _download_csv(df, f"{title}-apis.csv")
@@ -139,7 +153,9 @@ def _render_country_section(src_ips) -> None:
         return
     chart_df = df.head(TOP_N)
     fig = px.bar(chart_df.iloc[::-1], x="count", y="country", orientation="h")
-    fig.update_layout(height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_layout(
+        height=max(200, 28 * len(chart_df)), margin=dict(l=0, r=0, t=10, b=0)
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 
