@@ -76,6 +76,24 @@ def test_parse_summary_accepts_bytes():
     assert len(parse_summary(raw)) == 1
 
 
+def test_parse_summary_accepts_jsonl():
+    raw = "\n".join(
+        json.dumps(_identity(user_arn=f"arn:aws:iam::111:user/u{i}")) for i in range(3)
+    )
+    result = parse_summary(raw)
+    assert [r["user_arn"] for r in result] == [
+        "arn:aws:iam::111:user/u0",
+        "arn:aws:iam::111:user/u1",
+        "arn:aws:iam::111:user/u2",
+    ]
+
+
+def test_parse_summary_jsonl_ignores_blank_lines():
+    line = json.dumps(_identity())
+    raw = f"\n{line}\n\n{line}\n"
+    assert len(parse_summary(raw)) == 2
+
+
 def test_parse_summary_rejects_invalid_json():
     with pytest.raises(SuzakuSummaryError, match="Invalid JSON"):
         parse_summary("{not json")

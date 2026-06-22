@@ -47,8 +47,35 @@ class SuzakuSummaryError(ValueError):
     """Raised when the uploaded JSON is not a valid ``aws-ct-summary`` document."""
 
 
+def _parse_jsonl(raw: str, json_exc: json.JSONDecodeError) -> list[dict]:
+    """Parse ``raw`` as JSON Lines (one JSON value per non-empty line).
+
+    ``json_exc`` is the error from the failed whole-document JSON parse; it is
+    surfaced if the content turns out not to be valid JSON Lines either, so the
+    user gets a meaningful "Invalid JSON" message rather than a line-level one.
+    """
+    records: list[dict] = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            # Not valid JSON Lines either — report the original document error.
+            raise SuzakuSummaryError(f"Invalid JSON: {json_exc}") from json_exc
+    if not records:
+        raise SuzakuSummaryError(f"Invalid JSON: {json_exc}") from json_exc
+    return records
+
+
 def parse_summary(raw: str | bytes) -> list[dict]:
-    """Parse and validate raw ``aws-ct-summary`` JSON.
+    """Parse and validate raw ``aws-ct-summary`` JSON or JSON Lines.
+
+    Two layouts are accepted:
+
+    * **JSON** — a single array of identity summary objects.
+    * **JSON Lines** (``.jsonl``) — one identity summary object per line.
 
     Args:
         raw: The file contents, as bytes (from an upload) or a decoded string.
@@ -57,8 +84,8 @@ def parse_summary(raw: str | bytes) -> list[dict]:
         The list of identity summary objects.
 
     Raises:
-        SuzakuSummaryError: If the JSON is malformed, is not an array, is empty,
-            or any element is missing a required key.
+        SuzakuSummaryError: If the content is malformed, is neither a JSON array
+            nor JSON Lines, is empty, or any element is missing a required key.
     """
     if isinstance(raw, bytes):
         raw = raw.decode("utf-8")
@@ -66,7 +93,9 @@ def parse_summary(raw: str | bytes) -> list[dict]:
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise SuzakuSummaryError(f"Invalid JSON: {exc}") from exc
+        # A whole-document parse fails for JSON Lines (one object per line);
+        # fall back to line-by-line parsing before giving up.
+        data = _parse_jsonl(raw, exc)
 
     if not isinstance(data, list):
         raise SuzakuSummaryError(
