@@ -19,7 +19,7 @@
 
 <img src="doc/img-agent.png" width="800" alt="AI Chat UI">
 
-### 📊 60 Pre-built Dashboard Charts
+### 📊 80+ Pre-built Dashboard Charts
 
 <img src="doc/img-dashboard.png" width="800" alt="Superset Dashboard">
 
@@ -291,7 +291,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 ---
 
-### 📊 Dashboard Charts — 60+ charts
+### 📊 Dashboard Charts — 80+ charts
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
