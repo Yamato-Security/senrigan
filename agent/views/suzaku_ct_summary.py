@@ -67,6 +67,7 @@ def _render_detail(summary: dict) -> None:
     c4.metric("Last seen", summary.get("last_timestamp", "-"))
 
     # --- Abused APIs (primary threat signal) ---------------------------------
+    st.divider()
     st.markdown("### 🔴 Abused APIs")
     a1, a2 = st.columns(2)
     with a1:
@@ -81,6 +82,7 @@ def _render_detail(summary: dict) -> None:
     # --- Activity timeline ---------------------------------------------------
     tl = activity_timeline(summary)
     if not tl.empty:
+        st.divider()
         st.markdown("### 🕒 Abused-API Activity Timeline")
         fig = px.timeline(
             tl,
@@ -98,6 +100,7 @@ def _render_detail(summary: dict) -> None:
         st.plotly_chart(fig, use_container_width=True, key="chart-timeline")
 
     # --- Source IPs / Regions / User agents / Access keys --------------------
+    st.divider()
     st.markdown("### 🌐 Source & Identity Breakdown")
     b1, b2 = st.columns(2)
     with b1:
@@ -123,16 +126,17 @@ def _render_detail(summary: dict) -> None:
     )
 
     # --- Other (non-flagged) APIs --------------------------------------------
-    with st.expander("Other APIs (non-flagged)"):
-        o1, o2 = st.columns(2)
-        with o1:
-            _render_api_block(
-                "✅ Succeeded", summary.get("other_apis_success"), key="other-success"
-            )
-        with o2:
-            _render_api_block(
-                "❌ Failed", summary.get("other_apis_failed"), key="other-failed"
-            )
+    st.divider()
+    st.markdown("### Other APIs (non-flagged)")
+    o1, o2 = st.columns(2)
+    with o1:
+        _render_api_block(
+            "✅ Succeeded", summary.get("other_apis_success"), key="other-success"
+        )
+    with o2:
+        _render_api_block(
+            "❌ Failed", summary.get("other_apis_failed"), key="other-failed"
+        )
 
 
 def _render_api_block(title: str, entries, *, key: str) -> None:
@@ -198,8 +202,8 @@ def _render_uploader():
         st.subheader("📁 Summary File")
         st.session_state.setdefault("suzaku_uploader_key", 0)
         return st.file_uploader(
-            "aws-ct-summary JSON",
-            type=["json"],
+            "aws-ct-summary JSON / JSONL",
+            type=["json", "jsonl"],
             key=f"suzaku_upload_{st.session_state.suzaku_uploader_key}",
         )
 
@@ -260,7 +264,9 @@ def main() -> None:
 
     uploaded = _render_uploader()
     if uploaded is None:
-        st.info("Upload an `aws-ct-summary` JSON file in the sidebar to begin.")
+        st.info(
+            "Upload an `aws-ct-summary` JSON or JSONL file in the sidebar to begin."
+        )
         return
 
     raw = uploaded.getvalue()
