@@ -305,7 +305,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 🚨 High-Risk API Monitor | 7 | HRM time series · top calls/actors/IPs · defense evasion/credential detail · by region |
 
 <details>
-<summary>📋 Full list — all 60+ charts (click to expand)</summary>
+<summary>📋 Full list — all 80+ charts (click to expand)</summary>
 
 ### Dashboard Charts (Apache Superset — `dashboard/`)
 
