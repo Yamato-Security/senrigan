@@ -1,8 +1,14 @@
 # Plan: Hierarchical Layout — Sugiyama Algorithm Migration
 
+> **Status: COMPLETED.** This migration has shipped. `config_viz/frontend/src/utils/layout.ts`
+> now uses `elkjs` (ELK layered / Sugiyama layout), `package.json` declares `elkjs@0.11.1` with
+> `@dagrejs/dagre` removed, and `GraphCanvas.tsx` calls the async ELK layout. The sections below
+> are retained as the historical design record; the "Current state" description refers to the
+> pre-migration dagre implementation.
+
 ## 1. Motivation & Current Limitations
 
-### Current state (`@dagrejs/dagre`)
+### Current state (`@dagrejs/dagre`) — pre-migration (historical)
 
 `config_viz/frontend/src/utils/layout.ts` applies a **two-pass flat-dagre** strategy:
 

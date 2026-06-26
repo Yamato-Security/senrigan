@@ -241,7 +241,7 @@ ptw                               # Auto-run tests on file change
 cd config_viz
 source .venv/bin/activate
 
-pytest                            # Run all 34 backend tests
+pytest                            # Run all backend tests (~67)
 pytest -v --tb=short
 ruff check .
 black --check .
@@ -252,7 +252,7 @@ black --check .
 ```bash
 cd config_viz/frontend
 
-npm test                          # Run all 33 Vitest tests
+npm test                          # Run all Vitest tests (~114)
 npm test -- --run                 # Single-pass (no watch)
 npm run build                     # Production build → ../static/
 ```
@@ -287,9 +287,12 @@ senrigan/
 │   ├── config.py              # Configuration (env vars)
 │   ├── builtin_hunts.yaml     # Pre-built hunt queries
 │   ├── prompts/               # Prompt templates (system_prompt.py, analysis_prompt.py)
+│   ├── suzaku_summary.py      # Suzaku aws-ct-summary parsing/aggregation (pure functions)
+│   ├── suzaku_report.py       # Suzaku summary Markdown/HTML report (pure functions)
+│   ├── views/                 # st.navigation pages (suzaku_ct_summary.py)
 │   ├── requirements.txt       # Python dependencies
 │   ├── requirements-dev.txt   # Dev dependencies
-│   └── tests/                 # pytest tests (134 tests)
+│   └── tests/                 # pytest tests (~351 tests)
 ├── config_viz/
 │   ├── PLAN.md                # Phase A/B/C implementation plan
 │   ├── README.md              # Module documentation
@@ -301,12 +304,12 @@ senrigan/
 │   │   ├── requirements.txt
 │   │   └── scripts/
 │   │       └── extract_icons.py  # AWS icon download (build time)
-│   ├── frontend/              # React 18 + Vite SPA
+│   ├── frontend/              # React 18 + Vite SPA (reactflow + elkjs)
 │   │   ├── package.json
 │   │   ├── vite.config.ts     # outDir: ../static
-│   │   └── src/               # Components, utils, tests, MSW mocks
+│   │   └── src/               # Components, utils (ELK layout), tests, MSW mocks
 │   ├── static/                # Vite build output + icons/
-│   └── tests/                 # pytest backend tests (34 tests)
+│   └── tests/                 # pytest backend tests (~67 tests)
 ├── dashboard/                 # Superset config + pre-built dashboard assets
 │   └── assets/                # Dashboard definitions and ZIP exports
 ├── docker/

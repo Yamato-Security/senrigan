@@ -179,7 +179,7 @@ Built with FastAPI (Python 3.14) on the backend and React 18 + React Flow on the
 
 #### Technology Stack
 - Backend: FastAPI + DuckDB Python client (READ_ONLY)
-- Frontend: React 18 + Vite + TypeScript + React Flow + dagre
+- Frontend: React 18 + Vite + TypeScript + React Flow + elkjs (ELK layered / Sugiyama layout)
 
 #### Functional Requirements
 
