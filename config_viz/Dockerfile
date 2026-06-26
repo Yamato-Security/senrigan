@@ -5,8 +5,8 @@
 # extract_icons.py creates default.png and exits 0 — the frontend falls back to it.
 
 # Pinned by digest for supply chain integrity.
-# To update: docker pull node:22-slim && docker inspect --format '{{index .RepoDigests 0}}'
-FROM node:22-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732 AS frontend-builder
+# To update: docker pull node:24-slim && docker inspect --format '{{index .RepoDigests 0}}'
+FROM node:24-slim@sha256:b31e7a42fdf8b8aa5f5ed477c72d694301273f1069c5a2f71d53c6482e99a2fc AS frontend-builder
 
 ARG CUSTOM_CA_CERT_BASE64=""
 RUN if [ -n "$CUSTOM_CA_CERT_BASE64" ]; then \
