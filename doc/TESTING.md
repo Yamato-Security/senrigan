@@ -184,9 +184,13 @@ agent/
 ├── report.py
 ├── schema.py
 ├── config.py
+├── suzaku_summary.py
+├── suzaku_report.py
 ├── prompts/
 │   ├── system_prompt.py
 │   └── analysis_prompt.py
+├── views/
+│   └── suzaku_ct_summary.py
 └── tests/
     ├── conftest.py          # Shared fixtures
     ├── test_config.py
@@ -195,7 +199,12 @@ agent/
     ├── test_query.py
     ├── test_report.py
     ├── test_schema.py
-    └── test_app.py
+    ├── test_app.py
+    ├── test_builtin_hunts_phase1.py
+    ├── test_builtin_hunts_phase2.py
+    ├── test_builtin_hunts_phase3.py
+    ├── test_suzaku_summary.py
+    └── test_suzaku_report.py
 ```
 
 ### Shared Fixtures (conftest.py)
@@ -345,7 +354,7 @@ def test_generate_sql_strips_markdown_fences(mock_openai_client):
 cd agent
 source .venv/bin/activate
 
-pytest                                  # All tests (134 tests)
+pytest                                  # All tests (~351 tests)
 pytest tests/test_query.py              # Specific file
 pytest -k "test_validate"              # Pattern match
 pytest -v --tb=short                   # Verbose + short traceback
@@ -402,9 +411,9 @@ agent/tests/testdata/          # For Python agent tests (if needed)
 | Module     | Target Coverage | Focus Areas                                                   |
 | ---------- | --------------- | ------------------------------------------------------------- |
 | ingester   | 80%+            | parser, db insert logic, config import pipeline               |
-| agent      | 80%+            | SQL validation, LLM response parsing, reports                 |
-| config_viz | 80%+            | query functions, blocklist, graph endpoint, frontend components |
-| dashboard  | N/A             | Configuration-only; tested via manual QA                      |
+| agent      | 80%+            | SQL validation, LLM parsing, reports, Suzaku summary parsing/report |
+| config_viz | 80%+            | query functions, blocklist, graph endpoint, ELK layout, frontend components |
+| dashboard  | n/a (asset QA)  | YAML/asset/config/Dockerfile validation suite (`dashboard/tests/`) |
 
 ### Measuring Coverage
 
@@ -445,23 +454,28 @@ config_viz/
 │   └── query.py
 ├── frontend/
 │   └── src/
-│       └── __tests__/          # Vitest frontend tests (33 tests)
+│       └── __tests__/          # Vitest frontend tests (~114 tests)
 │           ├── App.test.tsx
 │           ├── Sidebar.test.tsx
 │           ├── GraphCanvas.test.tsx
 │           ├── AwsNode.test.tsx
 │           ├── AwsGroupNode.test.tsx
 │           ├── DetailPanel.test.tsx
+│           ├── Legend.test.tsx
 │           ├── layout.test.ts
+│           ├── layout_elk.test.ts
+│           ├── collapse.test.ts
+│           ├── label.test.ts
+│           ├── serviceColors.test.ts
 │           └── icons.test.ts
 └── tests/
     ├── conftest.py             # tmp_db_empty, tmp_db_seeded, tmp_db_hierarchy, client_* fixtures
-    └── test_query.py           # 34 backend tests (BA-01 to BA-14)
+    └── test_query.py           # backend tests (~67, BA-* series)
 ```
 
 ### Backend Tests (pytest)
 
-34 tests covering all API endpoints and SQL safety:
+~67 tests covering all API endpoints and SQL safety (the BA-* IDs below are the original core set):
 
 | Test ID | Coverage |
 |---------|---------|
@@ -479,14 +493,14 @@ config_viz/
 
 ```bash
 cd config_viz
-pytest                          # All 34 tests
+pytest                          # All backend tests (~67)
 pytest -v --tb=short
 pytest --cov=backend --cov-report=term-missing
 ```
 
 ### Frontend Tests (Vitest)
 
-33 tests using `@testing-library/react` and MSW v2 for API mocking:
+~114 tests using `@testing-library/react` and MSW v2 for API mocking. Representative areas:
 
 | Test ID | Coverage |
 |---------|---------|
@@ -496,9 +510,10 @@ pytest --cov=backend --cov-report=term-missing
 | BF-04 | `AwsNode` tooltip on hover |
 | BF-05/06 | Click → `DetailPanel` opens + fetches detail |
 | BF-07/10 | Resource type filter + layout toggle |
-| BF-08 | `applyDagreLayout()` assigns positions (compound graph) |
+| BF-08 | ELK layered layout assigns positions (compound graph) — `layout_elk.test.ts` |
 | BF-09 | `icons.ts` fallback for unknown resource types |
 | BF-11 | `AwsGroupNode` dashed border rendering |
+| — | Group collapse/expand (`collapse.test.ts`), label formatting (`label.test.ts`), service colors + `Legend` |
 
 ```bash
 cd config_viz/frontend
@@ -530,11 +545,33 @@ def tmp_db_hierarchy(tmp_path):
 
 ---
 
+## dashboard Testing
+
+The dashboard is configuration/asset-driven, but it now ships a `pytest` suite under
+`dashboard/tests/` that validates the Superset assets and bootstrap wiring (no running Superset
+instance required):
+
+| Test file | Validates |
+|-----------|-----------|
+| `test_chart_yaml.py` | Chart YAML definitions in `assets/` |
+| `test_dashboard_yaml.py` | Dashboard YAML definition (tabs, layout) |
+| `test_superset_config.py` | `superset_config.py` settings |
+| `test_init_scripts.py` | `init/bootstrap.sh`, `register_duckdb.py` wiring |
+| `test_dockerfile.py` | Dockerfile build expectations |
+| `test_rebuild_zip.py` | `cloudtrail_default.zip` import bundle integrity |
+
+```bash
+cd dashboard
+pytest                          # ~61 tests
+```
+
+---
+
 ## Continuous Integration Checks
 
 Every PR must pass:
 
-1. **All tests green** (`cargo test` + `pytest` for agent + `pytest` for config_viz + `npm test` for config_viz frontend)
+1. **All tests green** (`cargo test` + `pytest` for agent + `pytest` for config_viz + `npm test` for config_viz frontend + `pytest` for dashboard)
 2. **No lint warnings** (`cargo clippy -- -D warnings` + `ruff check .` + `black --check .`)
 3. **Format compliance** (`cargo fmt --check`)
 4. **No new test regressions** (test count must not decrease)

@@ -14,7 +14,11 @@ Four Docker containers share one DuckDB file via a **bind mount** (`docker/data/
 | `ingester` | Rust 1.85+ | READ_WRITE (sole writer) | — |
 | `agent` | Python 3.14+ / Streamlit | READ_ONLY | 8501 |
 | `dashboard` | Apache Superset | READ_ONLY | 8088 |
-| `config_viz` | Python 3.14+ / FastAPI + React 18 | READ_ONLY | 8502 |
+| `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK layout) | READ_ONLY | 8502 |
+
+The `agent` container is a multi-page Streamlit app (`st.navigation`): **🔭 Senrigan** (the chat
+hunting page) and **☁️ Suzaku CT Summary** (an upload-based viewer for Suzaku `aws-ct-summary`
+JSON — read-only, no DuckDB, no API key required).
 
 The bind-mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves
 relative paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry
@@ -118,14 +122,22 @@ black .                       # format
 
 ```bash
 # Python backend (config_viz/)
-pytest                        # all tests (34 backend tests)
+pytest                        # all tests (67 backend tests)
 ruff check .                  # lint
 black .                       # format
 
 # TypeScript frontend (config_viz/frontend/)
-npm test                      # all tests (33 frontend tests)
+npm test                      # all tests (114 frontend tests)
 npm run build                 # Vite production build → ../static/
 ```
+
+```bash
+# Dashboard (dashboard/) — YAML/asset/config validation suite
+pytest                        # all tests (61 tests)
+```
+
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 351 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 61. Test count must not decrease in a PR.
 
 ---
 
@@ -321,16 +333,20 @@ senrigan/
 │       ├── config_db.rs       # Config tables schema + Appender writes
 │       ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
 │       └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
-├── agent/                     # Python / Streamlit AI-agent UI
+├── agent/                     # Python / Streamlit AI-agent UI (multi-page via st.navigation)
 │   ├── AGENTS.md              # Agent-specific TDD context
-│   ├── app.py
+│   ├── app.py                 # Entry point: st.navigation (chat page + Suzaku CT Summary page)
 │   ├── handlers.py            # Stateful handler functions
 │   ├── llm.py
 │   ├── query.py
-│   ├── report.py
+│   ├── report.py              # Chat-session Markdown / PDF report
 │   ├── schema.py
 │   ├── config.py
 │   ├── builtin_hunts.yaml
+│   ├── suzaku_summary.py      # Parse + aggregate Suzaku aws-ct-summary JSON (pure functions)
+│   ├── suzaku_report.py       # Markdown / HTML report for the Suzaku summary (pure functions)
+│   ├── views/
+│   │   └── suzaku_ct_summary.py   # st.navigation page: upload-based Suzaku summary viewer
 │   └── prompts/
 │       ├── system_prompt.py
 │       └── analysis_prompt.py
@@ -347,7 +363,7 @@ senrigan/
 │   │   └── scripts/
 │   │       └── extract_icons.py   # AWS icon download (runs at Docker build time; failure-safe)
 │   ├── frontend/              # React 18 + Vite + TypeScript SPA
-│   │   ├── package.json       # (type: module)
+│   │   ├── package.json       # (type: module) — reactflow + elkjs
 │   │   ├── vite.config.ts     # outDir: ../static
 │   │   ├── vitest.config.ts
 │   │   └── src/
@@ -357,26 +373,36 @@ senrigan/
 │   │       ├── components/
 │   │       │   ├── AwsNode.tsx        # Leaf node + hover tooltip
 │   │       │   ├── AwsGroupNode.tsx   # Container node (dashed border)
-│   │       │   ├── GraphCanvas.tsx    # ReactFlow + dagre layout
+│   │       │   ├── GraphCanvas.tsx    # ReactFlow + ELK layout
 │   │       │   ├── Sidebar.tsx        # Snapshot list + filter + layout toggle
-│   │       │   └── DetailPanel.tsx    # Resource detail slide-in panel
+│   │       │   ├── DetailPanel.tsx    # Resource detail slide-in panel
+│   │       │   ├── CollapseContext.tsx # Collapse/expand state for group nodes
+│   │       │   └── Legend.tsx         # Service-color legend
 │   │       ├── utils/
-│   │       │   ├── layout.ts   # applyDagreLayout() (compound graph)
-│   │       │   └── icons.ts    # AWS resource type → icon URL (with fallback)
+│   │       │   ├── layout.ts        # ELK (elkjs) Sugiyama layered layout for the compound graph
+│   │       │   ├── collapse.ts      # Group collapse/expand helpers
+│   │       │   ├── label.ts         # Node label formatting
+│   │       │   ├── serviceColors.ts # AWS service → color mapping
+│   │       │   └── icons.ts         # AWS resource type → icon URL (with fallback)
 │   │       └── mocks/          # MSW v2 handlers for tests
 │   ├── static/                # Vite build output (served by FastAPI)
 │   └── tests/
 │       ├── conftest.py         # tmp_db_empty, tmp_db_seeded, tmp_db_hierarchy fixtures
-│       └── test_query.py       # 34 backend tests (BA-01 to BA-14)
+│       └── test_query.py       # backend tests (BA-* series)
 ├── dashboard/                 # Apache Superset BI dashboard
 │   ├── Dockerfile
 │   ├── superset_config.py
+│   ├── pytest.ini
 │   ├── assets/                # cloudtrail_default.zip + YAML definitions
-│   └── init/                  # bootstrap.sh, register_duckdb.py
+│   ├── init/                  # bootstrap.sh, register_duckdb.py
+│   └── tests/                 # YAML/asset/config/Dockerfile validation suite
 ├── doc/                       # Documentation
 │   ├── ARCHITECTURE.md
 │   ├── DEVELOPMENT.md
 │   ├── PRD.md
+│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements
+│   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
+│   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

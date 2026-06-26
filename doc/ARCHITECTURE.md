@@ -55,6 +55,11 @@ filesystem and store them in DuckDB.
 - Generates SQL from natural language via OpenAI API
 - Executes queries and displays results
 - Generates threat hunting reports (Markdown / PDF)
+- Multi-page Streamlit app (`st.navigation`):
+  - **🔭 Senrigan** — the chat-based hunting page (DuckDB + OpenAI)
+  - **☁️ Suzaku CT Summary** — upload-based viewer for Suzaku `aws-ct-summary` JSON.
+    Read-only, no DuckDB access and no API key required; parsing/aggregation and report
+    generation live in `suzaku_summary.py` / `suzaku_report.py` as pure functions.
 
 ### config_viz (Python / FastAPI + React)
 
@@ -63,9 +68,10 @@ filesystem and store them in DuckDB.
 - Reads from DuckDB (`READ_ONLY` mode)
 - FastAPI backend exposes 4 REST endpoints for graph data
 - React 18 + Vite + TypeScript frontend renders hierarchical resource graph
-  - `reactflow` for graph rendering, `@dagrejs/dagre` for auto-layout
-  - Container nesting: VPC / Subnet / EC2 shown as nested boxes
-  - Click-to-inspect detail panel with full configuration and tags
+  - `reactflow` for graph rendering, `elkjs` (ELK layered / Sugiyama algorithm) for auto-layout
+    — migrated from `@dagrejs/dagre`; see [PLAN_SUGIYAMA.md](PLAN_SUGIYAMA.md)
+  - Container nesting: VPC / Subnet / EC2 shown as nested, collapsible boxes
+  - Service-color legend and click-to-inspect detail panel with full configuration and tags
 - Port 8502
 
 ### dashboard (Apache Superset)
