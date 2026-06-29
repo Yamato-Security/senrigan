@@ -84,3 +84,6 @@ config_viz/static/assets/
 coverage.xml
 *.lcov
 .coverage.*
+
+# MkDocs documentation site build output
+/website/site/
