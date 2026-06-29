@@ -116,45 +116,171 @@ plugins:
         - locale: ja
           name: 日本語
           build: true
+          nav_translations:
+            "Home": "ホーム"
+            "Overview": "概要"
+            "About": "このプロジェクトについて"
+            "Modules": "モジュール"
+            "Architecture": "アーキテクチャ"
+            "Getting Started": "はじめに"
+            "Reference": "リファレンス"
+            "Resources": "リソース"
         - locale: zh-TW
           name: 繁體中文
           build: true
+          nav_translations:
+            "Home": "首頁"
+            "Overview": "概觀"
+            "About": "關於"
+            "Modules": "模組"
+            "Architecture": "架構"
+            "Getting Started": "開始使用"
+            "Reference": "參考"
+            "Resources": "資源"
         - locale: ko
           name: 한국어
           build: true
+          nav_translations:
+            "Home": "홈"
+            "Overview": "개요"
+            "About": "소개"
+            "Modules": "모듈"
+            "Architecture": "아키텍처"
+            "Getting Started": "시작하기"
+            "Reference": "참조"
+            "Resources": "리소스"
         - locale: de
           name: Deutsch
           build: true
+          nav_translations:
+            "Home": "Startseite"
+            "Overview": "Übersicht"
+            "About": "Über"
+            "Modules": "Module"
+            "Architecture": "Architektur"
+            "Getting Started": "Erste Schritte"
+            "Reference": "Referenz"
+            "Resources": "Ressourcen"
         - locale: tr
           name: Türkçe
           build: true
+          nav_translations:
+            "Home": "Ana Sayfa"
+            "Overview": "Genel Bakış"
+            "About": "Hakkında"
+            "Modules": "Modüller"
+            "Architecture": "Mimari"
+            "Getting Started": "Başlarken"
+            "Reference": "Başvuru"
+            "Resources": "Kaynaklar"
         - locale: fr
           name: Français
           build: true
+          nav_translations:
+            "Home": "Accueil"
+            "Overview": "Aperçu"
+            "About": "À propos"
+            "Modules": "Modules"
+            "Architecture": "Architecture"
+            "Getting Started": "Premiers pas"
+            "Reference": "Référence"
+            "Resources": "Ressources"
         - locale: es
           name: Español
           build: true
+          nav_translations:
+            "Home": "Inicio"
+            "Overview": "Resumen"
+            "About": "Acerca de"
+            "Modules": "Módulos"
+            "Architecture": "Arquitectura"
+            "Getting Started": "Primeros pasos"
+            "Reference": "Referencia"
+            "Resources": "Recursos"
         - locale: pt-BR
           name: Português (Brasil)
           build: true
+          nav_translations:
+            "Home": "Início"
+            "Overview": "Visão Geral"
+            "About": "Sobre"
+            "Modules": "Módulos"
+            "Architecture": "Arquitetura"
+            "Getting Started": "Primeiros Passos"
+            "Reference": "Referência"
+            "Resources": "Recursos"
         - locale: uk
           name: Українська
           build: true
+          nav_translations:
+            "Home": "Головна"
+            "Overview": "Огляд"
+            "About": "Про проєкт"
+            "Modules": "Модулі"
+            "Architecture": "Архітектура"
+            "Getting Started": "Початок роботи"
+            "Reference": "Довідник"
+            "Resources": "Ресурси"
         - locale: hi
           name: हिन्दी
           build: true
+          nav_translations:
+            "Home": "होम"
+            "Overview": "अवलोकन"
+            "About": "परिचय"
+            "Modules": "मॉड्यूल"
+            "Architecture": "आर्किटेक्चर"
+            "Getting Started": "शुरुआत करें"
+            "Reference": "संदर्भ"
+            "Resources": "संसाधन"
         - locale: id
           name: Bahasa Indonesia
           build: true
+          nav_translations:
+            "Home": "Beranda"
+            "Overview": "Ikhtisar"
+            "About": "Tentang"
+            "Modules": "Modul"
+            "Architecture": "Arsitektur"
+            "Getting Started": "Memulai"
+            "Reference": "Referensi"
+            "Resources": "Sumber Daya"
         - locale: my
           name: မြန်မာဘာသာ
           build: true
+          nav_translations:
+            "Home": "ပင်မ"
+            "Overview": "ခြုံငုံသုံးသပ်ချက်"
+            "About": "အကြောင်း"
+            "Modules": "မော်ဂျူးများ"
+            "Architecture": "ဗိသုကာဖွဲ့စည်းပုံ"
+            "Getting Started": "စတင်အသုံးပြုခြင်း"
+            "Reference": "ကိုးကားချက်"
+            "Resources": "အရင်းအမြစ်များ"
         - locale: th
           name: ไทย
           build: true
+          nav_translations:
+            "Home": "หน้าแรก"
+            "Overview": "ภาพรวม"
+            "About": "เกี่ยวกับ"
+            "Modules": "โมดูล"
+            "Architecture": "สถาปัตยกรรม"
+            "Getting Started": "เริ่มต้นใช้งาน"
+            "Reference": "ข้อมูลอ้างอิง"
+            "Resources": "แหล่งข้อมูล"
         - locale: ar
           name: العربية
           build: true
+          nav_translations:
+            "Home": "الرئيسية"
+            "Overview": "نظرة عامة"
+            "About": "حول"
+            "Modules": "الوحدات"
+            "Architecture": "البنية"
+            "Getting Started": "البدء"
+            "Reference": "المرجع"
+            "Resources": "الموارد"
 
 extra:
   social:
