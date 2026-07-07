@@ -2460,6 +2460,215 @@
     LIMIT 100
 
 # ===========================================================================
+# AI & LLM Abuse (LLMjacking — see doc/PLAN_LLMJACKING.md)
+# ===========================================================================
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f916 Bedrock Model Invocation Spike"
+  description: "Detects principals invoking Bedrock models 50+ times in one hour. High-volume inference on stolen credentials (LLMjacking) can cost the victim tens of thousands of dollars per day."
+  chart:
+    type: timeseries
+    bucket: hour
+  prompt: |
+    Find principals with a spike in Amazon Bedrock model invocations:
+    InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream
+    (event_source bedrock.amazonaws.com), 50 or more calls within any
+    1-hour window. Group by caller, hour, and modelId
+    (json_extract_string(request_parameters, '$.modelId')).
+    This is the core LLMjacking pattern: attackers resell stolen
+    inference capacity through reverse proxies at the victim's expense.
+  sql: |
+    SELECT
+        user_identity_arn,
+        DATE_TRUNC('hour', event_time)                          AS hour_bucket,
+        json_extract_string(request_parameters, '$.modelId')    AS model_id,
+        COUNT(*)                                                AS invocation_count,
+        COUNT(DISTINCT source_ip_address)                       AS distinct_ips,
+        COUNT(DISTINCT aws_region)                              AS distinct_regions
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+      AND event_name IN (
+          'InvokeModel', 'InvokeModelWithResponseStream',
+          'Converse',    'ConverseStream'
+      )
+    GROUP BY user_identity_arn, hour_bucket, model_id
+    HAVING COUNT(*) >= 50
+    ORDER BY invocation_count DESC
+    LIMIT 100
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f513 Bedrock Model Access Enablement"
+  description: "Detects foundation-model access being enabled or provisioned capacity purchased. In orgs that never adopted Bedrock this is a near-zero-noise LLMjacking indicator — the attacker's canonical first write."
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find Amazon Bedrock model-access enablement events:
+    PutUseCaseForModelAccess, PutFoundationModelEntitlement,
+    CreateFoundationModelAgreement, PutModelAccessConfig, and
+    CreateProvisionedModelThroughput (event_source bedrock.amazonaws.com).
+    Attackers with stolen credentials self-enable foundation-model access
+    before abusing it (LLMjacking). Show caller, model, region, source IP,
+    and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.modelId')   AS model_id,
+        source_ip_address,
+        aws_region,
+        user_agent,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+      AND event_name IN (
+          'PutUseCaseForModelAccess',      'PutFoundationModelEntitlement',
+          'CreateFoundationModelAgreement', 'PutModelAccessConfig',
+          'CreateProvisionedModelThroughput'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f648 Bedrock Invocation Logging Tampering"
+  description: "Detects deletion or modification of Bedrock model-invocation logging, plus attackers checking whether logging is enabled before abusing the account (a documented LLMjacking IOC)."
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find Amazon Bedrock invocation-logging tampering events:
+    DeleteModelInvocationLoggingConfiguration (disabling prompt/usage
+    logging), PutModelInvocationLoggingConfiguration (rewriting the config),
+    and GetModelInvocationLoggingConfiguration (attackers checking whether
+    their prompts are being recorded — a documented LLMjacking indicator).
+    Show caller, region, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        source_ip_address,
+        aws_region,
+        user_agent,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+      AND event_name IN (
+          'DeleteModelInvocationLoggingConfiguration',
+          'PutModelInvocationLoggingConfiguration',
+          'GetModelInvocationLoggingConfiguration'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f9ed Bedrock Reconnaissance Sweep"
+  description: "Identifies callers enumerating Bedrock models across 2+ regions or with 10+ enumeration calls in one hour. Stolen-key holders sweep regions to find where models are usable."
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - recon_calls
+      - distinct_regions
+  prompt: |
+    Identify Amazon Bedrock reconnaissance: callers who executed 10 or more
+    enumeration calls (ListFoundationModels, GetFoundationModelAvailability,
+    ListProvisionedModelThroughputs, ListInferenceProfiles,
+    GetUseCaseForModelAccess) within any 1-hour window, or who enumerated
+    across 2 or more regions. Attackers testing stolen keys sweep regions
+    to find where Bedrock models are enabled. Show caller, call count,
+    distinct regions, and the region list.
+  sql: |
+    SELECT
+        user_identity_arn,
+        DATE_TRUNC('hour', event_time)  AS hour_bucket,
+        COUNT(*)                        AS recon_calls,
+        COUNT(DISTINCT aws_region)      AS distinct_regions,
+        array_agg(DISTINCT aws_region)  AS regions,
+        array_agg(DISTINCT event_name)  AS api_calls
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+      AND event_name IN (
+          'ListFoundationModels',            'GetFoundationModelAvailability',
+          'ListProvisionedModelThroughputs', 'ListInferenceProfiles',
+          'GetUseCaseForModelAccess',        'ListFoundationModelAgreementOffers'
+      )
+    GROUP BY user_identity_arn, hour_bucket
+    HAVING COUNT(*) >= 10
+        OR COUNT(DISTINCT aws_region) >= 2
+    ORDER BY recon_calls DESC
+    LIMIT 100
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "⛔ Failed Bedrock Invocations"
+  description: "Finds bursts of failed Bedrock invocations (AccessDenied / ValidationException). Stolen-key testing produces failure storms across models and regions before a working combination is found."
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - failed_calls
+  prompt: |
+    Find failed Amazon Bedrock invocation attempts: InvokeModel,
+    InvokeModelWithResponseStream, Converse, ConverseStream with a non-null
+    error_code (AccessDenied, AccessDeniedException, ValidationException,
+    ThrottlingException). Group by caller and error code, and count distinct
+    models and regions tried. Bursts of failures indicate an attacker
+    probing which models a stolen key can invoke.
+  sql: |
+    SELECT
+        user_identity_arn,
+        COUNT(*)                                                       AS failed_calls,
+        array_agg(DISTINCT error_code)                                 AS error_codes,
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+                                                                       AS models_tried,
+        COUNT(DISTINCT aws_region)                                     AS regions_tried,
+        MIN(event_time)                                                AS first_seen,
+        MAX(event_time)                                                AS last_seen
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+      AND event_name IN (
+          'InvokeModel', 'InvokeModelWithResponseStream',
+          'Converse',    'ConverseStream'
+      )
+      AND error_code IS NOT NULL
+    GROUP BY user_identity_arn
+    HAVING COUNT(*) >= 5
+    ORDER BY failed_calls DESC
+    LIMIT 100
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f30d Bedrock Callers & Origins"
+  description: "Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all."
+  prompt: |
+    Build an inventory of all Amazon Bedrock callers
+    (event_source bedrock.amazonaws.com): group by user_identity_arn,
+    source_ip_address, geo_country_code, geo_org, and user_agent, with
+    total call count, distinct models used, first-seen and last-seen
+    timestamps. This baseline lets an analyst spot principals or origins
+    (unexpected countries, hosting ASNs, python-requests user agents)
+    that have no legitimate reason to use Bedrock.
+  sql: |
+    SELECT
+        user_identity_arn,
+        source_ip_address,
+        geo_country_code,
+        geo_org,
+        user_agent,
+        COUNT(*)                                                       AS total_calls,
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+                                                                       AS distinct_models,
+        COUNT(DISTINCT event_name)                                     AS distinct_apis,
+        MIN(event_time)                                                AS first_seen,
+        MAX(event_time)                                                AS last_seen
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock.amazonaws.com'
+    GROUP BY user_identity_arn, source_ip_address, geo_country_code,
+             geo_org, user_agent
+    ORDER BY total_calls DESC
+    LIMIT 200
+
+# ===========================================================================
 # Network & Infrastructure
 # ===========================================================================
 

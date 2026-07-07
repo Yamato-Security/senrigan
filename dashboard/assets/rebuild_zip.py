@@ -132,6 +132,11 @@ FILE_MAP = {
     "charts/lambda_config_changes.yaml": "charts/Lambda_Function_Configuration_Permission_Changes.yaml",
     "charts/cloudformation_changes.yaml": "charts/CloudFormation_Stack_Changes.yaml",
     "charts/kms_key_deletion.yaml": "charts/KMS_Key_Deletion_Disable_Events.yaml",
+    # LLMjacking charts (DSH-98 to DSH-101) — Bedrock abuse detection
+    "charts/bedrock_invocation_trend.yaml": "charts/Bedrock_Model_Invocation_Trend.yaml",
+    "charts/bedrock_model_access_changes.yaml": "charts/Bedrock_Model_Access_Logging_Changes.yaml",
+    "charts/bedrock_failed_invocations.yaml": "charts/Bedrock_Failed_Invocations.yaml",
+    "charts/bedrock_callers_geo.yaml": "charts/Bedrock_Callers_By_Origin.yaml",
 }
 
 if os.path.exists(OUTPUT_ZIP):

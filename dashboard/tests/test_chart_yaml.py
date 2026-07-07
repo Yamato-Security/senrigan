@@ -297,6 +297,47 @@ def test_hrm_credential_access_table_exists() -> None:
     assert chart["viz_type"] == "table"
 
 
+# ---------------------------------------------------------------------------
+# LLMjacking charts (DSH-98 to DSH-101) — see doc/PLAN_LLMJACKING.md
+# ---------------------------------------------------------------------------
+
+
+def test_dsh98_bedrock_invocation_trend_exists() -> None:
+    """DSH-98: bedrock_invocation_trend.yaml must exist as a time series."""
+    result = _find_chart_by_filename("bedrock_invocation_trend")
+    assert result is not None, "charts/bedrock_invocation_trend.yaml not found"
+    _, chart = result
+    assert chart["viz_type"] == "echarts_timeseries_bar"
+    assert "Bedrock" in chart["slice_name"]
+
+
+def test_dsh99_bedrock_model_access_changes_exists() -> None:
+    """DSH-99: bedrock_model_access_changes.yaml must exist as a table."""
+    result = _find_chart_by_filename("bedrock_model_access_changes")
+    assert result is not None, "charts/bedrock_model_access_changes.yaml not found"
+    _, chart = result
+    assert chart["viz_type"] == "table"
+    assert "Bedrock" in chart["slice_name"]
+
+
+def test_dsh100_bedrock_failed_invocations_exists() -> None:
+    """DSH-100: bedrock_failed_invocations.yaml must exist as a table."""
+    result = _find_chart_by_filename("bedrock_failed_invocations")
+    assert result is not None, "charts/bedrock_failed_invocations.yaml not found"
+    _, chart = result
+    assert chart["viz_type"] == "table"
+    assert "Bedrock" in chart["slice_name"]
+
+
+def test_dsh101_bedrock_callers_geo_exists() -> None:
+    """DSH-101: bedrock_callers_geo.yaml must exist as a table."""
+    result = _find_chart_by_filename("bedrock_callers_geo")
+    assert result is not None, "charts/bedrock_callers_geo.yaml not found"
+    _, chart = result
+    assert chart["viz_type"] == "table"
+    assert "Bedrock" in chart["slice_name"]
+
+
 def test_all_groupby_columns_exist_in_dataset() -> None:
     """All groupby columns used in charts must exist in the dataset YAML.
 

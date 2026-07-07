@@ -303,6 +303,39 @@ def test_computing_charts_not_in_tab_data() -> None:
 
 
 # ---------------------------------------------------------------------------
+# AI / LLM tab (LLMjacking — DSH-98 to DSH-101)
+# ---------------------------------------------------------------------------
+
+
+def test_ai_tab_is_top_level() -> None:
+    """TAB-ai must appear as a direct child of TABS_ID."""
+    dashboard = load_dashboard()
+    position = dashboard.get("position", {})
+    tabs_id = position.get("TABS_ID", {})
+    top_tabs = tabs_id.get("children", [])
+    assert "TAB-ai" in top_tabs, "TAB-ai not found in TABS_ID children"
+
+
+def test_ai_charts_in_tab_ai() -> None:
+    """All four Bedrock LLMjacking charts must be in TAB-ai."""
+    dashboard = load_dashboard()
+    position = dashboard.get("position", {})
+    tab = position.get("TAB-ai", {})
+    assert tab.get("type") == "TAB", "TAB-ai must be a TAB type"
+    charts = []
+    for row_id in tab.get("children", []):
+        row = position.get(row_id, {})
+        charts.extend(row.get("children", []))
+    for chart_id in (
+        "CHART-bedrock-invocation-trend",
+        "CHART-bedrock-model-access",
+        "CHART-bedrock-failed-invocations",
+        "CHART-bedrock-callers-geo",
+    ):
+        assert chart_id in charts, f"{chart_id} not found in TAB-ai"
+
+
+# ---------------------------------------------------------------------------
 # New native filters
 # ---------------------------------------------------------------------------
 

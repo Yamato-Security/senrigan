@@ -1,8 +1,9 @@
 # CloudTrail Threat Hunting — Dashboard Definition (v4)
-# 10-tab triage-first layout:
+# 11-tab triage-first layout:
 #   Overview | Identity & Access | Threat Detection | High-Risk API Monitor |
-#   API Activity | S3 & RDS | Computing | Network | Temporal Analysis | GeoIP Intelligence.
-# 87 charts total (71 themed + 9 Overview KPI cards + 7 Phase-2/3/4 DFIR hunts;
+#   API Activity | S3 & RDS | Computing | AI / LLM | Network | Temporal Analysis |
+#   GeoIP Intelligence.
+# 91 charts total (75 themed + 9 Overview KPI cards + 7 Phase-2/3/4 DFIR hunts;
 #   4 low-value/redundant charts removed in R3: HRM top source IPs, HRM by region,
 #   identities-by-country, first/last-seen user agent):
 #   Overview KPI-81 to KPI-89   ( 9 big_number triage cards — total events, distinct
@@ -21,6 +22,8 @@
 #                                             instance profile changes, user data modification,
 #                                             mass stop/terminate, spot fleet purchases)
 #   Phase-7  DSH-64 to DSH-66   ( 3 charts — Lambda config changes, CloudFormation changes, KMS key deletion)
+#   LLMjack  DSH-98 to DSH-101  ( 4 charts — Bedrock invocation trend, model access & logging changes,
+#                                             failed invocations, callers by origin)
 # Import via: superset import-dashboards -p cloudtrail_default.zip -u admin
 uuid: c3d4e5f6-a7b8-9012-cdef-123456789012
 version: 1.0.0
@@ -64,6 +67,7 @@ position:
       - TAB-data
       - TAB-s3-rds
       - TAB-computing
+      - TAB-ai
       - TAB-network
       - TAB-temporal
       - TAB-geoip
@@ -406,6 +410,102 @@ position:
       text: "\U0001f5a5️ Computing"
       defaultText: "Computing"
       tooltip: "EC2, ECS, EKS, SSM, and EBS compute platform events"
+
+  # Tab — AI / LLM (LLMjacking: Bedrock abuse on stolen credentials, DSH-98 to DSH-101)
+  TAB-ai:
+    type: TAB
+    id: TAB-ai
+    children:
+      - ROW-hdr-ai
+      - ROW-ai-1    # Bedrock Model Invocation Trend [HIGH]
+      - ROW-ai-2    # Model Access & Logging Changes | Failed Invocations [CRITICAL]
+      - ROW-ai-3    # Bedrock Callers by Origin [MEDIUM]
+    meta:
+      text: "\U0001f916 AI / LLM"
+      defaultText: "AI / LLM"
+      tooltip: "LLMjacking detection — Bedrock invocation spikes, model-access enablement, logging tampering, and caller origins"
+  ROW-hdr-ai:
+    type: ROW
+    id: ROW-hdr-ai
+    children: [MARKDOWN-hdr-ai]
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-hdr-ai:
+    type: MARKDOWN
+    id: MARKDOWN-hdr-ai
+    children: []
+    meta:
+      width: 12
+      height: 10
+      code: >-
+        ### 🤖 Is someone consuming LLM inference on your bill?
+
+        LLMjacking: stolen credentials abusing Amazon Bedrock — invocation spikes,
+        self-enabled model access, invocation-logging tampering, and failure storms
+        from key probing. **MITRE: TA0040 Impact (T1496 Resource Hijacking) ·
+        TA0005 Defense Evasion.**
+  ROW-ai-1:
+    type: ROW
+    id: ROW-ai-1
+    children:
+      - CHART-bedrock-invocation-trend
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-ai-2:
+    type: ROW
+    id: ROW-ai-2
+    children:
+      - CHART-bedrock-model-access
+      - CHART-bedrock-failed-invocations
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-ai-3:
+    type: ROW
+    id: ROW-ai-3
+    children:
+      - CHART-bedrock-callers-geo
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-bedrock-invocation-trend:
+    type: CHART
+    id: CHART-bedrock-invocation-trend
+    children: []
+    meta:
+      chartId: 98
+      uuid: 98b3c4d5-e6f7-8901-abcd-980000000098
+      width: 12
+      height: 50
+      sliceName: Bedrock Model Invocation Trend
+  CHART-bedrock-model-access:
+    type: CHART
+    id: CHART-bedrock-model-access
+    children: []
+    meta:
+      chartId: 99
+      uuid: 99c4d5e6-f7a8-9012-bcde-990000000099
+      width: 6
+      height: 50
+      sliceName: Bedrock Model Access & Logging Changes
+  CHART-bedrock-failed-invocations:
+    type: CHART
+    id: CHART-bedrock-failed-invocations
+    children: []
+    meta:
+      chartId: 100
+      uuid: a0d5e6f7-a8b9-0123-cdef-a00000000100
+      width: 6
+      height: 50
+      sliceName: Bedrock Failed Invocations
+  CHART-bedrock-callers-geo:
+    type: CHART
+    id: CHART-bedrock-callers-geo
+    children: []
+    meta:
+      chartId: 101
+      uuid: a1e6f7a8-b9c0-1234-def0-a10000000101
+      width: 12
+      height: 50
+      sliceName: Bedrock Callers by Origin
 
   # Tab 5 — S3 & RDS Security
   TAB-s3-rds:

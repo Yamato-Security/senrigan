@@ -7,6 +7,7 @@ import sys
 import zipfile
 
 import pytest
+import yaml
 
 REBUILD_ZIP_SCRIPT = os.path.join(
     os.path.dirname(__file__), "..", "assets", "rebuild_zip.py"
@@ -78,4 +79,65 @@ def test_zip_contains_new_chart(fragment: str) -> None:
     assert any(fragment in n for n in chart_names), (
         f"New chart '{fragment}' not found in ZIP charts/ entries.\n"
         f"Available: {sorted(chart_names)}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Completeness — FILE_MAP is an explicit list, so a chart YAML added to
+# charts/ without a matching FILE_MAP entry silently drops out of the ZIP.
+# Superset then shows "There is no chart definition associated with this
+# component" for every dashboard reference to the missing chart.
+# ---------------------------------------------------------------------------
+
+CHARTS_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "assets", "cloudtrail_default", "charts"
+)
+
+
+def _zip_chart_uuids() -> set[str]:
+    """Return the uuid of every charts/*.yaml entry inside the ZIP."""
+    uuids: set[str] = set()
+    with zipfile.ZipFile(OUTPUT_ZIP) as zf:
+        for name in zf.namelist():
+            if name.startswith("charts/") and name.endswith(".yaml"):
+                uuids.add(yaml.safe_load(zf.read(name))["uuid"])
+    return uuids
+
+
+def test_zip_contains_every_chart_yaml() -> None:
+    """Every YAML in the charts/ source dir must be packaged into the ZIP."""
+    zip_uuids = _zip_chart_uuids()
+    missing = []
+    for fname in sorted(os.listdir(CHARTS_DIR)):
+        if not fname.endswith(".yaml"):
+            continue
+        with open(os.path.join(CHARTS_DIR, fname), encoding="utf-8") as fh:
+            uuid = yaml.safe_load(fh)["uuid"]
+        if uuid not in zip_uuids:
+            missing.append(fname)
+    assert not missing, (
+        f"Chart YAMLs missing from the ZIP (add them to FILE_MAP in "
+        f"rebuild_zip.py and re-run it): {missing}"
+    )
+
+
+def test_zip_dashboard_chart_refs_resolve() -> None:
+    """Every CHART uuid in the ZIP's dashboard position must have a chart file.
+
+    A dangling reference makes Superset render 'There is no chart definition
+    associated with this component' in place of the chart.
+    """
+    zip_uuids = _zip_chart_uuids()
+    with zipfile.ZipFile(OUTPUT_ZIP) as zf:
+        dashboard = yaml.safe_load(zf.read("dashboards/cloudtrail_threat_hunting.yaml"))
+    dangling = {
+        key: value["meta"]["uuid"]
+        for key, value in dashboard["position"].items()
+        if isinstance(value, dict)
+        and value.get("type") == "CHART"
+        and value["meta"]["uuid"] not in zip_uuids
+    }
+    assert not dangling, (
+        f"Dashboard position references chart uuids with no chart file in the "
+        f"ZIP: {dangling}"
     )
