@@ -107,9 +107,9 @@ def test_console_logins_detects_oauth2_token_events(oauth2_login_db: str):
     sql = get_builtin_sql(CONSOLE_LOGINS_LABEL)
     rows = _run_sql(oauth2_login_db, sql)
     assert len(rows) == 2, f"Expected both OAuth2 sign-in events, got: {rows}"
-    assert all(r["login_result"] == "true" for r in rows), (
-        f"login_result should be extracted from additional_event_data.success. Got: {rows}"
-    )
+    assert all(
+        r["login_result"] == "true" for r in rows
+    ), f"login_result should be extracted from additional_event_data.success. Got: {rows}"
 
 
 def test_console_logins_by_country_detects_oauth2_token_events(

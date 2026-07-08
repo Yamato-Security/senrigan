@@ -22,7 +22,9 @@ import duckdb
 import pytest
 import yaml
 
-CHARTS_DIR = pathlib.Path(__file__).parent.parent / "assets" / "cloudtrail_default" / "charts"
+CHARTS_DIR = (
+    pathlib.Path(__file__).parent.parent / "assets" / "cloudtrail_default" / "charts"
+)
 
 
 def _load_chart(filename: str) -> dict:
@@ -117,9 +119,9 @@ def _run_count(db_path: str, where_sql: str) -> int:
 def test_console_login_activity_filter_includes_oauth2(login_db: str):
     chart = _load_chart("console_login_activity")
     where_sql = _adhoc_where(chart, "filter_event_type")
-    assert _run_count(login_db, where_sql) == 4, (
-        "filter should match 2 ConsoleLogin + 2 OAuth2 sign-in events"
-    )
+    assert (
+        _run_count(login_db, where_sql) == 4
+    ), "filter should match 2 ConsoleLogin + 2 OAuth2 sign-in events"
 
 
 def test_console_login_activity_success_failure_counts_oauth2(login_db: str):
@@ -137,7 +139,9 @@ def test_console_login_activity_success_failure_counts_oauth2(login_db: str):
     finally:
         conn.close()
     assert failed == 2, f"expected 2 failures (1 ConsoleLogin + 1 OAuth2), got {failed}"
-    assert success == 2, f"expected 2 successes (1 ConsoleLogin + 1 OAuth2), got {success}"
+    assert (
+        success == 2
+    ), f"expected 2 successes (1 ConsoleLogin + 1 OAuth2), got {success}"
 
 
 # ---------------------------------------------------------------------------
@@ -176,8 +180,12 @@ def test_auth_failure_success_counts_oauth2(login_db: str):
         failure, success = conn.execute(sql).fetchone()
     finally:
         conn.close()
-    assert failure == 2, f"expected 2 failures (1 ConsoleLogin + 1 OAuth2), got {failure}"
-    assert success == 2, f"expected 2 successes (1 ConsoleLogin + 1 OAuth2), got {success}"
+    assert (
+        failure == 2
+    ), f"expected 2 failures (1 ConsoleLogin + 1 OAuth2), got {failure}"
+    assert (
+        success == 2
+    ), f"expected 2 successes (1 ConsoleLogin + 1 OAuth2), got {success}"
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +196,6 @@ def test_auth_failure_success_counts_oauth2(login_db: str):
 def test_security_relevant_api_calls_includes_oauth2_events(login_db: str):
     chart = _load_chart("security_relevant_api_calls")
     where_sql = chart["params"]["adhoc_filters"][0]["sqlExpression"]
-    assert _run_count(login_db, where_sql) == 4, (
-        "sensitive-API allowlist should match ConsoleLogin and OAuth2 sign-in events"
-    )
+    assert (
+        _run_count(login_db, where_sql) == 4
+    ), "sensitive-API allowlist should match ConsoleLogin and OAuth2 sign-in events"
