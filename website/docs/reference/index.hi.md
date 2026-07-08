@@ -18,7 +18,7 @@
 | 🌍 GeoIP Analysis ✦ | 12 | असंभव यात्रा · multi-country क्रेडेंशियल · geo-ranked लॉगिन/denials/राइट्स · country/city/ASN विभाजन · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | CI/CD आपूर्ति श्रृंखला · CloudFormation दुरुपयोग |
 
-<details>
+<details markdown="1">
 <summary>📋 पूरी सूची — सभी 100+ क्वेरीज़ (विस्तृत करने के लिए क्लिक करें)</summary>
 
 ## बिल्ट-इन Hunts
@@ -195,7 +195,7 @@
 | 🕒 Temporal Analysis | 6 | identity/IP/API/agent द्वारा first/last seen · निष्क्रिय accounts पुनः सक्रिय · velocity स्पाइक्स |
 | 🚨 High-Risk API Monitor | 7 | HRM time series · शीर्ष calls/actors/IPs · बचाव चोरी/क्रेडेंशियल विवरण · region द्वारा |
 
-<details>
+<details markdown="1">
 <summary>📋 पूरी सूची — सभी 80+ चार्ट (विस्तृत करने के लिए क्लिक करें)</summary>
 
 ## डैशबोर्ड चार्ट (Apache Superset — `dashboard/`)

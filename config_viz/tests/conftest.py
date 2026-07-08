@@ -669,3 +669,234 @@ def client_s3(tmp_db_s3):
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# GR-1: Join-record folding (snap-010)
+# ---------------------------------------------------------------------------
+
+
+def _seed_join_records(conn: duckdb.DuckDBPyConnection) -> None:
+    """Insert snap-010: join-record resources for edge-folding readability."""
+    conn.execute("""
+        INSERT INTO config_snapshots VALUES
+            ('snap-010', '111122223333', 'ap-northeast-1',
+             TIMESTAMP '2026-05-25 00:00:00', '/data/snap10.json', 6)
+        """)
+    conn.execute("""
+        INSERT INTO config_resources VALUES
+            ('vpc-900',      'snap-010', 'AWS::EC2::VPC',
+             'ap-northeast-1', 'join-vpc',        '{"vpcId":"vpc-900"}', NULL),
+            ('subnet-900',   'snap-010', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'join-subnet',     '{"subnetId":"subnet-900"}', NULL),
+            ('rtb-900',      'snap-010', 'AWS::EC2::RouteTable',
+             'ap-northeast-1', 'join-rtb',        '{"routeTableId":"rtb-900"}', NULL),
+            ('igw-900',      'snap-010', 'AWS::EC2::InternetGateway',
+             'ap-northeast-1', 'join-igw',        '{"internetGatewayId":"igw-900"}', NULL),
+            ('rtbassoc-900', 'snap-010', 'AWS::EC2::SubnetRouteTableAssociation',
+             'ap-northeast-1', 'join-rtbassoc',   '{}', NULL),
+            ('IGW|vpc-900',  'snap-010', 'AWS::EC2::VPCGatewayAttachment',
+             'ap-northeast-1', 'join-vpc-attach', '{}', NULL),
+            ('aclassoc-900', 'snap-010', 'AWS::EC2::SubnetNetworkAclAssociation',
+             'ap-northeast-1', 'join-aclassoc',   '{}', NULL)
+        """)
+    conn.execute("""
+        INSERT INTO config_edges VALUES
+            ('snap-010', 'subnet-900',   'vpc-900',     'Is contained in Vpc'),
+            ('snap-010', 'rtb-900',      'vpc-900',     'Is contained in Vpc'),
+            ('snap-010', 'rtbassoc-900', 'subnet-900',  'Is associated with'),
+            ('snap-010', 'rtbassoc-900', 'rtb-900',     'Is associated with RouteTable'),
+            ('snap-010', 'IGW|vpc-900',  'igw-900',     'Is associated with'),
+            ('snap-010', 'IGW|vpc-900',  'vpc-900',     'Is associated with VPC'),
+            ('snap-010', 'aclassoc-900', 'subnet-900',  'Is associated with'),
+            ('snap-010', 'aclassoc-900', 'acl-MISSING', 'Is associated with NetworkAcl')
+        """)
+
+
+# ---------------------------------------------------------------------------
+# GR-2: Account-defaults quarantine (snap-011)
+# ---------------------------------------------------------------------------
+
+
+def _seed_account_defaults(conn: duckdb.DuckDBPyConnection) -> None:
+    """Insert snap-011: low-signal account-default resources plus one EC2 node."""
+    conn.execute("""
+        INSERT INTO config_snapshots VALUES
+            ('snap-011', '111122223333', 'ap-northeast-1',
+             TIMESTAMP '2026-05-26 00:00:00', '/data/snap11.json', 4)
+        """)
+    conn.execute("""
+        INSERT INTO config_resources VALUES
+            ('dc-cdonce', 'snap-011', 'AWS::CodeDeploy::DeploymentConfig',
+             'ap-northeast-1', 'CodeDeployDefault.OneAtATime', '{}', NULL),
+            ('ds-linear', 'snap-011', 'AWS::AppConfig::HostedConfigurationVersion',
+             'ap-northeast-1', 'default-version', '{}', NULL),
+            ('snapblock', 'snap-011', 'AWS::Config::ConfigurationRecorder',
+             'ap-northeast-1', 'default', '{}', NULL),
+            ('i-1100',    'snap-011', 'AWS::EC2::Instance',
+             'ap-northeast-1', 'worker-1100', '{"instanceType":"t3.micro"}', NULL)
+        """)
+
+
+# ---------------------------------------------------------------------------
+# GR-3: AZ containers (snap-012)
+# ---------------------------------------------------------------------------
+
+
+def _seed_az_layout(conn: duckdb.DuckDBPyConnection) -> None:
+    """Insert snap-012: multi-AZ and single-AZ VPC subnet layouts."""
+    conn.execute("""
+        INSERT INTO config_snapshots VALUES
+            ('snap-012', '111122223333', 'ap-northeast-1',
+             TIMESTAMP '2026-05-27 00:00:00', '/data/snap12.json', 7)
+        """)
+    conn.execute("""
+        INSERT INTO config_resources VALUES
+            ('vpc-950',    'snap-012', 'AWS::EC2::VPC',
+             'ap-northeast-1', 'multi-az-vpc', '{"vpcId":"vpc-950"}', NULL),
+            ('subnet-951', 'snap-012', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'az-a-subnet', '{"availabilityZone":"ap-northeast-1a"}', NULL),
+            ('subnet-952', 'snap-012', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'az-d-subnet', '{"availabilityZone":"ap-northeast-1d"}', NULL),
+            ('subnet-953', 'snap-012', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'unknown-az-subnet', '{}', NULL),
+            ('i-951',      'snap-012', 'AWS::EC2::Instance',
+             'ap-northeast-1', 'az-a-instance', '{"instanceType":"t3.micro"}', NULL),
+            ('vpc-960',    'snap-012', 'AWS::EC2::VPC',
+             'ap-northeast-1', 'single-az-vpc', '{"vpcId":"vpc-960"}', NULL),
+            ('subnet-961', 'snap-012', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'single-az-subnet', '{"availabilityZone":"ap-northeast-1a"}', NULL)
+        """)
+    conn.execute("""
+        INSERT INTO config_edges VALUES
+            ('snap-012', 'subnet-951', 'vpc-950',    'Is contained in Vpc'),
+            ('snap-012', 'subnet-952', 'vpc-950',    'Is contained in Vpc'),
+            ('snap-012', 'subnet-953', 'vpc-950',    'Is contained in Vpc'),
+            ('snap-012', 'i-951',      'subnet-951', 'Is contained in Subnet'),
+            ('snap-012', 'subnet-961', 'vpc-960',    'Is contained in Vpc')
+        """)
+
+
+# ---------------------------------------------------------------------------
+# GR-4: Most-specific containment wins (snap-013)
+# ---------------------------------------------------------------------------
+
+
+def _seed_multi_containment(conn: duckdb.DuckDBPyConnection) -> None:
+    """Insert snap-013: dual containment where the more specific parent wins."""
+    conn.execute("""
+        INSERT INTO config_snapshots VALUES
+            ('snap-013', '111122223333', 'ap-northeast-1',
+             TIMESTAMP '2026-05-28 00:00:00', '/data/snap13.json', 4)
+        """)
+    conn.execute("""
+        INSERT INTO config_resources VALUES
+            ('vpc-970',    'snap-013', 'AWS::EC2::VPC',
+             'ap-northeast-1', 'specificity-vpc', '{"vpcId":"vpc-970"}', NULL),
+            ('subnet-970', 'snap-013', 'AWS::EC2::Subnet',
+             'ap-northeast-1', 'specificity-subnet', '{"subnetId":"subnet-970"}', NULL),
+            ('i-970',      'snap-013', 'AWS::EC2::Instance',
+             'ap-northeast-1', 'specificity-instance', '{"instanceType":"t3.micro"}', NULL),
+            ('rtb-970',    'snap-013', 'AWS::EC2::RouteTable',
+             'ap-northeast-1', 'specificity-rtb', '{"routeTableId":"rtb-970"}', NULL)
+        """)
+    conn.execute("""
+        INSERT INTO config_edges VALUES
+            ('snap-013', 'subnet-970', 'vpc-970',    'Is contained in Vpc'),
+            ('snap-013', 'i-970',      'subnet-970', 'Is contained in Subnet'),
+            ('snap-013', 'i-970',      'vpc-970',    'Is contained in Vpc'),
+            ('snap-013', 'rtb-970',    'vpc-970',    'Is contained in Vpc'),
+            ('snap-013', 'rtb-970',    'subnet-970', 'Contains Subnet')
+        """)
+
+
+@pytest.fixture
+def tmp_db_join(tmp_path) -> str:
+    """Temporary DuckDB seeded with snap-010 (join-record folding cases)."""
+    path = str(tmp_path / "join.db")
+    conn = duckdb.connect(path)
+    _create_tables(conn)
+    _seed_join_records(conn)
+    conn.close()
+    return path
+
+
+@pytest.fixture
+def tmp_db_account_defaults(tmp_path) -> str:
+    """Temporary DuckDB seeded with snap-011 (account-default resources)."""
+    path = str(tmp_path / "account_defaults.db")
+    conn = duckdb.connect(path)
+    _create_tables(conn)
+    _seed_account_defaults(conn)
+    conn.close()
+    return path
+
+
+@pytest.fixture
+def tmp_db_az(tmp_path) -> str:
+    """Temporary DuckDB seeded with snap-012 (AZ container layout cases)."""
+    path = str(tmp_path / "az_layout.db")
+    conn = duckdb.connect(path)
+    _create_tables(conn)
+    _seed_az_layout(conn)
+    conn.close()
+    return path
+
+
+@pytest.fixture
+def tmp_db_multi_containment(tmp_path) -> str:
+    """Temporary DuckDB seeded with snap-013 (most-specific containment)."""
+    path = str(tmp_path / "multi_containment.db")
+    conn = duckdb.connect(path)
+    _create_tables(conn)
+    _seed_multi_containment(conn)
+    conn.close()
+    return path
+
+
+@pytest.fixture
+def client_join(tmp_db_join):
+    """TestClient backed by snap-010 (join-record folding cases)."""
+    from backend.db import get_conn
+    from backend.main import app
+
+    app.dependency_overrides[get_conn] = _make_override(tmp_db_join)
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_account_defaults(tmp_db_account_defaults):
+    """TestClient backed by snap-011 (account-default quarantine cases)."""
+    from backend.db import get_conn
+    from backend.main import app
+
+    app.dependency_overrides[get_conn] = _make_override(tmp_db_account_defaults)
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_az(tmp_db_az):
+    """TestClient backed by snap-012 (synthetic AZ container cases)."""
+    from backend.db import get_conn
+    from backend.main import app
+
+    app.dependency_overrides[get_conn] = _make_override(tmp_db_az)
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_multi_containment(tmp_db_multi_containment):
+    """TestClient backed by snap-013 (most-specific containment cases)."""
+    from backend.db import get_conn
+    from backend.main import app
+
+    app.dependency_overrides[get_conn] = _make_override(tmp_db_multi_containment)
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()

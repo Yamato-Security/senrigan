@@ -1,0 +1,85 @@
+# DSH-99: Bedrock Model Access & Logging Changes
+# Audit table of foundation-model access enablement and invocation-logging
+# tampering.  In orgs that never adopted Bedrock, PutUseCaseForModelAccess /
+# CreateFoundationModelAgreement are a near-zero-noise LLMjacking indicator
+# (the attacker's canonical first write); deleting the invocation logging
+# configuration hides the abused prompts.
+# MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496 Resource Hijacking)
+uuid: 99c4d5e6-f7a8-9012-bcde-990000000099
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Bedrock Model Access & Logging Changes
+viz_type: table
+description: >
+  Foundation-model access enablement and invocation-logging tampering
+  (DSH-99).  Attackers with stolen credentials self-enable Bedrock model
+  access before abusing it, and check or delete the model-invocation logging
+  configuration so their prompts are not recorded — both documented
+  LLMjacking indicators.  Any row in an org that never adopted Bedrock
+  warrants immediate investigation.
+  MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496).
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_bedrock_access_changes
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - aws_region
+    - source_ip_address
+    - user_agent
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'bedrock.amazonaws.com'
+        AND event_name IN (
+          'PutUseCaseForModelAccess', 'PutFoundationModelEntitlement',
+          'CreateFoundationModelAgreement', 'PutModelAccessConfig',
+          'CreateProvisionedModelThroughput',
+          'DeleteModelInvocationLoggingConfiguration',
+          'PutModelInvocationLoggingConfiguration',
+          'GetModelInvocationLoggingConfiguration'
+        )
+      filterOptionName: filter_bedrock_access_changes
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+  # Flag every row red — model-access enablement in a non-Bedrock org is critical.
+  conditional_formatting:
+    - column: event_count
+      operator: ">"
+      targetValue: 0
+      colorScheme: "#E04355"
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     event_time,
+#     event_name,
+#     user_identity_arn,
+#     aws_region,
+#     source_ip_address,
+#     user_agent,
+#     error_code
+# FROM cloudtrail_events
+# WHERE event_source = 'bedrock.amazonaws.com'
+#   AND event_name IN (
+#       'PutUseCaseForModelAccess', 'PutFoundationModelEntitlement',
+#       'CreateFoundationModelAgreement', 'PutModelAccessConfig',
+#       'CreateProvisionedModelThroughput',
+#       'DeleteModelInvocationLoggingConfiguration',
+#       'PutModelInvocationLoggingConfiguration',
+#       'GetModelInvocationLoggingConfiguration'
+#   )
+# ORDER BY event_time DESC
+# LIMIT 200

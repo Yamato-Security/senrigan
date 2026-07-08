@@ -30,6 +30,49 @@ const CHILD_OPTIONS: LayoutOptions = {
 
 const elk = new ELK();
 
+// ---------------------------------------------------------------------------
+// Category partitioning (GR Phase 3b)
+// Lower index = visually higher in TB layout (network → compute → management)
+// ---------------------------------------------------------------------------
+
+const _PARTITION: Record<string, number> = {
+  // 0 — Network & ingress
+  ElasticLoadBalancing: 0,
+  ElasticLoadBalancingV2: 0,
+  // 1 — Compute
+  AutoScaling: 1,
+  EC2: 1,
+  ECS: 1,
+  EKS: 1,
+  Lambda: 1,
+  // 2 — Management / audit
+  CloudFormation: 2,
+  CloudTrail: 2,
+  Config: 2,
+  IAM: 2,
+  KMS: 2,
+  Logs: 2,
+};
+
+const _UNKNOWN_PARTITION = 99;
+
+function _serviceOfType(resourceType: string): string {
+  // "__service__EC2" → "EC2"
+  if (resourceType.startsWith("__service__")) return resourceType.slice(11);
+  // "AWS::EC2::Instance" → "EC2"
+  const parts = resourceType.split("::");
+  return parts.length >= 2 ? parts[1] : resourceType;
+}
+
+/**
+ * Return the numeric partition index for a resource type string.
+ * Lower values sort earlier (top) in a TB layout.
+ * Accepts both "AWS::<Svc>::<Type>" and "__service__<Svc>" formats.
+ */
+export function partitionOfType(resourceType: string): number {
+  return _PARTITION[_serviceOfType(resourceType)] ?? _UNKNOWN_PARTITION;
+}
+
 function buildMaps(nodes: Node[]): {
   parentOf: Map<string, string>;
   childrenOf: Map<string, string[]>;
@@ -157,7 +200,21 @@ export async function applyElkLayout(
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const elkDir = direction === "TB" ? "DOWN" : "RIGHT";
 
-  const rootIds = nodes.filter((n) => !parentOf.has(n.id)).map((n) => n.id);
+  const rootIds = nodes
+    .filter((n) => !parentOf.has(n.id))
+    .sort((a, b) => {
+      // For TB layout: sort root nodes by category partition so ELK places
+      // them in order (Network → Compute → Management) top-to-bottom.
+      // ELK preserves the children array order for disconnected components.
+      if (direction === "TB") {
+        return (
+          partitionOfType(a.data?.resource_type ?? "") -
+          partitionOfType(b.data?.resource_type ?? "")
+        );
+      }
+      return 0;
+    })
+    .map((n) => n.id);
   const elkChildren = rootIds.map((id) =>
     toElkNode(id, nodeById, childrenOf, elkDir),
   );

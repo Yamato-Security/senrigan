@@ -18,7 +18,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 🌍 GeoIP Analizi ✦ | 12 | İmkânsız seyahat · çok ülkeli kimlik bilgileri · coğrafi sıralı oturum açmalar/redler/yazmalar · ülke/şehir/ASN dökümü · event_name × ülke · kimlik × ülke |
 | ☁ IaC ve Platform | 2 | CI/CD tedarik zinciri · CloudFormation istismarı |
 
-<details>
+<details markdown="1">
 <summary>📋 Tam liste — 100'den fazla sorgunun tamamı (genişletmek için tıklayın)</summary>
 
 ## Yerleşik Avlar
@@ -195,7 +195,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 🕒 Zamansal Analiz | 6 | Kimlik/IP/API/aracıya göre ilk/son görülme · yeniden etkinleşen uykudaki hesaplar · hız sıçramaları |
 | 🚨 Yüksek Riskli API İzleyici | 7 | HRM zaman serisi · en çok çağrılar/aktörler/IP'ler · savunma atlatma/kimlik bilgisi detayı · bölgeye göre |
 
-<details>
+<details markdown="1">
 <summary>📋 Tam liste — 80'den fazla grafiğin tamamı (genişletmek için tıklayın)</summary>
 
 ## Pano Grafikleri (Apache Superset — `dashboard/`)

@@ -18,7 +18,7 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 🌍 Analyse GeoIP ✦ | 12 | Voyage impossible · identifiants multi-pays · connexions/refus/écritures classés par géo · répartition par pays/ville/ASN · event_name × country · identity × country |
 | ☁ IaC et plateforme | 2 | Chaîne d'approvisionnement CI/CD · abus de CloudFormation |
 
-<details>
+<details markdown="1">
 <summary>📋 Liste complète — toutes les 100+ requêtes (cliquez pour développer)</summary>
 
 ## Chasses intégrées
@@ -195,7 +195,7 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 🕒 Analyse temporelle | 6 | Première/dernière apparition par identité/IP/API/agent · comptes dormants réactivés · pics de vélocité |
 | 🚨 Moniteur d'API à haut risque | 7 | Série temporelle HRM · top appels/acteurs/IP · détail évasion de défense/accès aux identifiants · par région |
 
-<details>
+<details markdown="1">
 <summary>📋 Liste complète — tous les 80+ graphiques (cliquez pour développer)</summary>
 
 ## Graphiques des tableaux de bord (Apache Superset — `dashboard/`)

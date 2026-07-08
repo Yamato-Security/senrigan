@@ -18,7 +18,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 🌍 GeoIP Analysis ✦ | 12 | Perjalanan mustahil · kredensial multi-negara · login/penolakan/penulisan terurut secara geo · rincian negara/kota/ASN · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | Rantai pasok CI/CD · penyalahgunaan CloudFormation |
 
-<details>
+<details markdown="1">
 <summary>📋 Daftar lengkap — semua 100+ kueri (klik untuk membuka)</summary>
 
 ## Perburuan Bawaan
@@ -195,7 +195,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 🕒 Temporal Analysis | 6 | First/last seen berdasarkan identitas/IP/API/agent · akun dorman yang diaktifkan kembali · lonjakan velositas |
 | 🚨 High-Risk API Monitor | 7 | Time series HRM · panggilan/aktor/IP teratas · detail penghindaran pertahanan/akses kredensial · berdasarkan region |
 
-<details>
+<details markdown="1">
 <summary>📋 Daftar lengkap — semua 80+ chart (klik untuk membuka)</summary>
 
 ## Chart Dashboard (Apache Superset — `dashboard/`)

@@ -499,7 +499,9 @@
     type: timeseries
     bucket: day
   prompt: |
-    List all ConsoleLogin events including successes and failures.
+    List all ConsoleLogin events including successes and failures. Also
+    include the newer OAuth2-based sign-in flow (CreateOAuth2Token /
+    AuthorizeOAuth2Access), which some accounts emit instead of ConsoleLogin.
     Identify accounts with multiple failed attempts followed by a success
     (possible brute force). Include source IP and user agent.
   sql: |
@@ -509,12 +511,18 @@
         source_ip_address,
         aws_region,
         user_agent,
-        json_extract_string(response_elements, '$.ConsoleLogin') AS login_result,
+        CASE
+            WHEN json_extract_string(response_elements, '$.ConsoleLogin') IS NOT NULL
+                THEN json_extract_string(response_elements, '$.ConsoleLogin')
+            WHEN json_extract_string(additional_event_data, '$.success') IS NOT NULL
+                THEN json_extract_string(additional_event_data, '$.success')
+            ELSE NULL
+        END AS login_result,
         error_code,
         error_message
     FROM cloudtrail_events
     WHERE event_source = 'signin.amazonaws.com'
-      AND event_name   = 'ConsoleLogin'
+      AND event_name IN ('ConsoleLogin', 'CreateOAuth2Token', 'AuthorizeOAuth2Access')
     ORDER BY event_time DESC
     LIMIT 200
 
@@ -2030,7 +2038,7 @@
 
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f511 EC2 Instance Connect / Serial Console Access"
-  description: "SSH\u30ad\u30fc\u3084\u8e0f\u307f\u53f0\u306a\u3057\u3067\u30a4\u30f3\u30b9\u30bf\u30f3\u30b9\u3078\u30d6\u30e9\u30a6\u30b6\u30fbCLI\u304b\u3089\u30a2\u30af\u30bb\u30b9\u3067\u304d\u308b EC2 Instance Connect \u3068 Serial Console \u3092\u691c\u51fa\u3002\u30ad\u30fc\u3092\u6301\u305f\u306a\u3044\u653b\u6483\u8005\u304c\u4f7f\u3046\u4e3b\u8981\u306a\u6a2a\u5c55\u958b\u624b\u6bb5\u3002"
+  description: "Detects EC2 Instance Connect and Serial Console access, which lets attackers reach an instance from a browser or CLI without an SSH key or bastion host. A primary lateral-movement path for attackers who lack SSH keys."
   chart:
     type: timeseries
     bucket: day
@@ -3331,7 +3339,9 @@
     type: timeseries
     bucket: day
   prompt: |
-    Show all console login events with their GeoIP information.
+    Show all console login events with their GeoIP information, including
+    the newer OAuth2-based sign-in flow (CreateOAuth2Token /
+    AuthorizeOAuth2Access) some accounts emit instead of ConsoleLogin.
     Group by country and show success/failure counts. Console logins
     from unexpected countries are a critical indicator of compromise.
   sql: |
@@ -3341,12 +3351,18 @@
         geo_city,
         source_ip_address,
         user_identity_arn,
-        json_extract_string(response_elements, '$.ConsoleLogin') AS login_result,
+        CASE
+            WHEN json_extract_string(response_elements, '$.ConsoleLogin') IS NOT NULL
+                THEN json_extract_string(response_elements, '$.ConsoleLogin')
+            WHEN json_extract_string(additional_event_data, '$.success') IS NOT NULL
+                THEN json_extract_string(additional_event_data, '$.success')
+            ELSE NULL
+        END AS login_result,
         event_time,
         error_code
     FROM cloudtrail_events
     WHERE event_source = 'signin.amazonaws.com'
-      AND event_name   = 'ConsoleLogin'
+      AND event_name IN ('ConsoleLogin', 'CreateOAuth2Token', 'AuthorizeOAuth2Access')
       AND geo_country_code IS NOT NULL
     ORDER BY event_time DESC
     LIMIT 100

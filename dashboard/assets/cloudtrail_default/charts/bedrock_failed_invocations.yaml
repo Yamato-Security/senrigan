@@ -1,0 +1,77 @@
+# DSH-100: Bedrock Failed Invocations
+# Table of failed Bedrock invocation attempts grouped by caller and error code.
+# Stolen-key testing produces AccessDenied / ValidationException storms across
+# models and regions before the attacker finds a working combination.
+# MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery
+uuid: a0d5e6f7-a8b9-0123-cdef-a00000000100
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Bedrock Failed Invocations
+viz_type: table
+description: >
+  Failed Amazon Bedrock invocation attempts grouped by caller and error code
+  (DSH-100).  Bursts of AccessDenied / ValidationException errors across
+  multiple models and regions indicate an attacker probing which models a
+  stolen key can invoke — the reconnaissance phase of LLMjacking.
+  MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: failed_calls
+      hasCustomLabel: true
+      optionName: metric_bedrock_failed_calls
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+      label: models_tried
+      hasCustomLabel: true
+      optionName: metric_bedrock_models_tried
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT aws_region)"
+      label: regions_tried
+      hasCustomLabel: true
+      optionName: metric_bedrock_regions_tried
+  groupby:
+    - user_identity_arn
+    - error_code
+    - source_ip_address
+    - geo_country_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'bedrock.amazonaws.com'
+        AND event_name IN (
+          'InvokeModel', 'InvokeModelWithResponseStream',
+          'Converse', 'ConverseStream'
+        )
+        AND error_code IS NOT NULL
+      filterOptionName: filter_bedrock_failed
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     error_code,
+#     source_ip_address,
+#     geo_country_code,
+#     COUNT(*)                                                       AS failed_calls,
+#     COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+#                                                                    AS models_tried,
+#     COUNT(DISTINCT aws_region)                                     AS regions_tried
+# FROM cloudtrail_events
+# WHERE event_source = 'bedrock.amazonaws.com'
+#   AND event_name IN ('InvokeModel', 'InvokeModelWithResponseStream',
+#                      'Converse', 'ConverseStream')
+#   AND error_code IS NOT NULL
+# GROUP BY 1, 2, 3, 4
+# ORDER BY failed_calls DESC
+# LIMIT 100

@@ -1,0 +1,62 @@
+# DSH-98: Bedrock Model Invocation Trend
+# Stacked bar chart of daily Bedrock model invocations per principal.
+# LLMjacking = attackers running LLM inference on stolen credentials; the
+# victim pays the (potentially $46k+/day) bill.  A volume spike from a single
+# principal — especially one that never used Bedrock before — is the core signal.
+# MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking)
+uuid: 98b3c4d5-e6f7-8901-abcd-980000000098
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Bedrock Model Invocation Trend
+viz_type: echarts_timeseries_bar
+description: >
+  Daily Amazon Bedrock model invocation volume per principal (DSH-98).
+  High-volume inference on stolen credentials (LLMjacking) is resold through
+  reverse proxies at the victim's expense.  Investigate any spike, any
+  principal that has never invoked Bedrock before, and any invocation from
+  an unexpected origin.
+  MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking).
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: invocation_count
+      hasCustomLabel: true
+      optionName: metric_bedrock_invocations
+  groupby:
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'bedrock.amazonaws.com'
+        AND event_name IN (
+          'InvokeModel', 'InvokeModelWithResponseStream',
+          'Converse', 'ConverseStream'
+        )
+      filterOptionName: filter_bedrock_invocations
+  row_limit: 50000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Invocation Count
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     DATE_TRUNC('day', event_time) AS day_bucket,
+#     user_identity_arn,
+#     COUNT(*) AS invocation_count
+# FROM cloudtrail_events
+# WHERE event_source = 'bedrock.amazonaws.com'
+#   AND event_name IN ('InvokeModel', 'InvokeModelWithResponseStream',
+#                      'Converse', 'ConverseStream')
+# GROUP BY 1, 2
+# ORDER BY day_bucket DESC, invocation_count DESC

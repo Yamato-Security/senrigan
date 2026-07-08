@@ -18,7 +18,7 @@
 | 🌍 GeoIP 分析 ✦ | 12 | 不可能的移動 · 多國憑證 · 地理排名登入/拒絕/寫入 · 國家/城市/ASN 細分 · event_name × country · identity × country |
 | ☁ IaC 與平台 | 2 | CI/CD 供應鏈 · CloudFormation 濫用 |
 
-<details>
+<details markdown="1">
 <summary>📋 完整清單——全部 100+ 個查詢（點擊展開）</summary>
 
 ## 內建獵捕
@@ -195,7 +195,7 @@
 | 🕒 時序分析 | 6 | 依身分/IP/API/代理的首次/最後出現 · 重新啟用的休眠帳戶 · 速率激增 |
 | 🚨 高風險 API 監控 | 7 | HRM 時間序列 · 熱門呼叫/行為者/IP · 防禦規避/憑證明細 · 依區域 |
 
-<details>
+<details markdown="1">
 <summary>📋 完整清單——全部 80+ 個圖表（點擊展開）</summary>
 
 ## 儀表板圖表（Apache Superset——`dashboard/`）

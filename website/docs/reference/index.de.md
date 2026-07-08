@@ -18,7 +18,7 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 🌍 GeoIP Analysis ✦ | 12 | Unmögliche Reisen · Anmeldeinformationen aus mehreren Ländern · geografisch eingestufte Logins/Verweigerungen/Schreibvorgänge · Aufschlüsselung nach Land/Stadt/ASN · event_name × Land · Identität × Land |
 | ☁ IaC & Platform | 2 | CI/CD-Lieferkette · CloudFormation-Missbrauch |
 
-<details>
+<details markdown="1">
 <summary>📋 Vollständige Liste — alle über 100 Abfragen (zum Aufklappen anklicken)</summary>
 
 ## Integrierte Suchen
@@ -195,7 +195,7 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 🕒 Temporal Analysis | 6 | Erstes/letztes Auftreten nach Identität/IP/API/Agent · reaktivierte ruhende Konten · Geschwindigkeitsspitzen |
 | 🚨 High-Risk API Monitor | 7 | HRM-Zeitreihe · Top-Aufrufe/-Akteure/-IPs · Defense-Evasion-/Credential-Detail · nach Region |
 
-<details>
+<details markdown="1">
 <summary>📋 Vollständige Liste — alle über 80 Diagramme (zum Aufklappen anklicken)</summary>
 
 ## Dashboard-Diagramme (Apache Superset — `dashboard/`)
