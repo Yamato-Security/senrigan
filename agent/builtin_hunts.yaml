@@ -511,10 +511,13 @@
         source_ip_address,
         aws_region,
         user_agent,
-        COALESCE(
-            json_extract_string(response_elements, '$.ConsoleLogin'),
-            json_extract_string(additional_event_data, '$.success')
-        ) AS login_result,
+        CASE
+            WHEN json_extract_string(response_elements, '$.ConsoleLogin') IS NOT NULL
+                THEN json_extract_string(response_elements, '$.ConsoleLogin')
+            WHEN json_extract_string(additional_event_data, '$.success') = 'true' THEN 'Success'
+            WHEN json_extract_string(additional_event_data, '$.success') = 'false' THEN 'Failure'
+            ELSE NULL
+        END AS login_result,
         error_code,
         error_message
     FROM cloudtrail_events
