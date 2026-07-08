@@ -3351,10 +3351,13 @@
         geo_city,
         source_ip_address,
         user_identity_arn,
-        COALESCE(
-            json_extract_string(response_elements, '$.ConsoleLogin'),
-            json_extract_string(additional_event_data, '$.success')
-        ) AS login_result,
+        CASE
+            WHEN json_extract_string(response_elements, '$.ConsoleLogin') IS NOT NULL
+                THEN json_extract_string(response_elements, '$.ConsoleLogin')
+            WHEN json_extract_string(additional_event_data, '$.success') = 'true' THEN 'Success'
+            WHEN json_extract_string(additional_event_data, '$.success') = 'false' THEN 'Failure'
+            ELSE NULL
+        END AS login_result,
         event_time,
         error_code
     FROM cloudtrail_events
