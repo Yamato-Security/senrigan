@@ -18,7 +18,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 🌍 GeoIP Analysis ✦ | 12 | Impossible travel · multi-country credentials · geo-ranked logins/denials/writes · country/city/ASN breakdown · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
-<details>
+<details markdown="1">
 <summary>📋 Full list — all 100+ queries (click to expand)</summary>
 
 ## Built-in Hunts
@@ -195,7 +195,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 🕒 Temporal Analysis | 6 | First/last seen by identity/IP/API/agent · dormant accounts reactivated · velocity spikes |
 | 🚨 High-Risk API Monitor | 7 | HRM time series · top calls/actors/IPs · defense evasion/credential detail · by region |
 
-<details>
+<details markdown="1">
 <summary>📋 Full list — all 80+ charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)

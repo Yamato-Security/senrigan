@@ -18,7 +18,7 @@
 | 🌍 GeoIP Analysis ✦ | 12 | การเดินทางที่เป็นไปไม่ได้ · credential หลายประเทศ · การล็อกอิน/การปฏิเสธ/การเขียนจัดอันดับตามภูมิศาสตร์ · การแยกย่อยตามประเทศ/เมือง/ASN · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | การโจมตี supply chain ของ CI/CD · การใช้ CloudFormation ในทางมิชอบ |
 
-<details>
+<details markdown="1">
 <summary>📋 รายการทั้งหมด — ทุก queries มากกว่า 100 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Hunts ในตัว
@@ -195,7 +195,7 @@
 | 🕒 Temporal Analysis | 6 | เวลาที่พบครั้งแรก/ครั้งสุดท้ายตาม identity/IP/API/agent · บัญชีที่ไม่ใช้งานถูกเปิดใช้ใหม่ · การพุ่งขึ้นของความเร็ว |
 | 🚨 High-Risk API Monitor | 7 | อนุกรมเวลา HRM · การเรียก/ผู้กระทำ/IP อันดับต้น · รายละเอียดการหลบเลี่ยงการป้องกัน/credential · ตามภูมิภาค |
 
-<details>
+<details markdown="1">
 <summary>📋 รายการทั้งหมด — ทุก charts มากกว่า 80 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)

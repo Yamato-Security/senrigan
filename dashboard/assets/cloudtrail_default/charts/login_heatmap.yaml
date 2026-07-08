@@ -47,7 +47,9 @@ params:
   adhoc_filters:
     - clause: WHERE
       expressionType: SQL
-      sqlExpression: "event_source = 'signin.amazonaws.com' AND event_name = 'ConsoleLogin'"
+      sqlExpression: >-
+        event_source = 'signin.amazonaws.com'
+        AND event_name IN ('ConsoleLogin', 'CreateOAuth2Token', 'AuthorizeOAuth2Access')
       filterOptionName: filter_heatmap_login
   granularity_sqla: event_time
   time_range: "No filter"
@@ -79,5 +81,5 @@ cache_timeout: null
 #     COUNT(*)                                                    AS login_count
 # FROM cloudtrail_events
 # WHERE event_source = 'signin.amazonaws.com'
-#   AND event_name   = 'ConsoleLogin'
+#   AND event_name IN ('ConsoleLogin', 'CreateOAuth2Token', 'AuthorizeOAuth2Access')
 # GROUP BY 1, 2

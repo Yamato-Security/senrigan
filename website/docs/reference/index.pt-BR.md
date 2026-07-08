@@ -18,7 +18,7 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 🌍 Análise GeoIP ✦ | 12 | Viagem impossível · credenciais em vários países · logins/negações/escritas classificados por geografia · detalhamento por país/cidade/ASN · event_name × país · identidade × país |
 | ☁ IaC e Plataforma | 2 | Cadeia de suprimentos de CI/CD · abuso de CloudFormation |
 
-<details>
+<details markdown="1">
 <summary>📋 Lista completa — todas as mais de 100 consultas (clique para expandir)</summary>
 
 ## Caças Integradas
@@ -195,7 +195,7 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 🕒 Análise Temporal | 6 | Primeira/última observação por identidade/IP/API/agente · contas dormentes reativadas · picos de velocidade |
 | 🚨 Monitor de APIs de Alto Risco | 7 | Série temporal de HRM · principais chamadas/atores/IPs · detalhe de evasão de defesa/acesso a credenciais · por região |
 
-<details>
+<details markdown="1">
 <summary>📋 Lista completa — todos os mais de 80 gráficos (clique para expandir)</summary>
 
 ## Gráficos de Painel (Apache Superset — `dashboard/`)

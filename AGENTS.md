@@ -105,6 +105,17 @@ docker compose up -d --build
 docker compose --profile resync run --rm superset-resync
 ```
 
+**After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
+Superset never reads those YAML files directly — it only applies them from a compiled
+`cloudtrail_default.zip`, imported into Superset's own metadata DB by the one-shot
+`superset-init` container. Editing the YAML (or even rebuilding the zip) alone has no effect
+on the running dashboard. Always finish with both steps:
+
+```bash
+cd dashboard/assets && python3 rebuild_zip.py   # regenerate cloudtrail_default.zip from the YAML
+cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
+```
+
 Development (run from module directories):
 
 ```bash

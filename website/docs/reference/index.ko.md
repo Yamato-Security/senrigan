@@ -18,7 +18,7 @@
 | 🌍 GeoIP 분석 ✦ | 12 | 불가능한 이동 · 다중 국가 자격 증명 · 지역별 순위 로그인/거부/쓰기 · 국가/도시/ASN 분석 · event_name × country · identity × country |
 | ☁ IaC 및 플랫폼 | 2 | CI/CD 공급망 · CloudFormation 남용 |
 
-<details>
+<details markdown="1">
 <summary>📋 전체 목록 — 100개 이상의 모든 쿼리 (클릭하여 확장)</summary>
 
 ## 내장 헌트
@@ -195,7 +195,7 @@
 | 🕒 시간적 분석 | 6 | 자격 증명/IP/API/에이전트별 처음/마지막 관찰 · 휴면 계정 재활성화 · 속도 급증 |
 | 🚨 고위험 API 모니터 | 7 | HRM 시계열 · 상위 호출/행위자/IP · 방어 회피/자격 증명 상세 · 리전별 |
 
-<details>
+<details markdown="1">
 <summary>📋 전체 목록 — 80개 이상의 모든 차트 (클릭하여 확장)</summary>
 
 ## 대시보드 차트 (Apache Superset — `dashboard/`)

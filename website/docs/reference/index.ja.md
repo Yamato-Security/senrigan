@@ -18,7 +18,7 @@
 | 🌍 GeoIP Analysis ✦ | 12 | 移動不可能な旅程 · 複数国の認証情報 · 地理ランク付けされたログイン/拒否/書き込み · 国/都市/ASN の内訳 · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | CI/CD サプライチェーン · CloudFormation 悪用 |
 
-<details>
+<details markdown="1">
 <summary>📋 全リスト — 100 以上の全クエリ (クリックで展開)</summary>
 
 ## 組み込みハント
@@ -195,7 +195,7 @@
 | 🕒 Temporal Analysis | 6 | ID/IP/API/エージェント別の初回/最終確認 · 再アクティブ化された休眠アカウント · 速度の急増 |
 | 🚨 High-Risk API Monitor | 7 | HRM 時系列 · 上位の呼び出し/アクター/IP · 防御回避/認証情報の詳細 · リージョン別 |
 
-<details>
+<details markdown="1">
 <summary>📋 全リスト — 80 以上の全チャート (クリックで展開)</summary>
 
 ## ダッシュボードチャート (Apache Superset — `dashboard/`)

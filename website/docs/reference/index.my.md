@@ -18,7 +18,7 @@
 | 🌍 GeoIP Analysis ✦ | 12 | မဖြစ်နိုင်သော ခရီးသွားလာမှု · multi-country credentials · geo-ranked logins/denials/writes · country/city/ASN ခွဲခြမ်းစိတ်ဖြာမှု · event_name × country · identity × country |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation အလွဲသုံးစားလုပ်ခြင်း |
 
-<details>
+<details markdown="1">
 <summary>📋 စာရင်းအပြည့်အစုံ — query 100+ ခုလုံး (ချဲ့ရန် နှိပ်ပါ)</summary>
 
 ## Built-in Hunts
@@ -195,7 +195,7 @@
 | 🕒 Temporal Analysis | 6 | First/last seen by identity/IP/API/agent · dormant accounts reactivated · velocity spikes |
 | 🚨 High-Risk API Monitor | 7 | HRM time series · top calls/actors/IPs · defense evasion/credential detail · by region |
 
-<details>
+<details markdown="1">
 <summary>📋 စာရင်းအပြည့်အစုံ — chart 80+ ခုလုံး (ချဲ့ရန် နှိပ်ပါ)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
