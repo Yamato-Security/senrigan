@@ -1,0 +1,77 @@
+# DSH-101: Bedrock Callers by Origin
+# Inventory of every principal that ever touched Bedrock, with source IP,
+# GeoIP origin, user agent, and model diversity.  Lets the analyst spot the
+# caller or origin (unexpected country, hosting ASN, python-requests UA)
+# that has no business using Bedrock at all.
+# MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking)
+uuid: a1e6f7a8-b9c0-1234-def0-a10000000101
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Bedrock Callers by Origin
+viz_type: table
+description: >
+  Inventory of all Amazon Bedrock callers with origin and model diversity
+  (DSH-101).  Baseline view for LLMjacking triage: principals calling from
+  unexpected countries, hosting/VPN ASNs, or generic scripting user agents
+  (python-requests, curl) with high call volume are prime suspects.
+  MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking).
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: total_calls
+      hasCustomLabel: true
+      optionName: metric_bedrock_total_calls
+    - expressionType: SQL
+      sqlExpression: >-
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+      label: distinct_models
+      hasCustomLabel: true
+      optionName: metric_bedrock_distinct_models
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_bedrock_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_bedrock_last_seen
+  groupby:
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_org
+    - user_agent
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "event_source = 'bedrock.amazonaws.com'"
+      filterOptionName: filter_bedrock_callers
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT
+#     user_identity_arn,
+#     source_ip_address,
+#     geo_country_code,
+#     geo_org,
+#     user_agent,
+#     COUNT(*)                                                       AS total_calls,
+#     COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
+#                                                                    AS distinct_models,
+#     MIN(event_time)                                                AS first_seen,
+#     MAX(event_time)                                                AS last_seen
+# FROM cloudtrail_events
+# WHERE event_source = 'bedrock.amazonaws.com'
+# GROUP BY 1, 2, 3, 4, 5
+# ORDER BY total_calls DESC
+# LIMIT 200
