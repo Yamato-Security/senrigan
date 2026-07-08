@@ -73,8 +73,32 @@ def _service_node_id(service_ns: str) -> str:
     return f"__svc__{service_ns}"
 
 
+# Specificity score for container types. When a resource has multiple
+# containment edges, the parent with the highest score wins.
+# Higher = more specific (preferred).
+_CONTAINER_SPECIFICITY: dict[str, int] = {
+    "AWS::EC2::Subnet": 50,
+    "AWS::AutoScaling::AutoScalingGroup": 40,
+    "AWS::CloudFormation::Stack": 40,
+    "AWS::ECS::Cluster": 40,
+    "AWS::RDS::DBCluster": 40,
+    "AWS::EC2::VPC": 30,
+}
+
+# Source resource types whose "contains*" edges are routing/management
+# associations rather than spatial containment. These edges must not
+# set a containment parent for the target.
+_NON_SPATIAL_CONTAINS_TYPES: frozenset[str] = frozenset(
+    {
+        "AWS::EC2::RouteTable",
+        "AWS::EC2::NetworkAcl",
+    }
+)
+
+
 def _build_parent_map(
     edge_rows: list[tuple[str, str, str]],
+    rid_to_type: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """Build resource_id → parent_resource_id map from containment edges.
 
@@ -83,23 +107,39 @@ def _build_parent_map(
 
     * ``contains`` — src contains tgt; tgt's parent is src.
       Covers ``"Contains"``, ``"Contains Subnet"``, ``"Contains DBInstance"``, etc.
+      Exception: edges from ``_NON_SPATIAL_CONTAINS_TYPES`` sources are skipped
+      because they represent routing/management associations, not spatial nesting.
     * ``is contained in`` — src is inside tgt; src's parent is tgt.
       Covers ``"Is contained in Vpc"``, ``"Is contained in Subnet"``, etc.
     * ``is member of`` — src belongs to tgt; src's parent is tgt.
       Covers ``"Is member of AutoScalingGroup"`` and similar membership edges.
+
+    When a resource has multiple containment edges pointing to different
+    containers, the container with the highest ``_CONTAINER_SPECIFICITY`` score
+    wins (e.g. Subnet beats VPC).
     """
     m: dict[str, str] = {}
+    priority: dict[str, int] = {}
+
+    def _set_parent(child: str, parent: str) -> None:
+        p = _CONTAINER_SPECIFICITY.get(
+            rid_to_type.get(parent, "") if rid_to_type else "", 0
+        )
+        if child not in m or p >= priority.get(child, -1):
+            m[child] = parent
+            priority[child] = p
+
     for src, tgt, etype in edge_rows:
         n = etype.strip().lower()
         if n.startswith("contains"):
-            # src contains tgt → tgt's parent is src
-            m[tgt] = src
+            # Skip non-spatial containment from routing/management source types
+            if rid_to_type and rid_to_type.get(src) in _NON_SPATIAL_CONTAINS_TYPES:
+                continue
+            _set_parent(tgt, src)
         elif n.startswith("is contained in"):
-            # src is contained in tgt → src's parent is tgt
-            m[src] = tgt
+            _set_parent(src, tgt)
         elif n.startswith("is member of"):
-            # src is a member of tgt → src's parent is tgt
-            m[src] = tgt
+            _set_parent(src, tgt)
     return m
 
 
@@ -307,6 +347,257 @@ def _infer_s3_hierarchy(
 
 
 # ---------------------------------------------------------------------------
+# GR-1: Join-record folding
+# ---------------------------------------------------------------------------
+
+# Join-record resource types. Each entry describes how to fold the join node
+# into a direct edge between its two endpoint neighbours.
+_JOIN_RECORD_SPECS: dict[str, dict] = {
+    "AWS::EC2::SubnetRouteTableAssociation": {
+        "source_types": frozenset({"AWS::EC2::Subnet"}),
+        "target_types": frozenset({"AWS::EC2::RouteTable"}),
+        "label": "route table",
+    },
+    "AWS::EC2::VPCGatewayAttachment": {
+        "source_types": frozenset(
+            {"AWS::EC2::InternetGateway", "AWS::EC2::VPNGateway"}
+        ),
+        "target_types": frozenset({"AWS::EC2::VPC"}),
+        "label": "attached",
+    },
+    "AWS::EC2::SubnetNetworkAclAssociation": {
+        "source_types": frozenset({"AWS::EC2::Subnet"}),
+        "target_types": frozenset({"AWS::EC2::NetworkAcl"}),
+        "label": "network acl",
+    },
+}
+
+
+def _fold_join_records(
+    resource_rows: list[tuple],
+    rid_to_type: dict[str, str],
+    all_edges: list[tuple[str, str, str]],
+    direct_edges_out: list[dict[str, Any]],
+) -> set[str]:
+    """Fold join-record nodes into direct edges between their endpoints.
+
+    For each resource whose type is in ``_JOIN_RECORD_SPECS``:
+    * If both endpoint neighbours (one matching ``source_types``, one matching
+      ``target_types``) exist in the snapshot, remove the join node and emit a
+      direct edge with the configured label.
+    * If either endpoint is absent (graceful degradation), keep the join node.
+
+    Args:
+        resource_rows: All displayed resource rows (rid, rtype, …).
+        rid_to_type: resource_id → resource_type for the full snapshot.
+        all_edges: All edges for the snapshot.
+        direct_edges_out: Mutable list to which new direct edges are appended.
+
+    Returns:
+        Set of resource_ids that were successfully folded (to be removed from nodes).
+    """
+    # Build bidirectional adjacency across all edges
+    adj: dict[str, list[str]] = {}
+    for src, tgt, _ in all_edges:
+        adj.setdefault(src, []).append(tgt)
+        adj.setdefault(tgt, []).append(src)
+
+    all_rids: set[str] = set(rid_to_type.keys())
+    folded: set[str] = set()
+
+    for row in resource_rows:
+        rid, rtype = row[0], row[1]
+        spec = _JOIN_RECORD_SPECS.get(rtype)
+        if spec is None:
+            continue
+
+        source: str | None = None
+        target: str | None = None
+
+        for nbr in adj.get(rid, []):
+            if nbr not in all_rids:
+                continue  # missing endpoint → cannot fold
+            nbr_type = rid_to_type.get(nbr, "")
+            if nbr_type in spec["source_types"]:
+                source = nbr
+            elif nbr_type in spec["target_types"]:
+                target = nbr
+
+        if source and target:
+            folded.add(rid)
+            direct_edges_out.append(
+                {
+                    "id": f"{source}__{target}__{spec['label']}",
+                    "source": source,
+                    "target": target,
+                    "label": spec["label"],
+                }
+            )
+
+    return folded
+
+
+# ---------------------------------------------------------------------------
+# GR-2: Account-defaults quarantine
+# ---------------------------------------------------------------------------
+
+# Resource types that are low-signal AWS-managed defaults or account singletons.
+# These are moved to the synthetic __svc__AccountDefaults group so they do not
+# clutter the main resource graph.
+_ACCOUNT_DEFAULT_TYPES: frozenset[str] = frozenset(
+    {
+        "AWS::CodeDeploy::DeploymentConfig",
+        "AWS::AppConfig::HostedConfigurationVersion",
+        "AWS::Config::ConfigurationRecorder",
+    }
+)
+
+_ACCOUNT_DEFAULTS_ID = "__svc__AccountDefaults"
+
+
+def _quarantine_account_defaults(nodes: list[dict[str, Any]]) -> None:
+    """Move low-signal account-default resources to ``__svc__AccountDefaults``.
+
+    Mutates *nodes* in-place:
+    1. Rehomes every node whose ``resource_type`` is in ``_ACCOUNT_DEFAULT_TYPES``
+       to the ``__svc__AccountDefaults`` group (creating it if necessary).
+    2. Removes any service-group node that becomes empty as a result.
+    """
+    ad_id = _ACCOUNT_DEFAULTS_ID
+    low_signal_ids: list[str] = [
+        n["id"]
+        for n in nodes
+        if n["data"].get("resource_type") in _ACCOUNT_DEFAULT_TYPES
+    ]
+    if not low_signal_ids:
+        return
+
+    # Create the AccountDefaults group if not already present
+    if not any(n["id"] == ad_id for n in nodes):
+        nodes.insert(
+            0,
+            {
+                "id": ad_id,
+                "type": "awsGroupNode",
+                "position": {"x": 0, "y": 0},
+                "parentId": None,
+                "data": {
+                    "resource_id": ad_id,
+                    "resource_type": "__service__AccountDefaults",
+                    "resource_name": "Account Defaults",
+                    "aws_region": "",
+                    "is_container": True,
+                    "default_collapsed": True,
+                    "member_count": len(low_signal_ids),
+                },
+            },
+        )
+    else:
+        for n in nodes:
+            if n["id"] == ad_id:
+                n["data"]["default_collapsed"] = True
+                n["data"]["member_count"] = len(low_signal_ids)
+                break
+
+    # Rehome the low-signal nodes
+    low_signal_set = set(low_signal_ids)
+    for n in nodes:
+        if n["id"] in low_signal_set:
+            n["parentId"] = ad_id
+
+    # Count remaining children per service group (excluding AccountDefaults)
+    child_counts: dict[str, int] = {}
+    for n in nodes:
+        pid = n.get("parentId")
+        if pid and pid != ad_id and pid.startswith("__svc__"):
+            child_counts[pid] = child_counts.get(pid, 0) + 1
+
+    # Prune empty service groups
+    nodes[:] = [
+        n
+        for n in nodes
+        if not (
+            n["id"].startswith("__svc__")
+            and n["id"] != ad_id
+            and child_counts.get(n["id"], 0) == 0
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# GR-3: AZ containers
+# ---------------------------------------------------------------------------
+
+
+def _insert_az_containers(
+    parent_map: dict[str, str],
+    rid_to_type: dict[str, str],
+    az_of_subnet: dict[str, str | None],
+) -> list[dict[str, Any]]:
+    """Insert synthetic AZ container nodes for multi-AZ VPCs.
+
+    For each VPC whose direct-child subnets span two or more distinct
+    availability zones, creates one synthetic ``__az__<vpc>__<az>`` group node
+    per AZ and reparents the subnets to their AZ container.
+
+    Subnets without an ``availabilityZone`` in their configuration stay directly
+    under the VPC. VPCs with subnets in only one AZ receive no AZ containers.
+
+    Args:
+        parent_map: Mutable containment map (resource_id → parent_id).
+                    Modified in-place: subnets are reparented and synthetic
+                    AZ → VPC entries are added.
+        rid_to_type: resource_id → resource_type lookup.
+        az_of_subnet: subnet_resource_id → AZ string (or None if absent).
+
+    Returns:
+        List of synthetic AZ group node dicts to be added to the graph.
+    """
+    # Group subnets by VPC and AZ
+    vpc_az_subnets: dict[str, dict[str, list[str]]] = {}
+    for subnet_id, az in az_of_subnet.items():
+        if not az:
+            continue
+        vpc_id = parent_map.get(subnet_id)
+        if vpc_id is None:
+            continue
+        if rid_to_type.get(vpc_id) != "AWS::EC2::VPC":
+            continue
+        vpc_az_subnets.setdefault(vpc_id, {}).setdefault(az, []).append(subnet_id)
+
+    synthetic: list[dict[str, Any]] = []
+
+    for vpc_id, az_map in vpc_az_subnets.items():
+        if len(az_map) < 2:
+            continue  # single-AZ VPC: skip
+
+        for az, subnet_ids in az_map.items():
+            az_node_id = f"__az__{vpc_id}__{az}"
+            # Reparent subnets to this AZ node
+            for subnet_id in subnet_ids:
+                parent_map[subnet_id] = az_node_id
+            # Register the AZ node itself as a child of the VPC
+            parent_map[az_node_id] = vpc_id
+            synthetic.append(
+                {
+                    "id": az_node_id,
+                    "type": "awsGroupNode",
+                    "position": {"x": 0, "y": 0},
+                    "parentId": vpc_id,
+                    "data": {
+                        "resource_id": az_node_id,
+                        "resource_type": "__az__",
+                        "resource_name": az,
+                        "aws_region": "",
+                        "is_container": True,
+                    },
+                }
+            )
+
+    return synthetic
+
+
+# ---------------------------------------------------------------------------
 # Public query functions
 # ---------------------------------------------------------------------------
 
@@ -365,7 +656,8 @@ def get_graph(
     via ``parentId`` on child nodes and are excluded from the edge list.
 
     When ``resource_type`` is given, service-group virtual nodes are **not**
-    added to keep the filtered view clean.
+    added to keep the filtered view clean, and join-record folding / account-
+    defaults quarantine are also skipped.
 
     For each unique ``resource_id`` only the first ``resource_type`` is used
     when building the parent map from edges (edges store only the raw
@@ -380,36 +672,49 @@ def get_graph(
         [snapshot_id],
     ).fetchall()
 
-    # 2. Build parent map and container set from ALL edges
-    parent_map = _build_parent_map(all_edges)
-
-    # 3. resource_id → first resource_type (for edge resolution)
+    # 2. resource_id → first resource_type (needed for type-aware parent map)
     all_type_rows: list[tuple[str, str]] = conn.execute(
         "SELECT resource_id, resource_type"
         " FROM config_resources WHERE snapshot_id = ?"
-        " ORDER BY resource_type",  # deterministic first-type selection
+        " ORDER BY resource_type",
         [snapshot_id],
     ).fetchall()
     rid_to_first_type: dict[str, str] = {}
     for rid, rtype in all_type_rows:
         rid_to_first_type.setdefault(rid, rtype)
 
-    # Infer Subnet membership for resources that have only association edges to
-    # a Subnet (e.g. VPC-deployed Lambda, RDS DBInstance).  Runs before VPC
-    # inference so these resources land at the most specific container.
+    # 3. Build parent map with type-aware, most-specific-wins logic
+    parent_map = _build_parent_map(all_edges, rid_to_first_type)
+
+    # 4. Inference passes
     _infer_subnet_for_residents(parent_map, all_edges, rid_to_first_type)
-
-    # Infer VPC membership for resources (e.g. EIP) that have no containment
-    # edge but are reachable from a VPC-resident resource via association edges.
     _infer_vpc_for_residents(parent_map, all_edges, rid_to_first_type)
-
-    # Infer S3 hierarchy: place S3 AccessPoints and similar sub-resources inside
-    # their parent S3 Bucket via any association edge.
     _infer_s3_hierarchy(parent_map, all_edges, rid_to_first_type)
 
+    # 5. GR-3: Fetch subnet AZ info and insert synthetic AZ container nodes
+    subnet_az_rows: list[tuple[str, str | None]] = conn.execute(
+        "SELECT resource_id, configuration"
+        " FROM config_resources WHERE snapshot_id = ? AND resource_type = 'AWS::EC2::Subnet'",
+        [snapshot_id],
+    ).fetchall()
+    az_of_subnet: dict[str, str | None] = {}
+    for rid, config_json in subnet_az_rows:
+        az: str | None = None
+        if config_json:
+            try:
+                az = json.loads(config_json).get("availabilityZone")
+            except (json.JSONDecodeError, KeyError):
+                pass
+        az_of_subnet[rid] = az
+
+    az_synthetic_nodes = _insert_az_containers(
+        parent_map, rid_to_first_type, az_of_subnet
+    )
+
+    # 6. Recompute container_ids after all parent_map mutations
     container_ids: set[str] = set(parent_map.values())
 
-    # 4. Resources to display (with optional type filter)
+    # 7. Resources to display (with optional type filter)
     params: list[Any] = [snapshot_id]
     type_filter = ""
     if resource_type:
@@ -426,19 +731,21 @@ def get_graph(
     # Unique resource_ids in the displayed node set
     displayed_rids: set[str] = {r[0] for r in resource_rows}
 
+    # Include synthetic AZ node IDs as valid parents (they are not in displayed_rids
+    # but subnets may have them as their parentId after AZ insertion).
+    valid_parent_ids: set[str] = displayed_rids | {n["id"] for n in az_synthetic_nodes}
+
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
 
-    # 5. Add service-group virtual nodes (only for unfiltered views)
+    # 8. Add service-group virtual nodes (only for unfiltered views)
     if not resource_type:
-        # Determine which resource_ids have no physical parent in the displayed set
         svc_members: dict[str, list[tuple[str, str]]] = {}
         for row in resource_rows:
             rid, rtype = row[0], row[1]
             physical_parent = parent_map.get(rid)
-            has_visible_parent = physical_parent and physical_parent in displayed_rids
+            has_visible_parent = physical_parent and physical_parent in valid_parent_ids
             if not has_visible_parent:
-                # Top-level resource → belongs to service group
                 svc = _service_of(rtype)
                 svc_members.setdefault(svc, []).append((rid, rtype))
 
@@ -462,17 +769,20 @@ def get_graph(
                 }
             )
 
-    # 6. Build leaf + container resource nodes
+    # 9. Prepend synthetic AZ nodes (only for unfiltered views; they have no
+    #    resource_type filter to match anyway, but keep consistent)
+    if not resource_type:
+        nodes.extend(az_synthetic_nodes)
+
+    # 10. Build leaf + container resource nodes
     for row in resource_rows:
         rid, rtype = row[0], row[1]
         physical_parent = parent_map.get(rid)
 
         parent_id: str | None = None
-        if physical_parent and physical_parent in displayed_rids:
-            # Physical containment edge resolved to a visible node
+        if physical_parent and physical_parent in valid_parent_ids:
             parent_id = physical_parent
         elif not resource_type:
-            # No physical parent → service group parent
             svc = _service_of(rtype)
             parent_id = _service_node_id(svc)
 
@@ -492,23 +802,39 @@ def get_graph(
             }
         )
 
-    # 7. Non-containment edges (only between displayed nodes)
+    # 11. GR-1: Fold join-record nodes into direct edges (unfiltered view only)
+    folded_ids: set[str] = set()
+    direct_edges: list[dict[str, Any]] = []
+    if not resource_type:
+        folded_ids = _fold_join_records(
+            resource_rows, rid_to_first_type, all_edges, direct_edges
+        )
+        nodes = [n for n in nodes if n["id"] not in folded_ids]
+
+    # 12. Non-containment edges (only between displayed, non-folded nodes)
     for src_id, tgt_id, etype in all_edges:
         n = etype.strip().lower()
         if n.startswith("contains") or n.startswith("is contained in"):
             continue
-        if src_id in displayed_rids and tgt_id in displayed_rids:
-            edges.append(
-                {
-                    "id": f"{src_id}__{tgt_id}__{etype}",
-                    "source": src_id,
-                    "target": tgt_id,
-                    "label": etype,
-                }
-            )
+        if src_id not in displayed_rids or tgt_id not in displayed_rids:
+            continue
+        if folded_ids and (src_id in folded_ids or tgt_id in folded_ids):
+            continue
+        edges.append(
+            {
+                "id": f"{src_id}__{tgt_id}__{etype}",
+                "source": src_id,
+                "target": tgt_id,
+                "label": etype,
+            }
+        )
+    edges.extend(direct_edges)
 
-    # 8. Compute nesting depth for each node (0 = root / service-group level).
-    # Used by the frontend to apply depth-aware visual styling.
+    # 13. GR-2: Quarantine account-default resources (unfiltered view only)
+    if not resource_type:
+        _quarantine_account_defaults(nodes)
+
+    # 14. Compute nesting depth for each node (0 = root / service-group level).
     id_to_parent_id: dict[str, str | None] = {n["id"]: n["parentId"] for n in nodes}
     depth_of: dict[str, int] = {}
     for nid, pid in id_to_parent_id.items():
