@@ -21,8 +21,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         COUNT(*) FILTER (
-          WHERE json_extract_string(raw_event,
-            '$.responseElements.ConsoleLogin') = 'Failure'
+          WHERE json_extract_string(response_elements, '$.ConsoleLogin') = 'Failure'
              OR json_extract_string(additional_event_data, '$.success') = 'false'
         )
       label: failure_count
