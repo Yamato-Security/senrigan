@@ -2,306 +2,361 @@
 
 > 💡 Aucune connaissance SQL ou approfondie d'AWS requise — sélectionnez simplement une chasse dans la liste déroulante et obtenez des résultats instantanément.
 
-## 🎯 Chasses intégrées — plus de 100 requêtes
+## 🎯 Chasses intégrées — 112 requêtes
 
 Les catégories sont classées par priorité de triage DFIR — vérifiez d'abord la falsification des outils de détection, puis l'abus d'identité, puis l'impact sur les données.
 
 | Catégorie | Requêtes | Principales menaces couvertes |
 |----------|:-------:|---------------------|
-| 🛡 Détection et réponse | 12 | Falsification du service d'audit (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · suppression de SCP · suppression d'alarme · exfiltration de journaux |
-| 🔑 Identité et accès | 26 | Utilisation du root · connexion console/MFA · élévation de privilèges · porte dérobée de politique de confiance · abus de PassRole · AssumeRole inter-comptes · SSO/SAML/OIDC · énumération d'identifiants |
-| 🪣 Données et stockage | 21 | Suppression/téléchargement en masse S3 · lecture en masse de secrets · falsification de sauvegarde · opérations KMS · partage de snapshot · exfiltration via EBS Direct API · export DynamoDB · réplication inter-comptes S3 |
-| ⚡ Calcul et serverless | 14 | Arrêt/terminaison en masse EC2 · mouvement latéral SSM · falsification Lambda/ECS/EKS/ECR · persistance EventBridge · cryptominage · abus de Lightsail |
-| 🌐 Réseau et infrastructure | 14 | SG ouvert sur Internet · suppression de journaux de flux VPC · détournement CloudFront · tunnels VPN/TGW dissimulés · IP élastique C2 · clés API Gateway |
-| 🕵 Schémas de menace | 5 | Écritures hors heures · rafale de reconnaissance · propagation multi-régions · agents utilisateurs inhabituels · premiers appels d'API |
-| 📊 Activité et référence | 3 | Événements d'écriture console · pics d'erreurs · erreurs récentes |
-| 🌍 Analyse GeoIP ✦ | 12 | Voyage impossible · identifiants multi-pays · connexions/refus/écritures classés par géo · répartition par pays/ville/ASN · event_name × country · identity × country |
-| ☁ IaC et plateforme | 2 | Chaîne d'approvisionnement CI/CD · abus de CloudFormation |
+| 🛡 Detection & Response | 12 | Falsification des services d'audit (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · suppression de SCP · suppression d'alarme · exfiltration de journaux |
+| 🔑 Identity & Access | 26 | Utilisation du root · connexion console/MFA · élévation de privilèges · porte dérobée de politique de confiance · abus de PassRole · AssumeRole inter-comptes · SSO/SAML/OIDC · énumération d'identifiants |
+| 🪣 Data & Storage | 21 | Suppression/téléchargement en masse S3 · lecture en masse de secrets · falsification de sauvegarde · opérations KMS · partage de snapshot · exfiltration via EBS Direct API · export DynamoDB · réplication inter-comptes S3 |
+| ⚡ Compute & Serverless | 14 | Arrêt/terminaison en masse EC2 · mouvement latéral SSM · falsification Lambda/ECS/EKS/ECR · persistance EventBridge · cryptominage · abus de Lightsail |
+| 🤖 AI & LLM Abuse | 6 | Pics d'invocation Bedrock · activation de l'accès aux modèles · falsification du journal d'invocations · reconnaissance par balayage de régions · rafales d'invocations échouées · inventaire des appelants/origines (LLMjacking) |
+| 🌐 Network & Infrastructure | 14 | SG ouvert sur Internet · suppression de journaux de flux VPC · détournement CloudFront · tunnels VPN/TGW dissimulés · IP élastique C2 · clés API Gateway |
+| 🕵 Threat Patterns | 4 | Rafale de reconnaissance · agents utilisateurs inhabituels · propagation multi-régions · premiers appels d'API |
+| 📊 Activity & Baseline | 3 | Événements d'écriture console · pics d'erreurs · erreurs récentes |
+| 🌍 GeoIP Analysis | 10 | Connexions/refus/écritures console par pays · accès depuis des pays peu fréquents · répartition par pays/ASN/ville · event_name × pays · identité × pays · référence des IP privées |
+| ☁ IaC & Platform | 2 | Chaîne d'approvisionnement CI/CD · abus de CloudFormation |
 
 <details markdown="1">
-<summary>📋 Liste complète — toutes les 100+ requêtes (cliquez pour développer)</summary>
+<summary>📋 Liste complète — toutes les 112 requêtes (cliquez pour développer)</summary>
 
 ## Chasses intégrées
 
-### 🛡 Détection et réponse
+### 🛡 Detection & Response
 
 | # | Libellé | Graphique | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🛑 CloudTrail Tampering | timeseries | Détecte toute tentative d'arrêt ou de modification de CloudTrail — l'indicateur de dissimulation le plus critique |
-| 2 | 🛡️ GuardDuty Detector Tampering | timeseries | Détecte la désactivation, la suppression et la manipulation de threat-intel de GuardDuty |
-| 3 | ⛔ Security Hub Tampering | timeseries | Détecte la désactivation de Security Hub, la désactivation de standard et la suppression de découvertes |
-| 4 | ⚙️ AWS Config Tampering | timeseries | Détecte la suppression d'enregistreur/règle AWS Config (élimine les preuves de conformité) |
-| 5 | 🛡 Organizations SCP Changes | timeseries | Détecte la création, la mise à jour et la suppression de SCP — supprimer un SCP Deny élimine les garde-fous sur chaque compte de l'OU |
-| 6 | 🚫 AWS Macie Tampering | timeseries | Détecte la désactivation de Macie et la création de filtre de découvertes (évasion de défense pré-exfiltration) |
-| 7 | 🚨 CloudWatch Alarm Deletion / Disable | timeseries | Détecte la suppression d'alarme et DisableAlarmActions — réduit au silence l'alerte de sécurité sans supprimer l'alarme |
-| 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | Détecte la création/suppression de filtre d'abonnement CW Logs (exfiltration de journaux en temps réel vers le Kinesis/Lambda de l'attaquant) |
-| 9 | 🏹 WAF WebACL Changes | timeseries | Détecte la création, la mise à jour et la suppression de WAF WebACL sur WAFv2/WAF Classic |
-| 10 | 🔍 GuardDuty Findings Read | timeseries | Détecte ListFindings / GetFindings — l'attaquant lit les découvertes actives pour comprendre ce que le SOC a déjà détecté |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Détecte la suppression de Budget/AnomalyMonitor (masque les coûts de cryptominage) |
-| 12 | 🚫 Access Denied Errors | bar | Regroupe les erreurs AccessDenied par identité et API — les principaux contrevenants indiquent un usage abusif d'identifiants |
+| 1 | 🛑 CloudTrail Tampering | timeseries | Détecte toute tentative d'arrêt ou de modification de CloudTrail. L'alerte la plus critique : indique une dissimulation. |
+| 2 | 🛡️ GuardDuty Detector Tampering | timeseries | Détecte la désactivation, la suppression et la manipulation de threat-intel de GuardDuty. Tout changement dans GuardDuty en cours d'investigation est un indicateur critique. |
+| 3 | ⛔ Security Hub Tampering | timeseries | Détecte la désactivation de Security Hub, la désactivation de standard et la suppression de découvertes. Réduire Security Hub au silence élimine le point central d'agrégation de toutes les découvertes de sécurité. |
+| 4 | ⚙️ AWS Config Tampering | timeseries | Détecte la suppression d'enregistreur/règle AWS Config. Arrêter Config élimine les preuves de conformité et le suivi des changements pour une région entière. |
+| 5 | 🛡 Organizations Service Control Policy (SCP) Changes | timeseries | Détecte la création, la modification et la suppression de SCP. Supprimer un SCP Deny élimine immédiatement les garde-fous sur tous les comptes de l'OU concernée. |
+| 6 | 🚫 AWS Macie Tampering | timeseries | Détecte la désactivation de Macie et la création de filtre de découvertes. Les attaquants suppriment les découvertes de Macie avant d'exfiltrer des données sensibles depuis S3. |
+| 7 | 🚨 CloudWatch Alarm Deletion / Disable | timeseries | Détecte la suppression et la désactivation d'alarmes CloudWatch. Réduire au silence les alarmes liées à GuardDuty, aux filtres de métriques CloudTrail ou aux seuils de facturation est un indicateur clé d'évasion de défense. |
+| 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | Détecte la création/suppression de filtre d'abonnement CW Logs et la suppression de groupes de journaux. Les attaquants diffusent les journaux vers une destination externe ou détruisent les preuves sur place. |
+| 9 | 🏹 WAF WebACL Changes | timeseries | Détecte la création, la mise à jour et la suppression de WAF WebACL. Supprimer ou affaiblir une WebACL désactive la protection contre les attaques SQLi, XSS et DDoS. |
+| 10 | 🔍 GuardDuty Findings Read | timeseries | Détecte les appels d'API en lecture seule de GuardDuty. Le module guardduty__list_findings de Pacu lit les découvertes actives pour comprendre ce que le défenseur a déjà détecté, permettant à l'attaquant d'adapter ses tactiques et d'éviter de déclencher de nouvelles alertes. |
+| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Détecte la suppression ou la modification des Budgets AWS et des moniteurs Cost Anomaly. Les attaquants suppriment les alertes de budget pour masquer le cryptominage ou des opérations gourmandes en ressources. |
+| 12 | 🚫 Access Denied Errors | bar | Regroupe les erreurs AccessDenied par identité et API. Les principaux contrevenants peuvent indiquer un usage abusif d'identifiants. |
 
-### 🔑 Identité et accès
-
-| # | Libellé | Graphique | Description |
-|---|-------|:-----:|-------------|
-| 1 | 🔑 Root Account Activity | timeseries | Détecte tout appel d'API effectué par le compte root — le root ne devrait jamais être utilisé en production |
-| 2 | 🔓 Console Login without MFA | timeseries | Détecte les connexions console où le MFA n'a pas été utilisé — indicateur à haut risque de compromission de compte |
-| 3 | 🌐 Console Logins | timeseries | Liste toutes les tentatives de connexion console, y compris les succès et les échecs (détection de force brute) |
-| 4 | 🔐 MFA & Password Changes | timeseries | Détecte la désactivation du MFA et les réinitialisations de mot de passe — indicateur fort de prise de contrôle de compte |
-| 5 | 🔄 Privilege Escalation (IAM) | timeseries | Détecte l'attachement de politique IAM et la manipulation de rôle (PutUserPolicy, AttachRolePolicy, CreatePolicyVersion, etc.) |
-| 6 | 🔄 IAM Role Trust Policy Changes | timeseries | Détecte UpdateAssumeRolePolicy — l'ajout de principaux externes à une politique de confiance crée une porte dérobée persistante |
-| 7 | 🚧 IAM Permission Boundary Changes | timeseries | Détecte les événements put/delete de limite de permission — supprimer une limite étend immédiatement les permissions effectives |
-| 8 | 👑 User Added to Admin Group | timeseries | Détecte les utilisateurs ajoutés à des groupes dont le nom contient « admin » — élévation de privilèges classique |
-| 9 | 👥 IAM Group Membership Changes | timeseries | Détecte tous les événements AddUserToGroup / RemoveUserFromGroup / CreateGroup / DeleteGroup quel que soit le nom du groupe |
-| 10 | 👤 New IAM Users / Keys | timeseries | Identifie les événements de création d'utilisateur IAM et de clé d'accès — une création inattendue peut indiquer une persistance |
-| 11 | 🎯 IAM PassRole Abuse | timeseries | Détecte l'usage de iam:PassRole en inspectant les événements de service récepteur (RunInstances, CreateFunction, CreateNotebookInstance, etc.) où un ARN de rôle est transmis |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | Affiche les événements AssumeRole où l'appelant et la cible sont dans des comptes AWS différents (mouvement latéral) |
-| 13 | 🏢 Cross-Account Access | timeseries | Trouve tous les événements où le compte appelant diffère du compte destinataire |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | Détecte GetFederationToken et GetSessionToken — convertit des clés à longue durée de vie en identifiants temporaires persistants |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Détecte l'abus de confiance OIDC (revendication sub mal configurée / GitHub Actions sans condition de dépôt) |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | Détecte les actions de gestion d'AWS IAM Identity Center (CreatePermissionSet, CreateAccountAssignment, etc.) |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | Détecte les changements de fournisseur d'identité SAML/OIDC — mettre à jour les métadonnées SAML avec un IdP contrôlé par l'attaquant crée une porte dérobée d'authentification persistante |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | Détecte tout usage d'IAM Access Analyzer — les attaquants exploitent l'analyseur natif pour énumérer les ressources accessibles depuis l'extérieur sans scripts de reconnaissance personnalisés |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | Détecte l'énumération IAM (GenerateCredentialReport, ListUsers, ListRoles, GetAccountAuthorizationDetails, etc.) |
-| 20 | 🗝 Access Key Abuse | bar | Détecte les clés d'accès utilisées depuis 3+ adresses IP source distinctes en 7 jours — indicateur fort de fuite de clé |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | Détecte la création de compte Organizations et les changements d'administrateur délégué (persistance par compte fantôme) |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | Détecte les pools d'identités Cognito avec allowUnauthenticatedIdentities=true |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Détecte la création de Glue DevEndpoint (iam:PassRole + glue:CreateDevEndpoint = endpoint accessible par SSH s'exécutant avec les permissions complètes du rôle transmis) et l'énumération de connexions pour la collecte d'identifiants |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Détecte la création de notebook SageMaker et la génération d'URL présignée — iam:PassRole + sagemaker:CreateNotebookInstance lance un environnement Jupyter avec les permissions AWS complètes du rôle transmis |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Détecte la création de ressources Data Pipeline et CodeStar utilisées pour l'élévation via iam:PassRole (CreateProjectFromTemplate crée un rôle IAM admin comme effet secondaire) |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Détecte la création de machine d'état Step Functions (iam:PassRole + states:CreateStateMachine exécute des tâches Lambda/ECS sous le rôle transmis) |
-
-### 🪣 Données et stockage
+### 🔑 Identity & Access
 
 | # | Libellé | Graphique | Description |
 |---|-------|:-----:|-------------|
-| 1 | 💣 S3 Bulk Object Deletion | bar | Détecte les identités effectuant ≥50 appels DeleteObject/DeleteObjects par heure — schéma de destruction de données par rançongiciel / wiper |
-| 2 | 🔥 AWS Backup Tampering | timeseries | Détecte la suppression de Backup Vault / Plan / RecoveryPoint et le retrait de Vault Lock — première étape du rançongiciel pour éliminer les options de récupération |
-| 3 | 🔓 KMS Key Operations | timeseries | Signale les opérations KMS sensibles (DisableKey, ScheduleKeyDeletion, CreateGrant, PutKeyPolicy, Decrypt à fort volume) |
-| 4 | 🔓 S3 Public Access Block Disabled | — | Détecte la désactivation des paramètres de blocage d'accès public S3 — risque d'exposition immédiate des données |
-| 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | Détecte les modifications de politique de bucket et d'ACL S3 (PutBucketPolicy avec Principal='*' est particulièrement critique) |
-| 6 | 🪣 S3 Data Access Anomalies | bar | Détecte les appels GetObject en masse (≥100/heure) — schéma d'exfiltration de données automatisée |
-| 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Détecte les identités récupérant ≥10 secrets distincts en une heure — signal de collecte d'identifiants |
-| 8 | 🗝 Secrets Manager Deletion & Cross-Account Policy | timeseries | Détecte la suppression de secret, PutResourcePolicy (partage inter-comptes) et CancelRotateSecret |
-| 9 | 🔐 SSM Parameter Store Bulk Read | bar | Détecte les identités lisant ≥20 paramètres en une heure — un canal d'exfiltration souvent négligé |
-| 10 | 💾 RDS Snapshot Cross-Account Share | timeseries | Détecte les snapshots RDS/Aurora partagés avec des comptes AWS externes (exfiltration de base de données via snapshot) |
-| 11 | 💣 RDS Deleted without Final Snapshot | — | Détecte la suppression RDS avec skipFinalSnapshot=true — destruction potentielle de données |
-| 12 | 💽 RDS Public Accessibility Enabled | timeseries | Détecte les instances RDS créées ou modifiées avec publiclyAccessible=true |
-| 13 | 🗄 DynamoDB Export / Bulk Exfiltration | timeseries | Détecte ExportTableToPointInTime (export complet de table côté serveur contournant la DLP GetItem), DeleteTable et la désactivation de PITR |
-| 14 | 💾 EBS Direct API Snapshot Exfiltration | timeseries | Détecte l'EBS Direct API (ListSnapshotBlocks / GetSnapshotBlock) — Pacu ebs__download_snapshots diffuse des données brutes de snapshot sans EC2, contournant la détection ModifySnapshotAttribute |
-| 15 | 🌊 Kinesis Firehose / Stream Exfiltration Channel | timeseries | Détecte la création/mise à jour de flux de livraison Firehose pointant vers un S3 externe — pipeline de données en temps réel invisible à la DLP réseau |
-| 16 | 🔁 S3 Cross-Account Replication | timeseries | Détecte PutBucketReplication — copie silencieusement tous les nouveaux objets vers un bucket contrôlé par l'attaquant sans générer d'événements GetObject supplémentaires |
-| 17 | 📂 S3 Versioning / Logging Disabled | timeseries | Détecte la suspension du versioning (permet la suppression permanente) et la désactivation de la journalisation d'accès serveur (supprime la piste de preuves) |
-| 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | Détecte les changements de règle de réception et de configuration d'identité SES — les règles de transfert relaient tout le courrier entrant vers les adresses de l'attaquant ; les identités vérifiées permettent des campagnes de phishing |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Détecte les changements de politique SQS/SNS accordant l'accès à des comptes externes (diffusion silencieuse de messages vers les endpoints de l'attaquant) |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Détecte les snapshots EBS ou AMI partagés publiquement (group=all) — permet à quiconque de copier des images disque et d'extraire des données |
-| 21 | 📧 Data Exfiltration Channels | bar | Détecte les appels SNS/SQS/SES/S3 PutObject à fort volume (≥50/heure) depuis une seule identité |
+| 1 | 🔑 Root Account Activity | timeseries | Détecte tout appel d'API effectué par le compte root. Le root ne devrait jamais être utilisé en production. |
+| 2 | 🔓 Console Login without MFA | timeseries | Détecte les connexions console où le MFA n'a pas été utilisé. Indicateur à haut risque de compromission de compte. |
+| 3 | 🌐 Console Logins | timeseries | Liste toutes les tentatives de connexion console. Force brute = plusieurs échecs suivis d'un succès. |
+| 4 | 🔐 MFA & Password Changes | timeseries | Détecte la désactivation du MFA et les réinitialisations de mot de passe. Indicateur fort de prise de contrôle de compte. |
+| 5 | 🔄 Privilege Escalation (IAM) | timeseries | Détecte les événements d'attachement de politique IAM et de manipulation de rôle utilisés pour l'élévation de privilèges. |
+| 6 | 🔄 IAM Role Trust Policy Changes | timeseries | Détecte les appels UpdateAssumeRolePolicy. Ajouter des principaux de comptes externes à une politique de confiance crée une porte dérobée persistante. |
+| 7 | 🚧 IAM Permission Boundary Changes | timeseries | Détecte les événements de création/suppression de limite de permission. Supprimer une limite de permission étend immédiatement les permissions effectives d'un principal, permettant l'élévation de privilèges. |
+| 8 | 👑 User Added to Admin Group | timeseries | Détecte les utilisateurs ajoutés à des groupes dont le nom contient « admin ». Technique classique d'élévation de privilèges. |
+| 9 | 👥 IAM Group Membership Changes | timeseries | Détecte tous les événements AddUserToGroup et RemoveUserFromGroup, quel que soit le nom du groupe. Tout ajout à un groupe peut indiquer une élévation de privilèges via des politiques héritées du groupe. |
+| 10 | 👤 New IAM Users / Keys | timeseries | Identifie les événements de création d'utilisateur IAM et de clé d'accès. Une création inattendue peut indiquer une persistance. |
+| 11 | 🎯 IAM PassRole Abuse | timeseries | Détecte les appels iam:PassRole. Transmettre un rôle privilégié à EC2/Lambda/Glue/ECS/SageMaker est la voie la plus courante d'élévation de privilèges latérale. |
+| 12 | 🔐 AssumeRole Cross-Account | timeseries | Affiche les événements AssumeRole où l'appelant et la cible sont dans des comptes AWS différents. Indique un mouvement latéral. |
+| 13 | 🏢 Cross-Account Access | timeseries | Trouve les événements où le compte appelant diffère du compte destinataire. Signal de mouvement latéral. |
+| 14 | 🔑 STS Federation Token Issuance | timeseries | Détecte les appels GetFederationToken et GetSessionToken. Les attaquants les utilisent pour convertir des clés à longue durée de vie en identifiants temporaires persistants. |
+| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Détecte les appels AssumeRoleWithWebIdentity. Abuser d'une confiance OIDC mal configurée (par exemple, une revendication sub trop large) permet aux attaquants de détourner un rôle à l'aide de jetons contrôlés par l'attaquant. |
+| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | Détecte les actions de gestion d'AWS IAM Identity Center. Les attaquants abusent du SSO pour créer des ensembles de permissions avec porte dérobée ou assigner des comptes à des utilisateurs contrôlés par l'attaquant. |
+| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | Détecte les changements de fournisseur d'identité SAML/OIDC. Mettre à jour un fournisseur SAML avec des métadonnées contrôlées par l'attaquant crée une porte dérobée d'authentification persistante. |
+| 18 | 🧐 IAM Access Analyzer Calls | timeseries | Détecte tout usage d'IAM Access Analyzer. Les attaquants exploitent l'analyseur natif d'AWS pour énumérer les ressources accessibles depuis l'extérieur sans écrire de scripts de reconnaissance personnalisés. |
+| 19 | 🔄 Credential Report & Enumeration | timeseries | Détecte l'activité d'énumération IAM qui cartographie l'ensemble du paysage IAM. Fréquent dans les premières étapes d'une attaque. |
+| 20 | 🗝 Access Key Abuse | bar | Détecte les clés d'accès utilisées depuis 3 adresses IP source distinctes ou plus en 7 jours. Indicateur fort de fuite de clé. |
+| 21 | 📰 AWS Organizations Account Creation | timeseries | Détecte la création de compte Organizations et les changements d'administrateur délégué. Les attaquants créent des comptes fantômes pour établir des points d'ancrage persistants en dehors du compte principal. |
+| 22 | 👥 Cognito Unauthenticated Access | timeseries | Détecte les pools d'identités Cognito avec l'accès non authentifié activé. Permet à des utilisateurs anonymes d'appeler les API AWS avec les permissions du rôle IAM non authentifié. |
+| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Détecte la création d'endpoint de développement Glue et l'énumération de connexions. iam:PassRole + glue:CreateDevEndpoint accorde toutes les permissions du rôle via SSH — l'une des techniques d'élévation de privilèges IAM les plus négligées. |
+| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Détecte la création d'instance de notebook SageMaker et la génération d'URL présignée. iam:PassRole + sagemaker:CreateNotebookInstance fournit un environnement Jupyter avec toutes les permissions AWS du rôle transmis. CreatePresignedNotebookInstanceUrl seul peut accorder l'accès à un notebook existant. |
+| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Détecte la création de ressources Data Pipeline et CodeStar. Les deux acceptent iam:PassRole et peuvent exécuter du code arbitraire avec les permissions du rôle transmis. CodeStar:CreateProjectFromTemplate est une API non documentée qui crée un rôle IAM administrateur. |
+| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Détecte la création et l'exécution de machines d'état Step Functions. iam:PassRole + states:CreateStateMachine + states:StartExecution permet d'exécuter des tâches Lambda / ECS arbitraires sous les permissions du rôle transmis. |
 
-### ⚡ Calcul et serverless
-
-| # | Libellé | Graphique | Description |
-|---|-------|:-----:|-------------|
-| 1 | 💥 EC2 Mass Stop / Terminate | timeseries | Détecte les identités effectuant ≥5 StopInstances/TerminateInstances en une heure — indicateur de rançongiciel / wiper |
-| 2 | 🖥️ SSM Session / Run Command | timeseries | Détecte SSM StartSession, SendCommand et StartAutomationExecution — principale voie de mouvement latéral via les instances gérées |
-| 3 | 🔑 EC2 Instance Connect / Serial Console Access | timeseries | Détecte SendSSHPublicKey et SendSerialConsoleSSHPublicKey — contourne les paires de clés EC2 (valides 60 secondes, ne laissent aucun artefact de clé SSH) |
-| 4 | 📝 EC2 User Data Modification | timeseries | Détecte ModifyInstanceAttribute avec un changement de userData — le script s'exécute en tant que root au prochain démarrage |
-| 5 | ⚡ Lambda Function Tampering | timeseries | Détecte la création de Lambda, les mises à jour de code (UpdateFunctionCode) et les changements de permission (AddPermission) |
-| 6 | 📦 Lambda Layer Addition | timeseries | Détecte la publication de couche Lambda et AddLayerVersionPermission avec un principal joker (attaque de chaîne d'approvisionnement publique) |
-| 7 | 📦 ECS Task Definition  | timeseries | Détecte RegisterTaskDefinition / UpdateService — Pacu ecs__backdoor_task_def injecte un conteneur sidecar malveillant sans toucher à ECR |
-| 8 | 👤 EC2 Instance Profile Changes | timeseries | Détecte AssociateIamInstanceProfile / ReplaceIamInstanceProfileAssociation — attache un profil privilégié permettant le mouvement latéral |
-| 9 | 🖥 EC2 Instance Launches | timeseries | Liste tous les événements RunInstances, y compris le type d'instance, le nombre, le nom de clé et l'AMI (détection de cryptominage) |
-| 10 | 💰 EC2 Spot Fleet / Reserved Instance Abuse | timeseries | Détecte les requêtes Spot Fleet importantes (ec2) et la création de groupe Auto Scaling à forte capacité (autoscaling) — indicateur d'impact financier de cryptominage |
-| 11 | ☸️ EKS Cluster API Calls | timeseries | Détecte les modifications du plan de contrôle de cluster EKS (exposition publique du serveur API, profils Fargate malveillants) |
-| 12 | 🐳 ECR Repository / Image Changes | timeseries | Détecte les événements de dépôt/image ECR (PutImage tagué 'latest' empoisonne tous les déploiements ultérieurs) |
-| 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | Détecte les modifications de règle EventBridge et de Scheduler (PutRule, CreateSchedule) — établit une persistance sans processus en cours d'exécution |
-| 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Détecte la récupération de clé, l'exposition de port et l'accès d'instance Lightsail — Pacu lightsail__download_ssh_keys / lightsail__generate_temp_access |
-
-### 🌐 Réseau et infrastructure
+### 🪣 Data & Storage
 
 | # | Libellé | Graphique | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | Trouve les règles de groupe de sécurité autorisant le trafic depuis 0.0.0.0/0 — risque d'exposition publique directe |
-| 2 | 🔥 Security Group Modifications | timeseries | Détecte tous les changements de règle de groupe de sécurité (AuthorizeSecurityGroupIngress, ModifySecurityGroupRules, etc.) |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | Détecte la suppression des journaux de flux VPC — supprimer les journaux de flux élimine la principale preuve forensique réseau |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | Détecte les changements d'origine CloudFront qui redirigent tout le trafic CDN vers des serveurs contrôlés par l'attaquant (MitM) |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Détecte le retrait de protection Network Firewall et Shield — expose des plages de sous-réseaux entières au trafic d'attaque |
-| 6 | 🧱 Network ACL Changes | timeseries | Détecte la création, la suppression et le remplacement d'entrée NACL — les NACL prévalent sur les groupes de sécurité au niveau du sous-réseau |
-| 7 | 🛣️ Route Table Changes | timeseries | Détecte les modifications de table de routage — les attaquants redirigent le trafic vers des passerelles malveillantes pour l'interception ou le C2 |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Détecte les nouvelles connexions VPN et les attachements Transit Gateway — crée des chemins réseau de couche 3 persistants pour le C2 ou l'exfiltration |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | Détecte l'allocation/association d'IP élastique — attribue une IP publique fixe aux instances compromises pour une infrastructure C2 stable |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | Détecte CreateKeyPair et ImportKeyPair — l'attaquant crée des clés SSH pour un accès persistant aux instances |
-| 11 | 📡 Network Infrastructure Changes | timeseries | Détecte les changements VPC / sous-réseau / IGW / NAT Gateway / peering pouvant établir une infrastructure contrôlée par l'attaquant |
-| 12 | 🏷 ACM Certificate Operations | timeseries | Détecte les demandes et suppressions de certificat ACM — les comptes compromis peuvent émettre des certificats TLS pour des domaines de phishing |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | Détecte la création de clé API Gateway et les changements d'autorisateur — Pacu api_gateway__create_api_keys génère des identifiants persistants qui survivent à la rotation des clés IAM |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | Détecte les erreurs d'accès refusé via les endpoints VPC — peut indiquer une politique d'endpoint mal configurée |
+| 1 | 💣 S3 Bulk Object Deletion | bar | Détecte les appels DeleteObject/DeleteObjects à fort volume (≥50/heure). Distinct de l'exfiltration — il s'agit d'un schéma de destruction de données / rançongiciel. |
+| 2 | 🔥 AWS Backup Tampering | timeseries | Détecte la suppression de Backup Vault/Plan/RecoveryPoint. Détruire les sauvegardes est la première étape des attaques par rançongiciel pour empêcher la récupération. |
+| 3 | 🔓 KMS Key Operations | timeseries | Signale les opérations KMS sensibles, y compris la suppression de clé et les appels Decrypt à fort volume. |
+| 4 | 🔓 S3 Public Access Block Disabled | — | Détecte la désactivation des paramètres de blocage d'accès public S3. Risque d'exposition immédiate des données. |
+| 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | Détecte les modifications de politique de bucket et d'ACL S3. Celles-ci peuvent rendre un bucket lisible publiquement ou accorder l'accès à des comptes contrôlés par l'attaquant. |
+| 6 | 🪣 S3 Data Access Anomalies | bar | Détecte les appels GetObject en masse (≥100/heure) pouvant indiquer une exfiltration de données. |
+| 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Détecte la récupération en masse de secrets (mots de passe de bases de données, clés API, etc.). Dix appels GetSecretValue ou plus en une heure est un signal fort de collecte d'identifiants. |
+| 8 | 🗝 Secrets Manager Deletion & Cross-Account Policy | timeseries | Détecte la suppression de secret Secrets Manager et les changements de politique de ressource inter-comptes. Complète la détection de lecture en masse existante avec des vecteurs de destruction et d'exfiltration par politique. |
+| 9 | 🔐 SSM Parameter Store Bulk Read | bar | Détecte les lectures en masse d'entrées SSM Parameter Store. Un canal d'exfiltration souvent négligé par rapport à Secrets Manager. |
+| 10 | 💾 RDS Snapshot Cross-Account Share | timeseries | Détecte les snapshots RDS/Aurora partagés avec des comptes AWS externes. Exfiltration classique de données via le partage de snapshot. |
+| 11 | 💣 RDS Deleted without Final Snapshot | — | Détecte la suppression d'instance/cluster RDS avec skipFinalSnapshot=true. Destruction potentielle de données. |
+| 12 | 💽 RDS Public Accessibility Enabled | timeseries | Détecte les instances RDS créées ou modifiées avec PubliclyAccessible=true. Expose la base de données directement à Internet, contournant les contrôles de sécurité de la VPC. |
+| 13 | 🗄 DynamoDB Export / Bulk Exfiltration | timeseries | Détecte ExportTableToPointInTime de DynamoDB (export silencieux de la table complète vers S3) et la suppression de table. Vecteur à haut risque d'exfiltration et de destruction. |
+| 14 | 💾 EBS Direct API Snapshot Exfiltration | timeseries | Détecte les appels EBS Direct API (ListSnapshotBlocks / GetSnapshotBlock). Le module ebs__download_snapshots de Pacu utilise cette API pour diffuser des données brutes de snapshot sans créer d'instances EC2, contournant la détection traditionnelle de partage de snapshot. |
+| 15 | 🌊 Kinesis Firehose / Stream Exfiltration Channel | timeseries | Détecte la création/mise à jour de flux de livraison Kinesis Firehose pointant vers un S3 externe. Exfiltration de données en temps réel via un pipeline invisible à la DLP réseau. |
+| 16 | 🔁 S3 Cross-Account Replication | timeseries | Détecte PutBucketReplication et DeleteBucketReplication. La réplication inter-comptes copie silencieusement tous les nouveaux objets vers un bucket contrôlé par l'attaquant. |
+| 17 | 📂 S3 Versioning / Logging Disabled | timeseries | Détecte la suspension du versioning S3 et la désactivation de la journalisation d'accès serveur. Désactiver le versioning permet la destruction de données ; désactiver la journalisation efface la piste de preuves d'accès. |
+| 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | Détecte les changements de règle de réception et de configuration d'identité SES. Les règles de transfert peuvent relayer automatiquement tout le courrier entrant vers des adresses de l'attaquant ; les identités vérifiées permettent des campagnes de phishing. |
+| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Détecte les changements de politique de file/sujet SQS/SNS accordant l'accès à des comptes externes. Crée un canal d'exfiltration silencieux sans déclencher d'alertes d'envoi à fort volume. |
+| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Détecte les snapshots EBS ou AMI partagés publiquement (group=all). Permet à quiconque de copier les images disque et d'extraire des données. |
+| 21 | 📧 Data Exfiltration Channels | bar | Détecte les appels SNS/SQS/SES/S3 PutObject à fort volume (≥50/heure) pouvant indiquer une exfiltration. |
 
-### 🕵 Schémas de menace
-
-| # | Libellé | Graphique | Description |
-|---|-------|:-----:|-------------|
-| 1 | 🔍 Reconnaissance Pattern | bar | Identifie les appelants ayant exécuté 10+ API Describe*/List*/Get* distinctes en une heure — phase précoce d'attaque courante |
-| 2 | 🤖 Unusual User Agents | bar | Liste les agents utilisateurs rares (<5 événements) ou les outils d'attaquant connus (Pacu, curl, wget) — peut indiquer un outillage d'attaque |
-| 3 | 🌍 Multi-Region Activity | bar | Détecte les identités effectuant des écritures dans 3+ régions en un jour — la dispersion géographique peut indiquer une compromission |
-| 4 | 🕵 First-Time API Calls (24h) | — | Trouve les appels d'API vus au cours des dernières 24h mais jamais auparavant — des opérations inédites peuvent indiquer un outillage d'attaquant |
-
-### 📊 Activité et référence
+### ⚡ Compute & Serverless
 
 | # | Libellé | Graphique | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🖥 Write Events from Management Console | timeseries | Identifie les appels d'API mutateurs effectués via la console AWS — utile lorsqu'un accès CLI uniquement est attendu |
-| 2 | 🔍 Events with Errors (24h) | timeseries | Liste tous les événements d'erreur des dernières 24 heures — aperçu rapide de ce qui échoue ou est sondé |
-| 3 | ❌ Error Spike Detection | — | Trouve les fenêtres d'une heure où le nombre d'erreurs dépasse de 3× la moyenne quotidienne |
+| 1 | 💥 EC2 Mass Stop / Terminate | timeseries | Détecte un fort volume de StopInstances/TerminateInstances EC2 (≥5 en une heure). Indique une perturbation par rançongiciel ou une attaque destructrice. |
+| 2 | 🖥️ SSM Session / Run Command | timeseries | Détecte SSM StartSession, SendCommand et les exécutions d'automatisation. Voie principale de mouvement latéral via des instances gérées. |
+| 3 | 🔑 EC2 Instance Connect / Serial Console Access | timeseries | Détecte l'accès via EC2 Instance Connect et Serial Console, qui permet aux attaquants d'atteindre une instance depuis un navigateur ou une CLI sans clé SSH ni hôte bastion. Une voie principale de mouvement latéral pour les attaquants sans clés SSH. |
+| 4 | 📝 EC2 User Data Modification | timeseries | Détecte les appels ModifyInstanceAttribute qui changent le champ userData. Les scripts user data s'exécutent en tant que root au prochain démarrage, fournissant une porte dérobée d'exécution de code persistante. |
+| 5 | ⚡ Lambda Function Tampering | timeseries | Détecte la création de Lambda, les mises à jour de code et les changements de permission. Les attaquants utilisent Lambda pour la persistance. |
+| 6 | 📦 Lambda Layer Addition | timeseries | Détecte la publication de couches Lambda et les changements de permission. Publier une couche partagée malveillante et l'ajouter à des fonctions de production injecte le code de l'attaquant dans la chaîne de dépendances. |
+| 7 | 📦 ECS Task Definition | timeseries | Détecte l'enregistrement de définition de tâche ECS et les mises à jour de service. Le module ecs__backdoor_task_def de Pacu enregistre une nouvelle version de définition de tâche pointant vers une image de conteneur malveillante, puis met à jour le service pour la déployer — le tout sans toucher à ECR. |
+| 8 | 👤 EC2 Instance Profile Changes | timeseries | Détecte l'association et le remplacement de profil d'instance IAM. Attacher un profil privilégié accorde à l'instance des permissions élevées pour le mouvement latéral. |
+| 9 | 🖥 EC2 Instance Launches | timeseries | Liste tous les événements RunInstances. Les lancements inattendus dans des régions inhabituelles peuvent indiquer du cryptominage. |
+| 10 | 💰 EC2 Spot Fleet / Reserved Instance Abuse | timeseries | Détecte les demandes importantes de Spot Fleet, les achats d'instances réservées et la création de groupes Auto Scaling à forte capacité. Indicateur d'impact financier de cryptominage. |
+| 11 | ☸️ EKS Cluster API Calls | timeseries | Détecte les modifications du plan de contrôle de cluster EKS. L'exposition publique du serveur API ou des profils Fargate malveillants permettent la prise de contrôle de la plateforme de conteneurs. |
+| 12 | 🐳 ECR Repository / Image Changes | timeseries | Détecte la création/suppression de dépôt ECR, les changements de politique et les envois d'image. Injecter des images malveillantes dans un dépôt de production est une technique de persistance de chaîne d'approvisionnement. |
+| 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | Détecte les modifications de règle EventBridge et d'EventBridge Scheduler. Les attaquants utilisent des règles planifiées pour établir une persistance sans processus en cours d'exécution continue. |
+| 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Détecte l'accès aux instances Lightsail, les opérations sur paires de clés et l'exposition de port. Pacu dispose de trois modules dédiés à Lightsail (enum, download_ssh_keys, generate_temp_access). Les ressources Lightsail fonctionnent en dehors du périmètre de sécurité standard d'EC2. |
 
-### 🌍 Analyse GeoIP
-
-> Nécessite des fichiers GeoLite2 `.mmdb` pour le peuplement (les colonnes sont NULL si ingérées sans GeoIP).
-
-| # | Libellé | Graphique | Description |
-|---|-------|:-----:|-------------|
-| 1 | 🕵 Impossible Travel Detection | — | Détecte une même identité appelant des API depuis des villes distantes en moins de 2 heures — indicateur fort de compromission d'identifiants |
-| 2 | ⚠ Identity Multi-Country Access | bar | Trouve les identités effectuant des appels d'API depuis 2+ pays — les utilisateurs légitimes opèrent rarement depuis plusieurs pays simultanément |
-| 3 | 🗺 Console Logins by Country | timeseries | Cartographie les événements de connexion console vers leur origine géographique — les connexions depuis des pays inattendus sont à haut risque |
-| 4 | 🚨 Unusual Country Access | bar | Détecte les combinaisons rares pays/identité (<10 événements) — un accès étranger à faible volume peut être une infrastructure d'attaquant |
-| 5 | 🚫 Access Denied by Country | bar | Regroupe les erreurs d'accès refusé par pays source — des refus concentrés depuis un pays peuvent signaler une attaque |
-| 6 | 🔍 Write Events by Country | bar | Affiche les appels d'API mutateurs regroupés par pays source — les écritures depuis des pays inattendus sont un signal plus fort que les lectures |
-| 7 | 🌍 Top Source Countries | bar | Classe les pays sources par volume d'appels d'API avec répartition des événements d'écriture et des identités uniques |
-| 8 | 🏢 Top ASN / Organizations | bar | Liste les systèmes autonomes (FAI/fournisseurs cloud) par volume d'appels d'API — les ASN VPN/hébergement peuvent indiquer une infrastructure d'attaquant |
-| 9 | 📍 Top Source Cities | bar | Classe les villes sources par volume d'événements — les données au niveau de la ville localisent précisément l'infrastructure d'attaquant ou les sites de bureaux |
-| 10 | 🌐 Private / Internal IP Summary | bar | Synthétise les événements provenant d'IP privées/loopback/internes AWS — référence pour le trafic interne attendu |
-| 11 | 📋 API Calls by Country (Event Name) | table | Principales paires (event_name, country) par volume d'appels — révèle quelles opérations d'API proviennent de régions géographiques inattendues |
-| 12 | 👤 Identities by Country (user_identity_arn) | table | Principales paires (user_identity_arn, country) par volume d'appels — fait ressortir les identités IAM actives depuis des pays inattendus avec première/dernière apparition |
-
-### ☁ IaC et plateforme
+### 🤖 AI & LLM Abuse
 
 | # | Libellé | Graphique | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🛠 CodeBuild / CodePipeline Supply Chain Attack | timeseries | Détecte la création et la modification de pipeline CI/CD (UpdateProject injecte des étapes de build malveillantes dans chaque build ultérieur) |
-| 2 | 🏗 CloudFormation / IaC Abuse | timeseries | Détecte les opérations de pile CloudFormation — les attaquants peuvent utiliser l'IaC pour déployer rapidement une infrastructure malveillante |
+| 1 | 🤖 Bedrock Model Invocation Spike | timeseries | Détecte les principaux invoquant des modèles Bedrock 50 fois ou plus en une heure. L'inférence à fort volume sur des identifiants volés (LLMjacking) peut coûter à la victime des dizaines de milliers de dollars par jour. |
+| 2 | 🔓 Bedrock Model Access Enablement | timeseries | Détecte l'activation de l'accès aux modèles fondamentaux ou l'achat de capacité provisionnée. Dans les organisations qui n'ont jamais adopté Bedrock, il s'agit d'un indicateur de LLMjacking presque sans bruit — la première écriture canonique de l'attaquant. |
+| 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | Détecte la suppression ou la modification de la journalisation des invocations de modèle Bedrock, ainsi que les attaquants vérifiant si la journalisation est activée avant d'abuser du compte (un IOC de LLMjacking documenté). |
+| 4 | 🧭 Bedrock Reconnaissance Sweep | bar | Identifie les appelants énumérant des modèles Bedrock dans 2 régions ou plus, ou avec 10 appels d'énumération ou plus en une heure. Les détenteurs de clés volées balaient les régions pour trouver où les modèles sont utilisables. |
+| 5 | ⛔ Failed Bedrock Invocations | bar | Trouve les rafales d'invocations Bedrock échouées (AccessDenied / ValidationException). Les tests de clés volées produisent des tempêtes d'échecs sur plusieurs modèles et régions avant de trouver une combinaison fonctionnelle. |
+| 6 | 🌍 Bedrock Callers & Origins | — | Inventorie tous les principaux ayant déjà utilisé Bedrock, avec IP source, origine GeoIP, agent utilisateur et diversité de modèles. Repère l'appelant ou l'origine qui n'a aucune raison d'utiliser Bedrock. |
+
+### 🌐 Network & Infrastructure
+
+| # | Libellé | Graphique | Description |
+|---|-------|:-----:|-------------|
+| 1 | 🌍 Security Group Opened to Internet | timeseries | Trouve les règles de groupe de sécurité autorisant le trafic depuis 0.0.0.0/0. Risque d'exposition publique directe. |
+| 2 | 🔥 Security Group Modifications | timeseries | Détecte les changements de règle de groupe de sécurité, en particulier les règles autorisant 0.0.0.0/0 sur n'importe quel port. |
+| 3 | 🌊 VPC Flow Log Changes | timeseries | Détecte la suppression des journaux de flux VPC. Supprimer les journaux de flux élimine les preuves au niveau réseau — un indicateur critique d'évasion de défense. |
+| 4 | 🌐 CloudFront Distribution Tampering | timeseries | Détecte la création de distribution CloudFront et les changements d'origine. Modifier les origines redirige le trafic CDN vers des serveurs contrôlés par l'attaquant pour une interception MitM ou une collecte de données. |
+| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Détecte le retrait de protection Network Firewall et Shield. Supprimer les défenses de la couche réseau expose les VPC au trafic d'attaque direct. |
+| 6 | 🧱 Network ACL Changes | timeseries | Détecte la création, la suppression et le remplacement d'entrée NACL. Les NACL prévalent sur les groupes de sécurité et peuvent ouvrir des sous-réseaux entiers aux attaquants. |
+| 7 | 🛣️ Route Table Changes | timeseries | Détecte les modifications de table de routage. Ajouter ou remplacer des routes peut rediriger le trafic vers des hôtes contrôlés par l'attaquant (MitM, détournement de trafic). |
+| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Détecte les nouvelles connexions VPN, Direct Connect et les attachements Transit Gateway. Les attaquants créent des tunnels réseau dissimulés pour des canaux C2 persistants ou d'exfiltration de données. |
+| 9 | 📡 Elastic IP Allocation / Association | timeseries | Détecte l'allocation et l'association d'IP élastique. Les attaquants attribuent une IP publique fixe à une instance compromise pour créer une infrastructure C2 stable. |
+| 10 | 🗝️ EC2 Key Pair Creation | timeseries | Détecte les événements CreateKeyPair et ImportKeyPair. Les attaquants créent ou importent des clés SSH comme mécanisme de persistance pour maintenir l'accès aux instances. |
+| 11 | 📡 Network Infrastructure Changes | timeseries | Détecte les changements de VPC et au niveau réseau pouvant établir une infrastructure contrôlée par l'attaquant. |
+| 12 | 🏷 ACM Certificate Operations | timeseries | Détecte les demandes et suppressions de certificat ACM. Les attaquants utilisent des comptes compromis pour émettre des certificats TLS pour des domaines contrôlés par l'attaquant afin de construire une infrastructure de phishing. |
+| 13 | 🔑 API Gateway Key Creation & Management | timeseries | Détecte la création de clé API Gateway et la gestion d'API REST. Le module api_gateway__create_api_keys de Pacu crée des identifiants d'API persistants qui survivent à la rotation des clés IAM. Les attaquants modifient aussi les autorisateurs d'API pour affaiblir les contrôles d'accès. |
+| 14 | 🚧 VPC Endpoint Access Denied | timeseries | Détecte les erreurs d'accès refusé via les endpoints VPC. Peut indiquer une politique d'endpoint mal configurée. |
+
+### 🕵 Threat Patterns
+
+| # | Libellé | Graphique | Description |
+|---|-------|:-----:|-------------|
+| 1 | 🔍 Reconnaissance Pattern | bar | Identifie les appelants ayant exécuté 10 appels d'API en lecture seule distincts ou plus en une heure. Phase précoce courante d'une attaque. |
+| 2 | 🤖 Unusual User Agents | bar | Liste les agents utilisateurs rares (<5 événements). Des outils personnalisés comme Pacu ou curl peuvent indiquer un outillage d'attaquant. |
+| 3 | 🌍 Multi-Region Activity | bar | Détecte les identités effectuant des écritures dans 3 régions ou plus en un jour. La dispersion géographique peut indiquer une compromission. |
+| 4 | 🕵 First-Time API Calls (24h) | — | Trouve les appels d'API vus au cours des dernières 24 h mais jamais auparavant. Des opérations inédites peuvent indiquer un outillage d'attaquant. |
+
+### 📊 Activity & Baseline
+
+| # | Libellé | Graphique | Description |
+|---|-------|:-----:|-------------|
+| 1 | 🖥 Write Events from Management Console | timeseries | Identifie les appels d'API mutateurs effectués via la console AWS. Utile lorsqu'un accès CLI uniquement est attendu. |
+| 2 | 🔍 Events with Errors (24h) | timeseries | Liste tous les événements d'erreur des dernières 24 heures. Aperçu rapide de ce qui échoue actuellement. |
+| 3 | ❌ Error Spike Detection | — | Trouve les fenêtres d'une heure où le nombre d'erreurs dépasse la moyenne quotidienne de 3 fois. Signale un scan ou une panne. |
+
+### 🌍 GeoIP Analysis
+
+| # | Libellé | Graphique | Description |
+|---|-------|:-----:|-------------|
+| 1 | 🗺 Console Logins by Country | timeseries | Cartographie les événements de connexion console vers leur origine géographique. Les connexions depuis des pays inattendus sont à haut risque. |
+| 2 | 🚨 Unusual Country Access | bar | Détecte les appels d'API depuis des pays inattendus en montrant des combinaisons pays/identité rares. |
+| 3 | 🚫 Access Denied by Country | bar | Regroupe les erreurs d'accès refusé par pays source. Des refus concentrés depuis un pays peuvent signaler une attaque. |
+| 4 | 🔍 Write Events by Country | bar | Affiche les appels d'API mutateurs (écriture) regroupés par pays. Les écritures depuis des pays inattendus sont de haute priorité. |
+| 5 | 🌍 Top Source Countries | bar | Classe les pays sources par volume d'appels d'API. Identifie la répartition géographique de toute l'activité. |
+| 6 | 🏢 Top ASN / Organizations | bar | Liste les systèmes autonomes (FAI/fournisseurs cloud) par volume d'appels d'API. Repère les fournisseurs de VPN/hébergement. |
+| 7 | 📍 Top Source Cities | bar | Classe les villes sources par volume d'événements. Identifie précisément les origines géographiques les plus actives. |
+| 8 | 📋 API Calls by Country (Event Name) | bar | Montre quelles opérations d'API sont appelées depuis chaque pays. Les événements d'écriture depuis des pays inattendus indiquent une compromission d'identifiants. |
+| 9 | 👤 Identities by Country (user_identity_arn) | bar | Montre quelles identités IAM sont actives depuis chaque pays. Une identité apparaissant depuis un nouveau pays est un indicateur de compromission à haute confiance. |
+| 10 | 🌐 Private / Internal IP Summary | bar | Synthétise les événements provenant d'IP privées, de loopback et internes AWS. Référence pour le trafic interne attendu. |
+
+### ☁ IaC & Platform
+
+| # | Libellé | Graphique | Description |
+|---|-------|:-----:|-------------|
+| 1 | 🛠 CodeBuild / CodePipeline Supply Chain Attack | timeseries | Détecte la création et la modification de pipeline CI/CD. Injecter des étapes de build malveillantes ou modifier les sources du pipeline empoisonne tous les déploiements ultérieurs. |
+| 2 | 🏗 CloudFormation / IaC Abuse | timeseries | Détecte les opérations de pile CloudFormation. Les attaquants peuvent utiliser l'IaC pour déployer rapidement une infrastructure malveillante. |
 
 </details>
 
 ---
 
-## 📊 Graphiques des tableaux de bord — plus de 80 graphiques
+## 📊 Dashboard Charts — 91 charts
 
 | Onglet | Graphiques | Ce qu'il montre |
 |-----|:------:|---------------|
-| 🔑 Identité et accès | 9 | Connexions console · tendance MFA · heatmap de connexion · API sensibles · usage du root · activité d'entité IAM · élévation de privilèges · SSO/privesc |
-| 🎯 Détection de menace | 12 | Volume d'événements · ratio lecture/écriture · évasion de défense · accès refusé · tendance d'erreurs · falsification SCP/Config/NACL/EventBridge |
-| 📊 Activité d'API | 7 | Top API · distribution par région · IP sources · agents utilisateurs · anomalie de secrets · AssumeRole externe · changements Route53 |
-| 🖥️ Calcul | 5 | Exécution SSM · snapshot public EC2 · événements EKS/ECR · porte dérobée ECS · exfiltration via EBS Direct API |
-| 🪣 S3 et RDS | 9 | Politique/ACL S3 · téléchargement/suppression en masse · versioning/journalisation désactivés · réplication inter-comptes · partage de snapshot RDS · falsification de Backup |
-| 🌍 Renseignement GeoIP | 6 | Carte du monde · top pays / villes / ASN par volume de requêtes · event_name × country · identity × country |
-| 🕒 Analyse temporelle | 6 | Première/dernière apparition par identité/IP/API/agent · comptes dormants réactivés · pics de vélocité |
-| 🚨 Moniteur d'API à haut risque | 7 | Série temporelle HRM · top appels/acteurs/IP · détail évasion de défense/accès aux identifiants · par région |
+| 🚦 Overview | 10 | 9 cartes KPI de triage (événements, principaux, IP, root, connexions sans MFA, accès refusé, évasion de défense, pays, régions) + tendance globale du volume d'événements |
+| 🎯 Threat Detection | 11 | Détecteur général d'évasion de défense · brèches de journalisation · falsification VPC flow log/Config/EventBridge/WAF · changements de SCP · tendances d'erreurs et de throttling · ratio écriture/lecture |
+| 🔑 Identity & Access | 14 | Connexions console · tendance MFA · heatmap de connexion · séquence d'authentification échec→succès · usage du root · activité d'entité IAM · chronologie d'élévation de privilèges · nouveaux principaux · SSO · AssumeRole inter-comptes |
+| 🚨 High-Risk API Monitor | 5 | Journaux de falsification de services de sécurité et de récupération d'identifiants via API · principaux appels à haut risque · principaux acteurs · volume d'appels à haut risque dans le temps |
+| 📊 API Activity | 6 | Top API · actions avec accès refusé · distribution par région · composition des codes d'erreur · IP sources · agents utilisateurs |
+| 🪣 S3 & RDS | 11 | Téléchargement/suppression en masse S3 · versioning/journalisation désactivés · réplication inter-comptes · politique/ACL de bucket · énumération · configuration de protection · suppression de coffre Backup · suppression de clé KMS · partage de snapshot RDS / suppression sans snapshot |
+| 🖥️ Computing | 14 | Lancements EC2/arrêt massif/paires de clés/profil d'instance/user-data/partage de snapshot/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation |
+| 🤖 AI / LLM | 4 | Tendance des invocations Bedrock · changements d'accès aux modèles et de journalisation · invocations échouées · appelants par origine (triage LLMjacking) |
+| 🌐 Network | 5 | Changements de groupe de sécurité · changements NACL/table de routage · infrastructure VPC · peering VPC/Transit Gateway · changements DNS Route53 |
+| 🕒 Temporal Analysis | 6 | Pics de vélocité d'événements · comptes dormants réactivés · première/dernière apparition par identité/IP/API/source de service |
+| 🌍 GeoIP Intelligence | 6 | Voyage impossible (principaux multi-pays) · top pays/villes/ASN · carte du monde · event_name × pays |
 
 <details markdown="1">
-<summary>📋 Liste complète — tous les 80+ graphiques (cliquez pour développer)</summary>
+<summary>📋 Liste complète — tous les 91 graphiques (cliquez pour développer)</summary>
 
 ## Graphiques des tableaux de bord (Apache Superset — `dashboard/`)
 
-### 🔑 Identité et accès
+### 🚦 Overview
 
 | # | Nom du graphique | Description |
 |---|------------|-------------|
-| 1 | Console Login Activity | Événements de connexion console regroupés par identité IAM (DSH-08) |
-| 2 | MFA-less Login Trend | Connexions console quotidiennes réparties par usage du MFA (DSH-28) |
-| 3 | Login Activity Heatmap (Hour × Day) | Nombre de connexions console par jour de la semaine et heure de la journée en JST (DSH-19) |
-| 4 | Sensitive API Calls | Invocations d'actions d'API AWS connues comme sensibles pour la sécurité (DSH-12) |
-| 5 | Root Account Usage | Tous les appels d'API effectués par le compte root AWS (DSH-13) |
-| 6 | IAM Entity Activity | Top 50 des entités IAM classées par total d'appels d'API, avec ratio d'écriture et taux d'erreur |
-| 7 | Privilege Escalation Timeline | Nombres quotidiens d'appels d'API d'élévation de privilèges par nom d'événement (DSH-30) |
-| 8 | IAM Identity Center (SSO) Events | Événements de gestion d'AWS IAM Identity Center depuis sso.amazonaws.com (DSH-44) |
-| 9 | Glue & SageMaker Privilege Escalation | Événements Glue DevEndpoint et SageMaker Notebook utilisés pour l'élévation de privilèges IAM via iam:PassRole (DSH-50) |
+| 1 | Total Events | Nombre total d'événements CloudTrail dans la plage sélectionnée (KPI-81). Le dénominateur pour le triage — l'ancre de tout ratio par principal ou par IP. |
+| 2 | Distinct Principals | Nombre d'ARN de principaux IAM uniques actifs dans la plage sélectionnée (KPI-82). À utiliser pour évaluer combien d'identités sont impliquées dans l'activité examinée. |
+| 3 | Distinct Source IPs | Nombre d'adresses IP source uniques des appelants dans la plage sélectionnée (KPI-83). Un bond par rapport à la référence suggère une rotation de proxy/VPN ou un accès distribué. |
+| 4 | Root Account Events | Nombre d'événements effectués par l'identité root du compte (KPI-84). L'activité root devrait être quasi nulle — toute valeur non nulle justifie une investigation. |
+| 5 | MFA-less Console Logins | Nombre de connexions console sans MFA dans la plage sélectionnée (KPI-85). Un indicateur direct de compromission d'identifiants — approfondir avec MFA-less Login Trend. |
+| 6 | Access Denied Events | Nombre d'événements d'échec d'autorisation dans la plage sélectionnée (KPI-86). Un pic suggère une reconnaissance ou un sondage de privilèges — analyser par principal/IP. |
+| 7 | Defense-Evasion Hits | Nombre d'événements de falsification d'audit/de surveillance dans la plage sélectionnée (KPI-87). Signal de triage de priorité maximale — toute valeur non nulle signifie que la détection a peut-être été désactivée. Approfondir avec Security Monitoring & Control Changes. MITRE ATT&CK : TA0005 Defense Evasion. |
+| 8 | Distinct Countries | Nombre de pays sources uniques dans la plage sélectionnée (KPI-88). Nécessite l'enrichissement GeoIP (make ingest-geoip). Une large dispersion suggère un accès depuis des origines géographiques inattendues. |
+| 9 | Active Regions | Nombre de régions AWS distinctes avec de l'activité dans la plage sélectionnée (KPI-89). Une activité dans des régions inutilisées peut indiquer un abus de ressources ou une préparation par l'attaquant. |
+| 10 | CloudTrail Events Over Time | Volume horaire d'événements de lecture vs écriture dans le temps (DSH-01). Les barres empilées montrent la répartition lecture/écriture : une hausse soudaine de write_events signale qu'un attaquant passe de la reconnaissance à l'exploitation active. Utile pour identifier les pics d'activité et les opérations hors heures. |
 
-### 🎯 Détection de menace
-
-| # | Nom du graphique | Description |
-|---|------------|-------------|
-| 1 | CloudTrail Events Over Time | Volume horaire d'événements de lecture vs écriture au fil du temps (DSH-01) |
-| 2 | Write/Read Ratio Trend | Répartition horaire des appels d'API de lecture vs écriture (DSH-20) |
-| 3 | Throttling Exception Spikes | Erreurs horaires de throttling/limite de débit par service AWS (DSH-21) |
-| 4 | Defense Evasion Events | Tous les événements CloudTrail correspondant à des techniques d'évasion de défense connues (DSH-22) |
-| 5 | Top Access Denied Actions | Top 20 des actions d'API renvoyant des erreurs AccessDenied (DSH-09) |
-| 6 | Error Event Trend | Événements d'erreur horaires ventilés par error_code (DSH-04) |
-| 7 | Organizations / SCP Changes | Événements de gestion d'AWS Organizations, y compris les changements de politique SCP (DSH-24) |
-| 8 | First-Time Service Sources | Toutes les sources de service AWS distinctes classées par date de première apparition (DSH-26) |
-| 9 | VPC Flow Log Changes | Événements de création et de suppression de journaux de flux VPC (DSH-42) |
-| 10 | AWS Config Tampering | Événements de falsification d'enregistreur et de règle AWS Config (DSH-43) |
-| 11 | Network ACL / Route Table Changes | Événements de modification de NACL et de table de routage (DSH-46) |
-| 12 | EventBridge / CloudWatch Rule Tampering | Falsification de règle EventBridge et CloudWatch Events (DSH-47) |
-
-### 📊 Activité d'API
+### 🎯 Threat Detection
 
 | # | Nom du graphique | Description |
 |---|------------|-------------|
-| 1 | Top 20 API Calls | Les 20 actions d'API AWS les plus fréquemment appelées (DSH-02) |
-| 2 | Region Activity | Distribution des événements CloudTrail entre les régions AWS (DSH-14) |
-| 3 | Top Source IP Addresses | Top 100 des IP sources externes par nombre de requêtes (DSH-05) |
-| 4 | User Agent Analysis | Top 50 des agents utilisateurs par nombre de requêtes avec répartition des erreurs et écritures (DSH-11) |
-| 5 | Secrets Access Anomaly | Identités accédant à Secrets Manager ou SSM Parameter Store ≥10 fois en une heure |
-| 6 | AssumedRole from External IP | Appels AssumeRole depuis des adresses IP publiques (non privées) (DSH-27) |
-| 7 | Route53 DNS Changes | Changements de configuration de zone hébergée et de résolveur Route 53 (DSH-29) |
+| 1 | Security Monitoring & Control Changes | Détecteur général et complet pour tous les événements d'évasion de défense (DSH-22). Couvre la falsification de CloudTrail (StopLogging, DeleteTrail), la désactivation de GuardDuty, la désactivation d'AWS Config, la suppression de VPC Flow Log, la suppression de journaux CloudWatch et la désactivation de services de sécurité (SecurityHub, IAM Access Analyzer). Tout événement ici justifie une investigation immédiate. Pour une analyse plus approfondie, utilisez les graphiques dédiés : VPC Flow Log Changes (DSH-42), AWS Config Tampering (DSH-43), EventBridge/CW Tampering (DSH-47). MITRE ATT&CK : TA0005 Defense Evasion. |
+| 2 | CloudTrail Logging Gap (Hourly Volume) | Volume horaire d'événements CloudTrail (DSH-91). Une chute soudaine à zéro entre des périodes actives suggère que la journalisation a été désactivée (StopLogging/DeleteTrail) ou qu'un angle mort de livraison existe. Investiguez toute brèche inattendue en la confrontant à la table Security Monitoring & Control Changes. MITRE ATT&CK : T1562.008 Impair Defenses — Disable Cloud Logs. |
+| 3 | VPC Flow Log Changes | Événements de création et de suppression de VPC Flow Log (DSH-42). DeleteFlowLogs élimine la principale source de preuve forensique réseau, rendant impossible l'analyse post-incident du mouvement latéral et de l'exfiltration de données. CreateFlowLogs pendant un incident peut indiquer une redirection de journaux vers un bucket S3 contrôlé par l'attaquant. MITRE ATT&CK : TA0005 Defense Evasion. |
+| 4 | AWS Config Recorder & Rule Changes | Événements de falsification d'enregistreur et de règle AWS Config (DSH-43) : StopConfigurationRecorder, DeleteConfigurationRecorder, DeleteDeliveryChannel, DeleteConfigRule et PutConfigRule. Arrêter l'enregistreur Config élimine les preuves de conformité et le suivi des changements pour la région entière, permettant aux changements d'infrastructure ultérieurs de passer inaperçus des règles Config et des standards Security Hub. MITRE ATT&CK : TA0005 Defense Evasion. |
+| 5 | EventBridge & CloudWatch Rule Modifications | Falsification de règle EventBridge et CloudWatch Events (DSH-47) : DeleteRule, DisableRule (réduire au silence la détection planifiée), CreateSchedule/UpdateSchedule (tâches cron de l'attaquant pour le beaconing C2), PutSubscriptionFilter (rediriger les journaux CloudTrail/VPC vers le compte de l'attaquant), DeleteLogGroup (détruire les enregistrements de VPC Flow Log). Graphique combiné de falsification de la couche de surveillance pour le DFIR. MITRE ATT&CK : TA0003 Persistence / TA0005 Defense Evasion / TA0011 C2. |
+| 6 | WAF Configuration Changes | Événements de changement de configuration AWS WAF v2 / WAF Classic (DSH-75). Couvre la création/mise à jour/suppression de WebACL, la manipulation d'ensembles d'IP, les changements de groupe de règles, les changements de configuration de journalisation et l'association/dissociation de WAF avec des ressources protégées. Désactiver les règles ou la journalisation WAF pendant qu'une attaque est en cours est un fort indicateur d'évasion de défense. MITRE ATT&CK : TA0005 Defense Evasion / TA0003 Persistence. |
+| 7 | Organizations / SCP Changes | Événements du plan de gestion AWS Organizations, y compris les changements de politique SCP (DSH-24). Un attaquant ayant accès au compte maître peut désactiver les garde-fous SCP pour supprimer les contrôles préventifs de toute l'organisation AWS. MITRE ATT&CK : TA0004 Privilege Escalation / TA0005 Defense Evasion. |
+| 8 | Error Event Trend | Événements d'erreur horaires ventilés par error_code (DSH-04). Les pics de ThrottlingException indiquent un scan automatisé ou un outillage d'attaque ; les pics d'AccessDenied / UnauthorizedAccess indiquent un sondage de privilèges ; l'apparition soudaine de nouveaux codes d'erreur peut indiquer des techniques d'attaque inédites. |
+| 9 | Throttling Exception Spikes | Erreurs horaires de throttling / limite de débit ventilées par service AWS (DSH-21). Les pics de ThrottlingException indiquent qu'une identité (ou un outil) émet des appels d'API bien plus rapidement que prévu, ce qui est caractéristique d'un outillage d'attaque automatisé effectuant de la reconnaissance ou de l'énumération. MITRE ATT&CK : TA0007 Discovery. |
+| 10 | Write/Read Ratio Trend | Répartition horaire des appels d'API de lecture vs écriture (DSH-20). Une augmentation soutenue de write_events par rapport à read_events indique qu'un attaquant est passé de la reconnaissance à l'exploitation active. MITRE ATT&CK : TA0040 Impact / TA0007 Discovery. |
+| 11 | CloudTrail Events Over Time | Volume horaire d'événements de lecture vs écriture dans le temps (DSH-01). Les barres empilées montrent la répartition lecture/écriture : une hausse soudaine de write_events signale qu'un attaquant passe de la reconnaissance à l'exploitation active. Utile pour identifier les pics d'activité et les opérations hors heures. |
 
-### 🖥️ Calcul
-
-| # | Nom du graphique | Description |
-|---|------------|-------------|
-| 1 | SSM Session / Run Command Execution | Événements d'exécution à distance AWS Systems Manager (DSH-39) |
-| 2 | EC2 Public Snapshot / AMI Sharing | Événements de partage public de snapshot EBS et d'AMI (DSH-41) |
-| 3 | EKS / ECR Container Platform Events | Événements de cluster EKS et de registre de conteneurs ECR (DSH-48) |
-| 4 | ECS Task Definition | Événements d'enregistrement de définition de tâche ECS et de mise à jour de service — schéma Pacu ecs__backdoor_task_def (DSH-49) |
-| 5 | EBS Direct API Snapshot Exfiltration | Appels EBS Direct API (ListSnapshotBlocks / GetSnapshotBlock) utilisés pour diffuser des données de snapshot sans EC2 (DSH-51) |
-
-### 🪣 S3 et RDS
+### 🔑 Identity & Access
 
 | # | Nom du graphique | Description |
 |---|------------|-------------|
-| 1 | S3 Protection Config Changes | Événements S3 qui affaiblissent la posture de sécurité du bucket (DSH-25) |
-| 2 | S3 Bucket Policy / ACL Changes | Événements de modification de politique de bucket et d'ACL S3 (DSH-45) |
-| 3 | RDS Snapshot Cross-Account Share | Événements de partage de snapshot RDS et Aurora (DSH-40) |
-| 4 | S3 Bulk Download | Identités effectuant ≥100 appels GetObject par heure — schéma d'exfiltration de données automatisée (DSH-52) |
-| 5 | S3 Bulk Object Deletion | Identités effectuant ≥50 appels DeleteObject/DeleteObjects par heure — schéma de destruction de données par rançongiciel (DSH-53) |
-| 6 | S3 Versioning / Logging Disabled | PutBucketVersioning (Suspended) et PutBucketLogging (disabled) — précurseur anti-forensique de la destruction de données (DSH-54) |
-| 7 | S3 Cross-Account Replication | PutBucketReplication / DeleteBucketReplication — canal d'exfiltration silencieux persistant vers un compte contrôlé par l'attaquant (DSH-55) |
-| 8 | RDS Deleted without Final Snapshot | DeleteDBInstance / DeleteDBCluster avec skipFinalSnapshot=true — destruction de données irrécupérable (DSH-56) |
-| 9 | AWS Backup Tampering | Suppression de Backup Vault / Plan / RecoveryPoint et retrait de Vault Lock — première étape du rançongiciel pour éliminer les options de récupération (DSH-57) |
+| 1 | Console Login Activity | Événements de connexion à AWS Management Console regroupés par identité IAM (DSH-08). Suit les tentatives de connexion réussies, échouées et sans MFA. Un ratio élevé d'échecs par rapport aux succès peut indiquer de la force brute ou du credential stuffing. mfa_less_count (MFAUsed = 'No') est un indicateur direct de compromission de compte, bien qu'il ne s'applique qu'aux événements classiques ConsoleLogin — le flux de connexion OAuth2 plus récent (CreateOAuth2Token / AuthorizeOAuth2Access) ne rapporte pas le statut MFA. Les événements sont filtrés sur event_type = 'AwsConsoleSignIn'. |
+| 2 | MFA-less Login Trend | Connexions console quotidiennes réparties par usage du MFA (DSH-28). mfa_less_logins (MFAUsed = 'No') est un indicateur direct de compromission de compte ou de phishing ; une hausse soutenue des connexions sans MFA devrait déclencher une revue immédiate des politiques d'authentification IAM. MITRE ATT&CK : TA0001 Initial Access. |
+| 3 | Failed -> Success Auth Sequence | Échecs et succès de connexion console par principal + IP source (DSH-93). Un failure_count important associé à un success_count non nul indique une attaque de force brute / password spray qui a fini par réussir — traitez le succès comme le point de compromission et analysez à partir de l'IP source. MITRE ATT&CK : T1110 Brute Force. |
+| 4 | Login Activity Heatmap (Hour x Day) | Nombre de connexions console sous forme de heatmap heure de la journée (X) par jour de la semaine (Y) en JST (DSH-19). Des cellules lumineuses dans les colonnes de fin de nuit (22h00-06h00 JST) ou les lignes de week-end sont un fort indicateur de compromission de compte ou d'usage abusif d'identifiants. MITRE ATT&CK : TA0001 Initial Access. |
+| 5 | Root Account Usage | Tous les appels d'API effectués par le compte Root AWS (DSH-13). L'usage du compte root devrait être extrêmement rare dans des environnements bien gouvernés. Toute activité Root — en particulier CreateAccessKey, ConsoleLogin ou StopLogging — est un indicateur critique de compromission ou de violation de politique. |
+| 6 | IAM Entity Activity | Top 50 des entités IAM classées par total d'appels d'API, avec ratio d'écriture et ventilation des erreurs (DSH-03). Les entités avec un write_ratio_pct ou error_events élevé par rapport à total_events peuvent indiquer un abus d'identifiants ou une élévation de privilèges. last_seen affiche l'horodatage d'activité le plus récent pour chaque entité. |
+| 7 | IAM Privilege Change Event Timeline | Nombres quotidiens d'appels d'API d'élévation de privilèges ventilés par nom d'événement (DSH-30). Un pic sur un seul jour indique une campagne d'attaque ciblée ; une augmentation lente peut indiquer une menace interne ou un attaquant avec un point d'ancrage persistant. MITRE ATT&CK : TA0004 Privilege Escalation. |
+| 8 | New IAM Principal Creation Timeline | Événements quotidiens de création de principal IAM et d'identifiant, empilés par type d'événement (DSH-95). Un pic de CreateAccessKey / CreateLoginProfile / CreateUser est un indicateur de persistance suivant l'accès initial — corréler avec le principal agissant et l'IP source. MITRE ATT&CK : T1136 Create Account / T1098 Account Manipulation. |
+| 9 | Glue & SageMaker IAM Role Pass Events | Événements Glue DevEndpoint et SageMaker Notebook utilisés pour l'élévation de privilèges IAM (DSH-50). iam:PassRole + glue:CreateDevEndpoint crée un environnement Python/Spark accessible par SSH avec toutes les permissions du rôle transmis. iam:PassRole + sagemaker:CreateNotebookInstance fournit un notebook Jupyter avec le même effet. sagemaker:CreatePresignedNotebookInstanceUrl seul peut accorder l'accès à un notebook existant sans posséder le rôle sous-jacent. Les deux sont documentées dans le dépôt AWS-IAM-Privilege-Escalation et implémentées dans le module iam__privesc_scan de Pacu. MITRE ATT&CK : TA0004 Privilege Escalation. |
+| 10 | AssumedRole from External IP | Appels d'API AssumedRole provenant d'adresses IP publiques (non privées) (DSH-27). Les identifiants du service de métadonnées d'instance EC2 (IMDS) sont normalement utilisés uniquement depuis l'intérieur de la VPC. Des appels depuis des IP externes indiquent que des identifiants temporaires ont fuité — typiquement via SSRF, évasion de conteneur ou export de clé. MITRE ATT&CK : TA0008 Lateral Movement / TA0006 Credential Access. |
+| 11 | Cross-Account AssumeRole | Appels AssumeRole / AssumeRoleWithWebIdentity où recipient_account_id diffère du compte de l'appelant (DSH-94). Des ID de compte externes inattendus indiquent un abus de relation de confiance ou un mouvement latéral entre comptes — vérifiez que chaque compte de destination est une confiance approuvée. MITRE ATT&CK : T1199 Trusted Relationship / TA0008 Lateral Movement. |
+| 12 | Secrets Access Anomaly | Identités accédant à Secrets Manager ou SSM Parameter Store ≥10 fois en une heure (DSH-23). Les lectures d'identifiants en masse sont un indicateur post-exploitation : les attaquants récoltent des secrets stockés pour pivoter vers d'autres services ou comptes. MITRE ATT&CK : TA0006 Credential Access / TA0010 Exfiltration. |
+| 13 | Security-Relevant API Calls | Invocations d'actions d'API AWS connues comme sensibles pour la sécurité (DSH-12). Couvre les changements d'identifiants IAM, les modifications de politique, les changements de politique de bucket S3, les modifications de groupe de sécurité, la gestion de clés, les opérations de jeton STS, la désactivation de services de sécurité, les lectures Secrets Manager et la gestion d'Organizations. Ces appels devraient être rares en opération normale ; des occurrences inattendues peuvent indiquer une élévation de privilèges, une persistance ou une exfiltration de données. |
+| 14 | IAM Identity Center (SSO) Events | Événements de gestion d'AWS IAM Identity Center (DSH-44) depuis sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com et identitystore.amazonaws.com. Identity Center est la voie d'authentification principale dans les organisations multi-comptes. Menaces clés : CreatePermissionSet (accès administrateur par porte dérobée), CreateAccountAssignment (assignation de comptes à des utilisateurs contrôlés par l'attaquant) et AttachManagedPolicyToPermissionSet (élévation de privilèges). MITRE ATT&CK : TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
 
-### 🌍 Renseignement GeoIP
-
-> Nécessite des fichiers GeoLite2 `.mmdb`. Les colonnes GeoIP sont NULL si ingérées sans GeoIP.
-
-| # | Nom du graphique | Description |
-|---|------------|-------------|
-| 1 | Global Request Origin Map | Carte du monde montrant la distribution géographique des origines des appels d'API CloudTrail |
-| 2 | Top Countries by Request Volume | Top 20 des pays sources par volume d'appels d'API avec répartition des événements d'écriture et des appelants uniques |
-| 3 | Top Cities by Request Volume | Top 25 des villes par volume d'appels d'API avec répartition des événements d'écriture et des appelants uniques |
-| 4 | Top ASN Organizations by Request Volume | Top 25 des organisations ASN par volume d'appels d'API |
-| 5 | API Calls by Country (Event Name × GeoIP) | Top 50 des paires (event_name, country) — révèle quelles opérations d'API sont appelées depuis chaque région géographique (DSH-79) |
-| 6 | Identities by Country (user_identity_arn × GeoIP) | Top 50 des paires (user_identity_arn, country) — fait ressortir les identités IAM actives depuis des pays inattendus avec nombre d'écritures et première/dernière apparition (DSH-80) |
-
-### 🕒 Analyse temporelle
+### 🚨 High-Risk API Monitor
 
 | # | Nom du graphique | Description |
 |---|------------|-------------|
-| 1 | First / Last Seen per IAM Identity | Identités IAM avec horodatages de première/dernière apparition, nombre d'événements et API distinctes |
-| 2 | First / Last Seen per Source IP | IP sources avec première/dernière apparition, identités distinctes et API distinctes |
-| 3 | First / Last Seen per API Call | Actions d'API classées par première apparition — les nouveaux appels peuvent indiquer un outillage d'attaque inédit (DSH-33) |
-| 4 | First / Last Seen per User Agent | Agents utilisateurs classés par première apparition — détection de nouvel outillage (DSH-34) |
-| 5 | Dormant Accounts Reactivated | Identités avec des périodes d'inactivité de 72+ heures qui ont repris leur activité (DSH-37) |
-| 6 | Event Velocity Spikes per Identity | Identités avec une activité en rafale de 50+ événements par heure (DSH-38) |
+| 1 | Security Service Modification API Events | Journal d'événements détaillé pour les API utilisées pour désactiver ou falsifier les contrôles d'audit (HRM-44). Couvre : DeleteTrail, StopLogging, UpdateTrail, PutEventSelectors (falsification de CloudTrail), DeletePolicy et DetachPolicy (suppression des garde-fous IAM). Toute occurrence en dehors d'une fenêtre de changement autorisée justifie une investigation immédiate. MITRE ATT&CK : TA0005 Defense Evasion. |
+| 2 | Credential Retrieval API Events | Journal d'événements détaillé pour les API utilisées pour récupérer des secrets et des identifiants (HRM-45). Couvre : GetSecretValue (Secrets Manager), GetParameter / GetParameterHistory (SSM). Un seul appel peut être légitime ; des dizaines de secrets uniques consultés en succession rapide constituent un signal fort d'attaquant. MITRE ATT&CK : TA0006 Credential Access. |
+| 3 | Top High-Risk API Calls | Actions d'API de la liste de surveillance à haut risque classées par nombre total d'appels (HRM-40). La présence fréquente d'API de reconnaissance (ListUsers, GetCallerIdentity) est attendue dans de nombreux environnements ; concentrez l'investigation sur les API d'accès aux identifiants et d'évasion de défense qui apparaissent avec un volume inhabituel ou depuis des principaux inattendus. |
+| 4 | Top Actors — High-Risk APIs | Principaux IAM classés par total d'appels aux API de la liste de surveillance à haut risque (HRM-42). Croisez avec le graphique de catégorie d'attaque pour voir quelles actions chaque principal effectue. Il est attendu que des rôles de service effectuent des appels AssumeRole fréquents ; il n'est pas attendu que des utilisateurs humains appellent GetSecretValue ou DeleteTrail en masse. |
+| 5 | High-Risk API Events Over Time | Volume d'appels quotidien pour les API couramment observées dans les campagnes d'attaque (HRM-39). Un pic soudain dans des actions normalement rares comme DeleteTrail ou GetSecretValue justifie une investigation immédiate. Notez que beaucoup de ces API sont aussi appelées dans des flux de travail légitimes — utilisez les anomalies de volume comme signal principal, pas la simple présence. MITRE ATT&CK : TA0001 / TA0003 / TA0004 / TA0005 / TA0006 / TA0007 / TA0008. |
 
-### 🚨 Moniteur d'API à haut risque (HRM)
+### 📊 API Activity
 
 | # | Nom du graphique | Description |
 |---|------------|-------------|
-| 1 | High-Risk API Events Over Time | Volume d'appels quotidien pour les API couramment observées dans les campagnes d'attaque (HRM-39) |
-| 2 | Top High-Risk API Calls | Actions d'API de la liste de surveillance à haut risque classées par nombre total d'appels (HRM-40) |
-| 3 | Top Actors — High-Risk APIs | Principaux IAM classés par total d'appels aux API de la liste de surveillance à haut risque (HRM-42) |
-| 4 | Top Source IPs — High-Risk APIs | IP sources classées par total d'appels aux API de la liste de surveillance à haut risque (HRM-43) |
-| 5 | Defense Evasion API Events | Journal d'événements détaillé pour les API utilisées pour désactiver ou falsifier les contrôles d'audit (HRM-44) |
-| 6 | Credential Access API Events | Journal d'événements détaillé pour les API utilisées pour récupérer des secrets et des identifiants (HRM-45) |
-| 7 | High-Risk API Calls by Region | Appels d'API de la liste de surveillance à haut risque distribués par région AWS (HRM-46) |
+| 1 | Top 20 API Calls | Les 20 actions d'API AWS les plus fréquemment appelées (DSH-02). Des nombres d'appels élevés pour des actions sensibles (par ex. AssumeRole, GetSecretValue) peuvent indiquer un outillage automatisé ou de la reconnaissance. |
+| 2 | Top Access Denied Actions | Top 20 des actions d'API ayant renvoyé des erreurs AccessDenied ou Client.UnauthorizedAccess (DSH-09). Des événements d'accès refusé répétés contre des API sensibles (par ex. AssumeRole, GetSecretValue, PutBucketPolicy) sont de forts indicateurs de tentatives d'élévation de privilèges ou de mouvement latéral. |
+| 3 | Region Activity | Distribution des événements CloudTrail entre les régions AWS (DSH-14). write_ratio_pct met en évidence les régions avec une activité d'écriture disproportionnée — des régions inattendues avec des ratios d'écriture élevés peuvent indiquer des instances EC2 de cryptominage, un mouvement latéral, ou une exfiltration de données vers des régions moins surveillées. |
+| 4 | Error-Code Composition Over Time | Volume quotidien d'erreurs CloudTrail, empilé par error_code (DSH-96). Une bande croissante d'AccessDenied / UnauthorizedOperation indique une reconnaissance ou un sondage de privilèges ; des pics de Throttling suggèrent une énumération à grande échelle. MITRE ATT&CK : TA0007 Discovery. |
+| 5 | Top Source IP Addresses | Top 100 des IP sources externes par nombre de requêtes (DSH-05). Exclut les patterns d'IP internes AWS (*.amazonaws.com). Les IP avec un write_requests élevé par rapport à request_count peuvent indiquer une exfiltration, un mouvement latéral, ou un outillage d'attaque automatisé. |
+| 6 | User Agent Analysis | Top 50 des agents utilisateurs par nombre de requêtes avec ventilation des erreurs et écritures (DSH-11). Des agents utilisateurs inhabituels ou personnalisés (par ex. Python/boto3, scripts personnalisés, Pacu, ScoutSuite) peuvent indiquer un outillage d'attaque automatisé. Les agents internes AWS (console.amazonaws.com, signin.amazonaws.com) sont attendus ; des chaînes inconnues justifient une investigation. |
+
+### 🪣 S3 & RDS
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | S3 High-Volume Object Downloads | Appels GetObject en masse sur S3 (DSH-52) : identités ayant effectué ≥100 requêtes GetObject en une seule heure, regroupées par tranche horaire, identité et IP source. Des lectures à fort volume indiquent une exfiltration de données automatisée — les attaquants vident le contenu du bucket avant de le détruire ou de le rançonner. Combinez avec le graphique S3 Bulk Object Deletion pour identifier la chaîne complète du rançongiciel : exfiltrer puis détruire. MITRE ATT&CK : TA0010 Exfiltration. |
+| 2 | S3 Bulk Object Deletion | Appels DeleteObject/DeleteObjects en masse sur S3 (DSH-53) : identités ayant supprimé ≥50 objets en une seule heure, regroupées par tranche horaire, identité et IP source. Les suppressions à fort volume sont la phase de destruction de données d'une attaque par rançongiciel — l'attaquant exfiltre d'abord (voir le graphique S3 Bulk Download), puis efface le bucket source pour extorquer la victime. Couvre aussi la suppression massive accidentelle. MITRE ATT&CK : TA0040 Impact / T1485 Data Destruction. |
+| 3 | S3 Versioning / Logging Disabled | Événements de suspension du versioning et de désactivation de journalisation S3 (DSH-54) : PutBucketVersioning avec Status=Suspended et PutBucketLogging avec un BucketLoggingStatus vide. Les attaquants désactivent le versioning pour empêcher la récupération d'objets après suppression, et désactivent la journalisation pour effacer la piste de preuves d'accès. Les deux sont des précurseurs anti-forensiques de la destruction de données. MITRE ATT&CK : TA0005 Defense Evasion / T1070 Indicator Removal. |
+| 4 | S3 Cross-Account Replication | Événements de configuration de réplication inter-comptes S3 (DSH-55) : PutBucketReplication et DeleteBucketReplication. La réplication inter-comptes copie silencieusement chaque nouvel objet vers un bucket contrôlé par l'attaquant, établissant un canal d'exfiltration persistant qui contourne les contrôles DLP réseau. Tout PutBucketReplication pointant vers un ID de compte externe est un indicateur d'incident critique. MITRE ATT&CK : TA0010 Exfiltration / T1537 Transfer Data to Cloud Account. |
+| 5 | S3 Bucket Policy / ACL Changes | Événements de modification de politique de bucket et d'ACL S3 (DSH-45) : PutBucketPolicy, DeleteBucketPolicy, PutBucketAcl, PutBucketCors, PutBucketWebsite et DeleteBucketWebsite. Ces changements peuvent exposer publiquement le contenu du bucket ou accorder l'accès à des comptes contrôlés par l'attaquant. PutBucketPolicy avec Principal='*' est un indicateur immédiat d'exposition de données. MITRE ATT&CK : TA0010 Exfiltration / TA0005 Defense Evasion. |
+| 6 | S3 Bucket & Object List Activity | Appels d'API d'énumération S3 regroupés par identité et IP source (DSH-74). Couvre ListBuckets (découverte de tout le compte), ListObjects / ListObjectsV2 (énumération par bucket), ListObjectVersions, ListMultipartUploads, HeadBucket et HeadObject. Un pic soudain d'appels de listage depuis une nouvelle identité ou une IP externe suggère fortement une reconnaissance suite à une compromission d'identifiants. MITRE ATT&CK : TA0007 Discovery. |
+| 7 | S3 Protection Config Changes | Événements S3 affaiblissant la posture de sécurité du bucket (DSH-25). Désactiver la journalisation d'accès serveur supprime la piste d'audit ; supprimer le blocage d'accès public expose les données à Internet ; supprimer le chiffrement ou la réplication du bucket affaiblit la protection des données au repos. Ce sont des actions préalables à l'exfiltration ou de dissimulation. MITRE ATT&CK : TA0005 Defense Evasion / TA0040 Impact. |
+| 8 | AWS Backup Vault & Plan Deletion Events | Événements de suppression de Backup Vault, Plan et Recovery Point AWS (DSH-57) : DeleteBackupVault, DeleteBackupPlan, DeleteRecoveryPoint, DeleteBackupSelection, DisassociateRecoveryPoint, PutBackupVaultAccessPolicy et DeleteBackupVaultLockConfiguration. Détruire les sauvegardes est la première étape d'une campagne de rançongiciel — cela garantit que la victime ne peut pas se restaurer à partir de sauvegardes avant que la demande de rançon soit formulée. La suppression de Vault Lock (DeleteBackupVaultLockConfiguration) est particulièrement critique car elle retire l'immuabilité WORM du coffre. MITRE ATT&CK : TA0040 Impact / T1490 Inhibit System Recovery. |
+| 9 | KMS Key Deletion & Disable Events | Événements de suppression, désactivation et gestion de rotation de clé KMS (DSH-66). ScheduleKeyDeletion — planifie la suppression de la clé (fenêtre de 7 à 30 jours pour annuler). DisableKey — arrête immédiatement le chiffrement/déchiffrement avec la clé. DeleteImportedKeyMaterial — détruit instantanément le matériel de clé pour les clés importées. DisableKeyRotation — empêche la rotation annuelle automatique de la clé. Chacun de ces événements rend toutes les données chiffrées sous cette clé définitivement inaccessibles. Utilisez CancelKeyDeletion pour annuler ScheduleKeyDeletion avant la date de suppression. MITRE ATT&CK : TA0040 Impact / T1485 Data Destruction. |
+| 10 | RDS Deleted without Final Snapshot | Suppression d'instance et de cluster RDS avec skipFinalSnapshot=true (DSH-56) : événements DeleteDBInstance et DeleteDBCluster où aucun snapshot final n'a été pris. Sauter le snapshot final rend la base de données irrécupérable — aucun point de restauration n'existe après la suppression. Les acteurs de rançongiciel utilisent cela pour maximiser la pression sur la victime lorsqu'AWS Backup a également été désactivé. Tout événement ici est un incident critique. MITRE ATT&CK : TA0040 Impact / T1485 Data Destruction. |
+| 11 | RDS Snapshot Cross-Account Share | Événements de partage de snapshot RDS et Aurora (DSH-40) : ModifyDBSnapshotAttribute et ModifyDBClusterSnapshotAttribute où une permission de restauration a été accordée à un autre compte AWS (valuesToAdd). Les attaquants partagent des snapshots vers leur propre compte pour exfiltrer une base de données entière sans DLP basée sur S3/réseau. Tout ID de compte externe dans l'attribut de restauration est un indicateur d'exfiltration critique. MITRE ATT&CK : TA0010 Exfiltration. |
+
+### 🖥️ Computing
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | EC2 Instance Launches | Tous les événements RunInstances EC2 (DSH-58). Les attaquants lancent des instances pour le cryptominage (GPU/spot), le relais C2, ou la préparation de mouvement latéral — souvent dans des régions inattendues pour éviter la détection. Filtrez par aws_region pour l'investigation d'anomalies régionales ; filtrez par user_identity_arn pour tracer quel identifiant a déclenché le lancement. MITRE ATT&CK : TA0002 Execution / TA0040 Impact (Resource Hijacking). |
+| 2 | RunInstances Spike by Region | Volume quotidien de RunInstances EC2, empilé par région AWS (DSH-97). Un pic soudain — particulièrement dans des régions hors de l'exploitation normale — indique du cryptominage ou un abus de ressources. Croisez avec le principal agissant et l'IP source. MITRE ATT&CK : T1496 Resource Hijacking. |
+| 3 | EC2 Mass Stop / Terminate | Événements StopInstances et TerminateInstances EC2 (DSH-62). Un seul appel d'API peut arrêter ou terminer des dizaines d'instances simultanément. La terminaison massive est la phase destructrice d'une attaque par rançongiciel ou de sabotage — mettre à bas la capacité de production EC2. Vérifiez le champ request_parameters pour la liste complète des instanceIds affectés. Associez aux graphiques AWS Backup Tampering et S3 Bulk Object Deletion pour identifier la chaîne complète du rançongiciel. MITRE ATT&CK : TA0040 Impact / T1489 Service Stop. |
+| 4 | EC2 Key Pair Creation | Événements de création et d'import de paire de clés EC2 (DSH-59) : CreateKeyPair, ImportKeyPair, DeleteKeyPair. Les attaquants créent de nouvelles paires de clés pour établir un accès SSH persistant à des instances EC2 qui survit à la rotation des identifiants IAM. ImportKeyPair injecte directement une clé publique contrôlée par l'attaquant sans qu'AWS ne la génère. Tout CreateKeyPair ou ImportKeyPair depuis une identité ou une IP inconnue est un indicateur de persistance. MITRE ATT&CK : TA0003 Persistence. |
+| 5 | EC2 Instance Profile Changes | Événements de gestion de profil d'instance EC2 et de profil d'instance IAM (DSH-60). IAM : CreateInstanceProfile, DeleteInstanceProfile, AddRoleToInstanceProfile, RemoveRoleFromInstanceProfile. EC2 : AssociateIamInstanceProfile, DisassociateIamInstanceProfile, ReplaceIamInstanceProfileAssociation. Changer un profil d'instance remplace le rôle IAM disponible pour tout le code sur l'instance — une voie courante d'élévation de privilèges quand l'attaquant contrôle une instance mais veut un rôle à plus haut privilège. MITRE ATT&CK : TA0004 Privilege Escalation / TA0003 Persistence. |
+| 6 | EC2 User Data Modification | Événements de modification de user data EC2 (DSH-61) : ModifyInstanceAttribute où l'attribut userData est changé. Le user data EC2 est exécuté par cloud-init à chaque (re)démarrage de l'instance — injecter un script malveillant fournit une exécution de code persistante qui survit aux redémarrages. Souvent associé à une séquence d'arrêt/démarrage (voir le graphique EC2 Mass Stop / Terminate) pour déclencher l'exécution. MITRE ATT&CK : TA0003 Persistence / TA0002 Execution. |
+| 7 | EC2 Public Snapshot / AMI Sharing | Événements de partage public de snapshot EBS et d'AMI EC2 (DSH-41) : ModifySnapshotAttribute avec createVolumePermission accordé au groupe 'all', et ModifyImageAttribute avec launchPermission accordé au groupe 'all'. Un snapshot ou une AMI publique permet à tout compte AWS de copier l'image disque et d'en extraire des données sensibles, des identifiants et des clés privées stockées sur le volume. MITRE ATT&CK : TA0010 Exfiltration. |
+| 8 | EC2 Spot Fleet & Reserved Instance Purchases | Événements d'achat de Spot Fleet, Fleet et instances réservées EC2 (DSH-63) : RequestSpotFleet, ModifySpotFleetRequest, CancelSpotFleetRequests, CreateFleet, DeleteFleet, PurchaseReservedInstancesOffering, RequestSpotInstances, CancelSpotInstanceRequests. Les attaquants utilisent les Spot Fleets pour lancer de grands clusters GPU/CPU pour le cryptominage, générant des factures AWS élevées tout en restant sous les seuils de détection par instance. Tout achat inattendu de Spot Fleet ou d'instance réservée justifie une investigation. MITRE ATT&CK : TA0040 Impact / T1496 Resource Hijacking. |
+| 9 | ECS Task Definition & Service Changes | Événements d'enregistrement de définition de tâche ECS et de modification de service (DSH-49). Le module ecs__backdoor_task_def de Pacu enregistre une nouvelle révision de définition de tâche qui injecte un conteneur sidecar voleur d'identifiants, puis émet UpdateService pour le déployer — contournant entièrement la surveillance des images ECR. Tout RegisterTaskDefinition ou UpdateService inattendu depuis un appelant ou une IP inconnus justifie une investigation immédiate. MITRE ATT&CK : TA0003 Persistence / TA0002 Execution / TA0006 Credential Access. |
+| 10 | Lambda Function Configuration & Permission Changes | Événements de création de fonction Lambda, de mise à jour de code et de permission (DSH-64). UpdateFunctionCode remplace le code de la fonction par une charge malveillante. AddPermission accorde un accès d'invocation Lambda inter-comptes ou public. CreateFunctionUrlConfig crée un endpoint HTTP public pour du C2 direct. CreateEventSourceMapping connecte la fonction pour se déclencher sur S3/DynamoDB/SQS. PublishLayerVersion injecte une couche partagée malveillante dans plusieurs fonctions. Chacun de ces événements depuis une identité ou une IP inattendue est un indicateur de persistance/exécution. MITRE ATT&CK : TA0003 Persistence / TA0002 Execution / TA0011 Command and Control. |
+| 11 | SSM Session / Run Command Execution | Événements d'exécution à distance AWS Systems Manager (DSH-39) : StartSession, TerminateSession, ResumeSession, SendCommand et StartAutomationExecution. SSM Session Manager fournit un accès shell sans ports SSH/RDP ouverts et constitue le mécanisme principal de mouvement latéral pour les attaquants disposant d'identifiants IAM volés. Toute session ou commande inattendue depuis une IP ou une identité inhabituelle justifie une investigation immédiate. MITRE ATT&CK : TA0008 Lateral Movement / TA0002 Execution. |
+| 12 | EBS Direct API Snapshot Block Access | Appels EBS Direct API utilisés pour exfiltrer des données de snapshot (DSH-51). Le module ebs__download_snapshots de Pacu utilise ListSnapshotBlocks et GetSnapshotBlock pour diffuser une image disque EBS complète bloc par bloc sans créer d'instance EC2, demander une copie de snapshot, ni déclencher d'événement ModifySnapshotAttribute — la rendant invisible à la détection traditionnelle de partage de snapshot. Tout appel GetSnapshotBlock ou ListSnapshotBlocks depuis une identité ou une adresse IP inattendue est un indicateur d'exfiltration critique. MITRE ATT&CK : TA0010 Exfiltration / TA0009 Collection. |
+| 13 | EKS / ECR Container Platform Events | Événements de cluster EKS et de registre de conteneurs ECR (DSH-48). EKS : UpdateClusterConfig (API publique), CreateFargateProfile (charges de travail malveillantes), AssociateIdentityProviderConfig (IdP OIDC malveillant). ECR : PutImage (envoi d'image avec porte dérobée), SetRepositoryPolicy (accès inter-comptes), PutRegistryPolicy (exposition du registre à l'échelle de l'organisation). Les événements de plateforme de conteneurs sont critiques pour détecter les attaques de chaîne d'approvisionnement et la compromission du plan de contrôle Kubernetes. MITRE ATT&CK : TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration. |
+| 14 | CloudFormation Stack Changes | Événements de gestion de pile et de change-set CloudFormation (DSH-65). Un seul UpdateStack peut déployer des instances EC2, modifier des rôles IAM, ou reconfigurer le réseau — consolidant des dizaines d'appels d'API individuels en un seul événement. CreateStackSet déploie l'infrastructure de l'attaquant sur tous les comptes d'une organisation. ExecuteChangeSet applique un changement pré-préparé, cachant le rayon d'impact d'une revue initiale. DeleteStack peut détruire des ressources contenant des preuves forensiques. MITRE ATT&CK : TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion. |
+
+### 🤖 AI / LLM
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | Bedrock Model Invocation Trend | Volume quotidien d'invocations de modèle Amazon Bedrock par principal (DSH-98). L'inférence à fort volume sur des identifiants volés (LLMjacking) est revendue via des proxies inverses aux frais de la victime. Investiguez tout pic, tout principal n'ayant jamais invoqué Bedrock auparavant, et toute invocation depuis une origine inattendue. MITRE ATT&CK : TA0040 Impact (T1496 Resource Hijacking). |
+| 2 | Bedrock Model Access & Logging Changes | Activation de l'accès aux modèles fondamentaux et falsification de la journalisation des invocations (DSH-99). Les attaquants disposant d'identifiants volés s'auto-activent l'accès aux modèles Bedrock avant d'en abuser, et vérifient ou suppriment la configuration de journalisation des invocations de modèle pour que leurs prompts ne soient pas enregistrés — les deux sont des indicateurs de LLMjacking documentés. Toute ligne dans une organisation n'ayant jamais adopté Bedrock justifie une investigation immédiate. MITRE ATT&CK : TA0005 Defense Evasion / TA0040 Impact (T1496). |
+| 3 | Bedrock Failed Invocations | Tentatives d'invocation Amazon Bedrock échouées regroupées par appelant et code d'erreur (DSH-100). Des rafales d'erreurs AccessDenied / ValidationException sur plusieurs modèles et régions indiquent qu'un attaquant sonde quels modèles une clé volée peut invoquer — la phase de reconnaissance du LLMjacking. MITRE ATT&CK : TA0006 Credential Access / TA0007 Discovery. |
+| 4 | Bedrock Callers by Origin | Inventaire de tous les appelants Amazon Bedrock avec origine et diversité de modèles (DSH-101). Vue de référence pour le triage LLMjacking : les principaux appelant depuis des pays inattendus, des ASN d'hébergement/VPN, ou des agents utilisateurs de script génériques (python-requests, curl) avec un volume d'appels élevé sont les principaux suspects. MITRE ATT&CK : TA0040 Impact (T1496 Resource Hijacking). |
+
+### 🌐 Network
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | Security Group Changes | Changements de règle de groupe de sécurité EC2 (DSH-76). Couvre l'autorisation et la révocation de règles entrantes/sortantes, la création et la suppression de groupes de sécurité, et les mises à jour de description de règle. Des règles d'entrée ouvertes à 0.0.0.0/0 sur des ports administratifs (22, 3389, etc.) sont un fort indicateur d'accès par porte dérobée ou de mauvaise configuration. MITRE ATT&CK : TA0003 Persistence / TA0005 Defense Evasion. |
+| 2 | Network ACL / Route Table Changes | Événements de modification de NACL et de table de routage (DSH-46). Les changements de NACL (CreateNetworkAclEntry, DeleteNetworkAclEntry, ReplaceNetworkAclEntry) peuvent contourner les restrictions de groupe de sécurité pour des sous-réseaux entiers. Les changements de table de routage (CreateRoute, ReplaceRoute, DeleteRoute) peuvent rediriger le trafic vers une infrastructure contrôlée par l'attaquant pour l'interception ou établir des canaux de communication C2 silencieux. MITRE ATT&CK : TA0005 Defense Evasion / TA0011 Command and Control. |
+| 3 | VPC Infrastructure Changes | Événements de changement de topologie VPC (DSH-77). Couvre la création/suppression/modification de VPC, les changements de sous-réseau, l'attachement de passerelle Internet, la création/suppression de passerelle NAT, les changements d'endpoint VPC, et l'allocation/association d'IP élastique. Des attachements IGW inattendus ou de nouvelles passerelles NAT dans des régions inutilisées sont de forts indicateurs d'infrastructure d'exfiltration contrôlée par l'attaquant. MITRE ATT&CK : TA0010 Exfiltration / TA0003 Persistence / TA0011 C2. |
+| 4 | VPC Peering & Transit Gateway Changes | Événements de changement de connexion de peering VPC et de Transit Gateway (DSH-78). Couvre la création/acceptation/suppression de peering VPC et la création de Transit Gateway, l'attachement VPC, et la gestion des attachements de peering. Des demandes de peering inter-comptes ou de nouveaux attachements Transit Gateway depuis des comptes inattendus indiquent un mouvement latéral entre comptes AWS. MITRE ATT&CK : TA0008 Lateral Movement / TA0010 Exfiltration. |
+| 5 | Route53 DNS Changes | Changements de configuration de zone hébergée et de résolveur Route 53 (DSH-29). Le tunneling DNS utilise des enregistrements TXT/CNAME et un grand nombre de sous-domaines pour exfiltrer des données dans les charges utiles de requêtes DNS. Les nouvelles zones hébergées et les appels ChangeResourceRecordSets inattendus doivent être investigués immédiatement. MITRE ATT&CK : TA0010 Exfiltration. |
+
+### 🕒 Temporal Analysis
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | Event Velocity Spikes per Identity | Identités avec des périodes d'activité en rafale de 50 événements ou plus par heure (DSH-38). Le credential stuffing, l'énumération automatisée, ou l'exfiltration de données créent des pics de vélocité marqués au-dessus des références normales. Affiche la tranche horaire, l'identité et le nombre d'événements pour chaque pic. MITRE ATT&CK : TA0006 Credential Access / TA0009 Collection / TA0010 Exfiltration. |
+| 2 | Dormant Accounts Reactivated | Identités avec des brèches d'inactivité de 72 heures ou plus qui ont repris leur activité (DSH-37). Un schéma classique d'identifiants dormants compromis utilisés comme arme. Affiche l'écart maximal en heures/jours entre événements consécutifs par identité. MITRE ATT&CK : TA0001 Initial Access / TA0003 Persistence. |
+| 3 | First / Last Seen per IAM Identity | Identités IAM avec horodatages de première/dernière apparition, nombre d'événements, API distinctes, IP distinctes, et étendue active en jours (DSH-31). Triez par first_seen DESC pour trouver les identités récemment apparues. Des étendues actives courtes avec un nombre d'événements élevé signalent des identifiants compromis ou des attaques automatisées. MITRE ATT&CK : TA0001 Initial Access / TA0003 Persistence. |
+| 4 | First / Last Seen per Source IP | IP sources avec première/dernière apparition, identités distinctes, API distinctes, et contexte GeoIP (DSH-32). De nouvelles IP apparaissant tard dans le jeu de données suggèrent un mouvement latéral ou une nouvelle infrastructure d'attaquant. MITRE ATT&CK : TA0001 Initial Access / TA0008 Lateral Movement. |
+| 5 | First / Last Seen per API Call | Actions d'API classées par première apparition (DSH-33). De nouveaux appels d'API apparaissant pour la première fois suggèrent des tentatives de reconnaissance ou d'élévation de privilèges. MITRE ATT&CK : TA0007 Discovery / TA0004 Privilege Escalation. |
+| 6 | First / Last Seen per Service Source | Horodatages de première et dernière apparition pour chaque source de service AWS distincte (DSH-26). Triez par first_seen DESC pour faire ressortir les services récemment introduits (infrastructure d'attaquant potentielle). Triez par last_seen ASC pour trouver les services devenus silencieux (nettoyage possible après compromission). MITRE ATT&CK : TA0003 Persistence / TA0007 Discovery. |
+
+### 🌍 GeoIP Intelligence
+
+| # | Nom du graphique | Description |
+|---|------------|-------------|
+| 1 | Impossible Travel (Multi-Country Principals) | Principaux IAM classés par pays sources distincts, avec IP sources distinctes, total d'événements, et première/dernière apparition (DSH-92). distinct_countries >= 2 pour un principal humain est un fort signal de compromission de compte — croisez la fenêtre temporelle et les IP sources. Nécessite l'enrichissement GeoIP. MITRE ATT&CK : TA0001 Initial Access / T1078 Valid Accounts. |
+| 2 | Top Countries by Request Volume | Top 20 des pays sources par volume d'appels d'API, avec ventilation des événements d'écriture et des appelants uniques (DSH-15). Des pays normalement non associés aux opérations de l'organisation peuvent indiquer un vol d'identifiants ou une infrastructure contrôlée par l'attaquant. Nécessite l'enrichissement GeoLite2 — les lignes NULL sont exclues automatiquement. |
+| 3 | Top ASN Organizations by Request Volume | Top 25 des organisations ASN par volume d'appels d'API avec ventilation des événements d'écriture et des appelants uniques (DSH-18). Un trafic provenant de fournisseurs VPN, de nœuds de sortie Tor, d'entreprises d'hébergement, ou de fournisseurs cloud en dehors de l'empreinte attendue peut indiquer l'usage par l'attaquant d'une infrastructure d'anonymisation. Nécessite l'enrichissement GeoLite2 — les lignes NULL sont exclues automatiquement. |
+| 4 | Top Cities by Request Volume | Top 25 des villes par volume d'appels d'API avec ventilation des événements d'écriture et des appelants uniques (DSH-17). La granularité au niveau de la ville peut révéler des emplacements spécifiques de centres de données utilisés par des acteurs de menace qui seraient masqués par une analyse au niveau du pays seule. Nécessite l'enrichissement GeoLite2 — les lignes NULL sont exclues automatiquement. |
+| 5 | Global Request Origin Map | Carte du monde montrant la distribution géographique des origines des appels d'API CloudTrail (DSH-16). L'intensité de couleur du pays est proportionnelle au nombre d'événements. Des pays normalement non associés aux opérations de l'organisation peuvent indiquer un vol d'identifiants ou une infrastructure contrôlée par l'attaquant. Nécessite l'enrichissement GeoLite2 — les lignes NULL sont exclues automatiquement. |
+| 6 | API Calls by Country (Event Name × GeoIP) | Top 50 des paires (event_name, country) par volume d'appels d'API (DSH-79). Révèle quelles opérations d'API sont appelées depuis chaque région géographique. Les opérations d'écriture depuis des pays inattendus sont un fort indicateur de compromission d'identifiants. Nécessite l'enrichissement GeoLite2 — les IP privées/internes et les lignes NULL sont exclues. |
 
 </details>
 
