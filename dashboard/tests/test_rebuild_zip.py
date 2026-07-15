@@ -1,6 +1,7 @@
 """Tests for rebuild_zip.py — verifies that the output ZIP has correct structure
 and contains all chart YAML files listed in FILE_MAP."""
 
+import importlib
 import os
 import subprocess
 import sys
@@ -36,6 +37,36 @@ NEW_CHART_FRAGMENTS = [
     "IAM_Privilege_Change_Event_Timeline",
     "Route53_DNS_Changes",
 ]
+
+
+def test_rebuild_zip_importable_without_side_effects() -> None:
+    """Importing rebuild_zip as a module must not rebuild the ZIP.
+
+    rebuild_rare_zip.py imports FILE_MAP from rebuild_zip, so the module's
+    top-level build code must live behind an ``if __name__ == "__main__"``
+    guard.  Rebuilding on import would silently touch the committed ZIP.
+    """
+    with open(OUTPUT_ZIP, "rb") as fh:
+        bytes_before = fh.read()
+
+    assets_dir = os.path.dirname(os.path.abspath(REBUILD_ZIP_SCRIPT))
+    sys.path.insert(0, assets_dir)
+    try:
+        module = importlib.import_module("rebuild_zip")
+        # Reload so the module top-level runs even if already imported.
+        module = importlib.reload(module)
+    finally:
+        sys.path.remove(assets_dir)
+
+    with open(OUTPUT_ZIP, "rb") as fh:
+        bytes_after = fh.read()
+    assert bytes_after == bytes_before, (
+        "Importing rebuild_zip rebuilt the ZIP — move the build code into "
+        "main() behind an __main__ guard."
+    )
+    assert isinstance(module.FILE_MAP, dict) and len(module.FILE_MAP) >= 95, (
+        "rebuild_zip.FILE_MAP must stay importable (4 core entries + " "91 charts)."
+    )
 
 
 def test_rebuild_zip_runs_without_error() -> None:

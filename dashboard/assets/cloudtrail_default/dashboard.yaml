@@ -1,4 +1,5 @@
-# CloudTrail Threat Hunting — Dashboard Definition (v4)
+# CloudTrail Threat Hunting — Top Events — Dashboard Definition (v4)
+# (Paired with the derived "— Rare Events" dashboard built by ../rebuild_rare_zip.py)
 # 11-tab triage-first layout:
 #   Overview | Identity & Access | Threat Detection | High-Risk API Monitor |
 #   API Activity | S3 & RDS | Computing | AI / LLM | Network | Temporal Analysis |
@@ -27,7 +28,7 @@
 # Import via: superset import-dashboards -p cloudtrail_default.zip -u admin
 uuid: c3d4e5f6-a7b8-9012-cdef-123456789012
 version: 1.0.0
-dashboard_title: CloudTrail Threat Hunting
+dashboard_title: CloudTrail Threat Hunting — Top Events
 description: >
   Pre-built threat hunting dashboard for AWS CloudTrail logs stored in DuckDB.
   Triage-first 10-tab layout led by an Overview tab of at-a-glance KPI cards, then

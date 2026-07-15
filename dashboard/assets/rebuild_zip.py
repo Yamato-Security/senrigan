@@ -9,9 +9,8 @@ Superset v1 import requires the following ZIP structure (NO top-level subdir):
   databases/<db_name>.yaml
 """
 
-import zipfile
 import os
-import shutil
+import zipfile
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SOURCE_DIR = os.path.join(BASE, "cloudtrail_default")
@@ -139,35 +138,42 @@ FILE_MAP = {
     "charts/bedrock_callers_geo.yaml": "charts/Bedrock_Callers_By_Origin.yaml",
 }
 
-if os.path.exists(OUTPUT_ZIP):
-    os.remove(OUTPUT_ZIP)
-    print(f"Removed old: {OUTPUT_ZIP}")
 
-with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
-    for src_rel, arc_name in FILE_MAP.items():
-        abs_path = os.path.join(SOURCE_DIR, src_rel)
-        if not os.path.exists(abs_path):
-            print(f"  MISSING: {abs_path}")
-            continue
-        zf.write(abs_path, arc_name)
-        print(f"  Added: {arc_name}")
+def main() -> None:
+    """Rebuild cloudtrail_default.zip from the FILE_MAP sources."""
+    if os.path.exists(OUTPUT_ZIP):
+        os.remove(OUTPUT_ZIP)
+        print(f"Removed old: {OUTPUT_ZIP}")
 
-print(f"\nCreated: {OUTPUT_ZIP}")
+    with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
+        for src_rel, arc_name in FILE_MAP.items():
+            abs_path = os.path.join(SOURCE_DIR, src_rel)
+            if not os.path.exists(abs_path):
+                print(f"  MISSING: {abs_path}")
+                continue
+            zf.write(abs_path, arc_name)
+            print(f"  Added: {arc_name}")
 
-# Verify structure
-with zipfile.ZipFile(OUTPUT_ZIP) as zf:
-    names = zf.namelist()
-    print("\nZIP contents:")
-    for n in sorted(names):
-        print(f"  {n}")
+    print(f"\nCreated: {OUTPUT_ZIP}")
 
-    # Check uuid in databases file
-    db_yaml = zf.read("databases/CloudTrail_DuckDB.yaml").decode()
-    if "uuid:" in db_yaml:
-        print("\nOK: uuid found in databases/CloudTrail_DuckDB.yaml")
-    else:
-        print("\nERROR: uuid NOT found in databases/CloudTrail_DuckDB.yaml")
+    # Verify structure
+    with zipfile.ZipFile(OUTPUT_ZIP) as zf:
+        names = zf.namelist()
+        print("\nZIP contents:")
+        for n in sorted(names):
+            print(f"  {n}")
 
-    # Check metadata
-    meta = zf.read("metadata.yaml").decode()
-    print(f"\nmetadata.yaml:\n{meta}")
+        # Check uuid in databases file
+        db_yaml = zf.read("databases/CloudTrail_DuckDB.yaml").decode()
+        if "uuid:" in db_yaml:
+            print("\nOK: uuid found in databases/CloudTrail_DuckDB.yaml")
+        else:
+            print("\nERROR: uuid NOT found in databases/CloudTrail_DuckDB.yaml")
+
+        # Check metadata
+        meta = zf.read("metadata.yaml").decode()
+        print(f"\nmetadata.yaml:\n{meta}")
+
+
+if __name__ == "__main__":
+    main()

@@ -108,13 +108,15 @@ docker compose --profile resync run --rm superset-resync
 ```
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
-Superset never reads those YAML files directly — it only applies them from a compiled
-`cloudtrail_default.zip`, which is imported into Superset's own metadata DB by the one-shot
-`superset-init` container. Editing the YAML alone (or even rebuilding the zip alone) has no
-effect on the running dashboard. Always finish with both steps:
+Superset never reads those YAML files directly — it only applies them from the compiled
+`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the "Rare Events" dashboard, derived
+from `cloudtrail_default/` by `rebuild_rare_zip.py` with ascending/bottom-N ordering),
+which are imported into Superset's own metadata DB by the one-shot `superset-init`
+container. Editing the YAML alone (or even rebuilding the zips alone) has no effect on the
+running dashboards. Always finish with all steps:
 
 ```bash
-cd dashboard/assets && python3 rebuild_zip.py   # regenerate cloudtrail_default.zip from the YAML
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
@@ -137,7 +139,7 @@ npm run build                 # Vite production build → ../static/
 ```
 
 Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 351 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 61 (asset/YAML/config validation suite).
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 514 (asset/YAML/config validation suite).
 
 Every PR must pass: all tests green, no lint warnings, format compliance, and no test-count regression.
 

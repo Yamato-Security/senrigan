@@ -160,6 +160,19 @@ The `cloudtrail_default.zip` import bundle contains **73 charts** across 9 tabs.
 All charts are backed by the `cloudtrail_events` dataset and respect
 Superset's native time-range and filter bar controls.
 
+### Rare Events dashboard
+
+A second dashboard, **CloudTrail Threat Hunting — Rare Events**
+(`cloudtrail_rare.zip`), mirrors the exact tab/chart layout of the default
+**CloudTrail Threat Hunting — Top Events** dashboard but flips every frequency-ranked chart to **ascending (bottom-N)
+order**, surfacing the least frequent — and therefore potentially most
+anomalous — values. It is generated from `cloudtrail_default/` by
+`assets/rebuild_rare_zip.py` (never edited by hand): chart/dashboard uuids
+are derived deterministically via `uuid5`, slice names get a ` (Rare)`
+suffix, and charts without an ordering knob (KPI cards, timeseries, world
+map, heatmap) are mirrored unchanged. Both dashboards share the same
+database and dataset objects.
+
 ---
 
 ## Directory Structure
@@ -169,8 +182,10 @@ dashboard/
 ├── Dockerfile                          # Extends apache/superset:6.1.0 + duckdb-engine (uv)
 ├── superset_config.py                  # Superset Flask config (SECRET_KEY, DB URI, dialect registration)
 ├── assets/
-│   ├── cloudtrail_default.zip          # Superset import ZIP (73 charts + dashboard + dataset)
-│   ├── rebuild_zip.py                  # Regenerate the ZIP from cloudtrail_default/
+│   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
+│   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
+│   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
+│   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions
 │       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
 │       ├── metadata.yaml
@@ -182,12 +197,15 @@ dashboard/
 │   ├── bootstrap.sh                    # Idempotent init script (runs in superset-init)
 │   ├── register_duckdb.py              # Register DuckDB connection; auto-migrates old URI/settings
 │   ├── register_dataset.py             # Register cloudtrail_events dataset
-│   └── import_dashboard.py             # Import cloudtrail_default.zip via ImportAssetsCommand
+│   └── import_dashboard.py             # Import a dashboard ZIP via ImportAssetsCommand (DASHBOARD_ZIP env)
 └── tests/
     ├── test_chart_yaml.py
     ├── test_dashboard_yaml.py
     ├── test_dockerfile.py
+    ├── test_import_dashboard.py
     ├── test_init_scripts.py
+    ├── test_rare_generator.py
+    ├── test_rare_zip.py
     ├── test_rebuild_zip.py
     └── test_superset_config.py
 ```
@@ -237,12 +255,14 @@ docker compose --profile resync run --rm superset-resync
 ### Modifying dashboard definitions
 
 1. Edit YAML files under `dashboard/assets/cloudtrail_default/`.
-2. Regenerate the ZIP:
+2. Regenerate both ZIPs (the Rare Events dashboard is derived from the
+   same source tree):
    ```bash
    cd dashboard/assets
-   python rebuild_zip.py
+   python3 rebuild_zip.py
+   python3 rebuild_rare_zip.py
    ```
-3. Re-run initialization to import the updated ZIP:
+3. Re-run initialization to import the updated ZIPs:
    ```bash
    cd docker
    docker compose run --rm superset-init
@@ -255,11 +275,14 @@ cd dashboard
 python3 -m pytest tests/ -v
 ```
 
-The test suite (281 tests) covers:
+The test suite (514 tests) covers:
 - `test_chart_yaml.py` — required fields and dataset UUID in all chart YAMLs
 - `test_dashboard_yaml.py` — layout structure, cross-references, native filters
 - `test_dockerfile.py` — base image version, duckdb-engine constraint, uv install, build-time import check
-- `test_init_scripts.py` — URI scheme, `allow_run_async` absence, idempotent migration logic
+- `test_import_dashboard.py` — query_context orderby direction honors `order_desc`
+- `test_init_scripts.py` — URI scheme, `allow_run_async` absence, idempotent migration logic, rare-dashboard import
+- `test_rare_generator.py` — Rare Events transformation rules (uuid derivation, order flip, layout preservation)
+- `test_rare_zip.py` — Rare Events ZIP structure, ascending semantics, byte determinism
 - `test_rebuild_zip.py` — ZIP structure and chart coverage
 - `test_superset_config.py` — feature flags, dialect registration
 

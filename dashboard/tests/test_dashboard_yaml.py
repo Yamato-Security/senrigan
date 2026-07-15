@@ -86,6 +86,15 @@ def test_dashboard_has_required_keys() -> None:
     assert not missing, f"dashboard.yaml missing fields: {missing}"
 
 
+def test_dashboard_title_pairs_with_rare_events() -> None:
+    """The default dashboard is titled "— Top Events" so it forms a clear
+    pair with the derived "— Rare Events" dashboard in the Superset list.
+    The slug stays "cloudtrail-threat-hunting" for URL compatibility."""
+    dashboard = load_dashboard()
+    assert dashboard["dashboard_title"] == "CloudTrail Threat Hunting — Top Events"
+    assert dashboard["slug"] == "cloudtrail-threat-hunting"
+
+
 def test_dashboard_filter_ids_unique() -> None:
     """Native filter IDs must be unique within the dashboard."""
     dashboard = load_dashboard()
