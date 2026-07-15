@@ -14,9 +14,11 @@ to be called from within a running Streamlit application.
 
 import logging
 
+import duckdb
 import pandas as pd
 import streamlit as st
 
+from geo import enrich_with_geo
 from llm import MAX_CONTEXT_TURNS, generate_analysis, generate_sql
 from query import (
     QueryValidationError,
@@ -55,6 +57,58 @@ def _format_row_info(
     return f"{len(results)} row(s){suffix}"
 
 
+def _maybe_enrich_geo(
+    conn: duckdb.DuckDBPyConnection, results: pd.DataFrame
+) -> pd.DataFrame:
+    """Geo-enrich *results* when the sidebar toggle is on.
+
+    Enrichment is best-effort: any failure is logged and the original
+    results are returned unchanged — it must never fail the query itself.
+
+    Args:
+        conn:    The open DuckDB connection the query ran on.
+        results: The query result DataFrame.
+
+    Returns:
+        The (possibly) enriched DataFrame.
+    """
+    if not st.session_state.get("geo_enrich", True):
+        return results
+    try:
+        return enrich_with_geo(conn, results)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Geo enrichment failed, returning raw results: %s", exc)
+        return results
+
+
+def _execute_sql_safely(
+    db_path: str, sql: str, row_limit: int
+) -> tuple[pd.DataFrame, str | None]:
+    """Execute *sql* read-only, converting known failures to a user message.
+
+    Successful results are geo-enriched via :func:`_maybe_enrich_geo`.
+
+    Args:
+        db_path:   Path to the DuckDB database file.
+        sql:       The SQL query to execute.
+        row_limit: Maximum number of rows to return.
+
+    Returns:
+        A tuple ``(results, error_message)`` — *error_message* is ``None`` on
+        success, otherwise a display-ready string and *results* is empty.
+    """
+    try:
+        with duckdb_connection(db_path) as conn:
+            results = execute_query(conn, sql, row_limit=row_limit)
+            return _maybe_enrich_geo(conn, results), None
+    except QueryValidationError as exc:
+        return pd.DataFrame(), f"🚫 SQL validation error: {exc}"
+    except TimeoutError:
+        return pd.DataFrame(), "⏱ Query timed out (30 s limit exceeded)."
+    except Exception as exc:  # noqa: BLE001
+        return pd.DataFrame(), f"❌ Query execution error: {exc}"
+
+
 def _handle_direct_sql(
     sql: str,
     db_path: str,
@@ -89,19 +143,10 @@ def _handle_direct_sql(
     # and the chat message always reflect what was actually executed.
     effective_sql = apply_row_limit(sql, st.session_state.row_limit)
 
-    results = pd.DataFrame()
-    error_message: str | None = None
-
     with st.spinner("⚡ Running direct SQL…"):
-        try:
-            with duckdb_connection(db_path) as conn:
-                results = execute_query(conn, sql, row_limit=st.session_state.row_limit)
-        except QueryValidationError as exc:
-            error_message = f"🚫 SQL validation error: {exc}"
-        except TimeoutError:
-            error_message = "⏱ Query timed out (30 s limit exceeded)."
-        except Exception as exc:  # noqa: BLE001
-            error_message = f"❌ Query execution error: {exc}"
+        results, error_message = _execute_sql_safely(
+            db_path, sql, st.session_state.row_limit
+        )
 
     st.session_state.last_sql = effective_sql
     st.session_state.last_results = results if error_message is None else None
@@ -161,19 +206,8 @@ def _handle_edit_rerun_sql(sql: str, db_path: str) -> None:
     row_limit = st.session_state.row_limit
     effective_sql = apply_row_limit(sql, row_limit)
 
-    results = pd.DataFrame()
-    error_message: str | None = None
-
     with st.spinner("▶ Running SQL…"):
-        try:
-            with duckdb_connection(db_path) as conn:
-                results = execute_query(conn, sql, row_limit=row_limit)
-        except QueryValidationError as exc:
-            error_message = f"🚫 SQL validation error: {exc}"
-        except TimeoutError:
-            error_message = "⏱ Query timed out (30 s limit exceeded)."
-        except Exception as exc:  # noqa: BLE001
-            error_message = f"❌ Query execution error: {exc}"
+        results, error_message = _execute_sql_safely(db_path, sql, row_limit)
 
     st.session_state.last_sql = effective_sql
     st.session_state.last_results = results if error_message is None else None
@@ -249,17 +283,6 @@ def _analyze_entry_results(entry_idx: int) -> None:
         st.session_state.last_summary = summary
 
 
-def _analyze_current_results() -> None:
-    """Analyze the most recent query_history entry using AI.
-
-    Delegates to _analyze_entry_results with the last entry index.
-    Kept for backward compatibility with existing call sites.
-    """
-    if not st.session_state.query_history:
-        return
-    _analyze_entry_results(len(st.session_state.query_history) - 1)
-
-
 def _handle_user_query(user_input: str, db_path: str) -> None:
     """Process a user query: generate SQL, execute, summarise, and update state.
 
@@ -319,6 +342,7 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
                 model=model,
                 row_limit=st.session_state.row_limit,
             )
+            results = _maybe_enrich_geo(conn, results)
         if final_sql != original_sql:
             sql = final_sql
         # Store the effective SQL (with row_limit applied) so the SQL editor

@@ -402,16 +402,16 @@ def test_session_state_has_date_filter_defaults():
 
 
 # ---------------------------------------------------------------------------
-# Tests #AI-A / #AI-B / #AI-C — _analyze_current_results()
+# Tests #AI-A / #AI-B / #AI-C — _analyze_entry_results()
 # ---------------------------------------------------------------------------
 
 
-def test_analyze_current_results_sets_last_summary_without_appending_message():
-    """_analyze_current_results() must store the analysis in last_summary only.
+def test_analyze_entry_results_sets_last_summary_without_appending_message():
+    """_analyze_entry_results() must store the analysis in last_summary only.
 
     Test #AI-A: The analysis result is displayed below the results table via
-    last_summary, NOT appended to the chat message history.
-    _analyze_current_results delegates to _analyze_entry_results for the last entry.
+    last_summary (when the entry is the last one), NOT appended to the chat
+    message history.
     """
     from report import ReportEntry
     from tests.conftest import MockSessionState
@@ -447,21 +447,20 @@ def test_analyze_current_results_sets_last_summary_without_appending_message():
         mock_response.choices[0].message.content = "• 1 ConsoleLogin event observed"
         mock_client.chat.completions.create.return_value = mock_response
 
-        from handlers import _analyze_current_results
+        from handlers import _analyze_entry_results
 
-        _analyze_current_results()
+        _analyze_entry_results(0)
 
     assert mock_state["last_summary"] == "• 1 ConsoleLogin event observed"
     # Analysis must NOT be added to the chat message history
     assert len(mock_state["messages"]) == 0
 
 
-def test_analyze_current_results_no_api_key_appends_warning():
-    """_analyze_current_results() must append a warning when no API key is set.
+def test_analyze_entry_results_no_api_key_appends_warning():
+    """_analyze_entry_results() must append a warning when no API key is set.
 
     Test #AI-B: verifies early-return behavior without an API key.
     generate_analysis must NOT be called.
-    _analyze_current_results delegates to _analyze_entry_results for the last entry.
     """
     from report import ReportEntry
     from tests.conftest import MockSessionState
@@ -484,28 +483,31 @@ def test_analyze_current_results_no_api_key_appends_warning():
         patch("streamlit.session_state", mock_state),
         patch("llm.OpenAI") as mock_openai_cls,
     ):
-        from handlers import _analyze_current_results
+        from handlers import _analyze_entry_results
 
-        _analyze_current_results()
+        _analyze_entry_results(0)
 
     mock_openai_cls.assert_not_called()
     assert len(mock_state["messages"]) == 1
     assert "API key" in mock_state["messages"][0]["content"]
 
 
-def test_analyze_current_results_no_results_does_nothing():
-    """_analyze_current_results() must be a no-op when last_results is None.
+def test_analyze_entry_results_empty_results_does_nothing():
+    """_analyze_entry_results() must be a no-op when the entry has no results.
 
-    Test #AI-C: verifies that nothing is appended when there are no results to analyse.
+    Test #AI-C: verifies that nothing is analysed or appended when the entry's
+    results DataFrame is empty.
     """
+    from report import ReportEntry
     from tests.conftest import MockSessionState
 
+    entry = ReportEntry(sql="SELECT 1", results=pd.DataFrame(), analysis="")
     mock_state = MockSessionState(
         api_key="sk-test",
         model="gpt-5.4",
         messages=[],
-        query_history=[],
-        last_sql="",
+        query_history=[entry],
+        last_sql="SELECT 1",
         last_results=None,
         last_summary="",
         date_start=None,
@@ -516,12 +518,13 @@ def test_analyze_current_results_no_results_does_nothing():
         patch("streamlit.session_state", mock_state),
         patch("llm.OpenAI") as mock_openai_cls,
     ):
-        from handlers import _analyze_current_results
+        from handlers import _analyze_entry_results
 
-        _analyze_current_results()
+        _analyze_entry_results(0)
 
     mock_openai_cls.assert_not_called()
     assert len(mock_state["messages"]) == 0
+    assert entry.analysis == ""
 
 
 def test_handle_direct_sql_applies_date_filter_from_session_state(tmp_duckdb):
@@ -2050,3 +2053,94 @@ def test_apply_entry_filter_combined_result_and_keyword():
     result = _apply_entry_filter(entries, "✅ Results", "identity")
     assert len(result) == 1
     assert result[0][1].label == "Root Account Activity"
+
+
+# ---------------------------------------------------------------------------
+# Tests #GEO-1 / #GEO-2 / #GEO-3 — automatic geo enrichment in handlers
+# ---------------------------------------------------------------------------
+
+
+def _geo_mock_state(**overrides):
+    """Session state for the geo-enrichment handler tests."""
+    from tests.conftest import MockSessionState
+
+    defaults = dict(
+        api_key="",
+        model="gpt-5.4",
+        messages=[],
+        query_history=[],
+        last_sql="",
+        last_results=None,
+        last_summary="",
+        date_start=None,
+        date_end=None,
+    )
+    defaults.update(overrides)
+    return MockSessionState(**defaults)
+
+
+def test_handle_direct_sql_enriches_ip_results_with_geo(tmp_duckdb_geo):
+    """Test #GEO-1: results with an IP column gain geo columns (toggle default ON)."""
+    sql = (
+        "SELECT event_name, source_ip_address "
+        "FROM cloudtrail_events ORDER BY event_time LIMIT 10"
+    )
+    mock_state = _geo_mock_state()
+
+    with (
+        patch("streamlit.session_state", mock_state),
+        patch("streamlit.spinner") as mock_spinner,
+    ):
+        mock_spinner.return_value.__enter__ = MagicMock(return_value=None)
+        mock_spinner.return_value.__exit__ = MagicMock(return_value=False)
+
+        from handlers import _handle_direct_sql
+
+        _handle_direct_sql(sql, tmp_duckdb_geo)
+
+    entry = mock_state["query_history"][0]
+    assert "geo_country_code" in entry.results.columns
+    assert entry.results["geo_country_code"].tolist() == ["US", "JP"]
+    assert mock_state["last_results"] is entry.results
+
+
+def test_handle_direct_sql_geo_toggle_off_skips_enrichment(tmp_duckdb_geo):
+    """Test #GEO-2: geo_enrich=False must leave results untouched."""
+    sql = "SELECT event_name, source_ip_address FROM cloudtrail_events LIMIT 10"
+    mock_state = _geo_mock_state(geo_enrich=False)
+
+    with (
+        patch("streamlit.session_state", mock_state),
+        patch("streamlit.spinner") as mock_spinner,
+    ):
+        mock_spinner.return_value.__enter__ = MagicMock(return_value=None)
+        mock_spinner.return_value.__exit__ = MagicMock(return_value=False)
+
+        from handlers import _handle_direct_sql
+
+        _handle_direct_sql(sql, tmp_duckdb_geo)
+
+    entry = mock_state["query_history"][0]
+    assert "geo_country_code" not in entry.results.columns
+
+
+def test_handle_direct_sql_enrichment_failure_keeps_results(tmp_duckdb_geo):
+    """Test #GEO-3: a failing enrichment must never fail the query itself."""
+    sql = "SELECT event_name, source_ip_address FROM cloudtrail_events LIMIT 10"
+    mock_state = _geo_mock_state()
+
+    with (
+        patch("streamlit.session_state", mock_state),
+        patch("streamlit.spinner") as mock_spinner,
+        patch("handlers.enrich_with_geo", side_effect=RuntimeError("boom")),
+    ):
+        mock_spinner.return_value.__enter__ = MagicMock(return_value=None)
+        mock_spinner.return_value.__exit__ = MagicMock(return_value=False)
+
+        from handlers import _handle_direct_sql
+
+        _handle_direct_sql(sql, tmp_duckdb_geo)
+
+    entry = mock_state["query_history"][0]
+    assert len(entry.results) == 2
+    assert "geo_country_code" not in entry.results.columns

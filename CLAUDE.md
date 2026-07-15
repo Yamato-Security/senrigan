@@ -9,8 +9,8 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [DEVELOPMENT.md](doc/DEVELOPMENT.md), [TESTING.md](doc/TESTING.md),
 > [TDD_GUIDE.md](doc/TDD_GUIDE.md), [PRD.md](doc/PRD.md),
 > [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
-> [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md), and
-> [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
+> [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md),
+> [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md), and [PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md).
 
 ---
 
@@ -138,8 +138,10 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 351 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 514 (asset/YAML/config validation suite).
+Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 440 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 605 (asset/YAML/config validation suite).
+When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
+stale counts here cause false "regression" alarms in later sessions.
 
 Every PR must pass: all tests green, no lint warnings, format compliance, and no test-count regression.
 
@@ -152,6 +154,17 @@ Every PR must pass: all tests green, no lint warnings, format compliance, and no
 GeoIP and extended columns are added via `ALTER TABLE ADD COLUMN IF NOT EXISTS`, so existing DBs
 migrate transparently. `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives SHA-256
 dedup. Full schema: [AGENTS.md](AGENTS.md#duckdb-schema).
+
+The LLM only "sees" the columns listed in `agent/schema.py` (currently the 17 core + 7 GeoIP
+columns — the 24 extended columns are deliberately excluded to keep the prompt small). A column
+that exists in DuckDB but not in `agent/schema.py` will never be used by AI-generated SQL.
+
+**Schema-change checklist** — when adding or newly exposing a column, update every one of:
+1. `ingester/` Rust schema + migration (`ALTER TABLE ADD COLUMN IF NOT EXISTS`),
+2. `agent/schema.py` (if the LLM should use it) and the idioms in `agent/prompts/system_prompt.py`,
+3. the schema section in [AGENTS.md](AGENTS.md#duckdb-schema),
+4. `dashboard/assets/cloudtrail_default/datasets/` YAML, then rebuild both zips + re-import
+   (see the dashboard-assets steps above) and run the `superset-resync` profile.
 
 Access rules:
 1. `ingester` is the **sole writer** — never open `READ_WRITE` from `agent`/`dashboard`/`config_viz`.
@@ -171,6 +184,8 @@ Before executing any LLM-generated SQL, three guards run in order:
 On failure, `agent`'s `execute_with_retry` calls `fix_sql_with_llm` once for automatic correction.
 Date-range UI filters inject a `_ct_filtered` CTE (see `apply_date_filter()` in `agent/query.py`).
 `agent/builtin_hunts.yaml` ships pre-built hunts; entries with an `sql` field run without an API key.
+Query results containing IP columns are automatically geo-enriched (`agent/geo.py`; sidebar toggle,
+best-effort — see [doc/PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md)).
 
 ---
 
@@ -198,7 +213,7 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 | Variable | Used by | Default | Notes |
 |----------|---------|---------|-------|
 | `OPENAI_API_KEY` | agent | — | Required for AI features |
-| `OPENAI_MODEL` | agent | `gpt-5.4` | SQL generation + analysis model |
+| `OPENAI_MODEL` | agent | `gpt-5.5` | SQL generation + analysis model |
 | `OPENAI_MODEL_LITE` | agent | `gpt-5.4-mini` | Optional lighter model |
 | `DUCKDB_PATH` | all | — | Overrides default DB path |
 | `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount dir |
@@ -229,7 +244,7 @@ senrigan/
 ├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/
 ├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA
+                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

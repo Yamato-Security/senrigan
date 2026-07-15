@@ -53,6 +53,7 @@ SESSION_STATE_DEFAULTS: dict = {
     "date_start": None,  # date | None — lower bound for event_time filter
     "date_end": None,  # date | None — upper bound for event_time filter
     "row_limit": DEFAULT_ROW_LIMIT,  # maximum rows returned per query
+    "geo_enrich": True,  # auto-join geo columns next to IP columns in results
     "conversation_context": [],  # recent (user_query, sql, summary) turns for LLM context
     "db_variant": DB_VARIANT_FULL,  # active DB variant; "Lite" only available when DUCKDB_PATH_LITE is set
     "analyst_notes": {},  # UI-01: dict[int, str] — query_index → analyst note text
@@ -576,6 +577,18 @@ def render_sidebar() -> None:
         )
         if int(new_row_limit) != st.session_state.row_limit:
             st.session_state.row_limit = int(new_row_limit)
+
+        # Automatic GeoIP context for IP columns (see agent/geo.py)
+        st.session_state.geo_enrich = st.checkbox(
+            "🌍 Auto geo-enrich IP columns",
+            value=st.session_state.geo_enrich,
+            help=(
+                "When results contain an IP address column, automatically add "
+                "the GeoIP columns (country, city, ISP organization) stored on "
+                "cloudtrail_events next to it. No effect when the database was "
+                "ingested without GeoLite2 databases."
+            ),
+        )
 
         st.divider()
 

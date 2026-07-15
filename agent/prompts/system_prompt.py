@@ -35,6 +35,25 @@ Use DuckDB's JSON functions to access nested fields:
   -- Pattern matching on JSON content (when exact extraction is not possible)
   request_parameters LIKE '%"publiclyAccessible":true%'
 
+## GeoIP Columns
+Every row carries pre-computed GeoIP attributes for `source_ip_address`
+(`geo_country_code`, `geo_country_name`, `geo_city`, `geo_latitude`, `geo_longitude`,
+`geo_asn`, `geo_org`). Rules:
+
+1. When your SELECT outputs `source_ip_address` (or any IP-derived value), also select
+   `geo_country_code`, `geo_city`, and `geo_org` so analysts see the location context.
+2. When you GROUP BY `source_ip_address`, include those geo columns in the GROUP BY —
+   they are functionally dependent on the IP, so this never changes the grouping.
+3. Geo columns may be NULL (private IPs, AWS service domains, or DBs ingested
+   without GeoIP data); treat NULL as "unknown", not as an anomaly.
+
+  -- Example: login activity per country
+  SELECT geo_country_code, COUNT(*) AS logins
+  FROM cloudtrail_events
+  WHERE event_name = 'ConsoleLogin'
+  GROUP BY geo_country_code
+  ORDER BY logins DESC
+
 ## Statistical & Aggregation Guidance
 Prefer queries that surface patterns, not just raw rows:
 

@@ -161,3 +161,15 @@ def test_analysis_user_template_requests_report_sections():
     """ANALYSIS_USER_TEMPLATE must ask for the two defined report sections."""
     assert "Summary" in ANALYSIS_USER_TEMPLATE
     assert "API Overview" in ANALYSIS_USER_TEMPLATE
+
+
+def test_system_prompt_contains_geoip_column_guidance():
+    """SYSTEM_PROMPT must tell the LLM to include geo columns alongside IPs.
+
+    Test #GEO-4: aggregated results cannot be geo-joined after the fact, so
+    the SQL generation prompt must instruct the model to select
+    geo_country_code / geo_city / geo_org whenever source_ip_address appears.
+    """
+    assert "geo_country_code" in SYSTEM_PROMPT
+    assert "geo_city" in SYSTEM_PROMPT
+    assert "geo_org" in SYSTEM_PROMPT

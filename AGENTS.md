@@ -145,11 +145,11 @@ npm run build                 # Vite production build → ../static/
 
 ```bash
 # Dashboard (dashboard/) — YAML/asset/config validation suite
-pytest                        # all tests (514 tests)
+pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 351 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 514. Test count must not decrease in a PR.
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 440 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 605. Test count must not decrease in a PR.
 
 ---
 
@@ -296,7 +296,7 @@ Files without a recognisable `yyyy/mm/dd` segment in their path are always inclu
 |----------|---------|---------|-------|
 | `OPENAI_API_KEY` | agent | — | Required for AI features |
 | `DUCKDB_PATH` | all | — | Overrides default DB path |
-| `OPENAI_MODEL` | agent | `gpt-5.4` | SQL generation + analysis model (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` available) |
+| `OPENAI_MODEL` | agent | `gpt-5.5` | SQL generation + analysis model (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` available) |
 | `OPENAI_MODEL_LITE` | agent | `gpt-5.4-mini` | Optional lighter model |
 | `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount directory |
 | `GEOIP_HOST_PATH` | docker host | `./data/geoip` | Host-side GeoIP directory |
@@ -415,6 +415,7 @@ senrigan/
 │   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
+│   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

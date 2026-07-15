@@ -386,3 +386,33 @@ def test_register_dataset_has_core_columns() -> None:
     assert (
         "source_ip_address" in core_col_names
     ), "CORE_COLUMNS is missing source_ip_address"
+
+
+# ---------------------------------------------------------------------------
+# GeoIP context — tables showing an IP must show geo columns
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("fname, chart", load_all_charts())
+def test_ip_table_includes_geo_columns(fname: str, chart: dict) -> None:
+    """Every table chart showing source_ip_address must also show geo columns.
+
+    Applies to both event-level listings (event_time in groupby) and
+    per-IP aggregation tables (e.g. Top Source IP Addresses). Raw IPs alone
+    give analysts no location context, so a country column (geo_country_code
+    or geo_country_name) plus at least one of geo_city / geo_org must also
+    be listed. Geo columns are functionally dependent on the IP, so adding
+    them never changes the grouping granularity.
+    """
+    if chart.get("viz_type") != "table":
+        return
+    groupby = (chart.get("params") or {}).get("groupby") or []
+    if "source_ip_address" not in groupby:
+        return
+
+    assert (
+        "geo_country_code" in groupby or "geo_country_name" in groupby
+    ), f"{fname}: table showing source_ip_address must include a geo country column"
+    assert (
+        "geo_city" in groupby or "geo_org" in groupby
+    ), f"{fname}: table showing source_ip_address must include geo_city or geo_org"

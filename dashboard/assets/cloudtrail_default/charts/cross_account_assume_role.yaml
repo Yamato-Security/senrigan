@@ -28,6 +28,8 @@ params:
     - user_identity_account_id
     - recipient_account_id
     - source_ip_address
+    - geo_country_code
+    - geo_city
   adhoc_filters:
     - clause: WHERE
       expressionType: SQL

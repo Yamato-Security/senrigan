@@ -49,6 +49,8 @@ params:
   groupby:
     - user_identity_arn
     - source_ip_address
+    - geo_country_code
+    - geo_city
   adhoc_filters:
     - clause: WHERE
       expressionType: SQL
