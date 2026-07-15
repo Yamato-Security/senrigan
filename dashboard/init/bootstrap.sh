@@ -33,5 +33,12 @@ else
   echo "    Dashboard ZIP not found — skipping import."
 fi
 
+echo "==> Importing Rare Events dashboard (if available)..."
+if [ -f /app/dashboards/cloudtrail_rare.zip ]; then
+  DASHBOARD_ZIP=/app/dashboards/cloudtrail_rare.zip python3 /app/import_dashboard.py
+else
+  echo "    Rare Events dashboard ZIP not found — skipping import."
+fi
+
 echo "==> Bootstrap complete."
 

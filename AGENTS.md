@@ -106,13 +106,14 @@ docker compose --profile resync run --rm superset-resync
 ```
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
-Superset never reads those YAML files directly — it only applies them from a compiled
-`cloudtrail_default.zip`, imported into Superset's own metadata DB by the one-shot
-`superset-init` container. Editing the YAML (or even rebuilding the zip) alone has no effect
-on the running dashboard. Always finish with both steps:
+Superset never reads those YAML files directly — it only applies them from the compiled
+`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the derived "Rare Events" dashboard),
+imported into Superset's own metadata DB by the one-shot `superset-init` container.
+Editing the YAML (or even rebuilding the zips) alone has no effect on the running
+dashboards. Always finish with all steps:
 
 ```bash
-cd dashboard/assets && python3 rebuild_zip.py   # regenerate cloudtrail_default.zip from the YAML
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
@@ -144,11 +145,11 @@ npm run build                 # Vite production build → ../static/
 
 ```bash
 # Dashboard (dashboard/) — YAML/asset/config validation suite
-pytest                        # all tests (61 tests)
+pytest                        # all tests (514 tests)
 ```
 
 Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 351 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 61. Test count must not decrease in a PR.
+114 frontend, dashboard ≈ 514. Test count must not decrease in a PR.
 
 ---
 
@@ -404,7 +405,7 @@ senrigan/
 │   ├── Dockerfile
 │   ├── superset_config.py
 │   ├── pytest.ini
-│   ├── assets/                # cloudtrail_default.zip + YAML definitions
+│   ├── assets/                # cloudtrail_default.zip + cloudtrail_rare.zip + YAML definitions
 │   ├── init/                  # bootstrap.sh, register_duckdb.py
 │   └── tests/                 # YAML/asset/config/Dockerfile validation suite
 ├── doc/                       # Documentation

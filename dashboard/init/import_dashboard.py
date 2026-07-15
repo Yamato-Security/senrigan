@@ -1,20 +1,94 @@
-"""import_dashboard.py — Import the pre-built CloudTrail dashboard into Superset.
+"""import_dashboard.py — Import a pre-built dashboard ZIP into Superset.
 
-Uses the Superset Python API (ImportDashboardsCommand) instead of the CLI,
+Uses the Superset Python API (ImportAssetsCommand) instead of the CLI,
 because the CLI requires a --username flag and does not work well in
 non-interactive bootstrap scripts.
 
+ImportAssetsCommand (not ImportDashboardsCommand) is required: the
+dashboard importer hardcodes overwrite=False for bundled charts, so chart
+YAML edits would never reach charts that already exist in the metadata DB.
+The assets importer overwrites everything by uuid, making re-imports
+actually sync the YAML state ("assets as code").
+
 This script runs inside the superset-init container as part of bootstrap.sh.
+The ZIP to import is selected via the DASHBOARD_ZIP environment variable.
 """
 
+import json
 import os
 import sys
 import zipfile
+
+import yaml
 
 DASHBOARD_ZIP = os.environ.get(
     "DASHBOARD_ZIP", "/app/dashboards/cloudtrail_default.zip"
 )
 ADMIN_USERNAME = os.environ.get("SUPERSET_ADMIN_USERNAME", "admin")
+
+
+def _first_orderby(metrics_list: list, order_desc: bool = True) -> list:
+    """Build an orderby pair for the first metric.
+
+    An empty orderby generates SQL with NO ORDER BY at all — order_desc
+    alone is ignored by the v1 chart-data path, so LIMIT then returns
+    arbitrary rows.  Named metrics are referenced directly; adhoc metric
+    dicts are referenced by their label, which Superset resolves to the
+    SELECT alias of the metric expression (verified on Superset 6.1).
+
+    The second element of an orderby pair is is_ascending, so it is the
+    inverse of order_desc.
+    """
+    if not metrics_list:
+        return []
+    first = metrics_list[0]
+    if isinstance(first, str):
+        return [[first, not order_desc]]
+    if isinstance(first, dict) and first.get("label"):
+        return [[first["label"], not order_desc]]
+    # Adhoc metric without a label cannot be referenced in orderby.
+    return []
+
+
+def _patch_metadata_type(metadata_yaml) -> bytes:
+    """Rewrite the bundle metadata type to "assets" (in memory only).
+
+    ImportAssetsCommand validates that metadata.yaml declares
+    type: assets.  The shipped ZIPs keep type: Dashboard so they stay
+    importable through the Superset UI, so the type is patched here just
+    before the import runs.
+    """
+    doc = yaml.safe_load(metadata_yaml) if metadata_yaml else None
+    if not isinstance(doc, dict):
+        doc = {}
+    doc["type"] = "assets"
+    doc.setdefault("version", "1.0.0")
+    return yaml.safe_dump(doc, sort_keys=False).encode("utf-8")
+
+
+def _needs_query_context(query_context, viz_type: str) -> bool:
+    """Return True when a chart's stored query_context must be (re)built.
+
+    Besides missing/placeholder/malformed contexts, a context is stale
+    when its first query declares metrics but an empty orderby: an older
+    version of this script emitted no orderby for adhoc metrics, producing
+    SQL without ORDER BY.  Pie/sunburst charts are exempt — they sort via
+    sort_by_metric and an empty orderby is correct for them.
+    """
+    if not query_context or query_context.strip() in ("", "null", "{}"):
+        return True
+    try:
+        qc = json.loads(query_context)
+    except (json.JSONDecodeError, AttributeError):
+        return True
+    if not (qc.get("datasource") and qc.get("queries")):
+        return True
+    if viz_type in ("pie", "sunburst"):
+        return False
+    query = qc["queries"][0]
+    if query.get("metrics") and not query.get("orderby"):
+        return True
+    return False
 
 
 def main() -> None:
@@ -43,15 +117,16 @@ def main() -> None:
     g.user = admin
 
     # Step 3: load ZIP and run import command.
-    from superset.commands.dashboard.importers.dispatcher import (  # noqa: PLC0415
-        ImportDashboardsCommand,
+    from superset.commands.importers.v1.assets import (  # noqa: PLC0415
+        ImportAssetsCommand,
     )
 
     with zipfile.ZipFile(DASHBOARD_ZIP) as z:
         contents = {name: z.read(name) for name in z.namelist()}
+    contents["metadata.yaml"] = _patch_metadata_type(contents.get("metadata.yaml"))
 
     try:
-        ImportDashboardsCommand(contents, overwrite=True).run()
+        ImportAssetsCommand(contents).run()
         print("    Dashboard imported successfully.")
         _remove_retired_charts()
         _generate_query_contexts()
@@ -74,9 +149,9 @@ def _remove_retired_charts() -> None:
     they no longer appear in the Charts list or on the dashboard.
 
     Add UUIDs here whenever a chart YAML is intentionally removed.
+    For charts on the Rare Events dashboard, add the DERIVED uuid produced
+    by assets/rebuild_rare_zip.py, not the source chart's uuid.
     """
-    import json  # noqa: PLC0415
-
     from superset.extensions import db  # noqa: PLC0415
     from superset.models.slice import Slice  # noqa: PLC0415
 
@@ -102,28 +177,21 @@ def _remove_retired_charts() -> None:
 
 
 def _generate_query_contexts() -> None:
-    """Generate query_context for charts that lack one.
+    """Generate query_context for charts that lack one or hold a stale one.
 
     Superset requires a stored query_context to render charts on dashboards.
     The v1 ZIP import does not populate it, so we build a minimal one from
-    each chart's params.
+    each chart's params.  Contexts whose first query has metrics but an
+    empty orderby (the old adhoc-metric code path) are rebuilt as well.
     """
-    import json  # noqa: PLC0415
-
     from superset.extensions import db  # noqa: PLC0415
     from superset.models.slice import Slice  # noqa: PLC0415
 
     charts = db.session.query(Slice).all()
     fixed = 0
     for c in charts:
-        # Skip charts that already have a valid query_context.
-        if c.query_context and c.query_context.strip() not in ("", "null", "{}"):
-            try:
-                qc = json.loads(c.query_context)
-                if qc.get("datasource") and qc.get("queries"):
-                    continue
-            except (json.JSONDecodeError, AttributeError):
-                pass
+        if not _needs_query_context(c.query_context, c.viz_type or ""):
+            continue
 
         params = json.loads(c.params) if c.params else {}
         metrics = params.get("metrics", ["count"])
@@ -133,20 +201,6 @@ def _generate_query_contexts() -> None:
         x_axis = params.get("x_axis")
         if x_axis and x_axis not in columns:
             columns = [x_axis] + columns
-
-        # Build a safe orderby for named metrics only.
-        # Adhoc metric dicts (expressionType/sqlExpression) cause
-        # "Field may not be null" schema validation errors in Superset 4.x
-        # when placed in orderby.  For adhoc metrics, return [] and rely on
-        # order_desc in params to sort by the first metric descending.
-        def _first_orderby(metrics_list: list) -> list:
-            if not metrics_list:
-                return []
-            first = metrics_list[0]
-            if isinstance(first, str):
-                return [[first, False]]
-            # Adhoc metric dict — let Superset handle ordering via order_desc.
-            return []
 
         # Ensure granularity_sqla is set — required by many chart types.
         if "granularity_sqla" not in params:
@@ -159,9 +213,15 @@ def _generate_query_contexts() -> None:
         adhoc_filters = params.get("adhoc_filters", [])
 
         # Pie/sunburst charts sort via sort_by_metric — orderby must be empty.
-        # For all other chart types, order by the first metric descending.
+        # For all other chart types, order by the first metric in the
+        # direction given by params.order_desc (default descending).
         viz_type = c.viz_type or ""
-        orderby = [] if viz_type in ("pie", "sunburst") else _first_orderby(metrics)
+        order_desc = params.get("order_desc", True)
+        orderby = (
+            []
+            if viz_type in ("pie", "sunburst")
+            else _first_orderby(metrics, order_desc)
+        )
 
         query_context = {
             "datasource": {"id": c.datasource_id, "type": "table"},
@@ -176,7 +236,7 @@ def _generate_query_contexts() -> None:
                     "orderby": orderby,
                     "row_limit": params.get("row_limit", 10000),
                     "series_limit": 0,
-                    "order_desc": params.get("order_desc", True),
+                    "order_desc": order_desc,
                     "url_params": {},
                     "custom_params": {},
                     "custom_form_data": {},

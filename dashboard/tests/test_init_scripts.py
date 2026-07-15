@@ -7,7 +7,6 @@ DU-13: SQLALCHEMY_URI must use duckdb+duckdb_engine:// (explicit driver) to avoi
 DU-14: databases/CloudTrail_DuckDB.yaml sqlalchemy_uri must use duckdb+duckdb_engine://.
 """
 
-import ast
 import os
 import re
 
@@ -15,6 +14,9 @@ import yaml
 
 REGISTER_DUCKDB_PATH = os.path.join(
     os.path.dirname(__file__), "..", "init", "register_duckdb.py"
+)
+BOOTSTRAP_SH_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "init", "bootstrap.sh"
 )
 DATABASES_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -80,6 +82,31 @@ def test_register_duckdb_uri_uses_explicit_driver() -> None:
         "register_duckdb.py SQLALCHEMY_URI must use 'duckdb+duckdb_engine://' "
         "instead of 'duckdb://' to avoid SA2 entry-point discovery failure.\n"
         'Change: SQLALCHEMY_URI = f"duckdb+duckdb_engine:///{DUCKDB_PATH}"'
+    )
+
+
+def test_bootstrap_imports_rare_dashboard() -> None:
+    """bootstrap.sh must import cloudtrail_rare.zip as a second dashboard.
+
+    import_dashboard.py is parameterized by the DASHBOARD_ZIP env var, so
+    the Rare Events dashboard is imported by invoking it a second time with
+    DASHBOARD_ZIP pointing at the rare ZIP, guarded by a file-existence
+    check (same pattern as the default dashboard import).
+    """
+    with open(BOOTSTRAP_SH_PATH, encoding="utf-8") as fh:
+        source = fh.read()
+
+    assert "/app/dashboards/cloudtrail_rare.zip" in source, (
+        "bootstrap.sh must reference /app/dashboards/cloudtrail_rare.zip "
+        "to import the Rare Events dashboard."
+    )
+    assert re.search(
+        r"DASHBOARD_ZIP=/app/dashboards/cloudtrail_rare\.zip\s+"
+        r"python3 /app/import_dashboard\.py",
+        source,
+    ), (
+        "bootstrap.sh must invoke import_dashboard.py with "
+        "DASHBOARD_ZIP=/app/dashboards/cloudtrail_rare.zip."
     )
 
 

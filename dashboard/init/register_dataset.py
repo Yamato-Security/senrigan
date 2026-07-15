@@ -22,6 +22,13 @@ Implementation note:
 
 import os
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Superset models are only importable inside the container after the app
+    # context is pushed, so at runtime they are imported lazily inside
+    # functions; this import exists solely for the "SqlaTable" annotations.
+    from superset.connectors.sqla.models import SqlaTable
 
 DB_NAME = "CloudTrail DuckDB"
 TABLE_NAME = "cloudtrail_events"

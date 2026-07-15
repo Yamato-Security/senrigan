@@ -273,7 +273,7 @@ def test_hrm_top_calls_exists() -> None:
     assert chart["viz_type"] == "bar"
 
 
-def test_hrm_top_calls_exists() -> None:
+def test_hrm_top_actors_exists() -> None:
     """HRM-42: hrm_top_actors.yaml must exist with bar viz."""
     result = _find_chart_by_filename("hrm_top_actors")
     assert result is not None, "charts/hrm_top_actors.yaml not found"
