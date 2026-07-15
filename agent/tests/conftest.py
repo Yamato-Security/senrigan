@@ -114,3 +114,38 @@ def tmp_duckdb(tmp_path):
     """)
     conn.close()
     yield str(db_path)
+
+
+@pytest.fixture
+def tmp_duckdb_geo(tmp_path):
+    """Temporary DuckDB whose cloudtrail_events rows carry GeoIP data."""
+    import duckdb
+
+    db_path = tmp_path / "test_geo.db"
+    conn = duckdb.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE cloudtrail_events (
+            event_time        TIMESTAMP,
+            event_name        VARCHAR,
+            source_ip_address VARCHAR,
+            geo_country_code  VARCHAR,
+            geo_country_name  VARCHAR,
+            geo_city          VARCHAR,
+            geo_latitude      DOUBLE,
+            geo_longitude     DOUBLE,
+            geo_asn           VARCHAR,
+            geo_org           VARCHAR
+        )
+    """)
+    conn.execute("""
+        INSERT INTO cloudtrail_events
+            (event_time, event_name, source_ip_address,
+             geo_country_code, geo_city, geo_org)
+        VALUES
+            ('2024-01-15 10:30:00', 'ConsoleLogin', '203.0.113.10',
+             'US', 'Ashburn', 'Amazon.com Inc.'),
+            ('2024-01-15 10:31:00', 'CreateUser',   '198.51.100.7',
+             'JP', 'Tokyo', 'Example ISP')
+    """)
+    conn.close()
+    yield str(db_path)

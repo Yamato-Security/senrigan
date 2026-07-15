@@ -32,6 +32,8 @@ params:
     - user_identity_arn
     - aws_region
     - source_ip_address
+    - geo_country_code
+    - geo_city
     - user_agent
     - error_code
   adhoc_filters:

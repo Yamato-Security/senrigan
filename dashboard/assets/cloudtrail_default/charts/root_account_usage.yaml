@@ -28,6 +28,8 @@ params:
     - event_name
     - event_source
     - source_ip_address
+    - geo_country_code
+    - geo_city
   granularity_sqla: event_time
   time_range: "No filter"
   adhoc_filters:

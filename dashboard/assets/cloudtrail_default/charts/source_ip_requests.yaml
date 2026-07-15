@@ -23,6 +23,9 @@ params:
     - write_requests
   groupby:
     - source_ip_address
+    - geo_country_code
+    - geo_city
+    - geo_org
   granularity_sqla: event_time
   time_range: "No filter"
   row_limit: 100

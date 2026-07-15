@@ -19,7 +19,7 @@ and pre-built preset queries.
 |------|-------|
 | Language | Python 3.14+ |
 | Framework | Streamlit |
-| AI Integration | OpenAI API (`gpt-5.4` default; `gpt-5.5`, `gpt-5.4-mini` also available) |
+| AI Integration | OpenAI API (`gpt-5.5` default; `gpt-5.4`, `gpt-5.4-mini` also available) |
 | DB Client | `duckdb` Python package |
 | Data Processing | `pandas` |
 | Test Framework | `pytest`, `pytest-mock` |
@@ -34,34 +34,44 @@ agent/
 ├── handlers.py            # Stateful handler functions (_handle_direct_sql, _handle_user_query, etc.)
 ├── llm.py                 # OpenAI API integration (SQL generation, analysis, SQL fix)
 ├── query.py               # DuckDB query execution, validation, date filter, row limit, retry
+├── geo.py                 # Automatic GeoIP enrichment of IP columns in query results
 ├── report.py              # Threat hunting report generation (Markdown + sensitive data redaction)
 ├── schema.py              # CloudTrail table schema description for the system prompt
 ├── config.py              # Configuration management (env vars)
+├── suzaku_summary.py      # Suzaku aws-ct-summary JSON parsing (pure functions)
+├── suzaku_report.py       # Suzaku CT Summary report generation (pure functions)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised)
 ├── prompts/
 │   ├── __init__.py
 │   ├── system_prompt.py   # System prompt template for SQL generation
 │   └── analysis_prompt.py # System prompt + user template for analysis
+├── views/
+│   └── suzaku_ct_summary.py # ☁️ Suzaku CT Summary page (upload-based, no DuckDB/API key)
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── Dockerfile
 ├── pytest.ini             # Sets pythonpath = . so modules resolve as `llm`, not `agent.llm`
 └── tests/
     ├── __init__.py
-    ├── conftest.py        # Shared fixtures: mock_openai_client, tmp_duckdb
+    ├── conftest.py        # Shared fixtures: mock_openai_client, tmp_duckdb, tmp_duckdb_geo
     ├── test_config.py
     ├── test_schema.py
     ├── test_query.py
+    ├── test_geo.py
     ├── test_llm.py
     ├── test_prompts.py
     ├── test_report.py
-    ├── test_handlers.py       # UI-03 bulk_mode / source field tests
-    └── test_app.py
+    ├── test_app.py            # includes handlers.py tests (UI-03 bulk mode, geo enrichment, …)
+    ├── test_builtin_hunts_phase1.py … test_builtin_hunts_phase4.py
+    ├── test_console_login_oauth2.py
+    ├── test_suzaku_summary.py
+    └── test_suzaku_report.py
 ```
 
 ## Implemented Tests
 
-291 tests across 9 test files. Key coverage areas per module:
+440 tests across 15 test files (counts below are approximate — run
+`python3 -m pytest <file> --collect-only -q` for exact numbers). Key coverage areas per module:
 
 ### config.py (`test_config.py` — 10 tests)
 - `test_get_duckdb_path_returns_env_var` — Config loads `DUCKDB_PATH` from environment.
@@ -75,7 +85,7 @@ agent/
 - `test_get_schema_description_returns_string` — Returns a human-readable schema description.
 - `test_get_column_names_returns_list` — Returns the expected column name list.
 
-### query.py (`test_query.py` — 17 tests)
+### query.py (`test_query.py` — 30 tests)
 - `test_connect_duckdb_readonly` — Opens DuckDB in read-only mode.
 - `test_execute_select_query` — Executes `SELECT` and returns a `pd.DataFrame`.
 - `test_execute_query_returns_empty_dataframe_for_no_results` — Empty result → empty DataFrame.
@@ -93,7 +103,7 @@ agent/
 - `test_default_row_limit_is_500` — `DEFAULT_ROW_LIMIT` constant equals 500.
 - Plus 2 additional execute_query_large_row_limit and forwarding tests.
 
-### llm.py (`test_llm.py` — 13 tests)
+### llm.py (`test_llm.py` — 49 tests)
 - `test_build_system_prompt_includes_schema` — System prompt includes schema description.
 - `test_build_system_prompt_includes_duckdb_dialect` — DuckDB dialect note included.
 - `test_generate_sql_returns_sql_string` — Mocked OpenAI response → SQL string returned.
@@ -110,7 +120,7 @@ agent/
 - `test_fix_sql_with_llm_handles_api_error` — API error during fix handled gracefully.
 - Plus 2 client-caching tests (`test_create_client_reuses_same_instance`, etc.).
 
-### prompts/ (`test_prompts.py` — 11 tests)
+### prompts/ (`test_prompts.py` — 23 tests)
 - `test_system_prompt_is_nonempty` / `test_system_prompt_contains_schema_placeholder`
 - `test_system_prompt_contains_duckdb_rule` / `test_system_prompt_contains_mitre_tactics`
 - `test_system_prompt_contains_no_write_rule` / `test_system_prompt_contains_json_extraction_guidance`
@@ -118,7 +128,7 @@ agent/
 - `test_analysis_system_prompt_is_nonempty` / `test_analysis_system_prompt_fact_based_rule`
 - `test_analysis_user_template_has_sql_placeholder` / `test_analysis_user_template_renders_correctly`
 
-### report.py (`test_report.py` — 15 tests)
+### report.py (`test_report.py` — 27 tests)
 - `test_generate_report_markdown` — Session produces Markdown report.
 - `test_report_includes_timestamp` — Report header contains generation timestamp.
 - `test_report_includes_all_queries` — All query/result/analysis triples included.
@@ -135,14 +145,22 @@ agent/
 - **UI-02:** `test_generate_report_includes_label_in_heading` — Label in query section heading.
 - **UI-02:** `test_generate_report_includes_category_when_set` — Category in report section.
 
-### handlers.py (`test_handlers.py` — 5 tests) — NEW
-- **UI-03:** `test_handle_direct_sql_bulk_mode_does_not_append_message` — `bulk_mode=True` skips chat.
-- **UI-03:** `test_handle_direct_sql_bulk_mode_appends_to_query_history` — Results stored.
-- **UI-03:** `test_handle_direct_sql_bulk_mode_sets_source_bulk` — `source == "bulk"` set.
-- **UI-03:** `test_handle_direct_sql_default_mode_sets_source_chat` — `source == "chat"` default.
-- **UI-03:** `test_handle_direct_sql_bulk_mode_stores_label_and_category` — Metadata stored.
+### geo.py (`test_geo.py` — 11 tests; handler integration in `test_app.py`)
+- `test_find_ip_columns_*` — IP column detection by name pattern + value shape
+  (rejects service domains like "cloudformation.amazonaws.com").
+- `test_enrich_appends_geo_columns_after_ip_column` — geo columns inserted next to the IP.
+- No-op guards: empty DataFrame, existing `geo_*` column, DB without GeoIP data.
+- `test_enrich_does_not_fan_out_rows` / `test_enrich_caps_number_of_looked_up_ips`.
+- `test_enrich_prefixes_geo_columns_for_second_ip_column` — collision-free multi-IP results.
+- **#GEO-1..3 (test_app.py):** enrichment ON by default, `geo_enrich=False` skips,
+  enrichment failure never fails the query.
 
-### app.py (`test_app.py` — 60+ tests)
+### handlers.py (tests live in `test_app.py`)
+- **UI-03:** bulk_mode chat suppression, query_history storage, `source` field ("bulk"/"chat"),
+  label/category metadata.
+- **#GEO:** `_maybe_enrich_geo` integration for all three execution paths.
+
+### app.py (`test_app.py` — 74 tests)
 - Session state initialisation and idempotency
 - Model options, built-in hunt YAML validation
 - Direct SQL execution (no API key path, date filter application)
@@ -278,7 +296,7 @@ def tmp_duckdb(tmp_path):
 |----------|---------|-------------|
 | `DUCKDB_PATH` | (required) | Path to the DuckDB database file |
 | `OPENAI_API_KEY` | (required for AI) | OpenAI API key |
-| `OPENAI_MODEL` | `gpt-5.4` | Model for SQL generation and analysis (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` available) |
+| `OPENAI_MODEL` | `gpt-5.5` | Model for SQL generation and analysis (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` available) |
 | `OPENAI_MODEL_LITE` | `gpt-5.4-mini` | Lightweight model (optional) |
 | `SSL_CERT_FILE` | — | CA bundle for corporate TLS inspection proxy |
 | `REQUESTS_CA_BUNDLE` | — | Alternative CA bundle path (same purpose) |
