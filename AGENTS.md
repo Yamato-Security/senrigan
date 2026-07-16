@@ -148,8 +148,8 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 440 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 605. Test count must not decrease in a PR.
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 492 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 655. Test count must not decrease in a PR.
 
 ---
 
@@ -416,6 +416,7 @@ senrigan/
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
+│   ├── PLAN_THREAT_CATALOG.md # Threat Technique Catalog for AWS coverage + TID annotations
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

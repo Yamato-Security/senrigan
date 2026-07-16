@@ -46,13 +46,13 @@ def test_rebuild_rare_zip_runs_without_error() -> None:
 
 def test_rare_zip_contains_required_files() -> None:
     """ZIP must contain metadata, rare dashboard, database, dataset, and
-    all 91 chart files."""
+    all 101 chart files."""
     with zipfile.ZipFile(OUTPUT_ZIP) as zf:
         names = set(zf.namelist())
     for required in REQUIRED_ZIP_PATHS:
         assert required in names, f"ZIP missing required file: {required}"
     chart_names = [n for n in names if n.startswith("charts/")]
-    assert len(chart_names) == 91
+    assert len(chart_names) == 101
 
 
 def test_rare_zip_charts_are_ascending() -> None:

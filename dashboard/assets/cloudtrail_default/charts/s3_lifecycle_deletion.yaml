@@ -1,0 +1,45 @@
+# DSH-67: S3 Lifecycle-Triggered Deletion
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) T1485.001.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.001.html
+uuid: 8fa0144f-a29b-4892-bc5c-a253d343799d
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 Lifecycle-Triggered Deletion
+viz_type: table
+description: >
+  S3 lifecycle rules that expire objects (and lifecycle-config deletion) used to silently purge data without DeleteObject bursts.
+  Threat Technique Catalog for AWS: T1485.001.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_lifecycle_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN (
+          'PutBucketLifecycle', 'PutBucketLifecycleConfiguration',
+          'DeleteBucketLifecycle'
+        )
+      filterOptionName: filter_s3_lifecycle
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

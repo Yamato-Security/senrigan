@@ -140,6 +140,8 @@ position:
       - ROW-di-3    # Secrets Access Anomaly [CRITICAL]
       - ROW-ia-3    # Security-Relevant API Calls [MEDIUM]
       - ROW-ia-6    # SSO Events [LOW]
+      - ROW-ttc-iamdel      # IAM Entity Deletion [HIGH] (T1070.A001)
+      - ROW-ttc-assumeroot  # AssumeRoot Usage [CRITICAL] (AT1669)
     meta:
       text: "\U0001f511 Identity & Access"
       defaultText: "Identity & Access"
@@ -238,6 +240,7 @@ position:
       - ROW-td-2    # Throttling Spikes [MEDIUM]
       - ROW-td-11   # Write/Read Ratio Trend [CONTEXT]
       - ROW-td-1    # Event Timeseries [CONTEXT]
+      - ROW-ttc-orgmember   # Organization Membership Changes [HIGH] (T1666.A002/A003)
     meta:
       text: "\U0001f3af Threat Detection"
       defaultText: "Threat Detection"
@@ -407,6 +410,9 @@ position:
       - ROW-di-11   # EBS Direct API Snapshot Access [HIGH]
       - ROW-di-9    # Container Platform Events [MEDIUM]
       - ROW-di-19   # CloudFormation Stack Changes [MEDIUM]
+      - ROW-ttc-imds        # IMDS Options Weakening [HIGH] (T1552.005)
+      - ROW-ttc-amisnap     # AMI & Snapshot Deletion [HIGH] (T1485.A002)
+      - ROW-ttc-workspaces  # WorkSpaces Hijacking [MEDIUM] (T1496.A009)
     meta:
       text: "\U0001f5a5️ Computing"
       defaultText: "Computing"
@@ -508,6 +514,179 @@ position:
       height: 50
       sliceName: Bedrock Callers by Origin
 
+  # Threat Technique Catalog gap charts (DSH-64 to DSH-73) —
+  # see doc/PLAN_THREAT_CATALOG.md
+  ROW-ttc-iamdel:
+    type: ROW
+    id: ROW-ttc-iamdel
+    children:
+      - CHART-ttc-iamdel
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-iamdel:
+    type: CHART
+    id: CHART-ttc-iamdel
+    children: []
+    meta:
+      chartId: 102
+      uuid: e7ea758f-efbb-478f-a557-da8a58e58135
+      width: 12
+      height: 50
+      sliceName: IAM Entity Deletion
+  ROW-ttc-assumeroot:
+    type: ROW
+    id: ROW-ttc-assumeroot
+    children:
+      - CHART-ttc-assumeroot
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-assumeroot:
+    type: CHART
+    id: CHART-ttc-assumeroot
+    children: []
+    meta:
+      chartId: 103
+      uuid: 91b29e10-a2bc-4f93-b7c0-73e3a3fb06ae
+      width: 12
+      height: 50
+      sliceName: AssumeRoot Usage
+  ROW-ttc-s3ssec:
+    type: ROW
+    id: ROW-ttc-s3ssec
+    children:
+      - CHART-ttc-s3ssec
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-s3ssec:
+    type: CHART
+    id: CHART-ttc-s3ssec
+    children: []
+    meta:
+      chartId: 104
+      uuid: a9a78467-37fe-4810-b610-b3c3f97913ed
+      width: 12
+      height: 50
+      sliceName: S3 SSE-C Ransomware Encryption
+  ROW-ttc-s3lifecycle:
+    type: ROW
+    id: ROW-ttc-s3lifecycle
+    children:
+      - CHART-ttc-s3lifecycle
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-s3lifecycle:
+    type: CHART
+    id: CHART-ttc-s3lifecycle
+    children: []
+    meta:
+      chartId: 105
+      uuid: 8fa0144f-a29b-4892-bc5c-a253d343799d
+      width: 12
+      height: 50
+      sliceName: S3 Lifecycle-Triggered Deletion
+  ROW-ttc-rdsmanip:
+    type: ROW
+    id: ROW-ttc-rdsmanip
+    children:
+      - CHART-ttc-rdsmanip
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-rdsmanip:
+    type: CHART
+    id: CHART-ttc-rdsmanip
+    children: []
+    meta:
+      chartId: 106
+      uuid: d2f307b4-8004-49bd-8dae-577b033cc11e
+      width: 12
+      height: 50
+      sliceName: RDS Query & Instance Manipulation
+  ROW-ttc-imds:
+    type: ROW
+    id: ROW-ttc-imds
+    children:
+      - CHART-ttc-imds
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-imds:
+    type: CHART
+    id: CHART-ttc-imds
+    children: []
+    meta:
+      chartId: 107
+      uuid: d6e626e1-67a6-45de-959d-d9eb118ab8b7
+      width: 12
+      height: 50
+      sliceName: IMDS Options Weakening
+  ROW-ttc-amisnap:
+    type: ROW
+    id: ROW-ttc-amisnap
+    children:
+      - CHART-ttc-amisnap
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-amisnap:
+    type: CHART
+    id: CHART-ttc-amisnap
+    children: []
+    meta:
+      chartId: 108
+      uuid: 8e8a1c97-0b1b-4c8b-bcf4-f68dbfdd7d2a
+      width: 12
+      height: 50
+      sliceName: AMI & Snapshot Deletion
+  ROW-ttc-storreenc:
+    type: ROW
+    id: ROW-ttc-storreenc
+    children:
+      - CHART-ttc-storreenc
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-storreenc:
+    type: CHART
+    id: CHART-ttc-storreenc
+    children: []
+    meta:
+      chartId: 109
+      uuid: 9e1e7b28-87b0-46b8-ad70-2ae8b537fdfc
+      width: 12
+      height: 50
+      sliceName: Storage Re-Encryption for Impact
+  ROW-ttc-workspaces:
+    type: ROW
+    id: ROW-ttc-workspaces
+    children:
+      - CHART-ttc-workspaces
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-workspaces:
+    type: CHART
+    id: CHART-ttc-workspaces
+    children: []
+    meta:
+      chartId: 110
+      uuid: 6b1fd091-effc-4f28-8d51-a3d90473b000
+      width: 12
+      height: 50
+      sliceName: WorkSpaces Hijacking
+  ROW-ttc-orgmember:
+    type: ROW
+    id: ROW-ttc-orgmember
+    children:
+      - CHART-ttc-orgmember
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ttc-orgmember:
+    type: CHART
+    id: CHART-ttc-orgmember
+    children: []
+    meta:
+      chartId: 111
+      uuid: c515a387-9d83-473f-85f6-6abc17dac397
+      width: 12
+      height: 50
+      sliceName: Organization Membership Changes
+
   # Tab 5 — S3 & RDS Security
   TAB-s3-rds:
     type: TAB
@@ -525,6 +704,10 @@ position:
       - ROW-kms-1   # KMS Key Deletion [CRITICAL]
       - ROW-rds-2   # RDS Deleted without Final Snapshot [HIGH]
       - ROW-rds-1   # RDS Snapshot Cross-Account Share [HIGH]
+      - ROW-ttc-s3ssec      # S3 SSE-C Ransomware Encryption [CRITICAL] (T1486.A001)
+      - ROW-ttc-s3lifecycle # S3 Lifecycle-Triggered Deletion [HIGH] (T1485.001)
+      - ROW-ttc-rdsmanip    # RDS Query & Instance Manipulation [HIGH] (AT1023.001/T1213.A013)
+      - ROW-ttc-storreenc   # Storage Re-Encryption for Impact [HIGH] (T1486.A002/A003)
     meta:
       text: "\U0001faa3 S3 & RDS"
       defaultText: "S3 & RDS"

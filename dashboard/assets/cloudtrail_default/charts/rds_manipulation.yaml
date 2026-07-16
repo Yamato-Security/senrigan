@@ -1,0 +1,48 @@
+# DSH-68: RDS Query & Instance Manipulation
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) AT1023.001 / T1213.A013.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1023.001.html
+uuid: d2f307b4-8004-49bd-8dae-577b033cc11e
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: RDS Query & Instance Manipulation
+viz_type: table
+description: >
+  RDS Data API queries and snapshot restores used to read data directly or restore into an attacker-controlled instance.
+  Threat Technique Catalog for AWS: AT1023.001 / T1213.A013.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_rds_manip_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (event_source = 'rds-data.amazonaws.com'
+         AND event_name IN ('ExecuteStatement', 'BatchExecuteStatement'))
+        OR (event_source = 'rds.amazonaws.com'
+            AND event_name IN (
+                'RestoreDBInstanceFromDBSnapshot',
+                'RestoreDBClusterFromSnapshot',
+                'DownloadDBLogFilePortion'
+            ))
+      filterOptionName: filter_rds_manip
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

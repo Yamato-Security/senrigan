@@ -117,6 +117,7 @@ def _handle_direct_sql(
     bulk_mode: bool = False,
     label: str = "",
     category: str = "",
+    techniques: list[dict] | None = None,
 ) -> None:
     """Execute a pre-built SQL query directly without requiring an API key.
 
@@ -136,6 +137,8 @@ def _handle_direct_sql(
                       execution so results appear in the dedicated bulk section.
         label:        Display name for the query (e.g. "🔑 Root Account Activity").
         category:     Category group (e.g. "🔑 Identity & Access").
+        techniques:   Threat Technique Catalog mappings for the preset
+                      (list of dicts with tid / name / summary / url keys).
     """
     # Apply date range filter (wraps sql in a date-scoped CTE when active).
     sql = apply_date_filter(sql, st.session_state.date_start, st.session_state.date_end)
@@ -178,6 +181,7 @@ def _handle_direct_sql(
                 label=label,
                 category=category,
                 source=source,
+                techniques=techniques or [],
             )
         )
         if not bulk_mode:

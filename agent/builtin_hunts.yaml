@@ -19,6 +19,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6d1 CloudTrail Tampering"
   description: "Detects any attempt to stop or modify CloudTrail. The most critical alert — indicates cover-up."
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
   chart:
     type: timeseries
     bucket: day
@@ -48,6 +53,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6e1\ufe0f GuardDuty Detector Tampering"
   description: "Detects GuardDuty disable, delete, and threat-intel manipulation. Any GuardDuty change mid-investigation is a critical indicator."
+  techniques:
+    - tid: "T1562.A001"
+      name: "Impair Defenses: Disable or Modify GuardDuty"
+      summary: "Adversaries disable or reconfigure GuardDuty so their activity stops generating findings."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -83,6 +93,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\u26d4 Security Hub Tampering"
   description: "Detects Security Hub disable, standard disable, and finding suppression. Silencing Security Hub removes the central aggregation point for all security findings."
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
   chart:
     type: timeseries
     bucket: day
@@ -119,6 +134,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\u2699\ufe0f AWS Config Tampering"
   description: "Detects AWS Config recorder/rule deletion. Stopping Config eliminates compliance evidence and change-tracking for an entire region."
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
   chart:
     type: timeseries
     bucket: day
@@ -151,6 +171,15 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6e1 Organizations Service Control Policy (SCP) Changes"
   description: "Detects SCP creation, modification, and deletion. Removing a Deny SCP immediately eliminates guardrails across every account in the affected OU."
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
+    - tid: "T1666.A002"
+      name: "Modify Cloud Resource Hierarchy: Leave AWS Organization"
+      summary: "Adversaries detach accounts from the organization to escape guardrails."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1666.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -195,6 +224,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6ab AWS Macie Tampering"
   description: "Detects Macie disable and finding-filter creation. Attackers suppress Macie findings before exfiltrating sensitive data from S3."
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
   chart:
     type: timeseries
     bucket: day
@@ -234,6 +268,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6a8 CloudWatch Alarm Deletion / Disable"
   description: "Detects CloudWatch alarm deletion and disabling. Silencing alarms tied to GuardDuty, CloudTrail metric filters, or billing thresholds is a key defense-evasion indicator."
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
   chart:
     type: timeseries
     bucket: day
@@ -270,6 +309,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f4dc CloudWatch Logs Subscription Changes"
   description: "Detects CW Logs subscription filter creation/deletion and log group deletion. Attackers stream logs to an external destination or destroy evidence in place."
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
   chart:
     type: timeseries
     bucket: day
@@ -304,6 +348,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f3f9 WAF WebACL Changes"
   description: "Detects WAF WebACL creation, update, and deletion. Removing or weakening a WebACL disables protection against SQLi, XSS, and DDoS attacks."
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries open or remove cloud firewall rules to enable their own access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
   chart:
     type: timeseries
     bucket: day
@@ -340,6 +389,11 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f50d GuardDuty Findings Read"
   description: "Detects read-only GuardDuty API calls. Pacu's guardduty__list_findings module reads active findings to understand what the defender has already detected, allowing the attacker to adapt their tactics and avoid triggering new alerts."
+  techniques:
+    - tid: "T1562.A001"
+      name: "Impair Defenses: Disable or Modify GuardDuty"
+      summary: "Adversaries disable or reconfigure GuardDuty so their activity stops generating findings."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -380,6 +434,15 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f4b0 Budget / Cost Anomaly Changes"
   description: "Detects deletion or modification of AWS Budgets and Cost Anomaly monitors. Attackers remove budget alerts to hide cryptomining or resource-intensive operations."
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
+    - tid: "T1496.001"
+      name: "Resource Hijacking: Compute Hijacking"
+      summary: "Adversaries run cryptomining or other workloads at the victim's expense."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -418,6 +481,15 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6ab Access Denied Errors"
   description: "Groups AccessDenied errors by identity and API. Top offenders may indicate credential misuse."
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate IAM users, roles, and policies to map the account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
+    - tid: "T1078.A001"
+      name: "Valid Accounts: IAM Users"
+      summary: "Adversaries authenticate with compromised long-lived IAM user credentials."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A001.html"
   chart:
     type: bar
     x: event_name
@@ -448,6 +520,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f511 Root Account Activity"
   description: "Detects any API call made by the root account. Root should never be used in production."
+  techniques:
+    - tid: "T1078.A002"
+      name: "Valid Accounts: Account Root User"
+      summary: "Adversaries use compromised root credentials for unrestricted account access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -470,6 +547,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f513 Console Login without MFA"
   description: "Detects console logins where MFA was not used. High-risk indicator of account compromise."
+  techniques:
+    - tid: "T1078.A001"
+      name: "Valid Accounts: IAM Users"
+      summary: "Adversaries authenticate with compromised long-lived IAM user credentials."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -495,6 +577,15 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f310 Console Logins"
   description: "Lists all console login attempts. Brute force = multiple failures followed by success."
+  techniques:
+    - tid: "T1078.A001"
+      name: "Valid Accounts: IAM Users"
+      summary: "Adversaries authenticate with compromised long-lived IAM user credentials."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A001.html"
+    - tid: "T1538"
+      name: "Cloud Service Dashboard"
+      summary: "Adversaries use the management console to explore the environment."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1538.html"
   chart:
     type: timeseries
     bucket: day
@@ -529,6 +620,15 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f510 MFA & Password Changes"
   description: "Detects MFA deactivation and password resets. Strong indicator of account takeover."
+  techniques:
+    - tid: "T1098"
+      name: "Account Manipulation"
+      summary: "Adversaries modify credentials or permissions to maintain or elevate access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.html"
+    - tid: "T1531"
+      name: "Account Access Removal"
+      summary: "Adversaries delete or lock legitimate credentials to deny defenders access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1531.html"
   chart:
     type: timeseries
     bucket: day
@@ -556,6 +656,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 Privilege Escalation (IAM)"
   description: "Detects IAM policy attachment and role manipulation events used for privilege escalation."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -587,6 +692,15 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 IAM Role Trust Policy Changes"
   description: "Detects UpdateAssumeRolePolicy calls. Adding external account principals to a trust policy creates a persistent backdoor."
+  techniques:
+    - tid: "T1484.002"
+      name: "Domain or Tenant Policy Modification: Trust Modification"
+      summary: "Adversaries modify trust relationships (SAML/OIDC/role trust) to gain persistent access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1484.002.html"
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -613,6 +727,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f6a7 IAM Permission Boundary Changes"
   description: "Detects permission boundary put/delete events. Removing a permission boundary immediately expands a principal's effective permissions, enabling privilege escalation."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -646,6 +765,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f451 User Added to Admin Group"
   description: "Detects users added to groups with 'admin' in the name. Classic privilege escalation technique."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -670,6 +794,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f465 IAM Group Membership Changes"
   description: "Detects all AddUserToGroup and RemoveUserFromGroup events regardless of group name. Any group addition may indicate privilege escalation through group-inherited policies."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -698,6 +827,15 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f464 New IAM Users / Keys"
   description: "Identifies IAM user and access key creation events. Unexpected creation may indicate persistence."
+  techniques:
+    - tid: "T1136.003"
+      name: "Create Account: Cloud Account"
+      summary: "Adversaries create new IAM users or accounts as a persistent foothold."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1136.003.html"
+    - tid: "T1098.001"
+      name: "Account Manipulation: Additional Cloud Credentials"
+      summary: "Adversaries add access keys, passwords, or SSH keys to existing identities as a backdoor."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -722,6 +860,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f3af IAM PassRole Abuse"
   description: "Detects iam:PassRole calls. Passing a privileged role to EC2/Lambda/Glue/ECS/SageMaker is the most common lateral privilege escalation path."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -774,6 +917,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f510 AssumeRole Cross-Account"
   description: "Shows AssumeRole events where caller and target are in different AWS accounts. Indicates lateral movement."
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -802,6 +950,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f3e2 Cross-Account Access"
   description: "Finds events where the caller account differs from the recipient account. Lateral movement signal."
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -828,6 +981,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f511 STS Federation Token Issuance"
   description: "Detects GetFederationToken and GetSessionToken calls. Attackers use these to convert long-lived keys into persistent temporary credentials."
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -857,6 +1015,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9e9 STS AssumeRoleWithWebIdentity"
   description: "Detects AssumeRoleWithWebIdentity calls. Abusing a misconfigured OIDC trust (e.g., overly broad sub claim) lets attackers hijack a role using attacker-controlled tokens."
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -886,6 +1049,15 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f194 IAM Identity Center (SSO) Events"
   description: "Detects AWS IAM Identity Center management actions. Attackers abuse SSO to create backdoor permission sets or assign accounts to attacker-controlled users."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
+    - tid: "T1078.A001"
+      name: "Valid Accounts: IAM Users"
+      summary: "Adversaries authenticate with compromised long-lived IAM user credentials."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -919,6 +1091,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f517 SAML / OIDC Provider Updates"
   description: "Detects SAML/OIDC identity provider changes. Updating a SAML provider with attacker-controlled metadata creates a persistent authentication backdoor."
+  techniques:
+    - tid: "T1484.002"
+      name: "Domain or Tenant Policy Modification: Trust Modification"
+      summary: "Adversaries modify trust relationships (SAML/OIDC/role trust) to gain persistent access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1484.002.html"
   chart:
     type: timeseries
     bucket: day
@@ -953,6 +1130,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9d0 IAM Access Analyzer Calls"
   description: "Detects any use of IAM Access Analyzer. Attackers use the native AWS analyzer to enumerate externally accessible resources without writing custom recon scripts."
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate IAM users, roles, and policies to map the account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
   chart:
     type: timeseries
     bucket: day
@@ -981,6 +1163,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 Credential Report & Enumeration"
   description: "Detects IAM enumeration activity that maps the entire IAM landscape. Common in early attack stages."
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate IAM users, roles, and policies to map the account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
   chart:
     type: timeseries
     bucket: day
@@ -1008,6 +1195,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f5dd Access Key Abuse"
   description: "Detects access keys used from 3+ distinct source IPs in 7 days. Strong indicator of key leak."
+  techniques:
+    - tid: "T1078.A001"
+      name: "Valid Accounts: IAM Users"
+      summary: "Adversaries authenticate with compromised long-lived IAM user credentials."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.A001.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -1038,6 +1230,23 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f4f0 AWS Organizations Account Creation"
   description: "Detects Organizations account creation and delegated administrator changes. Attackers create shadow accounts to establish persistent footholds outside the main account."
+  techniques:
+    - tid: "T1666.A001"
+      name: "Modify Cloud Resource Hierarchy: Create or Invite AWS Account"
+      summary: "Adversaries create or invite accounts to expand or hide their foothold."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1666.A001.html"
+    - tid: "T1136.003"
+      name: "Create Account: Cloud Account"
+      summary: "Adversaries create new IAM users or accounts as a persistent foothold."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1136.003.html"
+    - tid: "T1666.A002"
+      name: "Modify Cloud Resource Hierarchy: Leave AWS Organization"
+      summary: "Adversaries detach accounts from the organization to escape guardrails."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1666.A002.html"
+    - tid: "T1666.A003"
+      name: "Modify Cloud Resource Hierarchy: Invite Accounts to Unknown Organization"
+      summary: "Adversaries move victim accounts under an attacker-controlled organization."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1666.A003.html"
   chart:
     type: timeseries
     bucket: day
@@ -1046,7 +1255,10 @@
     persistence), InviteAccountToOrganization, RegisterDelegatedAdministrator
     (granting a rogue account service-level admin), DeregisterDelegatedAdministrator,
     EnableAWSServiceAccess, DisableAWSServiceAccess, CreateOrganizationalUnit,
-    MoveAccount, AttachPolicy, DetachPolicy.
+    MoveAccount, AttachPolicy, DetachPolicy. Also flag hierarchy-escape events:
+    LeaveOrganization and RemoveAccountFromOrganization (detaching an account
+    from its guardrails), and AcceptHandshake / CancelHandshake / DeclineHandshake
+    (moving an account under a different, possibly attacker-controlled, organization).
     Creating a new account inside the organization gives the attacker a permanent
     foothold that survives incident response in the targeted account.
     Show account name, email, caller, and time.
@@ -1059,6 +1271,7 @@
         json_extract_string(request_parameters, '$.accountId')        AS target_account_id,
         json_extract_string(request_parameters, '$.email')            AS account_email,
         json_extract_string(request_parameters, '$.servicePrincipal') AS service_principal,
+        json_extract_string(request_parameters, '$.handshakeId')      AS handshake_id,
         aws_region,
         source_ip_address,
         error_code
@@ -1069,7 +1282,9 @@
           'CreateOrganizationalUnit',      'MoveAccount',
           'AttachPolicy',                  'DetachPolicy',
           'RegisterDelegatedAdministrator','DeregisterDelegatedAdministrator',
-          'EnableAWSServiceAccess',        'DisableAWSServiceAccess'
+          'EnableAWSServiceAccess',        'DisableAWSServiceAccess',
+          'LeaveOrganization',             'RemoveAccountFromOrganization',
+          'AcceptHandshake',               'CancelHandshake', 'DeclineHandshake'
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -1077,6 +1292,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f465 Cognito Unauthenticated Access"
   description: "Detects Cognito Identity Pools with unauthenticated access enabled. Allows anonymous users to call AWS APIs with the unauthenticated IAM role's permissions."
+  techniques:
+    - tid: "T1098.A006"
+      name: "Account Manipulation: Cognito Refresh Token Abuse"
+      summary: "Adversaries abuse Cognito tokens and user-pool settings to keep authenticated access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.A006.html"
   chart:
     type: timeseries
     bucket: day
@@ -1111,6 +1331,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9ea Glue DevEndpoint Privilege Escalation"
   description: "Detects Glue development endpoint creation and connection enumeration. iam:PassRole + glue:CreateDevEndpoint grants full role permissions via SSH — one of the most overlooked IAM privilege escalation techniques."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -1148,6 +1373,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9ea SageMaker Notebook Privilege Escalation"
   description: "Detects SageMaker notebook instance creation and presigned URL generation. iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter environment with the passed role's full AWS permissions. CreatePresignedNotebookInstanceUrl alone can grant access to an existing notebook."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -1188,6 +1418,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f6e0 Data Pipeline / CodeStar Privilege Escalation"
   description: "Detects Data Pipeline and CodeStar resource creation. Both accept iam:PassRole and can execute arbitrary code with the passed role's permissions. CodeStar:CreateProjectFromTemplate is an undocumented API that creates an admin IAM role."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -1236,6 +1471,11 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9e9 Step Functions Privilege Escalation"
   description: "Detects Step Functions state machine creation and execution. iam:PassRole + states:CreateStateMachine + states:StartExecution allows running arbitrary Lambda / ECS tasks under the passed role's permissions."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -1269,6 +1509,86 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "🔑 Identity & Access"
+  label: "🪓 IAM Entity Deletion"
+  description: "Detects deletion of IAM users, roles, policies, and MFA devices. Attackers delete IAM entities to remove traces of their activity or lock defenders out."
+  techniques:
+    - tid: "T1070.A001"
+      name: "Indicator Removal: Delete IAM Entities"
+      summary: "Adversaries delete IAM users, roles, and policies to remove traces of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1070.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find IAM entity deletion events: DeleteUser, DeleteRole, DeleteAccessKey,
+    DeleteLoginProfile, DeletePolicy, DeleteRolePolicy, DeleteUserPolicy,
+    DeleteGroup, DeleteVirtualMFADevice, DeactivateMFADevice.
+    Deleting IAM entities removes evidence of attacker-created identities and
+    can lock legitimate users out. Show which entity was deleted, the caller,
+    source IP, and time. Flag callers with many deletions in a short window.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.userName'),
+            json_extract_string(request_parameters, '$.roleName'),
+            json_extract_string(request_parameters, '$.policyArn'),
+            json_extract_string(request_parameters, '$.groupName'),
+            json_extract_string(request_parameters, '$.serialNumber'),
+            json_extract_string(request_parameters, '$.instanceProfileName')
+        )                                                                 AS deleted_entity,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'iam.amazonaws.com'
+      AND event_name IN (
+          'DeleteUser',             'DeleteRole',
+          'DeleteAccessKey',        'DeleteLoginProfile',
+          'DeletePolicy',           'DeleteRolePolicy',
+          'DeleteUserPolicy',       'DeleteGroup',
+          'DeleteGroupPolicy',      'DeleteVirtualMFADevice',
+          'DeactivateMFADevice',    'DeleteInstanceProfile'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🔑 Identity & Access"
+  label: "👑 AssumeRoot Usage"
+  description: "Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way."
+  techniques:
+    - tid: "AT1669"
+      name: "Assume Root into Organization Member Account"
+      summary: "Adversaries use sts:AssumeRoot to take over member-account root from the management account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1669.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find all sts:AssumeRoot events. AssumeRoot lets the Organizations
+    management account obtain temporary root credentials in a member
+    account — attackers use it to delete root credentials, reset MFA,
+    or take over member accounts. Show the caller, the target principal
+    (member account), the task policy used, source IP, and time.
+    Correlate with DeactivateMFADevice / DeleteLoginProfile shortly after.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.targetPrincipal')     AS target_principal,
+        json_extract_string(request_parameters, '$.taskPolicyArn.arn')   AS task_policy_arn,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name = 'AssumeRoot'
+    ORDER BY event_time DESC
+    LIMIT 100
+
 # ===========================================================================
 # Data & Storage
 # ===========================================================================
@@ -1276,6 +1596,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4a3 S3 Bulk Object Deletion"
   description: "Detects high-volume DeleteObject/DeleteObjects calls (>=50/hour). Distinct from exfiltration — this is data destruction / ransomware pattern."
+  techniques:
+    - tid: "T1485.A003"
+      name: "Data Destruction: S3 Object and Bucket Deletion"
+      summary: "Adversaries mass-delete S3 objects and buckets."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.A003.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -1306,6 +1631,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f525 AWS Backup Tampering"
   description: "Detects Backup Vault/Plan/RecoveryPoint deletion. Destroying backups is the first step in ransomware attacks to prevent recovery."
+  techniques:
+    - tid: "T1485"
+      name: "Data Destruction"
+      summary: "Adversaries destroy data and backups to cause damage or prevent recovery."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.html"
   chart:
     type: timeseries
     bucket: day
@@ -1344,6 +1674,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f513 KMS Key Operations"
   description: "Flags sensitive KMS operations including key deletion and high-volume Decrypt calls."
+  techniques:
+    - tid: "T1486"
+      name: "Data Encrypted for Impact"
+      summary: "Adversaries encrypt data with attacker-controlled keys for ransom."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.html"
+    - tid: "T1485"
+      name: "Data Destruction"
+      summary: "Adversaries destroy data and backups to cause damage or prevent recovery."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.html"
   chart:
     type: timeseries
     bucket: day
@@ -1372,6 +1711,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f513 S3 Public Access Block Disabled"
   description: "Detects S3 public access block settings being disabled. Immediate data exposure risk."
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
   prompt: |
     Find all PutPublicAccessBlock events where any of the four block settings
     were set to false. This exposes S3 buckets to public access.
@@ -1397,6 +1741,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001faa3 S3 Bucket Policy / ACL Changes"
   description: "Detects S3 bucket policy and ACL modifications. These can make a bucket publicly readable or grant access to attacker-controlled accounts."
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -1428,6 +1777,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001faa3 S3 Data Access Anomalies"
   description: "Detects bulk GetObject calls (>=100/hour) that may indicate data exfiltration."
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -1454,6 +1808,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f510 Secrets Manager Bulk GetSecretValue"
   description: "Detects bulk retrieval of secrets (DB passwords, API keys, etc.). Ten or more GetSecretValue calls in one hour is a strong credential-harvesting signal."
+  techniques:
+    - tid: "T1552"
+      name: "Unsecured Credentials"
+      summary: "Adversaries harvest secrets stored in cloud services or files."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1552.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -1484,6 +1843,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f5dd Secrets Manager Deletion & Cross-Account Policy"
   description: "Detects Secrets Manager secret deletion and cross-account resource policy changes. Complements existing bulk-read detection with destruction and policy-exfiltration vectors."
+  techniques:
+    - tid: "T1552"
+      name: "Unsecured Credentials"
+      summary: "Adversaries harvest secrets stored in cloud services or files."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1552.html"
+    - tid: "T1485"
+      name: "Data Destruction"
+      summary: "Adversaries destroy data and backups to cause damage or prevent recovery."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.html"
   chart:
     type: timeseries
     bucket: day
@@ -1523,6 +1891,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f510 SSM Parameter Store Bulk Read"
   description: "Detects bulk reads of SSM Parameter Store entries. An often-overlooked exfiltration channel compared with Secrets Manager."
+  techniques:
+    - tid: "T1552"
+      name: "Unsecured Credentials"
+      summary: "Adversaries harvest secrets stored in cloud services or files."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1552.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -1554,6 +1927,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4be RDS Snapshot Cross-Account Share"
   description: "Detects RDS/Aurora snapshots shared to external AWS accounts. Classic data exfiltration via snapshot sharing."
+  techniques:
+    - tid: "T1578.001"
+      name: "Modify Cloud Compute Infrastructure: Create Snapshot"
+      summary: "Adversaries create and share snapshots to stage data theft."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.001.html"
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
   chart:
     type: timeseries
     bucket: day
@@ -1590,6 +1972,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4a3 RDS Deleted without Final Snapshot"
   description: "Detects RDS instance/cluster deletion with skipFinalSnapshot=true. Potential data destruction."
+  techniques:
+    - tid: "T1485.A001"
+      name: "Data Destruction: RDS Instances and Backups"
+      summary: "Adversaries delete RDS instances and backups to destroy data."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.A001.html"
   prompt: |
     Find all DeleteDBInstance and DeleteDBCluster events where the final
     snapshot was skipped. This may indicate data destruction or a destructive
@@ -1612,6 +1999,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4bd RDS Public Accessibility Enabled"
   description: "Detects RDS instances created or modified with PubliclyAccessible=true. Exposes the database directly to the internet, bypassing VPC security controls."
+  techniques:
+    - tid: "T1213.A013"
+      name: "Data from Information Repositories: RDS Instance Manipulation"
+      summary: "Adversaries restore, expose, or reconfigure RDS instances to reach the data inside."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1213.A013.html"
   chart:
     type: timeseries
     bucket: day
@@ -1648,6 +2040,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f5c4 DynamoDB Export / Bulk Exfiltration"
   description: "Detects DynamoDB ExportTableToPointInTime (silent full-table export to S3) and table deletion. High-risk exfiltration and destruction vector."
+  techniques:
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
   chart:
     type: timeseries
     bucket: day
@@ -1685,6 +2082,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4be EBS Direct API Snapshot Exfiltration"
   description: "Detects EBS Direct API calls (ListSnapshotBlocks / GetSnapshotBlock). Pacu's ebs__download_snapshots uses this API to stream raw snapshot data without creating EC2 instances, bypassing traditional snapshot-sharing detection."
+  techniques:
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
+    - tid: "T1578.001"
+      name: "Modify Cloud Compute Infrastructure: Create Snapshot"
+      summary: "Adversaries create and share snapshots to stage data theft."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -1723,6 +2129,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f30a Kinesis Firehose / Stream Exfiltration Channel"
   description: "Detects Kinesis Firehose delivery stream creation/update pointing to external S3. Real-time data pipeline exfiltration invisible to network DLP."
+  techniques:
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
   chart:
     type: timeseries
     bucket: day
@@ -1762,6 +2173,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f501 S3 Cross-Account Replication"
   description: "Detects PutBucketReplication and DeleteBucketReplication. Cross-account replication silently copies all new objects to an attacker-controlled bucket."
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -1789,6 +2205,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4c2 S3 Versioning / Logging Disabled"
   description: "Detects S3 versioning suspension and server access logging disable. Disabling versioning enables data destruction; disabling logging erases the access evidence trail."
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
+    - tid: "T1485"
+      name: "Data Destruction"
+      summary: "Adversaries destroy data and backups to cause damage or prevent recovery."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.html"
   chart:
     type: timeseries
     bucket: day
@@ -1822,6 +2247,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e7 SES Identity & Forwarding Config Changes"
   description: "Detects SES receipt rule and identity configuration changes. Forwarding rules can auto-relay all inbound mail to attacker addresses; verified identities enable phishing campaigns."
+  techniques:
+    - tid: "T1496.A001"
+      name: "Resource Hijacking: Cloud Service Hijacking - SES Messaging"
+      summary: "Adversaries abuse SES to send spam or phishing from the victim account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -1866,6 +2296,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e1 SQS / SNS Cross-Account Policy Changes"
   description: "Detects SQS/SNS queue/topic policy changes that grant access to external accounts. Creates a silent exfiltration channel without triggering high-volume send alerts."
+  techniques:
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
   chart:
     type: timeseries
     bucket: day
@@ -1910,6 +2345,11 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4f8 EC2 Public Snapshot / AMI Sharing"
   description: "Detects EBS snapshots or AMIs shared publicly (group=all). Enables anyone to copy your disk images and extract data."
+  techniques:
+    - tid: "T1578.001"
+      name: "Modify Cloud Compute Infrastructure: Create Snapshot"
+      summary: "Adversaries create and share snapshots to stage data theft."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -1943,6 +2383,15 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e7 Data Exfiltration Channels"
   description: "Detects high-volume SNS/SQS/SES/S3 PutObject calls (>=50/hour) that may indicate exfiltration."
+  techniques:
+    - tid: "T1530"
+      name: "Data from Cloud Storage"
+      summary: "Adversaries collect data from cloud storage services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.html"
+    - tid: "T1496.003"
+      name: "Resource Hijacking: SMS Pumping"
+      summary: "Adversaries abuse SNS SMS sending for revenue-generating message fraud."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.003.html"
   chart:
     type: bar
     x: event_name
@@ -1971,6 +2420,233 @@
     ORDER BY call_count DESC
     LIMIT 50
 
+- category: "🪣 Data & Storage"
+  label: "🔐 S3 SSE-C Encryption (Ransomware)"
+  description: "Detects S3 objects re-encrypted with attacker-supplied SSE-C keys, plus bucket default-encryption changes. Without the customer key the victim cannot decrypt — a cloud-native ransomware pattern."
+  techniques:
+    - tid: "T1486.A001"
+      name: "Data Encrypted for Impact: S3 Encryption - SSE-C Key Encryption"
+      summary: "Adversaries re-encrypt S3 objects with attacker-supplied SSE-C keys for ransom."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find S3 ransomware indicators: CopyObject or PutObject calls where the
+    object is encrypted with a customer-provided key (SSE-C), and
+    PutBucketEncryption changes to the bucket default. SSE-C means the key is
+    supplied by the caller and never stored by AWS, so an attacker who
+    re-encrypts objects with their own key holds the data for ransom. Show the
+    bucket, object key, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.bucketName')          AS bucket_name,
+        json_extract_string(request_parameters, '$.key')                 AS object_key,
+        json_extract_string(additional_event_data, '$.SSEApplied')       AS sse_applied,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND (
+          (event_name IN ('CopyObject', 'PutObject')
+           AND (
+               json_extract_string(additional_event_data, '$.SSEApplied') = 'SSE_C'
+               OR json_extract_string(
+                   request_parameters,
+                   '$.x-amz-server-side-encryption-customer-algorithm'
+               ) IS NOT NULL
+           ))
+          OR event_name = 'PutBucketEncryption'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🪣 Data & Storage"
+  label: "⏳ S3 Lifecycle-Triggered Deletion"
+  description: "Detects S3 lifecycle rules that expire objects, plus lifecycle-config deletion. Attackers set a short expiration to silently purge data over time without issuing DeleteObject calls."
+  techniques:
+    - tid: "T1485.001"
+      name: "Data Destruction: Lifecycle-Triggered Deletion"
+      summary: "Adversaries set short S3 lifecycle expiration rules to silently purge data."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find S3 lifecycle changes used for stealthy data destruction:
+    PutBucketLifecycle / PutBucketLifecycleConfiguration (especially rules
+    with a short Expiration in days) and DeleteBucketLifecycle. A short
+    expiration rule causes S3 to delete objects automatically, avoiding the
+    DeleteObject bursts that trigger other alerts. Show the bucket, the
+    expiration in days, the caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.bucketName')          AS bucket_name,
+        json_extract_string(
+            request_parameters,
+            '$.LifecycleConfiguration.Rule.Expiration.Days'
+        )                                                                 AS expiration_days,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND event_name IN (
+          'PutBucketLifecycle',
+          'PutBucketLifecycleConfiguration',
+          'DeleteBucketLifecycle'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🪣 Data & Storage"
+  label: "🗃 RDS Query & Instance Manipulation"
+  description: "Detects RDS Data API queries, master-password resets, and snapshot restores. Attackers read data directly, reset credentials to gain access, or restore snapshots into instances they control."
+  techniques:
+    - tid: "AT1023.001"
+      name: "Cloud Database Discovery: Query RDS"
+      summary: "Adversaries query RDS databases directly to discover and read data."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1023.001.html"
+    - tid: "T1213.A013"
+      name: "Data from Information Repositories: RDS Instance Manipulation"
+      summary: "Adversaries restore, expose, or reconfigure RDS instances to reach the data inside."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1213.A013.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find RDS discovery and manipulation: rds-data ExecuteStatement /
+    BatchExecuteStatement (direct SQL over the Data API), ModifyDBInstance or
+    ModifyDBCluster that set masterUserPassword (credential reset for access),
+    RestoreDBInstanceFromDBSnapshot / RestoreDBClusterFromSnapshot (restore into
+    an attacker-controlled instance), and DownloadDBLogFilePortion. Show the
+    event, the target DB identifier, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.dBInstanceIdentifier'),
+            json_extract_string(request_parameters, '$.dBClusterIdentifier'),
+            json_extract_string(request_parameters, '$.resourceArn')
+        )                                                                 AS db_target,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE
+        (event_source = 'rds-data.amazonaws.com'
+         AND event_name IN ('ExecuteStatement', 'BatchExecuteStatement'))
+        OR (event_source = 'rds.amazonaws.com'
+            AND (
+                (event_name IN ('ModifyDBInstance', 'ModifyDBCluster')
+                 AND json_extract_string(
+                     request_parameters, '$.masterUserPassword'
+                 ) IS NOT NULL)
+                OR event_name IN (
+                    'RestoreDBInstanceFromDBSnapshot',
+                    'RestoreDBClusterFromSnapshot',
+                    'DownloadDBLogFilePortion'
+                )
+            ))
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🪣 Data & Storage"
+  label: "🔎 S3 Bucket Enumeration"
+  description: "Detects callers sweeping bucket and object metadata (≥10 List/GetBucket* reads in one hour). A common early step to locate valuable data before exfiltration."
+  techniques:
+    - tid: "T1619.A001"
+      name: "Cloud Storage Discovery: S3 Object and Bucket Enumeration"
+      summary: "Adversaries enumerate buckets and objects to locate valuable data."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1619.A001.html"
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - enum_calls
+  prompt: |
+    Find identities that made 10 or more S3 enumeration calls in a single hour
+    — ListBuckets, ListObjects/ListObjectsV2, GetBucketAcl, GetBucketPolicy,
+    GetBucketVersioning, GetBucketLocation, GetBucketEncryption. Bulk metadata
+    reads across many buckets indicate an attacker mapping storage before
+    stealing data. Show the caller, source IP, hour bucket, number of
+    enumeration calls, and number of distinct buckets touched.
+  sql: |
+    SELECT
+        user_identity_arn,
+        source_ip_address,
+        DATE_TRUNC('hour', event_time)                                   AS hour_bucket,
+        COUNT(*)                                                          AS enum_calls,
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.bucketName'))
+                                                                          AS buckets_touched
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND event_name IN (
+          'ListBuckets',        'ListObjects',       'ListObjectsV2',
+          'GetBucketAcl',       'GetBucketPolicy',   'GetBucketVersioning',
+          'GetBucketLocation',  'GetBucketEncryption', 'GetBucketLogging',
+          'GetBucketReplication'
+      )
+    GROUP BY user_identity_arn, source_ip_address, hour_bucket
+    HAVING COUNT(*) >= 10
+    ORDER BY enum_calls DESC
+    LIMIT 50
+
+- category: "🪣 Data & Storage"
+  label: "🔑 Storage Re-Encryption for Impact"
+  description: "Detects EBS/RDS snapshots and volumes re-encrypted with an explicit KMS key, plus disabling of default EBS encryption. Re-encrypting with an attacker-held key holds the data for ransom."
+  techniques:
+    - tid: "T1486.A002"
+      name: "Data Encrypted for Impact: EC2/EBS Data Encryption"
+      summary: "Adversaries re-encrypt EBS volumes and snapshots with attacker-controlled KMS keys."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.A002.html"
+    - tid: "T1486.A003"
+      name: "Data Encrypted for Impact: RDS Data Encryption"
+      summary: "Adversaries re-encrypt RDS data with attacker-controlled KMS keys."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.A003.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find storage re-encryption used for ransom: CopySnapshot, CopyImage,
+    CreateVolume, or CopyDBSnapshot / CopyDBClusterSnapshot calls that specify
+    an explicit kmsKeyId (re-encrypting data under an attacker-controlled key),
+    and DisableEbsEncryptionByDefault. Show the event, the KMS key used, the
+    source resource, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.kmsKeyId')            AS kms_key_id,
+        COALESCE(
+            json_extract_string(request_parameters, '$.sourceSnapshotId'),
+            json_extract_string(request_parameters, '$.sourceDBSnapshotIdentifier'),
+            json_extract_string(request_parameters, '$.snapshotId')
+        )                                                                 AS source_resource,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE
+        (event_name IN (
+            'CopySnapshot', 'CopyImage', 'CreateVolume',
+            'CopyDBSnapshot', 'CopyDBClusterSnapshot'
+         )
+         AND json_extract_string(request_parameters, '$.kmsKeyId') IS NOT NULL)
+        OR event_name = 'DisableEbsEncryptionByDefault'
+    ORDER BY event_time DESC
+    LIMIT 100
+
 # ===========================================================================
 # Compute & Serverless
 # ===========================================================================
@@ -1978,6 +2654,15 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4a5 EC2 Mass Stop / Terminate"
   description: "Detects high-volume EC2 StopInstances/TerminateInstances (>=5 in one hour). Indicates ransomware disruption or destructive attack."
+  techniques:
+    - tid: "T1578.003"
+      name: "Modify Cloud Compute Infrastructure: Delete Cloud Instance"
+      summary: "Adversaries terminate instances to destroy evidence or disrupt service."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.003.html"
+    - tid: "T1485"
+      name: "Data Destruction"
+      summary: "Adversaries destroy data and backups to cause damage or prevent recovery."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.html"
   chart:
     type: timeseries
     bucket: day
@@ -2008,6 +2693,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f5a5\ufe0f SSM Session / Run Command"
   description: "Detects SSM StartSession, SendCommand, and automation executions. Primary lateral movement path via managed instances."
+  techniques:
+    - tid: "T1651"
+      name: "Cloud Administration Command"
+      summary: "Adversaries execute commands on instances via SSM and other admin channels."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1651.html"
   chart:
     type: timeseries
     bucket: day
@@ -2039,6 +2729,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f511 EC2 Instance Connect / Serial Console Access"
   description: "Detects EC2 Instance Connect and Serial Console access, which lets attackers reach an instance from a browser or CLI without an SSH key or bastion host. A primary lateral-movement path for attackers who lack SSH keys."
+  techniques:
+    - tid: "T1651"
+      name: "Cloud Administration Command"
+      summary: "Adversaries execute commands on instances via SSM and other admin channels."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1651.html"
   chart:
     type: timeseries
     bucket: day
@@ -2074,6 +2769,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4dd EC2 User Data Modification"
   description: "Detects ModifyInstanceAttribute calls that change the userData field. User data scripts run as root at next boot, providing a persistent code-execution backdoor."
+  techniques:
+    - tid: "T1578.005"
+      name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
+      summary: "Adversaries change compute or network configuration to enable their operations."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.005.html"
   chart:
     type: timeseries
     bucket: day
@@ -2103,14 +2803,26 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\u26a1 Lambda Function Tampering"
   description: "Detects Lambda creation, code updates, and permission changes. Attackers use Lambda for persistence."
+  techniques:
+    - tid: "T1648"
+      name: "Serverless Execution"
+      summary: "Adversaries run code through serverless services such as Lambda."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.html"
+    - tid: "T1648.A001"
+      name: "Serverless Execution: Invoking Lambda Function"
+      summary: "Adversaries invoke or trigger Lambda functions to execute their code."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.A001.html"
   chart:
     type: timeseries
     bucket: day
   prompt: |
     Find Lambda-related events: CreateFunction, UpdateFunctionCode,
     UpdateFunctionConfiguration, AddPermission, CreateEventSourceMapping.
-    Attackers may deploy malicious functions for persistence or crypto mining.
-    Show caller, function details from request_parameters, and time.
+    Also flag Function URL exposure — CreateFunctionUrlConfig /
+    UpdateFunctionUrlConfig, especially with authType=NONE, which turns a
+    function into an unauthenticated public HTTP trigger the attacker can invoke
+    at will. Attackers may deploy malicious functions for persistence or crypto
+    mining. Show caller, function details from request_parameters, and time.
   sql: |
     SELECT
         event_time,
@@ -2118,6 +2830,7 @@
         user_identity_arn,
         json_extract_string(request_parameters, '$.functionName') AS function_name,
         json_extract_string(request_parameters, '$.runtime')      AS runtime,
+        json_extract_string(request_parameters, '$.authType')     AS function_url_auth_type,
         source_ip_address,
         aws_region,
         error_code
@@ -2127,7 +2840,8 @@
         'UpdateFunctionCode20150331v2', 'UpdateFunctionCode',
         'UpdateFunctionConfiguration20150331v2', 'UpdateFunctionConfiguration',
         'AddPermission20150331v2', 'AddPermission',
-        'CreateEventSourceMapping'
+        'CreateEventSourceMapping',
+        'CreateFunctionUrlConfig', 'UpdateFunctionUrlConfig'
     )
     ORDER BY event_time DESC
     LIMIT 100
@@ -2135,6 +2849,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4e6 Lambda Layer Addition"
   description: "Detects Lambda layer publication and permission changes. Publishing a malicious shared layer and adding it to production functions injects attacker code into the dependency chain."
+  techniques:
+    - tid: "T1648.A002"
+      name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
+      summary: "Adversaries inject malicious code through compromised packages, layers, or images."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -2169,6 +2888,11 @@
 - category: "⚡ Compute & Serverless"
   label: "\U0001f4e6 ECS Task Definition"
   description: "Detects ECS task definition registration and service updates. Pacu's ecs__backdoor_task_def registers a new task definition version pointing to a malicious container image, then updates the service to deploy it — all without touching ECR."
+  techniques:
+    - tid: "T1496.A006"
+      name: "Resource Hijacking: Compute Hijacking - ECS"
+      summary: "Adversaries deploy attacker containers on ECS for hijacked compute."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A006.html"
   chart:
     type: timeseries
     bucket: day
@@ -2209,6 +2933,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f464 EC2 Instance Profile Changes"
   description: "Detects IAM instance profile association and replacement. Attaching a privileged profile grants the instance elevated permissions for lateral movement."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
   chart:
     type: timeseries
     bucket: day
@@ -2243,6 +2972,15 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f5a5 EC2 Instance Launches"
   description: "Lists all RunInstances events. Unexpected launches in unusual regions may indicate cryptomining."
+  techniques:
+    - tid: "T1578.002"
+      name: "Modify Cloud Compute Infrastructure: Create Cloud Instance"
+      summary: "Adversaries launch instances to run their own workloads."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.002.html"
+    - tid: "T1496.A008"
+      name: "Resource Hijacking: Compute Hijacking - EC2 Use"
+      summary: "Adversaries launch EC2 capacity for cryptomining or other paid workloads."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A008.html"
   chart:
     type: timeseries
     bucket: day
@@ -2271,6 +3009,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4b0 EC2 Spot Fleet / Reserved Instance Abuse"
   description: "Detects large Spot Fleet requests, Reserved Instance purchases, and Auto Scaling group creation with high capacity. Cryptomining financial-impact indicator."
+  techniques:
+    - tid: "T1496.A008"
+      name: "Resource Hijacking: Compute Hijacking - EC2 Use"
+      summary: "Adversaries launch EC2 capacity for cryptomining or other paid workloads."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A008.html"
   chart:
     type: timeseries
     bucket: day
@@ -2317,6 +3060,15 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\u2638\ufe0f EKS Cluster API Calls"
   description: "Detects EKS cluster control-plane modifications. Public API server exposure or rogue Fargate profiles enable container platform takeover."
+  techniques:
+    - tid: "T1190.A020"
+      name: "Exploit Public-Facing Application: EKS"
+      summary: "Adversaries exploit exposed EKS API endpoints and workloads."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1190.A020.html"
+    - tid: "AT1668"
+      name: "EKS Modification - Workload Integrity Degradation"
+      summary: "Adversaries modify EKS clusters and workloads to run attacker-controlled containers."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1668.html"
   chart:
     type: timeseries
     bucket: day
@@ -2356,6 +3108,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f433 ECR Repository / Image Changes"
   description: "Detects ECR repository creation/deletion, policy changes, and image pushes. Injecting malicious images into a production repository is a supply-chain persistence technique."
+  techniques:
+    - tid: "T1648.A002"
+      name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
+      summary: "Adversaries inject malicious code through compromised packages, layers, or images."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -2392,6 +3149,11 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4c5 EventBridge / CloudWatch Rule Changes"
   description: "Detects EventBridge rule and EventBridge Scheduler modifications. Attackers use scheduled rules to establish persistence without a long-running process."
+  techniques:
+    - tid: "T1648.A001"
+      name: "Serverless Execution: Invoking Lambda Function"
+      summary: "Adversaries invoke or trigger Lambda functions to execute their code."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -2425,6 +3187,11 @@
 - category: "⚡ Compute & Serverless"
   label: "\U0001f4a1 Lightsail Instance & Key Abuse"
   description: "Detects Lightsail instance access, key pair operations, and port exposure. Pacu has three dedicated Lightsail modules (enum, download_ssh_keys, generate_temp_access). Lightsail resources operate outside the standard EC2 security boundary."
+  techniques:
+    - tid: "T1496.001"
+      name: "Resource Hijacking: Compute Hijacking"
+      summary: "Adversaries run cryptomining or other workloads at the victim's expense."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -2467,6 +3234,86 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "⚡ Compute & Serverless"
+  label: "🛰 IMDS Options Weakening"
+  description: "Detects ModifyInstanceMetadataOptions calls that make IMDSv2 optional or re-enable the metadata endpoint. Weakening IMDS re-opens the SSRF path to steal instance-role credentials."
+  techniques:
+    - tid: "T1552.005"
+      name: "Unsecured Credentials: Cloud Instance Metadata API"
+      summary: "Adversaries steal instance-role credentials via the EC2 instance metadata service."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1552.005.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find ModifyInstanceMetadataOptions calls that weaken IMDS protection:
+    HttpTokens set to 'optional' (downgrading from required IMDSv2 to IMDSv1),
+    HttpEndpoint set to 'enabled', or a raised HttpPutResponseHopLimit. IMDSv1
+    is vulnerable to SSRF-based theft of instance-role credentials, so an
+    attacker who can call this API re-opens that path. Show the instance ID,
+    the requested token/endpoint/hop-limit values, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(
+            request_parameters,
+            '$.ModifyInstanceMetadataOptionsRequest.InstanceId'
+        )                                                                 AS instance_id,
+        json_extract_string(
+            request_parameters,
+            '$.ModifyInstanceMetadataOptionsRequest.HttpTokens'
+        )                                                                 AS http_tokens,
+        json_extract_string(
+            request_parameters,
+            '$.ModifyInstanceMetadataOptionsRequest.HttpEndpoint'
+        )                                                                 AS http_endpoint,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name = 'ModifyInstanceMetadataOptions'
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "⚡ Compute & Serverless"
+  label: "💥 AMI & Snapshot Deletion"
+  description: "Detects bulk deregistration of AMIs and deletion of EBS snapshots (≥5 in one hour). Destroying golden images and backups removes recovery options during a destructive attack."
+  techniques:
+    - tid: "T1485.A002"
+      name: "Data Destruction: AMI Image Deletion"
+      summary: "Adversaries deregister AMIs and delete snapshots to destroy recovery images."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1485.A002.html"
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - delete_count
+  prompt: |
+    Find identities that deregistered AMIs or deleted EBS snapshots 5 or more
+    times within a single hour — DeregisterImage, DeleteSnapshot. Bulk deletion
+    of images and snapshots destroys the recovery baseline before or during a
+    destructive attack. Show the caller, source IP, hour bucket, number of
+    deletions, and the affected image/snapshot IDs.
+  sql: |
+    SELECT
+        user_identity_arn,
+        source_ip_address,
+        DATE_TRUNC('hour', event_time)                                   AS hour_bucket,
+        COUNT(*)                                                          AS delete_count,
+        COUNT(DISTINCT COALESCE(
+            json_extract_string(request_parameters, '$.snapshotId'),
+            json_extract_string(request_parameters, '$.imageId')
+        ))                                                                AS resources_affected
+    FROM cloudtrail_events
+    WHERE event_source = 'ec2.amazonaws.com'
+      AND event_name IN ('DeregisterImage', 'DeleteSnapshot')
+    GROUP BY user_identity_arn, source_ip_address, hour_bucket
+    HAVING COUNT(*) >= 5
+    ORDER BY delete_count DESC
+    LIMIT 50
+
 # ===========================================================================
 # AI & LLM Abuse (LLMjacking — see doc/PLAN_LLMJACKING.md)
 # ===========================================================================
@@ -2474,6 +3321,11 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f916 Bedrock Model Invocation Spike"
   description: "Detects principals invoking Bedrock models 50+ times in one hour. High-volume inference on stolen credentials (LLMjacking) can cost the victim tens of thousands of dollars per day."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
   chart:
     type: timeseries
     bucket: hour
@@ -2507,6 +3359,11 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f513 Bedrock Model Access Enablement"
   description: "Detects foundation-model access being enabled or provisioned capacity purchased. In orgs that never adopted Bedrock this is a near-zero-noise LLMjacking indicator — the attacker's canonical first write."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
   chart:
     type: timeseries
     bucket: day
@@ -2541,6 +3398,15 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f648 Bedrock Invocation Logging Tampering"
   description: "Detects deletion or modification of Bedrock model-invocation logging, plus attackers checking whether logging is enabled before abusing the account (a documented LLMjacking IOC)."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
   chart:
     type: timeseries
     bucket: day
@@ -2573,6 +3439,11 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f9ed Bedrock Reconnaissance Sweep"
   description: "Identifies callers enumerating Bedrock models across 2+ regions or with 10+ enumeration calls in one hour. Stolen-key holders sweep regions to find where models are usable."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -2611,6 +3482,11 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "⛔ Failed Bedrock Invocations"
   description: "Finds bursts of failed Bedrock invocations (AccessDenied / ValidationException). Stolen-key testing produces failure storms across models and regions before a working combination is found."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -2648,6 +3524,11 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f30d Bedrock Callers & Origins"
   description: "Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all."
+  techniques:
+    - tid: "T1496.A007"
+      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
+      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
   prompt: |
     Build an inventory of all Amazon Bedrock callers
     (event_source bedrock.amazonaws.com): group by user_identity_arn,
@@ -2683,6 +3564,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f30d Security Group Opened to Internet"
   description: "Finds security group rules that allow traffic from 0.0.0.0/0. Direct public exposure risk."
+  techniques:
+    - tid: "T1190.A019"
+      name: "Exploit Public-Facing Application: Overly Permissive VPC Security Groups"
+      summary: "Overly open security groups expose workloads directly to the internet."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1190.A019.html"
   chart:
     type: timeseries
     bucket: day
@@ -2712,6 +3598,15 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f525 Security Group Modifications"
   description: "Detects security group rule changes, especially rules allowing 0.0.0.0/0 on any port."
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries open or remove cloud firewall rules to enable their own access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
+    - tid: "T1190.A019"
+      name: "Exploit Public-Facing Application: Overly Permissive VPC Security Groups"
+      summary: "Overly open security groups expose workloads directly to the internet."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1190.A019.html"
   chart:
     type: timeseries
     bucket: day
@@ -2743,6 +3638,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f30a VPC Flow Log Changes"
   description: "Detects deletion of VPC Flow Logs. Removing flow logs eliminates network-level evidence — a critical defense evasion indicator."
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
   chart:
     type: timeseries
     bucket: day
@@ -2769,6 +3669,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f310 CloudFront Distribution Tampering"
   description: "Detects CloudFront distribution creation and origin changes. Modifying origins redirects CDN traffic to attacker-controlled servers for MitM interception or data collection."
+  techniques:
+    - tid: "T1491.A001"
+      name: "Defacement: Subdomain Takeover"
+      summary: "Adversaries hijack dangling DNS records and CDN origins to serve their own content."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1491.A001.html"
   chart:
     type: timeseries
     bucket: day
@@ -2805,6 +3710,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6e1 Network Firewall / Shield Tampering"
   description: "Detects Network Firewall and Shield protection removal. Deleting network-layer defenses exposes VPCs to direct attack traffic."
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries open or remove cloud firewall rules to enable their own access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
   chart:
     type: timeseries
     bucket: day
@@ -2853,6 +3763,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f9f1 Network ACL Changes"
   description: "Detects Network ACL entry creation, deletion, and replacement. NACLs override security groups and can open entire subnets to attackers."
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries open or remove cloud firewall rules to enable their own access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
   chart:
     type: timeseries
     bucket: day
@@ -2886,6 +3801,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6e3\ufe0f Route Table Changes"
   description: "Detects route table modifications. Adding or replacing routes can redirect traffic to attacker-controlled hosts (MitM, traffic hijacking)."
+  techniques:
+    - tid: "T1578.005"
+      name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
+      summary: "Adversaries change compute or network configuration to enable their operations."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.005.html"
   chart:
     type: timeseries
     bucket: day
@@ -2920,6 +3840,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f9f1 VPN / Direct Connect / Transit Gateway"
   description: "Detects new VPN connections, Direct Connect, and Transit Gateway attachments. Attackers create covert network tunnels for persistent C2 or data exfiltration channels."
+  techniques:
+    - tid: "T1578.005"
+      name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
+      summary: "Adversaries change compute or network configuration to enable their operations."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.005.html"
   chart:
     type: timeseries
     bucket: day
@@ -2961,6 +3886,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f4e1 Elastic IP Allocation / Association"
   description: "Detects Elastic IP allocation and association. Attackers assign a fixed public IP to a compromised instance to create stable C2 infrastructure."
+  techniques:
+    - tid: "T1578.005"
+      name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
+      summary: "Adversaries change compute or network configuration to enable their operations."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.005.html"
   chart:
     type: timeseries
     bucket: day
@@ -2995,6 +3925,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f5dd\ufe0f EC2 Key Pair Creation"
   description: "Detects CreateKeyPair and ImportKeyPair events. Attackers create or import SSH keys as a persistence mechanism to maintain instance access."
+  techniques:
+    - tid: "T1098.001"
+      name: "Account Manipulation: Additional Cloud Credentials"
+      summary: "Adversaries add access keys, passwords, or SSH keys to existing identities as a backdoor."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -3021,6 +3956,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f4e1 Network Infrastructure Changes"
   description: "Detects VPC and network-level changes that may establish attacker-controlled infrastructure."
+  techniques:
+    - tid: "T1578.005"
+      name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
+      summary: "Adversaries change compute or network configuration to enable their operations."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.005.html"
   chart:
     type: timeseries
     bucket: day
@@ -3051,6 +3991,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f3f7 ACM Certificate Operations"
   description: "Detects ACM certificate requests and deletions. Attackers use compromised accounts to issue TLS certificates for attacker-controlled domains to build phishing infrastructure."
+  techniques:
+    - tid: "T1583.001"
+      name: "Acquire Infrastructure: Domains"
+      summary: "Adversaries register or manage domains and certificates for attack infrastructure."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1583.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -3090,6 +4035,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f511 API Gateway Key Creation & Management"
   description: "Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls."
+  techniques:
+    - tid: "AT1667.001"
+      name: "Application API Abuse: API Gateway"
+      summary: "Adversaries create or modify API Gateway resources for persistent access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1667.001.html"
   chart:
     type: timeseries
     bucket: day
@@ -3133,6 +4083,11 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6a7 VPC Endpoint Access Denied"
   description: "Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy."
+  techniques:
+    - tid: "T1059.009"
+      name: "Command and Scripting Interpreter: Cloud API"
+      summary: "Adversaries drive the attack through direct AWS API calls and tooling such as Pacu."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1059.009.html"
   chart:
     type: timeseries
     bucket: day
@@ -3156,6 +4111,158 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "⚡ Compute & Serverless"
+  label: "🖥 WorkSpaces Hijacking"
+  description: "Detects Amazon WorkSpaces provisioning and pool creation. Attackers spin up desktops at the victim's expense, an under-monitored compute-hijacking channel outside the EC2 boundary."
+  techniques:
+    - tid: "T1496.A009"
+      name: "Resource Hijacking: Compute Hijacking - WorkSpaces"
+      summary: "Adversaries provision WorkSpaces desktops at the victim's expense."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A009.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find Amazon WorkSpaces provisioning that may indicate compute hijacking:
+    CreateWorkspaces, CreateWorkspacesPool, CreateStandbyWorkspaces,
+    ModifyWorkspaceProperties, and RebuildWorkspaces. WorkSpaces run outside
+    the EC2 security boundary and are rarely monitored, so an attacker can
+    provision desktops for hijacked compute. Show the event, the directory ID,
+    caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.directoryId')         AS directory_id,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'workspaces.amazonaws.com'
+      AND event_name IN (
+          'CreateWorkspaces', 'CreateWorkspacesPool', 'CreateStandbyWorkspaces',
+          'ModifyWorkspaceProperties', 'RebuildWorkspaces'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🔑 Identity & Access"
+  label: "🎫 Support Case Manipulation"
+  description: "Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise."
+  techniques:
+    - tid: "T1098.A001"
+      name: "Account Manipulation: AWS Support Case Closure"
+      summary: "Adversaries resolve AWS abuse/support cases to suppress compromise notifications."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find AWS Support activity attackers use to hide a compromise: ResolveCase
+    (closing an AWS-opened abuse case), AddCommunicationToCase, CreateCase, and
+    DescribeCases (monitoring what AWS has flagged). Silencing or watching abuse
+    cases lets an attacker keep operating after AWS detects, for example,
+    cryptomining or spam. Show the event, the case ID, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.caseId')             AS case_id,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'support.amazonaws.com'
+      AND event_name IN (
+          'ResolveCase', 'AddCommunicationToCase', 'CreateCase', 'DescribeCases'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🔑 Identity & Access"
+  label: "🪪 Cognito User Pool Manipulation"
+  description: "Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users."
+  techniques:
+    - tid: "T1098.A006"
+      name: "Account Manipulation: Cognito Refresh Token Abuse"
+      summary: "Adversaries abuse Cognito tokens and user-pool settings to keep authenticated access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.A006.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find Cognito user-pool manipulation used for persistence: UpdateUserPoolClient
+    or CreateUserPoolClient (extending refresh/access token validity for
+    long-lived tokens), AdminCreateUser and AdminSetUserPassword (seeding a
+    backdoor user), and UpdateUserPool. This complements the identity-pool
+    unauthenticated-access hunt with the user-pool token-abuse vector. Show the
+    event, the user pool ID, caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.userPoolId')          AS user_pool_id,
+        json_extract_string(request_parameters, '$.refreshTokenValidity') AS refresh_token_validity,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'cognito-idp.amazonaws.com'
+      AND event_name IN (
+          'UpdateUserPoolClient', 'CreateUserPoolClient', 'UpdateUserPool',
+          'AdminCreateUser', 'AdminSetUserPassword'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🌐 Network & Infrastructure"
+  label: "🌐 Route 53 & Domain Changes"
+  description: "Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing."
+  techniques:
+    - tid: "T1583.001"
+      name: "Acquire Infrastructure: Domains"
+      summary: "Adversaries register or manage domains and certificates for attack infrastructure."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1583.001.html"
+    - tid: "T1491.A001"
+      name: "Defacement: Subdomain Takeover"
+      summary: "Adversaries hijack dangling DNS records and CDN origins to serve their own content."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1491.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find Route 53 and domain changes that enable traffic redirection, subdomain
+    takeover, or phishing infrastructure: ChangeResourceRecordSets (DNS record
+    edits), CreateHostedZone / DeleteHostedZone, and Route 53 Domains actions
+    RegisterDomain, TransferDomain, DisableDomainTransferLock,
+    UpdateDomainNameservers. Show the event, the hosted zone or domain name,
+    caller, source IP, and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.hostedZoneId'),
+            json_extract_string(request_parameters, '$.name'),
+            json_extract_string(request_parameters, '$.domainName')
+        )                                                                 AS dns_target,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source IN ('route53.amazonaws.com', 'route53domains.amazonaws.com')
+      AND event_name IN (
+          'ChangeResourceRecordSets', 'CreateHostedZone', 'DeleteHostedZone',
+          'RegisterDomain', 'TransferDomain', 'DisableDomainTransferLock',
+          'UpdateDomainNameservers'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
 # ===========================================================================
 # Threat Patterns
 # ===========================================================================
@@ -3163,6 +4270,15 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f50d Reconnaissance Pattern"
   description: "Identifies callers who ran 10+ distinct read-only API calls in one hour. Common early attack phase."
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate IAM users, roles, and policies to map the account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
+    - tid: "T1619.A001"
+      name: "Cloud Storage Discovery: S3 Object and Bucket Enumeration"
+      summary: "Adversaries enumerate buckets and objects to locate valuable data."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1619.A001.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -3193,6 +4309,11 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f916 Unusual User Agents"
   description: "Lists rare user agents (<5 events). Custom tooling like Pacu or curl may indicate attacker tooling."
+  techniques:
+    - tid: "T1059.009"
+      name: "Command and Scripting Interpreter: Cloud API"
+      summary: "Adversaries drive the attack through direct AWS API calls and tooling such as Pacu."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1059.009.html"
   chart:
     type: bar
     x: user_agent
@@ -3225,6 +4346,11 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f30d Multi-Region Activity"
   description: "Detects identities performing writes in 3+ regions in one day. Geographic spread may indicate compromise."
+  techniques:
+    - tid: "T1535"
+      name: "Unused/Unsupported Cloud Regions"
+      summary: "Adversaries operate in regions the victim does not monitor."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1535.html"
   chart:
     type: bar
     x: user_identity_arn
@@ -3252,10 +4378,61 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f575 First-Time API Calls (24h)"
   description: "Finds API calls seen in the last 24h but never before. Novel operations may indicate attacker tooling."
+  techniques:
+    - tid: "T1059.009"
+      name: "Command and Scripting Interpreter: Cloud API"
+      summary: "Adversaries drive the attack through direct AWS API calls and tooling such as Pacu."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1059.009.html"
   prompt: |
     Find API calls that appear in the last 24 hours but have never been seen
     before in the entire log dataset. These novel operations may indicate
     attacker reconnaissance or tooling.
+
+- category: "🕵 Threat Patterns"
+  label: "🗺 First-Seen Region Activity"
+  description: "Finds AWS regions whose first-ever activity falls in the last 24h of the dataset. Operating in a never-before-used region is a classic way to hide cryptomining or staging from region-scoped monitoring."
+  techniques:
+    - tid: "T1535"
+      name: "Unused/Unsupported Cloud Regions"
+      summary: "Adversaries operate in regions the victim does not monitor."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1535.html"
+  chart:
+    type: bar
+    x: aws_region
+    y:
+      - event_count
+  prompt: |
+    Find AWS regions that were first used only within the last 24 hours of the
+    dataset — i.e. a region whose earliest event is recent while the rest of the
+    account has a longer history. Attackers use unused regions to run
+    cryptomining or stage tooling where region-scoped alarms and dashboards do
+    not look. Show the region, its first-seen time, the number of events, and
+    the distinct callers and event names.
+  sql: |
+    WITH region_first_seen AS (
+        SELECT
+            aws_region,
+            MIN(event_time) AS first_seen,
+            COUNT(*)        AS event_count,
+            COUNT(DISTINCT user_identity_arn) AS distinct_callers,
+            COUNT(DISTINCT event_name)        AS distinct_events
+        FROM cloudtrail_events
+        WHERE aws_region IS NOT NULL
+        GROUP BY aws_region
+    ),
+    dataset_bounds AS (
+        SELECT MAX(event_time) AS max_time FROM cloudtrail_events
+    )
+    SELECT
+        r.aws_region,
+        r.first_seen,
+        r.event_count,
+        r.distinct_callers,
+        r.distinct_events
+    FROM region_first_seen r, dataset_bounds b
+    WHERE r.first_seen >= b.max_time - INTERVAL 24 HOUR
+    ORDER BY r.first_seen DESC
+    LIMIT 50
 
 # ===========================================================================
 # Activity & Baseline
@@ -3628,6 +4805,11 @@
 - category: "\u2601 IaC & Platform"
   label: "\U0001f6e0 CodeBuild / CodePipeline Supply Chain Attack"
   description: "Detects CI/CD pipeline creation and modification. Injecting malicious build steps or modifying pipeline sources poisons all subsequent deployments."
+  techniques:
+    - tid: "T1648.A002"
+      name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
+      summary: "Adversaries inject malicious code through compromised packages, layers, or images."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1648.A002.html"
   chart:
     type: timeseries
     bucket: day
@@ -3679,6 +4861,15 @@
 - category: "\u2601 IaC & Platform"
   label: "\U0001f3d7 CloudFormation / IaC Abuse"
   description: "Detects CloudFormation stack operations. Attackers may use IaC to rapidly deploy malicious infrastructure."
+  techniques:
+    - tid: "T1098.003"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
+    - tid: "T1578.002"
+      name: "Modify Cloud Compute Infrastructure: Create Cloud Instance"
+      summary: "Adversaries launch instances to run their own workloads."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1578.002.html"
   chart:
     type: timeseries
     bucket: day

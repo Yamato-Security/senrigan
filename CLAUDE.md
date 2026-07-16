@@ -10,7 +10,8 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [TDD_GUIDE.md](doc/TDD_GUIDE.md), [PRD.md](doc/PRD.md),
 > [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
 > [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md),
-> [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md), and [PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md).
+> [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md), [PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md),
+> and [PLAN_THREAT_CATALOG.md](doc/PLAN_THREAT_CATALOG.md).
 
 ---
 
@@ -138,8 +139,8 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 440 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 605 (asset/YAML/config validation suite).
+Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 492 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 655 (asset/YAML/config validation suite).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
 
@@ -244,7 +245,8 @@ senrigan/
 ├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/
 ├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT
+                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
+                 #   PLAN_THREAT_CATALOG
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

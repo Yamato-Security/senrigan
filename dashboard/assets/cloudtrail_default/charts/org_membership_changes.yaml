@@ -1,0 +1,46 @@
+# DSH-73: Organization Membership Changes
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) T1666.A002 / T1666.A003.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1666.A002.html
+uuid: c515a387-9d83-473f-85f6-6abc17dac397
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Organization Membership Changes
+viz_type: table
+description: >
+  Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization.
+  Threat Technique Catalog for AWS: T1666.A002 / T1666.A003.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_org_membership_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'organizations.amazonaws.com'
+        AND event_name IN (
+          'LeaveOrganization', 'RemoveAccountFromOrganization',
+          'AcceptHandshake', 'CancelHandshake', 'DeclineHandshake',
+          'InviteAccountToOrganization'
+        )
+      filterOptionName: filter_org_membership
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

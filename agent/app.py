@@ -201,6 +201,33 @@ def _init_session_state() -> None:
             st.session_state[key] = default
 
 
+def _format_technique_caption(technique: dict) -> str:
+    """Format one Threat Technique Catalog mapping as a caption line.
+
+    Args:
+        technique: Dict with tid / name / summary / url keys (all optional
+            except tid).
+
+    Returns:
+        A Markdown caption like
+        ``🎯 [T1562.008 — Impair Defenses: Disable Cloud Logs](url): summary``.
+        The link is omitted when no url is present; the summary suffix is
+        omitted when no summary is present.
+    """
+    tid = str(technique.get("tid", ""))
+    name = str(technique.get("name", ""))
+    url = str(technique.get("url", ""))
+    summary = str(technique.get("summary", ""))
+
+    title = f"{tid} — {name}" if name else tid
+    if url:
+        title = f"[{title}]({url})"
+    caption = f"🎯 {title}"
+    if summary:
+        caption = f"{caption}: {summary}"
+    return caption
+
+
 def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
     """Return a flat list of bulk-query dicts for every entry that has a sql field.
 
@@ -209,8 +236,8 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
 
     Returns:
         List of dicts with keys sql, description, chart_config, label, category,
-        covering every entry whose sql field is non-empty.  sql values are stripped
-        of leading/trailing whitespace.
+        techniques, covering every entry whose sql field is non-empty.  sql
+        values are stripped of leading/trailing whitespace.
     """
     return [
         {
@@ -219,6 +246,7 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
             "chart_config": p.get("chart"),
             "label": p["label"],
             "category": p.get("category", ""),
+            "techniques": p.get("techniques") or [],
         }
         for p in prompts
         if p.get("sql", "").strip()
@@ -395,6 +423,7 @@ def render_sidebar() -> None:
                         "sql": p["sql"].strip(),
                         "description": p.get("description", ""),
                         "chart_config": p.get("chart"),
+                        "techniques": p.get("techniques") or [],
                         "label": p["label"],
                         "category": p.get("category", ""),
                     }
@@ -434,6 +463,10 @@ def render_sidebar() -> None:
                 if desc:
                     st.caption(f"ℹ️ {desc}")
 
+                # Show Threat Technique Catalog mappings when available
+                for technique in matched.get("techniques") or []:
+                    st.caption(_format_technique_caption(technique))
+
                 has_sql = bool(matched.get("sql", "").strip())
 
                 if has_sql:
@@ -448,6 +481,9 @@ def render_sidebar() -> None:
                         st.session_state["_pending_preset_label"] = matched["label"]
                         st.session_state["_pending_preset_category"] = matched.get(
                             "category", ""
+                        )
+                        st.session_state["_pending_preset_techniques"] = (
+                            matched.get("techniques") or []
                         )
                         st.rerun()
                 else:
@@ -752,6 +788,8 @@ def _render_result_card(
                 st.markdown(f"### {entry.label}")
         if entry.description:
             st.caption(f"ℹ️ {entry.description}")
+        for technique in entry.techniques:
+            st.caption(_format_technique_caption(technique))
         st.code(entry.sql, language="sql")
 
         if entry.results is not None and not entry.results.empty:
@@ -824,6 +862,7 @@ def render_chat() -> None:
     pending_chart_config = st.session_state.pop("_pending_chart_config", None)
     pending_preset_label = st.session_state.pop("_pending_preset_label", "")
     pending_preset_category = st.session_state.pop("_pending_preset_category", "")
+    pending_preset_techniques = st.session_state.pop("_pending_preset_techniques", [])
     if pending_direct_sql:
         _handle_direct_sql(
             pending_direct_sql,
@@ -832,6 +871,7 @@ def render_chat() -> None:
             chart_config=pending_chart_config,
             label=pending_preset_label,
             category=pending_preset_category,
+            techniques=pending_preset_techniques,
             bulk_mode=True,  # no chat bubble — show in Query Results section
         )
         st.rerun()
@@ -859,6 +899,7 @@ def render_chat() -> None:
                 bulk_mode=True,
                 label=q["label"],
                 category=q.get("category", ""),
+                techniques=q.get("techniques") or [],
             )
         progress_placeholder.empty()
         st.rerun()

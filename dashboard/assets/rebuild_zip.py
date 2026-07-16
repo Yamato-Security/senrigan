@@ -136,6 +136,18 @@ FILE_MAP = {
     "charts/bedrock_model_access_changes.yaml": "charts/Bedrock_Model_Access_Logging_Changes.yaml",
     "charts/bedrock_failed_invocations.yaml": "charts/Bedrock_Failed_Invocations.yaml",
     "charts/bedrock_callers_geo.yaml": "charts/Bedrock_Callers_By_Origin.yaml",
+    # Threat Technique Catalog gap charts (DSH-64 to DSH-73) —
+    # see doc/PLAN_THREAT_CATALOG.md
+    "charts/iam_entity_deletion.yaml": "charts/IAM_Entity_Deletion.yaml",
+    "charts/assume_root_events.yaml": "charts/AssumeRoot_Usage.yaml",
+    "charts/s3_ssec_encryption.yaml": "charts/S3_SSE_C_Ransomware_Encryption.yaml",
+    "charts/s3_lifecycle_deletion.yaml": "charts/S3_Lifecycle_Triggered_Deletion.yaml",
+    "charts/rds_manipulation.yaml": "charts/RDS_Query_Instance_Manipulation.yaml",
+    "charts/imds_options_changes.yaml": "charts/IMDS_Options_Weakening.yaml",
+    "charts/ami_snapshot_deletion.yaml": "charts/AMI_Snapshot_Deletion.yaml",
+    "charts/storage_reencryption.yaml": "charts/Storage_Re_Encryption_For_Impact.yaml",
+    "charts/workspaces_activity.yaml": "charts/WorkSpaces_Hijacking.yaml",
+    "charts/org_membership_changes.yaml": "charts/Organization_Membership_Changes.yaml",
 }
 
 
