@@ -1,0 +1,40 @@
+# DSH-65: AssumeRoot Usage
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) AT1669.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/AT1669.html
+uuid: 91b29e10-a2bc-4f93-b7c0-73e3a3fb06ae
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AssumeRoot Usage
+viz_type: table
+description: >
+  sts:AssumeRoot calls from the management account into member-account root — a full member-account takeover path.
+  Threat Technique Catalog for AWS: AT1669.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_assume_root_event_count
+  groupby:
+    - event_time
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name = 'AssumeRoot'
+      filterOptionName: filter_assume_root
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

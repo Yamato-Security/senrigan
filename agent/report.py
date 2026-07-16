@@ -205,6 +205,9 @@ class ReportEntry:
     label: str = ""  # UI-02: display name (e.g. "🔑 Root Account Activity")
     category: str = ""  # UI-02: category group (e.g. "🔑 Identity & Access")
     source: str = "chat"  # UI-03: "chat" | "bulk"
+    # TC: Threat Technique Catalog for AWS mappings — list of dicts with
+    # tid / name / summary / url keys (see doc/PLAN_THREAT_CATALOG.md).
+    techniques: list[dict] = field(default_factory=list)
     # Prevent pandas DataFrame equality issues in dataclass comparisons
     _results_placeholder: None = field(default=None, init=False, repr=False)
 
@@ -286,6 +289,46 @@ def _render_toc(entries: list[ReportEntry]) -> str:
     return "\n".join(lines)
 
 
+def _technique_title(technique: dict) -> str:
+    """Return the display title for a technique mapping.
+
+    Args:
+        technique: Dict with at least a ``tid`` key; ``name`` is optional.
+
+    Returns:
+        ``"<tid> — <name>"`` when a name is present, otherwise just the tid.
+    """
+    tid = str(technique.get("tid", ""))
+    name = str(technique.get("name", ""))
+    return f"{tid} — {name}" if name else tid
+
+
+def _render_techniques_md(techniques: list[dict]) -> str:
+    """Render the Techniques block of a Markdown report section.
+
+    Each technique becomes one bullet linking to its Threat Technique
+    Catalog for AWS page, followed by its one-line summary.
+
+    Args:
+        techniques: List of technique dicts (tid / name / summary / url).
+
+    Returns:
+        Markdown block string, or an empty string when the list is empty.
+    """
+    if not techniques:
+        return ""
+    lines = []
+    for t in techniques:
+        title = _sanitize(_technique_title(t))
+        url = str(t.get("url", ""))
+        summary = _sanitize(str(t.get("summary", "")))
+        item = f"[{title}]({url})" if url else title
+        if summary:
+            item = f"{item} — {summary}"
+        lines.append(f"- {item}")
+    return "### Techniques\n\n" + "\n".join(lines) + "\n\n"
+
+
 def _render_entry(index: int, entry: ReportEntry) -> str:
     """Render one ReportEntry as a Markdown section.
 
@@ -314,6 +357,9 @@ def _render_entry(index: int, entry: ReportEntry) -> str:
 
     heading = f"## {_build_heading(index, entry)}"
 
+    # Techniques block (only when the entry maps to catalog techniques)
+    techniques_section = _render_techniques_md(entry.techniques)
+
     # Analyst note section (only when non-empty)
     analyst_note_section = ""
     if entry.analyst_note:
@@ -322,6 +368,7 @@ def _render_entry(index: int, entry: ReportEntry) -> str:
 
     return (
         f"{heading}\n\n"
+        f"{techniques_section}"
         f"### SQL\n\n"
         f"```sql\n{sql_block}\n```\n\n"
         f"### Results\n\n"
@@ -445,8 +492,24 @@ def _render_entry_html(index: int, entry: ReportEntry) -> str:
         note = _sanitize(entry.analyst_note)
         analyst_section = f'<h3>Analyst Note</h3><pre class="analyst-note">{note}</pre>'
 
+    techniques_section = ""
+    if entry.techniques:
+        items = []
+        for t in entry.techniques:
+            title = _sanitize(_technique_title(t))
+            url = str(t.get("url", ""))
+            summary = _sanitize(str(t.get("summary", "")))
+            link = f'<a href="{url}" target="_blank">{title}</a>' if url else title
+            if summary:
+                link = f"{link} — {summary}"
+            items.append(f"<li>{link}</li>")
+        techniques_section = (
+            f'<h3>Techniques</h3><ul class="techniques">{"".join(items)}</ul>'
+        )
+
     return f"""<section id="{anchor}">
   <h2>{heading_text}</h2>
+  {techniques_section}
   <h3>SQL</h3>
   <pre><code class="sql">{sql_highlighted}</code></pre>
   <h3>Results</h3>

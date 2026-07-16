@@ -1,0 +1,46 @@
+# DSH-72: WorkSpaces Hijacking
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) T1496.A009.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A009.html
+uuid: 6b1fd091-effc-4f28-8d51-a3d90473b000
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: WorkSpaces Hijacking
+viz_type: table
+description: >
+  Amazon WorkSpaces provisioning used for compute hijacking outside the EC2 security boundary.
+  Threat Technique Catalog for AWS: T1496.A009.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_workspaces_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'workspaces.amazonaws.com'
+        AND event_name IN (
+          'CreateWorkspaces', 'CreateWorkspacesPool',
+          'CreateStandbyWorkspaces', 'ModifyWorkspaceProperties',
+          'RebuildWorkspaces'
+        )
+      filterOptionName: filter_workspaces
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

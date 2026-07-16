@@ -1,0 +1,46 @@
+# DSH-71: Storage Re-Encryption for Impact
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) T1486.A002 / T1486.A003.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.A002.html
+uuid: 9e1e7b28-87b0-46b8-ad70-2ae8b537fdfc
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Storage Re-Encryption for Impact
+viz_type: table
+description: >
+  EBS/RDS snapshots and volumes re-encrypted with an explicit attacker-controlled KMS key, plus default-encryption disable.
+  Threat Technique Catalog for AWS: T1486.A002 / T1486.A003.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_storage_reenc_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        (event_name IN (
+            'CopySnapshot', 'CopyImage', 'CreateVolume',
+            'CopyDBSnapshot', 'CopyDBClusterSnapshot'
+         )
+         AND json_extract_string(request_parameters, '$.kmsKeyId') IS NOT NULL)
+        OR event_name = 'DisableEbsEncryptionByDefault'
+      filterOptionName: filter_storage_reenc
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

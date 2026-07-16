@@ -65,7 +65,7 @@ def test_rebuild_zip_importable_without_side_effects() -> None:
         "main() behind an __main__ guard."
     )
     assert isinstance(module.FILE_MAP, dict) and len(module.FILE_MAP) >= 95, (
-        "rebuild_zip.FILE_MAP must stay importable (4 core entries + " "91 charts)."
+        "rebuild_zip.FILE_MAP must stay importable (4 core entries + " "101 charts)."
     )
 
 

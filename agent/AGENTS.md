@@ -40,7 +40,8 @@ agent/
 ├── config.py              # Configuration management (env vars)
 ├── suzaku_summary.py      # Suzaku aws-ct-summary JSON parsing (pure functions)
 ├── suzaku_report.py       # Suzaku CT Summary report generation (pure functions)
-├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised)
+├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised; each maps to
+│                          #   Threat Technique Catalog for AWS techniques via `techniques:`)
 ├── prompts/
 │   ├── __init__.py
 │   ├── system_prompt.py   # System prompt template for SQL generation
@@ -62,7 +63,8 @@ agent/
     ├── test_prompts.py
     ├── test_report.py
     ├── test_app.py            # includes handlers.py tests (UI-03 bulk mode, geo enrichment, …)
-    ├── test_builtin_hunts_phase1.py … test_builtin_hunts_phase4.py
+    ├── test_builtin_hunts_phase1.py … test_builtin_hunts_phase6.py
+    ├── test_builtin_hunts_techniques.py  # Threat Technique Catalog metadata + rendering
     ├── test_console_login_oauth2.py
     ├── test_suzaku_summary.py
     └── test_suzaku_report.py

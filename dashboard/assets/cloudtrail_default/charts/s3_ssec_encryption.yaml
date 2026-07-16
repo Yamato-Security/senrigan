@@ -1,0 +1,46 @@
+# DSH-66: S3 SSE-C Ransomware Encryption
+# Table of CloudTrail events for Threat Technique Catalog for AWS technique(s) T1486.A001.
+# Catalog: https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.A001.html
+uuid: a9a78467-37fe-4810-b610-b3c3f97913ed
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: S3 SSE-C Ransomware Encryption
+viz_type: table
+description: >
+  S3 objects re-encrypted with attacker-supplied SSE-C keys plus bucket default-encryption changes — cloud-native ransomware.
+  Threat Technique Catalog for AWS: T1486.A001.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: event_count
+      hasCustomLabel: true
+      optionName: metric_s3_ssec_event_count
+  groupby:
+    - event_time
+    - event_name
+    - user_identity_arn
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - aws_region
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND (
+          (event_name IN ('CopyObject', 'PutObject')
+           AND json_extract_string(additional_event_data, '$.SSEApplied') = 'SSE_C')
+          OR event_name = 'PutBucketEncryption'
+        )
+      filterOptionName: filter_s3_ssec
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
