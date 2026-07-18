@@ -296,32 +296,30 @@ pub fn insert_events_with_geo(
     Ok((events.len(), geoip_ns))
 }
 
-/// Record a batch of ingested files in a single Appender flush.
+/// Record (upsert) a batch of ingested files.
 ///
-/// Replaces N individual `INSERT OR REPLACE` statements (one per file) with
-/// a single Appender write, reducing SQL round-trip overhead from O(N) to
-/// O(1) per chunk.
+/// Uses `INSERT OR REPLACE`, keyed on the `file_path` PRIMARY KEY, so that
+/// re-ingesting a file whose content changed (a new sha256 under the same
+/// path — e.g. a rotated/re-downloaded log or a regenerated config snapshot)
+/// updates the existing mark instead of violating the primary key and aborting
+/// the entire run. `ingested_at` falls back to its `DEFAULT current_timestamp`,
+/// so each (re-)mark records when it was written.
 ///
-/// `ingested_at` is supplied as a formatted RFC 3339 timestamp string so the
-/// appender can fill the TIMESTAMP column without relying on SQL DEFAULT.
+/// A DuckDB `Appender` cannot be used here: it performs a plain `INSERT` and
+/// raises a constraint error the moment an already-tracked path is re-marked.
+/// The statement is prepared once and executed per row to keep re-parsing off
+/// the hot path.
 pub fn batch_mark_ingested(conn: &Connection, files: &[(String, String)]) -> Result<()> {
     if files.is_empty() {
         return Ok(());
     }
-    let now = chrono::Utc::now()
-        .format("%Y-%m-%d %H:%M:%S%.6f")
-        .to_string();
-    let mut appender = conn
-        .appender("ingested_files")
-        .context("Failed to create appender for ingested_files")?;
+    let mut stmt = conn
+        .prepare("INSERT OR REPLACE INTO ingested_files (file_path, sha256) VALUES (?, ?)")
+        .context("Failed to prepare ingested_files upsert")?;
     for (path, sha256) in files {
-        appender
-            .append_row([path.as_str(), sha256.as_str(), now.as_str()])
-            .with_context(|| format!("Failed to append ingested_files row for {path}"))?;
+        stmt.execute(duckdb::params![path.as_str(), sha256.as_str()])
+            .with_context(|| format!("Failed to upsert ingested_files row for {path}"))?;
     }
-    appender
-        .flush()
-        .context("Failed to flush ingested_files appender")?;
     Ok(())
 }
 
@@ -780,5 +778,45 @@ mod tests {
             map.get("/logs/b.json.gz").map(String::as_str),
             Some("bbbb2222")
         );
+    }
+
+    // Issue #49: re-marking a file whose content changed must upsert (update the
+    // sha256) instead of raising a PRIMARY KEY constraint error that aborts the run.
+    #[test]
+    fn test_batch_mark_ingested_upserts_changed_file() {
+        let conn = temp_db();
+        ensure_table(&conn).unwrap();
+
+        batch_mark_ingested(&conn, &[("/logs/a.json".into(), "sha_v1".into())])
+            .expect("initial mark should succeed");
+        // Same path, new content hash — must not error.
+        batch_mark_ingested(&conn, &[("/logs/a.json".into(), "sha_v2".into())])
+            .expect("re-marking a changed file must not violate the primary key");
+
+        let map = fetch_ingested_files_map(&conn).expect("fetch should succeed");
+        assert_eq!(map.len(), 1, "the file must have exactly one mark, not two");
+        assert_eq!(
+            map.get("/logs/a.json").map(String::as_str),
+            Some("sha_v2"),
+            "the stored hash must be updated to the latest content"
+        );
+    }
+
+    #[test]
+    fn test_batch_mark_ingested_inserts_multiple_new_files() {
+        let conn = temp_db();
+        ensure_table(&conn).unwrap();
+
+        batch_mark_ingested(
+            &conn,
+            &[
+                ("/logs/a.json".into(), "aaaa".into()),
+                ("/logs/b.json".into(), "bbbb".into()),
+            ],
+        )
+        .expect("marking new files should succeed");
+
+        let map = fetch_ingested_files_map(&conn).expect("fetch should succeed");
+        assert_eq!(map.len(), 2);
     }
 }
