@@ -22,8 +22,20 @@ from sqlalchemy.dialects import registry  # noqa: E402
 registry.register("duckdb", "duckdb_engine", "Dialect")
 registry.register("duckdb.duckdb_engine", "duckdb_engine", "Dialect")
 
-# Secret key for session signing — MUST be overridden in production via env var.
-SECRET_KEY = os.environ.get("SUPERSET_SECRET_KEY", "change-me-in-production")
+# Secret key for session signing. There is NO safe default: a known key lets
+# anyone reachable on the port forge a valid signed admin session cookie without
+# the password. Require it to be set to a non-default value and refuse to boot
+# otherwise, so a missing/insecure key fails loudly instead of silently shipping
+# a publicly-known one.
+_INSECURE_DEFAULT_SECRET_KEY = "change-me-in-production"  # noqa: S105
+SECRET_KEY = os.environ.get("SUPERSET_SECRET_KEY", "")
+if not SECRET_KEY or SECRET_KEY == _INSECURE_DEFAULT_SECRET_KEY:
+    raise SystemExit(
+        "SUPERSET_SECRET_KEY is unset or still the insecure default. "
+        "Generate a unique value and set it in docker/.env before starting "
+        'Superset, e.g.:  echo "SUPERSET_SECRET_KEY=$(openssl rand -base64 42)" '
+        ">> docker/.env"
+    )
 
 # Superset home directory for metadata DB, uploads, etc.
 DATA_DIR = "/app/superset_home"
@@ -37,8 +49,11 @@ SUPERSET_LOAD_EXAMPLES = False
 # Prevent connections to unsafe internal/metadata databases.
 PREVENT_UNSAFE_DB_CONNECTIONS = True
 
-# CSRF — disable for local development convenience (re-enable for production).
-WTF_CSRF_ENABLED = False
+# CSRF protection — enabled so a malicious web page the analyst visits cannot
+# drive state-changing requests against Superset on localhost. The one-shot
+# init/resync scripts use the in-process Python API (not HTTP forms), so this
+# does not affect them.
+WTF_CSRF_ENABLED = True
 
 # Chart query results cache — FileSystemCache persists across container restarts via
 # the superset_home named volume.  Data is static between ingester runs, so 8 h TTL
