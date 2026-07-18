@@ -8,7 +8,7 @@
 
 x-superset-image: &superset-image senrigan-dashboard:latest
 x-superset-env: &superset-env
-  SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-change-me-in-production}
+  SUPERSET_SECRET_KEY: "${SUPERSET_SECRET_KEY:?set SUPERSET_SECRET_KEY in .env (generate with openssl rand -base64 42)}"
   DUCKDB_PATH: /data/db/threat_hunting.db
 x-ca-cert-arg: &ca-cert-arg
   CUSTOM_CA_CERT_BASE64: ${CUSTOM_CA_CERT_BASE64:-}
@@ -101,7 +101,9 @@ services:
     ports:
       - "127.0.0.1:8088:8088"
     volumes:
-      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db
+      # Superset only reads the DuckDB file — mount read-only (least privilege),
+      # matching the agent/config-viz reader services.
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
       - superset_home:/app/superset_home
       - ../dashboard/assets:/app/dashboards:ro
       - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
@@ -121,7 +123,8 @@ services:
     image: *superset-image
     container_name: threat-hunting-superset-init
     volumes:
-      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db
+      # Init only registers datasets/dashboards; it never writes the DuckDB file.
+      - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
       - superset_home:/app/superset_home
       - ../dashboard/assets:/app/dashboards:ro
       - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
