@@ -1,5 +1,5 @@
 .PHONY: help \
-        up down build ps \
+        up down build ps ensure-secret \
         ingest ingest-full ingest-geoip enrich config-import resync \
         logs-agent logs-config-viz logs-superset \
         test lint fmt-check \
@@ -12,7 +12,22 @@ GEOIP_CITY ?= /data/geoip/GeoLite2-City.mmdb
 GEOIP_ASN  ?= /data/geoip/GeoLite2-ASN.mmdb
 
 # ── サービス管理 ──────────────────────────────────────────
-up:              ## Start all services
+# docker-compose.yml interpolates ${SUPERSET_SECRET_KEY:?} at parse time, so
+# every compose invocation needs the key present in docker/.env — hence the
+# ensure-secret prerequisite on all $(DC) targets.
+ensure-secret:   ## Generate a per-install SUPERSET_SECRET_KEY into docker/.env if missing
+	@touch docker/.env
+	@if ! grep -q '^SUPERSET_SECRET_KEY=..*' docker/.env; then \
+	    key=$$(head -c 42 /dev/urandom | base64 | tr -d '\n'); \
+	    if grep -q '^SUPERSET_SECRET_KEY=' docker/.env; then \
+	        sed -i.bak "s|^SUPERSET_SECRET_KEY=.*|SUPERSET_SECRET_KEY=$$key|" docker/.env && rm -f docker/.env.bak; \
+	    else \
+	        echo "SUPERSET_SECRET_KEY=$$key" >> docker/.env; \
+	    fi; \
+	    echo "  🔑 Generated SUPERSET_SECRET_KEY in docker/.env"; \
+	fi
+
+up: ensure-secret ## Start all services
 	$(DC) up -d --build
 	@echo ""
 	@echo "  🚀 \033[1mSenrigan is up and running!\033[0m"
@@ -21,54 +36,54 @@ up:              ## Start all services
 	@echo "  📊  \033[36mhttp://localhost:8088/dashboard/list\033[0m  — Dashboard  \033[2m(admin / admin)\033[0m"
 	@echo ""
 
-down:            ## Stop all services
+down: ensure-secret            ## Stop all services
 	$(DC) down
 
-clean:           ## Stop containers, remove volumes + images + build cache
+clean: ensure-secret           ## Stop containers, remove volumes + images + build cache
 	$(DC) down -v --rmi all
 	docker builder prune -f
 
-build:           ## Build all Docker images (no start)
+build: ensure-secret           ## Build all Docker images (no start)
 	$(DC) build
 
-ps:              ## Show container status
+ps: ensure-secret              ## Show container status
 	$(DC) ps
 
 # ── Ingest ───────────────────────────────────────────────
-ingest:          ## Ingest CloudTrail logs (strip-raw-event, lean DB)
+ingest: ensure-secret          ## Ingest CloudTrail logs (strip-raw-event, lean DB)
 	$(DC) --profile ingest run --rm ingester ingest \
 	    --path /data/logs --strip-raw-event --strip-fields
 
-ingest-full:     ## Ingest CloudTrail logs (keep raw_event column)
+ingest-full: ensure-secret     ## Ingest CloudTrail logs (keep raw_event column)
 	$(DC) --profile ingest run --rm ingester ingest \
 	    --path /data/logs --strip-fields
 
-ingest-geoip:    ## Ingest CloudTrail logs with GeoIP enrichment
+ingest-geoip: ensure-secret    ## Ingest CloudTrail logs with GeoIP enrichment
 	$(DC) --profile ingest run --rm ingester ingest \
 	    --path /data/logs \
 	    --geoip-city $(GEOIP_CITY) \
 	    --geoip-asn $(GEOIP_ASN) \
 	    --strip-raw-event --strip-fields
 
-enrich:          ## Back-fill GeoIP on existing DB rows
+enrich: ensure-secret          ## Back-fill GeoIP on existing DB rows
 	$(DC) --profile ingest run --rm ingester enrich \
 	    --geoip-country /data/geoip
 
-config-import:   ## Import AWS Config snapshots
+config-import: ensure-secret   ## Import AWS Config snapshots
 	$(DC) --profile ingest run --rm ingester config-import \
 	    --path /data/config
 
-resync:          ## Re-sync Superset dataset metadata after re-ingestion
+resync: ensure-secret          ## Re-sync Superset dataset metadata after re-ingestion
 	$(DC) --profile resync run --rm superset-resync
 
 # ── ログ ─────────────────────────────────────────────────
-logs-agent:      ## Tail agent logs
+logs-agent: ensure-secret      ## Tail agent logs
 	$(DC) logs -f agent
 
-logs-config-viz: ## Tail config-viz logs
+logs-config-viz: ensure-secret ## Tail config-viz logs
 	$(DC) logs -f config-viz
 
-logs-superset:   ## Tail superset logs
+logs-superset: ensure-secret   ## Tail superset logs
 	$(DC) logs -f superset
 
 # ── 開発: テスト ─────────────────────────────────────────
