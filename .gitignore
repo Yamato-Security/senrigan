@@ -18,6 +18,8 @@ target/
 .env
 .env.local
 .env.*.local
+docker/.env
+docker/.env.bak
 
 # ── Python ──────────────────────────────────────────
 __pycache__/
