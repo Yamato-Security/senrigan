@@ -557,3 +557,40 @@ def test_generate_analysis_retries_on_server_error(mock_openai_client):
 
     assert "Analysis" in result
     mock_sleep.assert_called_once_with(1.0)
+
+
+# ---------------------------------------------------------------------------
+# TLS verification (issue #47): a custom CA bundle must be trusted, not bypassed
+# ---------------------------------------------------------------------------
+
+
+def test_create_client_uses_ca_bundle_for_verification():
+    """A configured CA bundle is passed to httpx verify=, never verify=False."""
+    _clear_client_cache()
+    with (
+        patch("llm.OpenAI") as mock_openai,
+        patch("llm.httpx.Client") as mock_httpx,
+        patch.dict(
+            "os.environ", {"SSL_CERT_FILE": "/etc/ssl/proxy-ca.pem"}, clear=False
+        ),
+    ):
+        mock_openai.return_value = MagicMock()
+        _create_client("sk-ca-test")
+
+    mock_httpx.assert_called_once_with(verify="/etc/ssl/proxy-ca.pem")
+    # Guard against a regression back to verify=False.
+    assert mock_httpx.call_args.kwargs.get("verify") is not False
+
+
+def test_create_client_no_ca_bundle_uses_default_client():
+    """With no CA bundle configured, no custom (unverified) http_client is built."""
+    _clear_client_cache()
+    with (
+        patch("llm.OpenAI") as mock_openai,
+        patch("llm.httpx.Client") as mock_httpx,
+        patch.dict("os.environ", {}, clear=True),
+    ):
+        mock_openai.return_value = MagicMock()
+        _create_client("sk-no-ca")
+
+    mock_httpx.assert_not_called()
