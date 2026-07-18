@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current with automated bump PRs so that
+  # pinning to immutable commits does not leave the workflows stuck on old,
+  # potentially vulnerable action versions.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(ci)"
