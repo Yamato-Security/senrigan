@@ -219,7 +219,7 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 | `DUCKDB_PATH` | all | — | Overrides default DB path |
 | `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount dir |
 | `GEOIP_CITY/COUNTRY/ASN_PATH` | ingester | — | GeoLite2 mmdb paths |
-| `SUPERSET_SECRET_KEY` | dashboard | `change-me-in-production` | **Change before network exposure** |
+| `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
 | `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies (see DEVELOPMENT.md §6) |
 
 ---

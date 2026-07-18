@@ -303,7 +303,7 @@ Files without a recognisable `yyyy/mm/dd` segment in their path are always inclu
 | `GEOIP_CITY_PATH` | ingester | — | Path to GeoLite2-City.mmdb |
 | `GEOIP_COUNTRY_PATH` | ingester | — | Path to GeoLite2-Country.mmdb |
 | `GEOIP_ASN_PATH` | ingester | — | Path to GeoLite2-ASN.mmdb |
-| `SUPERSET_SECRET_KEY` | dashboard | `change-me-in-production` | **Change before exposing to network** |
+| `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
 | `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | agent | — | CA bundle for corporate TLS proxy |
 | `RAYON_NUM_THREADS` | ingester | CPU count | Limits rayon thread pool |
 

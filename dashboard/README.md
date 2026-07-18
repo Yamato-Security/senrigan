@@ -33,8 +33,8 @@ docker compose up -d superset
 
 Open http://localhost:8088 (default credentials: `admin` / `admin`).
 
-> **Security:** Change `SUPERSET_SECRET_KEY` and the admin password before
-> exposing the service outside localhost.
+> **Security:** Set `SUPERSET_SECRET_KEY` before starting Superset (or run `make ensure-secret`, which writes a per-install key to `docker/.env`). Change the admin password before exposing
+> the service outside localhost.
 
 ---
 
@@ -216,7 +216,7 @@ dashboard/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SUPERSET_SECRET_KEY` | `change-me-in-production` | Session signing key (**must change in production**) |
+| `SUPERSET_SECRET_KEY` | auto-generated | Session signing key; `make up` generates a per-install value into `docker/.env` (Superset refuses to start without one) |
 | `SUPERSET_ADMIN_USERNAME` | `admin` | Admin username |
 | `SUPERSET_ADMIN_PASSWORD` | `admin` | Admin password (**must change in production**) |
 | `DUCKDB_PATH` | `/data/db/threat_hunting.db` | DuckDB file path (in container) |
