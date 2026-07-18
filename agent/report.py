@@ -353,7 +353,12 @@ def _render_entry(index: int, entry: ReportEntry) -> str:
 
     sql_block = _sanitize(entry.sql)
     results_block = _sanitize(results_md)
-    summary_block = _sanitize(entry.analysis) if entry.analysis else "(no summary)"
+    # Escape the AI analysis: it is derived from attacker-influenceable log data,
+    # and Markdown renderers commonly pass raw HTML through. Escaping angle
+    # brackets neutralises injected HTML without affecting Markdown bullet output.
+    summary_block = (
+        _html.escape(_sanitize(entry.analysis)) if entry.analysis else "(no summary)"
+    )
 
     heading = f"## {_build_heading(index, entry)}"
 
@@ -481,24 +486,27 @@ def _render_entry_html(index: int, entry: ReportEntry) -> str:
     sql_raw = _sanitize(entry.sql)
     sql_highlighted = _highlight_sql(sql_raw)
     results_html_sanitized = _sanitize(results_html)
+    # HTML-escape all AI/attacker-influenced text before interpolation. The AI
+    # analysis is derived from CloudTrail fields an attacker can influence, so an
+    # injected `<img onerror=...>` would otherwise become live HTML in the report.
     summary_block = (
-        f"<p>{_sanitize(entry.analysis)}</p>"
+        f"<p>{_html.escape(_sanitize(entry.analysis))}</p>"
         if entry.analysis
         else '<p class="no-results">(no summary)</p>'
     )
 
     analyst_section = ""
     if entry.analyst_note:
-        note = _sanitize(entry.analyst_note)
+        note = _html.escape(_sanitize(entry.analyst_note))
         analyst_section = f'<h3>Analyst Note</h3><pre class="analyst-note">{note}</pre>'
 
     techniques_section = ""
     if entry.techniques:
         items = []
         for t in entry.techniques:
-            title = _sanitize(_technique_title(t))
-            url = str(t.get("url", ""))
-            summary = _sanitize(str(t.get("summary", "")))
+            title = _html.escape(_sanitize(_technique_title(t)))
+            url = _html.escape(str(t.get("url", "")), quote=True)
+            summary = _html.escape(_sanitize(str(t.get("summary", ""))))
             link = f'<a href="{url}" target="_blank">{title}</a>' if url else title
             if summary:
                 link = f"{link} — {summary}"

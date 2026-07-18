@@ -400,3 +400,56 @@ def test_html_report_has_sql_highlight_css():
     assert ".sql-string" in result
     assert ".sql-comment" in result
     assert ".sql-number" in result
+
+
+# ---------------------------------------------------------------------------
+# XSS hardening (issue #48): AI analysis / analyst notes must be HTML-escaped
+# ---------------------------------------------------------------------------
+
+_XSS = "<img src=x onerror=alert(1)>"
+
+
+def test_html_report_escapes_ai_analysis():
+    """AI analysis (derived from attacker-influenceable data) must be escaped."""
+    entry = ReportEntry(
+        sql="SELECT 1",
+        results=pd.DataFrame({"a": [1]}),
+        analysis=f"Findings: {_XSS}",
+    )
+    html = generate_html_report([entry])
+    assert _XSS not in html
+    assert "&lt;img src=x onerror=alert(1)&gt;" in html
+
+
+def test_html_report_escapes_analyst_note():
+    """Analyst notes (which quote log values) must be escaped in the report."""
+    entry = ReportEntry(
+        sql="SELECT 1",
+        results=pd.DataFrame({"a": [1]}),
+        analyst_note=f"note {_XSS}",
+    )
+    html = generate_html_report([entry])
+    assert _XSS not in html
+    assert "&lt;img" in html
+
+
+def test_html_report_escapes_technique_fields():
+    """Technique title/summary must not inject raw HTML."""
+    entry = ReportEntry(
+        sql="SELECT 1",
+        results=pd.DataFrame({"a": [1]}),
+        techniques=[{"tid": "T1", "name": _XSS, "summary": _XSS, "url": ""}],
+    )
+    html = generate_html_report([entry])
+    assert _XSS not in html
+
+
+def test_markdown_report_escapes_ai_analysis():
+    """The Markdown report also neutralises raw HTML in the AI analysis."""
+    entry = ReportEntry(
+        sql="SELECT 1",
+        results=pd.DataFrame({"a": [1]}),
+        analysis=f"Findings: {_XSS}",
+    )
+    md = generate_report([entry])
+    assert _XSS not in md
