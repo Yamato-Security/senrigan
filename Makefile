@@ -11,7 +11,7 @@ DC         := cd docker && DOCKER_CLI_HINTS=false docker compose
 GEOIP_CITY ?= /data/geoip/GeoLite2-City.mmdb
 GEOIP_ASN  ?= /data/geoip/GeoLite2-ASN.mmdb
 
-# ── サービス管理 ──────────────────────────────────────────
+# ── Service management ─────────────────────────────────
 # docker-compose.yml interpolates ${SUPERSET_SECRET_KEY:?} at parse time, so
 # every compose invocation needs the key present in docker/.env — hence the
 # ensure-secret prerequisite on all $(DC) targets.
