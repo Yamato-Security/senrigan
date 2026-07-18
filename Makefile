@@ -86,7 +86,7 @@ logs-config-viz: ensure-secret ## Tail config-viz logs
 logs-superset: ensure-secret   ## Tail superset logs
 	$(DC) logs -f superset
 
-# ── 開発: テスト ─────────────────────────────────────────
+# ── Development: Tests ─────────────────────────────────
 test: test-ingester test-agent test-config-viz test-frontend  ## Run all tests
 
 test-ingester:   ## Run ingester (Rust) tests
