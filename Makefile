@@ -76,7 +76,7 @@ config-import: ensure-secret   ## Import AWS Config snapshots
 resync: ensure-secret          ## Re-sync Superset dataset metadata after re-ingestion
 	$(DC) --profile resync run --rm superset-resync
 
-# ── ログ ─────────────────────────────────────────────────
+# ── Logs ───────────────────────────────────────────────
 logs-agent: ensure-secret      ## Tail agent logs
 	$(DC) logs -f agent
 
