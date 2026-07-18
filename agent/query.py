@@ -21,18 +21,115 @@ logger = logging.getLogger(__name__)
 QUERY_TIMEOUT_SECONDS: int = 30
 DEFAULT_ROW_LIMIT: int = 200
 
-# Forbidden SQL keywords that must never be executed (case-insensitive, word boundary).
+# Forbidden SQL keywords/functions that must never be executed (case-insensitive,
+# word boundary). Besides write/DDL statements, this blocks DuckDB constructs that
+# touch the filesystem or load extensions — a READ_ONLY connection does NOT sandbox
+# those (COPY ... TO writes files; read_text/read_csv/read_blob/glob read arbitrary
+# files; ATTACH/INSTALL/LOAD extend the engine). Defense in depth on top of the
+# ``enable_external_access=false`` connection config (see :func:`connect_duckdb`).
 _FORBIDDEN_PATTERN = re.compile(
-    r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)\b",
+    r"\b("
+    r"INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|"
+    r"ATTACH|DETACH|COPY|INSTALL|LOAD|"
+    r"read_text|read_csv|read_csv_auto|read_parquet|read_json|read_json_auto|"
+    r"read_blob|glob"
+    r")\b",
     re.IGNORECASE,
 )
 
 # Matches the leading WITH keyword of a CTE (case-insensitive, multi-line safe).
 _WITH_PREFIX_PATTERN = re.compile(r"^\s*WITH\s+", re.IGNORECASE | re.DOTALL)
 
+# Matches a single-quoted SQL string literal (with '' escaping) so table-name
+# rewriting can skip over string contents.
+_SQL_STRING_LITERAL = re.compile(r"'(?:[^']|'')*'")
+
+# Matches a trailing top-level LIMIT clause (with optional OFFSET) at the very
+# end of a statement — used to override a preset/edited row cap in place.
+_TRAILING_LIMIT = re.compile(r"\bLIMIT\s+\d+(\s+OFFSET\s+\d+)?\s*$", re.IGNORECASE)
+
 
 class QueryValidationError(Exception):
     """Raised when a SQL query fails safety validation."""
+
+
+def _sub_outside_string_literals(pattern: re.Pattern, repl: str, sql: str) -> str:
+    """Apply ``pattern.sub(repl, ...)`` to *sql* but skip single-quoted literals.
+
+    Splits *sql* on single-quoted string literals, substitutes only in the
+    non-literal segments, and re-joins with the literals untouched. This keeps
+    identifier rewriting (e.g. ``cloudtrail_events`` → ``_ct_filtered``) from
+    corrupting a string value that merely contains the same text.
+
+    Args:
+        pattern: Compiled regex to substitute (matched only outside literals).
+        repl:    Replacement string.
+        sql:     SQL text to transform.
+
+    Returns:
+        The transformed SQL string.
+    """
+    segments = _SQL_STRING_LITERAL.split(sql)
+    literals = _SQL_STRING_LITERAL.findall(sql)
+    out: list[str] = []
+    for i, segment in enumerate(segments):
+        out.append(pattern.sub(repl, segment))
+        if i < len(literals):
+            out.append(literals[i])
+    return "".join(out)
+
+
+def _line_comment_start(line: str) -> int | None:
+    """Return the index of a top-level ``--`` comment in *line*, or ``None``.
+
+    A ``--`` that appears inside a single-quoted string literal is ignored so a
+    value such as ``'a--b'`` is not mistaken for a comment.
+    """
+    in_string = False
+    i = 0
+    n = len(line)
+    while i < n:
+        ch = line[i]
+        if ch == "'":
+            if in_string and i + 1 < n and line[i + 1] == "'":
+                i += 2  # '' escape inside a string literal
+                continue
+            in_string = not in_string
+        elif ch == "-" and not in_string and i + 1 < n and line[i + 1] == "-":
+            return i
+        i += 1
+    return None
+
+
+def _strip_trailing_comments(sql: str) -> str:
+    """Strip trailing SQL comments (and semicolons) from *sql*.
+
+    Removes any ``-- line`` comment on the final line and any ``/* block */``
+    comment at the end, repeatedly, so that a commented-out ``LIMIT`` can
+    neither hide nor be mistaken for a real row cap and a dangling line comment
+    cannot swallow a wrapper's closing clause. String literals are respected.
+
+    Args:
+        sql: SQL text.
+
+    Returns:
+        *sql* with trailing comments and semicolons removed.
+    """
+    cur = sql.rstrip().rstrip(";").rstrip()
+    while True:
+        if cur.endswith("*/"):
+            start = cur.rfind("/*")
+            if start != -1:
+                cur = cur[:start].rstrip().rstrip(";").rstrip()
+                continue
+        newline = cur.rfind("\n")
+        last_line = cur[newline + 1 :]
+        pos = _line_comment_start(last_line)
+        if pos is not None:
+            cur = (cur[: newline + 1] + last_line[:pos]).rstrip().rstrip(";").rstrip()
+            continue
+        break
+    return cur
 
 
 def apply_date_filter(
@@ -83,9 +180,11 @@ def apply_date_filter(
         f")"
     )
 
-    # Replace cloudtrail_events references in the original SQL.
-    modified_sql = re.sub(
-        r"\bcloudtrail_events\b", "_ct_filtered", sql, flags=re.IGNORECASE
+    # Replace cloudtrail_events references in the original SQL, but never inside
+    # single-quoted string literals (rewriting a literal that merely contains the
+    # text "cloudtrail_events" would silently change query semantics).
+    modified_sql = _sub_outside_string_literals(
+        re.compile(r"\bcloudtrail_events\b", re.IGNORECASE), "_ct_filtered", sql
     )
 
     # Prepend the CTE, handling an existing WITH clause correctly.
@@ -101,17 +200,19 @@ def apply_date_filter(
 def apply_row_limit(sql: str, limit: int) -> str:
     """Apply *limit* to *sql*, always honouring the caller's value.
 
-    If the SQL already contains a trailing ``LIMIT`` clause it is replaced
-    **in-place** with *limit* so that the caller's value is always the
-    effective row cap — regardless of any limit already present in the SQL.
-    This ensures the sidebar row-limit setting overrides hard-coded limits in
-    preset queries.
+    Trailing SQL comments and semicolons are stripped first (see
+    :func:`_strip_trailing_comments`) so that a commented-out ``LIMIT`` can
+    neither hide a missing cap nor be mistaken for a real one.
 
-    If the SQL has no ``LIMIT`` clause the whole statement is wrapped with
-    ``SELECT * FROM (...) AS _limited LIMIT {limit}``.
+    If the comment-free statement ends in a top-level ``LIMIT`` clause it is
+    replaced **in place** with *limit*, so the caller's value overrides any
+    limit already present (up or down) — this also keeps CTE (``WITH``) queries
+    valid, since they cannot always be wrapped in a derived table.
 
-    A trailing semicolon is stripped before processing to keep the resulting
-    SQL syntactically valid.
+    Otherwise the whole statement is wrapped with
+    ``SELECT * FROM (\n{sql}\n) AS _limited LIMIT {limit}``. The subquery is
+    placed on its own lines so that no inner trailing token can merge with the
+    closing ``) AS _limited``.
 
     Args:
         sql:   SQL string to apply the row limit to.
@@ -120,34 +221,40 @@ def apply_row_limit(sql: str, limit: int) -> str:
     Returns:
         SQL string guaranteed to return at most *limit* rows.
     """
-    stripped = sql.rstrip().rstrip(";").rstrip()
-    # Try to replace a trailing top-level LIMIT clause (with optional OFFSET).
-    # The substitution only succeeds when LIMIT appears at the very end of the
-    # statement (i.e. as a top-level clause, not inside a subquery or CTE).
-    new_sql = re.sub(
-        r"\bLIMIT\s+\d+(\s+OFFSET\s+\d+)?\s*$",
-        f"LIMIT {limit}",
-        stripped,
-        flags=re.IGNORECASE,
-    )
-    if new_sql != stripped:
-        # Replacement succeeded — LIMIT was a top-level clause.
+    core = _strip_trailing_comments(sql)
+    new_sql = _TRAILING_LIMIT.sub(f"LIMIT {limit}", core)
+    if new_sql != core:
+        # A genuine top-level LIMIT was replaced in place.
         return new_sql
-    # No top-level LIMIT found (or LIMIT only exists inside a subquery/CTE).
-    # Wrap the whole statement so the cap is always applied.
-    return f"SELECT * FROM ({stripped}) AS _limited LIMIT {limit}"
+    # No top-level LIMIT (or LIMIT only inside a subquery/CTE): wrap to cap.
+    return f"SELECT * FROM (\n{core}\n) AS _limited LIMIT {limit}"
+
+
+# DuckDB connection config for reader services. ``read_only`` alone does NOT
+# sandbox the filesystem — COPY ... TO writes files and read_text/read_csv/glob
+# read arbitrary files even on a read-only connection. Disabling external access
+# turns those into permission errors, and locking the configuration prevents SQL
+# from re-enabling it at runtime (e.g. ``SET enable_external_access=true``).
+_READONLY_CONFIG: dict[str, str] = {
+    "enable_external_access": "false",
+    "lock_configuration": "true",
+}
 
 
 def connect_duckdb(path: str) -> duckdb.DuckDBPyConnection:
-    """Open a DuckDB connection in READ_ONLY mode.
+    """Open a DuckDB connection in READ_ONLY mode with the filesystem sandboxed.
+
+    The connection disables DuckDB's external file access so that LLM-generated
+    or hand-edited SQL cannot read/write local files (``read_text``, ``COPY ...
+    TO``, ``INSTALL``, ``glob``, …) via the query path.
 
     Args:
         path: Filesystem path to the DuckDB database file.
 
     Returns:
-        A DuckDB connection opened in read-only mode.
+        A DuckDB connection opened in read-only mode with external access off.
     """
-    return duckdb.connect(path, read_only=True)
+    return duckdb.connect(path, read_only=True, config=_READONLY_CONFIG)
 
 
 @contextmanager
@@ -178,9 +285,15 @@ def duckdb_connection(path: str) -> Generator[duckdb.DuckDBPyConnection, None, N
 def validate_query(conn: duckdb.DuckDBPyConnection, sql: str) -> None:
     """Validate SQL safety using keyword filtering and EXPLAIN.
 
-    Performs two checks in order:
-    1. Rejects any statement containing forbidden write/DDL keywords.
-    2. Runs ``EXPLAIN <sql>`` to verify the query is syntactically valid
+    Performs three checks in order:
+    1. Rejects multi-statement input. ``conn.execute("EXPLAIN <sql>")`` would
+       run every statement after the first ``;`` for real (the ``EXPLAIN``
+       prefix only binds to the first statement), so a stacked statement such
+       as ``SELECT 1; COPY (...) TO '/tmp/x'`` must be rejected *before* the
+       EXPLAIN step — otherwise it executes during "validation", bypassing the
+       row-limit and timeout wrappers entirely.
+    2. Rejects any statement containing forbidden write/DDL/filesystem keywords.
+    3. Runs ``EXPLAIN <sql>`` to verify the query is syntactically valid
        without executing it.
 
     Args:
@@ -188,9 +301,19 @@ def validate_query(conn: duckdb.DuckDBPyConnection, sql: str) -> None:
         sql:  The SQL string to validate.
 
     Raises:
-        QueryValidationError: If the query contains forbidden keywords or
-                              fails the EXPLAIN check.
+        QueryValidationError: If the query is multi-statement, contains
+                              forbidden keywords, or fails the EXPLAIN check.
     """
+    try:
+        statements = conn.extract_statements(sql)
+    except Exception as exc:
+        raise QueryValidationError(f"SQL validation failed: {exc}") from exc
+    if len(statements) != 1:
+        raise QueryValidationError(
+            "Only a single SQL statement is allowed "
+            f"(got {len(statements)}): {sql[:120]}"
+        )
+
     if _FORBIDDEN_PATTERN.search(sql):
         raise QueryValidationError(f"Write/DDL statements are not allowed: {sql[:120]}")
 

@@ -430,3 +430,81 @@ def test_execute_with_retry_forwards_row_limit(tmp_duckdb):
 
     mock_exec.assert_called_once_with(conn, sql, row_limit=50)
     conn.close()
+
+
+# ---------------------------------------------------------------------------
+# SQL-safety hardening (issue #46): sandbox, multi-statement, comment bypass
+# ---------------------------------------------------------------------------
+
+
+def test_validate_query_rejects_stacked_statement(tmp_duckdb):
+    """A stacked (multi-statement) query is rejected before the EXPLAIN step.
+
+    Otherwise ``conn.execute('EXPLAIN <sql>')`` would run every statement after
+    the first ``;`` for real, bypassing the row-limit and timeout wrappers.
+    """
+    conn = connect_duckdb(tmp_duckdb)
+    with pytest.raises(QueryValidationError, match="single SQL statement"):
+        validate_query(
+            conn,
+            "SELECT 1; COPY (SELECT 1) TO '/tmp/senrigan_pwn.csv'",
+        )
+    conn.close()
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT content FROM read_text('/etc/hostname')",
+        "SELECT * FROM read_csv('/etc/hostname')",
+        "COPY (SELECT 1) TO '/tmp/x.csv'",
+        "ATTACH '/tmp/o.db' AS o",
+        "INSTALL httpfs",
+        "SELECT * FROM glob('/etc/*')",
+    ],
+)
+def test_validate_query_rejects_filesystem_functions(tmp_duckdb, sql):
+    """Filesystem/extension SQL is rejected by the keyword blocklist."""
+    conn = connect_duckdb(tmp_duckdb)
+    with pytest.raises(QueryValidationError):
+        validate_query(conn, sql)
+    conn.close()
+
+
+def test_connect_duckdb_blocks_external_file_access(tmp_duckdb, tmp_path):
+    """read_only alone is not a sandbox — the connection must deny file access.
+
+    Verifies defense in depth below the blocklist: even executed directly, a
+    filesystem-touching function raises instead of reading local files.
+    """
+    secret = tmp_path / "secret.txt"
+    secret.write_text("TOP_SECRET")
+    conn = connect_duckdb(tmp_duckdb)
+    with pytest.raises(duckdb.Error):
+        conn.execute(f"SELECT content FROM read_text('{secret}')").fetchall()
+    conn.close()
+
+
+def test_apply_row_limit_ignores_commented_limit():
+    """A commented-out ``LIMIT`` must not defeat the row cap (comment bypass)."""
+    result = apply_row_limit("SELECT * FROM cloudtrail_events -- LIMIT 5", 200)
+    assert result.upper().rstrip().endswith("LIMIT 200")
+    assert "_limited" in result  # wrapped, so the cap is really applied
+
+
+def test_apply_row_limit_wraps_trailing_line_comment_executably(tmp_duckdb):
+    """Wrapping a query that ends in a line comment must stay executable."""
+    conn = connect_duckdb(tmp_duckdb)
+    wrapped = apply_row_limit("SELECT * FROM cloudtrail_events -- newest first", 2)
+    df = conn.execute(wrapped).df()
+    assert len(df) <= 2
+    conn.close()
+
+
+def test_apply_date_filter_skips_string_literals():
+    """Table-name rewriting must not touch text inside string literals."""
+    sql = "SELECT * FROM cloudtrail_events WHERE event_name = 'cloudtrail_events'"
+    result = apply_date_filter(sql, date(2024, 1, 1), None)
+    # The literal is preserved verbatim; only the FROM reference is rewritten.
+    assert "'cloudtrail_events'" in result
+    assert "FROM _ct_filtered" in result
