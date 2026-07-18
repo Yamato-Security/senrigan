@@ -167,13 +167,18 @@ def _create_client(api_key: str) -> OpenAI:
     When running behind a corporate proxy that performs TLS inspection,
     set the ``SSL_CERT_FILE`` or ``REQUESTS_CA_BUNDLE`` environment
     variable to point to a CA bundle that includes the proxy's root CA.
+    That bundle is used to **verify** the connection — certificate
+    verification is never disabled.
     """
     if api_key not in _client_cache:
         ca_bundle = os.environ.get("SSL_CERT_FILE") or os.environ.get(
             "REQUESTS_CA_BUNDLE"
         )
         if ca_bundle:
-            http_client = httpx.Client(verify=False)
+            # Trust the supplied CA bundle (e.g. a TLS-inspecting proxy's root
+            # CA). Do NOT disable verification — that would expose the API key
+            # and query results to any on-path attacker.
+            http_client = httpx.Client(verify=ca_bundle)
             _client_cache[api_key] = OpenAI(api_key=api_key, http_client=http_client)
         else:
             _client_cache[api_key] = OpenAI(api_key=api_key)
