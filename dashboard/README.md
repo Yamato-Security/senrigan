@@ -33,8 +33,7 @@ docker compose up -d superset
 
 Open http://localhost:8088 (default credentials: `admin` / `admin`).
 
-> **Security:** `SUPERSET_SECRET_KEY` is auto-generated per install by
-> `make up` (into `docker/.env`). Change the admin password before exposing
+> **Security:** Set `SUPERSET_SECRET_KEY` before starting Superset (or run `make ensure-secret`, which writes a per-install key to `docker/.env`). Change the admin password before exposing
 > the service outside localhost.
 
 ---
