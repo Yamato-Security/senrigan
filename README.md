@@ -7,7 +7,7 @@
 
  <p>
    <b>Offline, open-source AWS CloudTrail DFIR &amp; threat hunting platform.</b><br/>
-   By <a href="https://github.com/Yamato-Security">Yamato Security</a> — 100+ built-in hunts, 80+
+   By <a href="https://github.com/Yamato-Security">Yamato Security</a> — 120+ built-in hunts, 100+
    Superset dashboard charts, AI chat, and an AWS Config resource graph, all on your laptop with a
    single <code>make up</code>.
  </p>
@@ -37,7 +37,7 @@
 ## 🦅 About
 
 Senrigan is an **offline, open-source AWS CloudTrail DFIR & threat hunting platform**. Drop in your
-CloudTrail logs and get **100+ ready-to-run threat hunts**, **80+ pre-built Apache Superset dashboard
+CloudTrail logs and get **120+ ready-to-run threat hunts**, **100+ pre-built Apache Superset dashboard
 charts**, AI-assisted chat analysis, [Suzaku](https://github.com/Yamato-Security/suzaku) results
 visualization, HTML threat-hunting reports, and an AWS Config resource graph — all on your laptop with
 a single `make up`. **No SIEM required, no cloud infrastructure needed.**
@@ -48,12 +48,12 @@ All documentation now lives on a dedicated, searchable, multi-language site:
 
 > ### 👉 **[yamato-security.github.io/senrigan](https://yamato-security.github.io/senrigan/)**
 
-| Section | |
-| --- | --- |
-| 🚀 [Getting Started](https://yamato-security.github.io/senrigan/getting-started/) | Prerequisites, quick start with Docker |
-| 🔎 [Reference](https://yamato-security.github.io/senrigan/reference/) | 100+ built-in hunts and 80+ dashboard charts |
-| 🧩 [Modules](https://yamato-security.github.io/senrigan/overview/modules/) | ingester, agent, dashboard, config_viz |
-| 🏛️ [Architecture](https://yamato-security.github.io/senrigan/overview/architecture/) | How it all fits together |
+| Section |                                               |
+| --- |-----------------------------------------------|
+| 🚀 [Getting Started](https://yamato-security.github.io/senrigan/getting-started/) | Prerequisites, quick start with Docker        |
+| 🔎 [Reference](https://yamato-security.github.io/senrigan/reference/) | 120+ built-in hunts and 100+ dashboard charts |
+| 🧩 [Modules](https://yamato-security.github.io/senrigan/overview/modules/) | ingester, agent, dashboard, config_viz        |
+| 🏛️ [Architecture](https://yamato-security.github.io/senrigan/overview/architecture/) | How it all fits together                      |
 
 ## 🗂️ Looking for the old README?
 
