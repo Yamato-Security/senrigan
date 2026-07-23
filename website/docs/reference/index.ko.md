@@ -2,25 +2,25 @@
 
 > 💡 SQL이나 깊은 AWS 지식이 필요 없습니다 — 드롭다운에서 헌트를 선택하기만 하면 즉시 결과를 얻을 수 있습니다.
 
-## 🎯 내장 헌트 — 112 쿼리
+## 🎯 내장 헌트 — 126 쿼리
 
 카테고리는 DFIR 트리아지 우선순위 순으로 정렬되어 있습니다 — 먼저 탐지 도구 변조를 확인하고, 그다음 자격 증명 남용, 그다음 데이터 영향을 확인하세요.
 
 | 카테고리 | 쿼리 | 다루는 주요 위협 |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 12 | 감사 서비스 변조 (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 삭제 · 알람 억제 · 로그 유출 |
-| 🔑 Identity & Access | 26 | 루트 사용 · 콘솔 로그인/MFA · 권한 상승 · 신뢰 정책 백도어 · PassRole 남용 · 교차 계정 AssumeRole · SSO/SAML/OIDC · 자격 증명 열거 |
-| 🪣 Data & Storage | 21 | S3 대량 삭제/다운로드 · 시크릿 대량 읽기 · 백업 변조 · KMS 작업 · 스냅샷 공유 · EBS Direct API 유출 · DynamoDB 내보내기 · S3 교차 계정 복제 |
-| ⚡ Compute & Serverless | 14 | EC2 대량 중지/종료 · SSM 측면 이동 · Lambda/ECS/EKS/ECR 변조 · EventBridge 지속성 · 크립토마이닝 · Lightsail 남용 |
+| 🔑 Identity & Access | 30 | 루트 사용 · 콘솔 로그인/MFA · 권한 상승 · 신뢰 정책 백도어 · PassRole 남용 · 교차 계정 AssumeRole · SSO/SAML/OIDC · 자격 증명 열거 · IAM 엔티티 삭제 · AssumeRoot 탈취 · Cognito 사용자 풀/토큰 남용 · 지원 케이스 억제 |
+| 🪣 Data & Storage | 26 | S3 대량 삭제/다운로드 · 시크릿 대량 읽기 · 백업 변조 · KMS 작업 · 스냅샷 공유 · EBS Direct API 유출 · DynamoDB 내보내기 · S3 교차 계정 복제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS Data API 조작 · 영향을 위한 스토리지 재암호화 |
+| ⚡ Compute & Serverless | 17 | EC2 대량 중지/종료 · SSM 측면 이동 · Lambda/ECS/EKS/ECR 변조 · EventBridge 지속성 · 크립토마이닝 · Lightsail 남용 · IMDS/SSRF 약화 · AMI/스냅샷 삭제 · WorkSpaces 탈취 |
 | 🤖 AI & LLM Abuse | 6 | Bedrock 호출 급증 · 모델 액세스 활성화 · 호출 로깅 변조 · 리전 횡단 정찰 · 실패 호출 버스트 · 호출자/발신지 목록화 (LLMjacking) |
-| 🌐 Network & Infrastructure | 14 | SG 인터넷 개방 · VPC 흐름 로그 삭제 · CloudFront 하이재킹 · 은밀한 VPN/TGW 터널 · Elastic IP C2 · API Gateway 키 |
-| 🕵 Threat Patterns | 4 | 정찰 버스트 · 비정상 사용자 에이전트 · 다중 리전 확산 · 최초 API 호출 |
+| 🌐 Network & Infrastructure | 15 | SG 인터넷 개방 · VPC 흐름 로그 삭제 · CloudFront 하이재킹 · 은밀한 VPN/TGW 터널 · Elastic IP C2 · API Gateway 키 · Route 53/도메인 탈취 |
+| 🕵 Threat Patterns | 5 | 정찰 버스트 · 비정상 사용자 에이전트 · 다중 리전 확산 · 최초 API 호출 · 최초 관찰 리전 활동 |
 | 📊 Activity & Baseline | 3 | 콘솔 쓰기 이벤트 · 오류 급증 · 최근 오류 |
 | 🌍 GeoIP Analysis | 10 | 국가별 콘솔 로그인/거부/쓰기 · 드문 국가에서의 접근 · 국가/ASN/도시 분석 · event_name × country · identity × country · 프라이빗 IP 베이스라인 |
 | ☁ IaC & Platform | 2 | CI/CD 공급망 · CloudFormation 남용 |
 
 <details markdown="1">
-<summary>📋 전체 목록 — 전체 112 쿼리 (클릭하여 확장)</summary>
+<summary>📋 전체 목록 — 전체 126 쿼리 (클릭하여 확장)</summary>
 
 ## 내장 헌트
 
@@ -71,6 +71,10 @@
 | 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker 노트북 인스턴스 생성 및 사전 서명 URL 생성을 탐지합니다. iam:PassRole + sagemaker:CreateNotebookInstance는 전달된 역할의 전체 AWS 권한을 가진 Jupyter 환경을 제공합니다. CreatePresignedNotebookInstanceUrl 단독으로도 기존 노트북에 대한 접근을 허용할 수 있습니다. |
 | 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Data Pipeline 및 CodeStar 리소스 생성을 탐지합니다. 둘 다 iam:PassRole을 받아들이며 전달된 역할의 권한으로 임의의 코드를 실행할 수 있습니다. CodeStar:CreateProjectFromTemplate은 관리자 IAM 역할을 생성하는 문서화되지 않은 API입니다. |
 | 26 | 🧩 Step Functions Privilege Escalation | timeseries | Step Functions 상태 머신 생성 및 실행을 탐지합니다. iam:PassRole + states:CreateStateMachine + states:StartExecution을 통해 전달된 역할의 권한으로 임의의 Lambda / ECS 작업을 실행할 수 있습니다. |
+| 27 | 🪓 IAM Entity Deletion | timeseries | IAM 사용자, 역할, 정책, MFA 디바이스의 삭제를 탐지합니다. 공격자는 자신의 활동 흔적을 지우거나 방어자를 잠그기 위해 IAM 엔티티를 삭제합니다. |
+| 28 | 👑 AssumeRoot Usage | timeseries | 관리 계정에서 회원 계정의 루트로 향하는 sts:AssumeRoot 호출을 탐지합니다. 관리 계정이 침해되면 이 방법으로 모든 회원 계정을 장악할 수 있습니다. |
+| 29 | 🎫 Support Case Manipulation | timeseries | AWS Support 케이스 종료 및 댓글 활동을 탐지합니다. 공격자는 침해에 대한 AWS 알림을 억제하기 위해 남용/지원 케이스를 해결 처리합니다. |
+| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito 사용자 풀 및 앱 클라이언트 변경(토큰 유효 기간 연장, 새 클라이언트, 관리자 사용자 생성)을 탐지합니다. 공격자는 이를 악용해 수명이 긴 토큰을 발급하거나 백도어 사용자를 심습니다. |
 
 ### 🪣 Data & Storage
 
@@ -97,6 +101,11 @@
 | 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 외부 계정에 접근 권한을 부여하는 SQS/SNS 큐/토픽 정책 변경을 탐지합니다. 대량 전송 경보를 유발하지 않고 조용한 유출 채널을 만듭니다. |
 | 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 공개적으로 공유된(group=all) EBS 스냅샷 또는 AMI를 탐지합니다. 누구나 디스크 이미지를 복사하고 데이터를 추출할 수 있게 됩니다. |
 | 21 | 📧 Data Exfiltration Channels | bar | 유출을 나타낼 수 있는 대량 SNS/SQS/SES/S3 PutObject 호출(시간당 50회 이상)을 탐지합니다. |
+| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 공격자가 제공한 SSE-C 키로 재암호화된 S3 객체와 버킷 기본 암호화 설정 변경을 탐지합니다. 고객 키가 없으면 피해자는 복호화할 수 없습니다 — 클라우드 네이티브 랜섬웨어 패턴입니다. |
+| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | 객체를 만료시키는 S3 수명 주기 규칙과 수명 주기 구성 삭제를 탐지합니다. 공격자는 DeleteObject 호출 없이 시간이 지남에 따라 데이터를 조용히 삭제하기 위해 짧은 만료 기간을 설정합니다. |
+| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API 쿼리, 마스터 비밀번호 재설정, 스냅샷 복원을 탐지합니다. 공격자는 데이터를 직접 읽거나, 접근 권한을 얻기 위해 자격 증명을 재설정하거나, 스냅샷을 자신이 제어하는 인스턴스로 복원합니다. |
+| 25 | 🔎 S3 Bucket Enumeration | bar | 버킷 및 객체 메타데이터를 훑는 호출자를 탐지합니다(한 시간에 10회 이상의 List/GetBucket* 읽기). 유출 전 가치 있는 데이터를 찾는 흔한 초기 단계입니다. |
+| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | 명시적 KMS 키로 재암호화된 EBS/RDS 스냅샷 및 볼륨과 기본 EBS 암호화 비활성화를 탐지합니다. 공격자가 보유한 키로 재암호화하면 데이터를 인질로 잡을 수 있습니다. |
 
 ### ⚡ Compute & Serverless
 
@@ -116,6 +125,9 @@
 | 12 | 🐳 ECR Repository / Image Changes | timeseries | ECR 리포지토리 생성/삭제, 정책 변경, 이미지 푸시를 탐지합니다. 프로덕션 리포지토리에 악성 이미지를 주입하는 것은 공급망 지속성 기법입니다. |
 | 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | EventBridge 규칙 및 EventBridge Scheduler 수정을 탐지합니다. 공격자는 실행 중인 프로세스 없이 지속성을 확립하기 위해 예약된 규칙을 사용합니다. |
 | 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Lightsail 인스턴스 접근, 키 페어 작업, 포트 노출을 탐지합니다. Pacu에는 3개의 전용 Lightsail 모듈(enum, download_ssh_keys, generate_temp_access)이 있습니다. Lightsail 리소스는 표준 EC2 보안 경계 밖에서 작동합니다. |
+| 15 | 🛰 IMDS Options Weakening | timeseries | IMDSv2를 선택 사항으로 만들거나 메타데이터 엔드포인트를 다시 활성화하는 ModifyInstanceMetadataOptions 호출을 탐지합니다. IMDS를 약화시키면 인스턴스 역할 자격 증명을 훔치는 SSRF 경로가 다시 열립니다. |
+| 16 | 💥 AMI & Snapshot Deletion | bar | AMI의 대량 등록 취소 및 EBS 스냅샷 삭제(한 시간에 5회 이상)를 탐지합니다. 골든 이미지와 백업을 파괴하면 파괴적 공격 중 복구 옵션이 사라집니다. |
+| 17 | 🖥 WorkSpaces Hijacking | timeseries | Amazon WorkSpaces 프로비저닝 및 풀 생성을 탐지합니다. 공격자는 피해자의 비용으로 데스크톱을 구동합니다 — EC2 경계 밖에 있는, 감시가 부족한 컴퓨팅 하이재킹 채널입니다. |
 
 ### 🤖 AI & LLM Abuse
 
@@ -146,6 +158,7 @@
 | 12 | 🏷 ACM Certificate Operations | timeseries | ACM 인증서 요청 및 삭제를 탐지합니다. 공격자는 침해된 계정을 사용해 피싱 인프라를 구축하기 위한 공격자 제어 도메인용 TLS 인증서를 발급합니다. |
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway 키 생성 및 REST API 관리를 탐지합니다. Pacu의 api_gateway__create_api_keys는 IAM 키 교체에도 살아남는 지속적인 API 자격 증명을 생성합니다. 공격자는 접근 제어를 약화시키기 위해 API 권한 부여자도 수정합니다. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC 엔드포인트를 통한 액세스 거부 오류를 탐지합니다. 잘못 구성된 엔드포인트 정책을 나타낼 수 있습니다. |
+| 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS 레코드 편집, 호스팅 영역 변경, 도메인 등록/이전을 탐지합니다. 공격자는 트래픽을 리디렉션하거나, 방치된 서브도메인을 탈취하거나, 피싱을 위한 유사 도메인을 등록합니다. |
 
 ### 🕵 Threat Patterns
 
@@ -155,6 +168,7 @@
 | 2 | 🤖 Unusual User Agents | bar | 드문 사용자 에이전트(5개 미만의 이벤트)를 나열합니다. Pacu나 curl 같은 사용자 지정 도구는 공격자 도구를 나타낼 수 있습니다. |
 | 3 | 🌍 Multi-Region Activity | bar | 하루에 3개 이상의 리전에서 쓰기를 수행하는 자격 증명을 탐지합니다. 지리적 확산은 침해를 나타낼 수 있습니다. |
 | 4 | 🕵 First-Time API Calls (24h) | — | 지난 24시간 내에는 보였지만 이전에는 본 적 없는 API 호출을 찾습니다. 새로운 작업은 공격자 도구를 나타낼 수 있습니다. |
+| 5 | 🗺 First-Seen Region Activity | bar | 데이터셋의 지난 24시간 내에 사상 첫 활동이 발생한 AWS 리전을 찾습니다. 이전에 한 번도 사용된 적 없는 리전에서 작업하는 것은 리전 범위 모니터링으로부터 크립토마이닝이나 준비 작업을 숨기는 전형적인 방법입니다. |
 
 ### 📊 Activity & Baseline
 
@@ -190,24 +204,24 @@
 
 ---
 
-## 📊 대시보드 차트 — 91 차트
+## 📊 대시보드 차트 — 101 차트
 
 | 탭 | 차트 | 표시 내용 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9개의 트리아지 KPI 카드(이벤트, 주체, IP, 루트, MFA 없는 로그인, 액세스 거부, 방어 회피, 국가, 리전) + 전역 이벤트량 추세 |
-| 🎯 Threat Detection | 11 | 방어 회피 종합 · 로깅 공백 · VPC 흐름 로그/Config/EventBridge/WAF 변조 · SCP 변경 · 오류 및 스로틀링 추세 · 쓰기/읽기 비율 |
-| 🔑 Identity & Access | 14 | 콘솔 로그인 · MFA 추세 · 로그인 히트맵 · 실패→성공 인증 시퀀스 · 루트 사용 · IAM 엔티티 활동 · 권한 상승 타임라인 · 새 주체 · SSO · 교차 계정 AssumeRole |
+| 🎯 Threat Detection | 12 | 방어 회피 종합 · 로깅 공백 · VPC 흐름 로그/Config/EventBridge/WAF 변조 · SCP/조직 멤버십 변경 · 오류 및 스로틀링 추세 · 쓰기/읽기 비율 |
+| 🔑 Identity & Access | 16 | 콘솔 로그인 · MFA 추세 · 로그인 히트맵 · 실패→성공 인증 시퀀스 · 루트 사용 · IAM 엔티티 활동/삭제 · 권한 상승 타임라인 · 새 주체 · SSO · 교차 계정 AssumeRole · AssumeRoot 사용 |
 | 🚨 High-Risk API Monitor | 5 | 보안 서비스 변조 & 자격 증명 검색 API 로그 · 상위 고위험 호출 · 상위 행위자 · 시계열 고위험 호출량 |
 | 📊 API Activity | 6 | 상위 API · 액세스 거부 작업 · 리전 분포 · 오류 코드 구성 · 소스 IP · 사용자 에이전트 |
-| 🪣 S3 & RDS | 11 | S3 대량 다운로드/삭제 · 버전 관리/로깅 비활성화 · 교차 계정 복제 · 버킷 정책/ACL · 열거 · 보호 설정 · Backup vault 삭제 · KMS 키 삭제 · RDS 스냅샷 공유 / 스냅샷 없는 삭제 |
-| 🖥️ Computing | 14 | EC2 시작/대량 중지/키 페어/인스턴스 프로필/사용자 데이터/스냅샷 공유/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation |
+| 🪣 S3 & RDS | 15 | S3 대량 다운로드/삭제 · 버전 관리/로깅 비활성화 · 교차 계정 복제 · 버킷 정책/ACL · 열거 · 보호 설정 · Backup vault 삭제 · KMS 키 삭제 · RDS 스냅샷 공유 / 스냅샷 없는 삭제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS 쿼리/인스턴스 조작 · 영향을 위한 스토리지 재암호화 |
+| 🖥️ Computing | 17 | EC2 시작/대량 중지/키 페어/인스턴스 프로필/사용자 데이터/스냅샷 공유/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS 약화 · AMI/스냅샷 삭제 · WorkSpaces 탈취 |
 | 🤖 AI / LLM | 4 | Bedrock 호출 추세 · 모델 액세스 & 로그 변경 · 실패 호출 · 발신지별 호출자(LLMjacking 트리아지) |
 | 🌐 Network | 5 | 보안 그룹 변경 · NACL/라우트 테이블 변경 · VPC 인프라 · VPC 피어링/Transit Gateway · Route53 DNS 변경 |
 | 🕒 Temporal Analysis | 6 | 이벤트 속도 급증 · 재활성화된 휴면 계정 · 자격 증명/IP/API/서비스 소스별 처음/마지막 관찰 |
 | 🌍 GeoIP Intelligence | 6 | 불가능한 이동(다중 국가 주체) · 상위 국가/도시/ASN · 세계 지도 · event_name × country |
 
 <details markdown="1">
-<summary>📋 전체 목록 — 전체 91 차트 (클릭하여 확장)</summary>
+<summary>📋 전체 목록 — 전체 101 차트 (클릭하여 확장)</summary>
 
 ## 대시보드 차트 (Apache Superset — `dashboard/`)
 
@@ -241,6 +255,7 @@
 | 9 | Throttling Exception Spikes | AWS 서비스별 시간별 스로틀링/속도 제한 오류(DSH-21). ThrottlingException 급증은 자격 증명(또는 도구)이 예상보다 훨씬 빠르게 API 호출을 발생시키고 있음을 나타내며, 이는 정찰이나 열거를 수행하는 자동화된 공격 도구의 특징입니다. MITRE ATT&CK: TA0007 Discovery. |
 | 10 | Write/Read Ratio Trend | 읽기 대 쓰기 API 호출의 시간별 분석(DSH-20). read_events 대비 write_events의 지속적인 증가는 공격자가 정찰에서 적극적인 공격으로 전환했음을 나타냅니다. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | 시간 경과에 따른 시간당 Read 대 Write 이벤트량(DSH-01). 누적 막대는 Read/Write 분할을 보여줍니다 — write_events의 급격한 증가는 공격자가 정찰에서 적극적인 공격으로 전환하고 있음을 나타냅니다. 활동 급증이나 업무 외 시간 작업을 식별하는 데 유용합니다. |
+| 12 | Organization Membership Changes | 계정을 가드레일에서 분리하거나 공격자가 제어하는 조직 아래로 이동시키는 Organizations 멤버십 변경. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 
 ### 🔑 Identity & Access
 
@@ -260,6 +275,8 @@
 | 12 | Secrets Access Anomaly | 한 시간에 10회 이상 Secrets Manager 또는 SSM Parameter Store에 접근하는 자격 증명(DSH-23). 대량 자격 증명 읽기는 침해 후 지표입니다 — 공격자는 다른 서비스나 계정으로 피벗하기 위해 저장된 시크릿을 수집합니다. MITRE ATT&CK: TA0006 Credential Access / TA0010 Exfiltration. |
 | 13 | Security-Relevant API Calls | 알려진 보안 민감 AWS API 작업의 호출(DSH-12). IAM 자격 증명 변경, 정책 수정, S3 버킷 정책 변경, 보안 그룹 수정, 키 관리, STS 토큰 작업, 보안 서비스 비활성화, Secrets Manager 읽기, Organizations 관리를 다룹니다. 이러한 호출은 정상적인 운영에서 드물어야 합니다 — 예기치 않은 발생은 권한 상승, 지속성, 또는 데이터 유출을 나타낼 수 있습니다. |
 | 14 | IAM Identity Center (SSO) Events | sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com, identitystore.amazonaws.com에서 발생하는 AWS IAM Identity Center 관리 이벤트(DSH-44). Identity Center는 다중 계정 조직에서 주요 인증 경로입니다. 주요 위협: CreatePermissionSet(백도어 관리자 접근), CreateAccountAssignment(공격자가 제어하는 사용자에게 계정 할당), AttachManagedPolicyToPermissionSet(권한 상승). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
+| 15 | IAM Entity Deletion | 공격자가 생성한 자격 증명의 흔적을 지우거나 방어자를 잠그는 데 사용되는 IAM 사용자, 역할, 정책, MFA 디바이스의 삭제. Threat Technique Catalog for AWS: T1070.A001. |
+| 16 | AssumeRoot Usage | 관리 계정에서 회원 계정의 루트로 향하는 sts:AssumeRoot 호출 — 회원 계정을 완전히 장악하는 경로입니다. Threat Technique Catalog for AWS: AT1669. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -297,6 +314,10 @@
 | 9 | KMS Key Deletion & Disable Events | KMS 키 삭제, 비활성화, 로테이션 관리 이벤트(DSH-66). ScheduleKeyDeletion — 키 삭제를 예약(7~30일 취소 가능 기간). DisableKey — 키를 이용한 암호화/복호화를 즉시 중지. DeleteImportedKeyMaterial — 가져온 키의 키 자료를 즉시 파괴. DisableKeyRotation — 연간 자동 키 로테이션을 방지. 이러한 이벤트 중 하나라도 발생하면 해당 키로 암호화된 모든 데이터가 영구적으로 접근 불가능해집니다. 삭제일 이전에 ScheduleKeyDeletion을 취소하려면 CancelKeyDeletion을 사용하세요. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 10 | RDS Deleted without Final Snapshot | 최종 스냅샷 없이 삭제된 RDS 인스턴스 및 클러스터(DSH-56): 최종 스냅샷이 생성되지 않은 DeleteDBInstance 및 DeleteDBCluster 이벤트. 최종 스냅샷을 건너뛰면 데이터베이스를 복구할 수 없게 됩니다 — 삭제 후 복원 지점이 존재하지 않습니다. 랜섬웨어 행위자는 AWS Backup도 비활성화된 경우 피해자에 대한 압박을 극대화하기 위해 이를 사용합니다. 여기에 나타나는 모든 이벤트는 중대한 인시던트입니다. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 11 | RDS Snapshot Cross-Account Share | RDS 및 Aurora 스냅샷 공유 이벤트(DSH-40): 복원 권한이 다른 AWS 계정에 부여된(valuesToAdd) ModifyDBSnapshotAttribute 및 ModifyDBClusterSnapshotAttribute. 공격자는 S3/네트워크 기반 DLP를 거치지 않고 전체 데이터베이스를 유출하기 위해 자신의 계정에 스냅샷을 공유합니다. 복원 속성에 포함된 외부 계정 ID는 모두 중대한 유출 지표입니다. MITRE ATT&CK: TA0010 Exfiltration. |
+| 12 | S3 SSE-C Ransomware Encryption | 공격자가 제공한 SSE-C 키로 재암호화된 S3 객체와 버킷 기본 암호화 설정 변경 — 클라우드 네이티브 랜섬웨어입니다. Threat Technique Catalog for AWS: T1486.A001. |
+| 13 | S3 Lifecycle-Triggered Deletion | DeleteObject 폭주 없이 데이터를 조용히 삭제하는 데 사용되는, 객체를 만료시키는 S3 수명 주기 규칙(및 수명 주기 구성 삭제). Threat Technique Catalog for AWS: T1485.001. |
+| 14 | RDS Query & Instance Manipulation | 데이터를 직접 읽거나 공격자가 제어하는 인스턴스로 복원하는 데 사용되는 RDS Data API 쿼리 및 스냅샷 복원. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
+| 15 | Storage Re-Encryption for Impact | 공격자가 제어하는 명시적 KMS 키로 재암호화된 EBS/RDS 스냅샷 및 볼륨과 기본 암호화 비활성화. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
 
 ### 🖥️ Computing
 
@@ -316,6 +337,9 @@
 | 12 | EBS Direct API Snapshot Block Access | 스냅샷 데이터 유출에 사용되는 EBS Direct API 호출(DSH-51). Pacu의 ebs__download_snapshots는 ListSnapshotBlocks와 GetSnapshotBlock을 사용해, EC2 인스턴스 생성, 스냅샷 복사 요청, ModifySnapshotAttribute 이벤트 트리거 없이 완전한 EBS 디스크 이미지를 블록 단위로 스트리밍합니다 — 기존의 스냅샷 공유 탐지에는 보이지 않습니다. 낯선 자격 증명이나 IP 주소에서의 GetSnapshotBlock 또는 ListSnapshotBlocks 호출은 모두 중대한 유출 지표입니다. MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection. |
 | 13 | EKS / ECR Container Platform Events | EKS 클러스터 및 ECR 컨테이너 레지스트리 이벤트(DSH-48). EKS: UpdateClusterConfig(퍼블릭 API), CreateFargateProfile(악성 워크로드), AssociateIdentityProviderConfig(불법 OIDC IdP). ECR: PutImage(백도어가 포함된 이미지 푸시), SetRepositoryPolicy(교차 계정 접근), PutRegistryPolicy(조직 전체 레지스트리 노출). 컨테이너 플랫폼 이벤트는 공급망 공격 및 Kubernetes 컨트롤 플레인 침해를 탐지하는 데 중요합니다. MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration. |
 | 14 | CloudFormation Stack Changes | CloudFormation 스택 및 변경 세트 관리 이벤트(DSH-65). 단일 UpdateStack으로 EC2 인스턴스를 배포하거나, IAM 역할을 수정하거나, 네트워킹을 재구성할 수 있어 수십 개의 개별 API 호출을 하나의 이벤트로 통합합니다. CreateStackSet은 조직 내 모든 계정에 공격자 인프라를 배포합니다. ExecuteChangeSet은 사전 준비된 변경을 적용하여 초기 검토에서 영향 범위를 숨깁니다. DeleteStack은 포렌식 증거가 되는 리소스를 파괴할 수 있습니다. MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion. |
+| 15 | IMDS Options Weakening | IMDSv2를 선택 사항으로 만들거나 메타데이터 엔드포인트를 다시 활성화하여 SSRF 자격 증명 탈취 경로를 다시 여는 ModifyInstanceMetadataOptions 호출. Threat Technique Catalog for AWS: T1552.005. |
+| 16 | AMI & Snapshot Deletion | 파괴적 공격 중 복구 기준선을 파괴하는 AMI 등록 취소 및 EBS 스냅샷 삭제. Threat Technique Catalog for AWS: T1485.A002. |
+| 17 | WorkSpaces Hijacking | EC2 보안 경계 밖에서 컴퓨팅 하이재킹에 사용되는 Amazon WorkSpaces 프로비저닝. Threat Technique Catalog for AWS: T1496.A009. |
 
 ### 🤖 AI / LLM
 

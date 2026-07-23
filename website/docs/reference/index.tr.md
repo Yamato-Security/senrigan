@@ -2,25 +2,25 @@
 
 > 💡 SQL veya derin AWS bilgisi gerekmez — açılır menüden bir av seçin ve sonuçları anında alın.
 
-## 🎯 Yerleşik Avlar — 112 sorgu
+## 🎯 Yerleşik Avlar — 126 sorgu
 
 Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit aracı kurcalamasını, ardından kimlik istismarını, sonra veri etkisini kontrol edin.
 
 | Kategori | Sorgu Sayısı | Kapsanan Başlıca Tehditler |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 12 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma |
-| 🔑 Identity & Access | 26 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma |
-| 🪣 Data & Storage | 21 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma |
-| ⚡ Compute & Serverless | 14 | EC2 toplu durdurma/sonlandırma · SSM yanal hareket · Lambda/ECS/EKS/ECR kurcalama · EventBridge kalıcılığı · kripto madenciliği · Lightsail istismarı |
+| 🔑 Identity & Access | 30 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma |
+| 🪣 Data & Storage | 26 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme |
+| ⚡ Compute & Serverless | 17 | EC2 toplu durdurma/sonlandırma · SSM yanal hareket · Lambda/ECS/EKS/ECR kurcalama · EventBridge kalıcılığı · kripto madenciliği · Lightsail istismarı · IMDS/SSRF zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
 | 🤖 AI & LLM Abuse | 6 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · çağıran/köken envanteri (LLMjacking) |
-| 🌐 Network & Infrastructure | 14 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları |
-| 🕵 Threat Patterns | 4 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları |
+| 🌐 Network & Infrastructure | 15 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme |
+| 🕵 Threat Patterns | 5 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği |
 | 📊 Activity & Baseline | 3 | Konsol yazma olayları · hata sıçramaları · son hatalar |
 | 🌍 GeoIP Analysis | 10 | Ülkeye göre konsol oturum açma/red/yazma · nadir ülke erişimi · ülke/ASN/şehir dökümü · event_name × country · identity × country · özel-IP temel çizgisi |
 | ☁ IaC & Platform | 2 | CI/CD tedarik zinciri · CloudFormation istismarı |
 
 <details markdown="1">
-<summary>📋 Tam liste — 112 sorgunun tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 126 sorgunun tamamı (genişletmek için tıklayın)</summary>
 
 ## Yerleşik Avlar
 
@@ -71,6 +71,10 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker notebook örneği oluşturmayı ve önceden imzalanmış URL oluşturmayı tespit eder. iam:PassRole + sagemaker:CreateNotebookInstance, geçirilen rolün tüm AWS izinleriyle bir Jupyter ortamı sağlar. CreatePresignedNotebookInstanceUrl tek başına mevcut bir notebook'a erişim sağlayabilir. |
 | 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Data Pipeline ve CodeStar kaynak oluşturmayı tespit eder. Her ikisi de iam:PassRole kabul eder ve geçirilen rolün izinleriyle rastgele kod çalıştırabilir. CodeStar:CreateProjectFromTemplate, bir admin IAM rolü oluşturan belgelenmemiş bir API'dir. |
 | 26 | 🧩 Step Functions Privilege Escalation | timeseries | Step Functions durum makinesi oluşturmayı ve yürütmeyi tespit eder. iam:PassRole + states:CreateStateMachine + states:StartExecution, geçirilen rolün izinleri altında rastgele Lambda / ECS görevlerini çalıştırmaya olanak tanır. |
+| 27 | 🪓 IAM Entity Deletion | timeseries | IAM kullanıcılarının, rollerinin, politikalarının ve MFA cihazlarının silinmesini tespit eder. Saldırganlar, etkinliklerinin izlerini kaldırmak veya savunmacıları dışarıda bırakmak için IAM varlıklarını siler. |
+| 28 | 👑 AssumeRoot Usage | timeseries | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrılarını tespit eder. Ele geçirilmiş bir yönetim hesabı, bu yolla her üye hesabı ele geçirebilir. |
+| 29 | 🎫 Support Case Manipulation | timeseries | AWS Support vaka kapatma ve yorum etkinliğini tespit eder. Saldırganlar, bir ele geçirilme hakkındaki AWS bildirimlerini bastırmak için istismar/destek vakalarını çözer. |
+| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito user pool ve app client değişikliklerini tespit eder: uzatılmış token geçerliliği, yeni client'lar ve admin kullanıcı oluşturma. Saldırganlar bunları uzun ömürlü token'lar üretmek veya arka kapı kullanıcıları oluşturmak için istismar eder. |
 
 ### 🪣 Data & Storage
 
@@ -97,6 +101,11 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Harici hesaplara erişim veren SQS/SNS kuyruk/konu politikası değişikliklerini tespit eder. Yüksek hacimli gönderim uyarılarını tetiklemeden sessiz bir sızdırma kanalı oluşturur. |
 | 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Herkese açık paylaşılan (group=all) EBS anlık görüntülerini veya AMI'leri tespit eder. Herkesin disk görüntülerinizi kopyalamasına ve veri çıkarmasına olanak tanır. |
 | 21 | 📧 Data Exfiltration Channels | bar | Sızdırmaya işaret edebilecek yüksek hacimli SNS/SQS/SES/S3 PutObject çağrılarını (≥50/saat) tespit eder. |
+| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Saldırgan tarafından sağlanan SSE-C anahtarlarıyla yeniden şifrelenen S3 nesnelerini, ayrıca bucket varsayılan şifreleme değişikliklerini tespit eder. Müşteri anahtarı olmadan mağdur şifreyi çözemez — buluta özgü bir fidye yazılımı kalıbı. |
+| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Nesnelerin süresini dolduran S3 lifecycle kurallarını, ayrıca lifecycle yapılandırma silmeyi tespit eder. Saldırganlar, DeleteObject çağrıları yapmadan zamanla verileri sessizce temizlemek için kısa bir son kullanma tarihi ayarlar. |
+| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API sorgularını, master parola sıfırlamalarını ve anlık görüntü geri yüklemelerini tespit eder. Saldırganlar veriyi doğrudan okur, erişim kazanmak için kimlik bilgilerini sıfırlar veya anlık görüntüleri kontrol ettikleri örneklere geri yükler. |
+| 25 | 🔎 S3 Bucket Enumeration | bar | Bucket ve nesne meta verilerini tarayan çağıranları tespit eder (bir saatte ≥10 List/GetBucket* okuması). Sızdırmadan önce değerli veriyi bulmak için yaygın bir erken adım. |
+| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Açık bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntülerini ve volume'lerini, ayrıca varsayılan EBS şifrelemesinin devre dışı bırakılmasını tespit eder. Saldırganın elinde tuttuğu bir anahtarla yeniden şifreleme veriyi fidye için rehin tutar. |
 
 ### ⚡ Compute & Serverless
 
@@ -116,6 +125,9 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | 🐳 ECR Repository / Image Changes | timeseries | ECR repository oluşturma/silme, politika değişiklikleri ve image push'larını tespit eder. Üretim repository'sine kötü amaçlı image'lar enjekte etmek, bir tedarik zinciri kalıcılık tekniğidir. |
 | 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | EventBridge kuralı ve EventBridge Scheduler değişikliklerini tespit eder. Saldırganlar, uzun süre çalışan bir süreç olmadan kalıcılık sağlamak için zamanlanmış kurallar kullanır. |
 | 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Lightsail örnek erişimini, anahtar çifti işlemlerini ve port açığa çıkmasını tespit eder. Pacu'nun üç özel Lightsail modülü vardır (enum, download_ssh_keys, generate_temp_access). Lightsail kaynakları standart EC2 güvenlik sınırının dışında çalışır. |
+| 15 | 🛰 IMDS Options Weakening | timeseries | IMDSv2'yi isteğe bağlı hale getiren veya metadata uç noktasını yeniden etkinleştiren ModifyInstanceMetadataOptions çağrılarını tespit eder. IMDS'in zayıflatılması, örnek rolü kimlik bilgilerini çalmak için SSRF yolunu yeniden açar. |
+| 16 | 💥 AMI & Snapshot Deletion | bar | AMI'lerin toplu kaydının silinmesini ve EBS anlık görüntülerinin silinmesini tespit eder (bir saatte ≥5). Altın imgelerin ve yedeklerin yok edilmesi, yıkıcı bir saldırı sırasında kurtarma seçeneklerini ortadan kaldırır. |
+| 17 | 🖥 WorkSpaces Hijacking | timeseries | Amazon WorkSpaces provizyonlamasını ve pool oluşturmayı tespit eder. Saldırganlar, mağdurun masrafına masaüstleri başlatır; bu, EC2 sınırının dışında az izlenen bir hesaplama ele geçirme kanalıdır. |
 
 ### 🤖 AI & LLM Abuse
 
@@ -146,6 +158,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | 🏷 ACM Certificate Operations | timeseries | ACM sertifika isteklerini ve silmelerini tespit eder. Saldırganlar, kimlik avı altyapısı oluşturmak için saldırgan kontrolündeki alanlar için TLS sertifikaları vermek amacıyla ele geçirilmiş hesapları kullanır. |
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway anahtar oluşturma ve REST API yönetimini tespit eder. Pacu'nun api_gateway__create_api_keys'i, IAM anahtar rotasyonundan sağ çıkan kalıcı API kimlik bilgileri oluşturur. Saldırganlar ayrıca erişim kontrollerini zayıflatmak için API yetkilendiricilerini değiştirir. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC endpoint'leri üzerinden erişim reddedildi hatalarını tespit eder. Yanlış yapılandırılmış bir endpoint politikasına işaret edebilir. |
+| 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS kaydı düzenlemelerini, barındırılan bölge değişikliklerini ve alan adı kaydını/transferini tespit eder. Saldırganlar trafiği yönlendirir, sarkan alt alan adlarını ele geçirir veya kimlik avı için benzer görünümlü alan adları kaydeder. |
 
 ### 🕵 Threat Patterns
 
@@ -155,6 +168,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 2 | 🤖 Unusual User Agents | bar | Nadir kullanıcı aracılarını (<5 olay) listeler. Pacu veya curl gibi özel araçlar saldırgan araçlarına işaret edebilir. |
 | 3 | 🌍 Multi-Region Activity | bar | Bir günde 3 veya daha fazla bölgede yazma işlemi yapan kimlikleri tespit eder. Coğrafi yayılma ele geçirilmeye işaret edebilir. |
 | 4 | 🕵 First-Time API Calls (24h) | — | Son 24 saatte görülen ancak daha önce hiç görülmeyen API çağrılarını bulur. Yeni işlemler saldırgan araçlarına işaret edebilir. |
+| 5 | 🗺 First-Seen Region Activity | bar | İlk etkinliği veri kümesinin son 24 saatine düşen AWS bölgelerini bulur. Daha önce hiç kullanılmamış bir bölgede faaliyet göstermek, kripto madenciliğini veya hazırlığı bölgeye özgü izlemeden gizlemenin klasik bir yoludur. |
 
 ### 📊 Activity & Baseline
 
@@ -190,24 +204,24 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 
 ---
 
-## 📊 Dashboard Charts — 91 grafik
+## 📊 Dashboard Charts — 101 grafik
 
 | Sekme | Grafik Sayısı | Ne Gösterir |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triyaj KPI kartı (olaylar, principal'lar, IP'ler, root, MFA'sız oturum açmalar, erişim reddedildi, savunma atlatma, ülkeler, bölgeler) + küresel olay hacmi trendi |
-| 🎯 Threat Detection | 11 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı |
-| 🔑 Identity & Access | 14 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole |
+| 🎯 Threat Detection | 12 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı |
+| 🔑 Identity & Access | 16 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
 | 🚨 High-Risk API Monitor | 5 | Güvenlik hizmeti kurcalaması & kimlik bilgisi alma API logları · en çok yüksek riskli çağrılar · en çok aktörler · zaman içinde yüksek riskli çağrı hacmi |
 | 📊 API Activity | 6 | En çok API'ler · erişim reddedilen eylemler · bölge dağılımı · hata kodu bileşimi · kaynak IP'ler · kullanıcı aracıları |
-| 🪣 S3 & RDS | 11 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme |
-| 🖥️ Computing | 14 | EC2 lansmanları/toplu durdurma/anahtar çiftleri/örnek profili/kullanıcı verisi/anlık görüntü paylaşımı/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation |
+| 🪣 S3 & RDS | 15 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme |
+| 🖥️ Computing | 17 | EC2 lansmanları/toplu durdurma/anahtar çiftleri/örnek profili/kullanıcı verisi/anlık görüntü paylaşımı/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
 | 🤖 AI / LLM | 4 | Bedrock çağrı trendi · model erişimi & loglama değişiklikleri · başarısız çağrılar · kökene göre çağıranlar (LLMjacking triyajı) |
 | 🌐 Network | 5 | Security group değişiklikleri · NACL/route table değişiklikleri · VPC altyapısı · VPC peering/Transit Gateway · Route53 DNS değişiklikleri |
 | 🕒 Temporal Analysis | 6 | Olay hızı sıçramaları · yeniden etkinleşen uykudaki hesaplar · kimlik/IP/API/hizmet kaynağına göre ilk/son görülme |
 | 🌍 GeoIP Intelligence | 6 | İmkânsız seyahat (çok ülkeli principal'lar) · en çok ülkeler/şehirler/ASN'ler · dünya haritası · event_name × country |
 
 <details markdown="1">
-<summary>📋 Tam liste — 91 grafiğin tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 101 grafiğin tamamı (genişletmek için tıklayın)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -241,6 +255,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 9 | Throttling Exception Spikes | AWS hizmetine göre saatlik kısıtlama/hız sınırı hataları (DSH-21). ThrottlingException sıçramaları, bir kimliğin (veya aracın) beklenenden çok daha hızlı API çağrıları yaptığını gösterir; bu, keşif veya numaralandırma yapan otomatik saldırı araçlarının bir özelliğidir. MITRE ATT&CK: TA0007 Discovery. |
 | 10 | Write/Read Ratio Trend | Okuma ve yazma API çağrılarının saatlik dökümü (DSH-20). write_events'in read_events'e göre sürekli artışı, bir saldırganın keşiften aktif istismara geçtiğini gösterir. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | Zaman içinde saatlik Okuma ve Yazma olay hacmi (DSH-01). Yığın çubuklar Okuma/Yazma ayrımını gösterir: write_events'teki ani bir artış, bir saldırganın keşiften aktif istismara geçtiğinin sinyalidir. Etkinlik sıçramalarını ve mesai dışı işlemleri belirlemek için kullanışlıdır. |
+| 12 | Organization Membership Changes | Hesapları korkuluklardan ayıran veya saldırgan kontrolündeki bir organizasyon altına taşıyan Organizations üyelik değişiklikleri. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 
 ### 🔑 Identity & Access
 
@@ -260,6 +275,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | Secrets Access Anomaly | Bir saatte Secrets Manager veya SSM Parameter Store'a ≥10 kez erişen kimlikler (DSH-23). Toplu kimlik bilgisi okumaları bir istismar sonrası göstergesidir: saldırganlar, diğer hizmetlere veya hesaplara geçmek için saklanan gizli bilgileri toplar. MITRE ATT&CK: TA0006 Credential Access / TA0010 Exfiltration. |
 | 13 | Security-Relevant API Calls | Bilinen güvenlik açısından hassas AWS API eylemlerinin çağrıları (DSH-12). IAM kimlik bilgisi değişikliklerini, politika değişikliklerini, S3 bucket politikası değişikliklerini, security group değişikliklerini, anahtar yönetimini, STS token işlemlerini, güvenlik hizmeti devre dışı bırakmayı, Secrets Manager okumalarını ve Organizations yönetimini kapsar. Bu çağrılar normal operasyonlarda nadir olmalıdır; beklenmedik oluşumlar ayrıcalık yükseltmeye, kalıcılığa veya veri sızdırmaya işaret edebilir. |
 | 14 | IAM Identity Center (SSO) Events | sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com ve identitystore.amazonaws.com'dan AWS IAM Identity Center yönetim olayları (DSH-44). Identity Center, çok hesaplı organizasyonlarda birincil kimlik doğrulama yoludur. Temel tehditler: CreatePermissionSet (arka kapı admin erişimi), CreateAccountAssignment (hesapları saldırgan kontrolündeki kullanıcılara atama) ve AttachManagedPolicyToPermissionSet (ayrıcalık yükseltme). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
+| 15 | IAM Entity Deletion | Saldırgan tarafından oluşturulan kimliklerin izlerini silmek veya savunmacıları dışarıda bırakmak için kullanılan IAM kullanıcılarının, rollerinin, politikalarının ve MFA cihazlarının silinmesi. Threat Technique Catalog for AWS: T1070.A001. |
+| 16 | AssumeRoot Usage | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrıları — tam bir üye hesap ele geçirme yolu. Threat Technique Catalog for AWS: AT1669. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -297,6 +314,10 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 9 | KMS Key Deletion & Disable Events | KMS anahtar silme, devre dışı bırakma ve rotasyon yönetimi olayları (DSH-66). ScheduleKeyDeletion — anahtar silmeyi zamanlar (iptal etmek için 7-30 günlük pencere). DisableKey — anahtarla şifreleme/şifre çözmeyi anında durdurur. DeleteImportedKeyMaterial — içe aktarılan anahtarlar için anahtar materyalini anında yok eder. DisableKeyRotation — otomatik yıllık anahtar rotasyonunu önler. Bu olaylardan herhangi biri, anahtar altında şifrelenmiş tüm verileri kalıcı olarak erişilemez hale getirir. ScheduleKeyDeletion'ı silme tarihinden önce tersine çevirmek için CancelKeyDeletion kullanın. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 10 | RDS Deleted without Final Snapshot | skipFinalSnapshot=true ile RDS örneği ve küme silme (DSH-56): son bir anlık görüntü alınmayan DeleteDBInstance ve DeleteDBCluster olayları. Son anlık görüntüyü atlamak veritabanını kurtarılamaz hale getirir — silmeden sonra hiçbir geri yükleme noktası kalmaz. Fidye yazılımı aktörleri, AWS Backup da devre dışı bırakıldığında mağdur baskısını en üst düzeye çıkarmak için bunu kullanır. Buradaki herhangi bir olay kritik bir olaydır. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 11 | RDS Snapshot Cross-Account Share | RDS ve Aurora anlık görüntü paylaşım olayları (DSH-40): geri yükleme izninin başka bir AWS hesabına verildiği (valuesToAdd) ModifyDBSnapshotAttribute ve ModifyDBClusterSnapshotAttribute. Saldırganlar, S3/ağ tabanlı DLP olmadan tüm bir veritabanını sızdırmak için anlık görüntüleri kendi hesaplarına paylaşır. Geri yükleme özelliğindeki herhangi bir harici hesap kimliği kritik bir sızdırma göstergesidir. MITRE ATT&CK: TA0010 Exfiltration. |
+| 12 | S3 SSE-C Ransomware Encryption | Saldırgan tarafından sağlanan SSE-C anahtarlarıyla yeniden şifrelenen S3 nesneleri, ayrıca bucket varsayılan şifreleme değişiklikleri — buluta özgü fidye yazılımı. Threat Technique Catalog for AWS: T1486.A001. |
+| 13 | S3 Lifecycle-Triggered Deletion | DeleteObject patlamaları olmadan verileri sessizce temizlemek için kullanılan, nesnelerin süresini dolduran S3 lifecycle kuralları (ve lifecycle yapılandırma silme). Threat Technique Catalog for AWS: T1485.001. |
+| 14 | RDS Query & Instance Manipulation | Veriyi doğrudan okumak veya saldırgan kontrolündeki bir örneğe geri yüklemek için kullanılan RDS Data API sorguları ve anlık görüntü geri yüklemeleri. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
+| 15 | Storage Re-Encryption for Impact | Açıkça saldırgan kontrolündeki bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntüleri ve volume'leri, ayrıca varsayılan şifreleme devre dışı bırakma. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
 
 ### 🖥️ Computing
 
@@ -316,6 +337,9 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | EBS Direct API Snapshot Block Access | Anlık görüntü verisini sızdırmak için kullanılan EBS Direct API çağrıları (DSH-51). Pacu'nun ebs__download_snapshots'ı, bir EC2 örneği oluşturmadan, bir anlık görüntü kopyası istemeden veya bir ModifySnapshotAttribute olayını tetiklemeden tam bir EBS disk görüntüsünü blok blok akış olarak göndermek için ListSnapshotBlocks ve GetSnapshotBlock kullanır — bu da onu geleneksel anlık görüntü paylaşım tespitine karşı görünmez kılar. Beklenmedik bir kimlik veya IP adresinden gelen herhangi bir GetSnapshotBlock veya ListSnapshotBlocks çağrısı kritik bir sızdırma göstergesidir. MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection. |
 | 13 | EKS / ECR Container Platform Events | EKS cluster ve ECR container registry olayları (DSH-48). EKS: UpdateClusterConfig (genel API), CreateFargateProfile (kötü amaçlı iş yükleri), AssociateIdentityProviderConfig (sahte OIDC IdP). ECR: PutImage (arka kapılı image push'u), SetRepositoryPolicy (hesaplar arası erişim), PutRegistryPolicy (organizasyon genelinde registry açığa çıkması). Konteyner platformu olayları, tedarik zinciri saldırılarını ve Kubernetes kontrol düzlemi ele geçirilmesini tespit etmek için kritiktir. MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration. |
 | 14 | CloudFormation Stack Changes | CloudFormation stack ve change-set yönetim olayları (DSH-65). Tek bir UpdateStack, EC2 örnekleri dağıtabilir, IAM rollerini değiştirebilir veya ağı yeniden yapılandırabilir — düzinelerce bireysel API çağrısını tek bir olayda birleştirir. CreateStackSet, saldırgan altyapısını bir organizasyondaki tüm hesaplara dağıtır. ExecuteChangeSet, önceden hazırlanmış bir değişikliği uygular ve etki alanını ilk incelemeden gizler. DeleteStack, adli kanıt kaynaklarını yok edebilir. MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion. |
+| 15 | IMDS Options Weakening | IMDSv2'yi isteğe bağlı hale getiren veya metadata uç noktasını yeniden etkinleştiren, SSRF kimlik bilgisi hırsızlığını yeniden açan ModifyInstanceMetadataOptions çağrıları. Threat Technique Catalog for AWS: T1552.005. |
+| 16 | AMI & Snapshot Deletion | Yıkıcı bir saldırı sırasında kurtarma temel çizgisini yok eden AMI'lerin kaydının silinmesi ve EBS anlık görüntülerinin silinmesi. Threat Technique Catalog for AWS: T1485.A002. |
+| 17 | WorkSpaces Hijacking | EC2 güvenlik sınırının dışında hesaplama ele geçirme için kullanılan Amazon WorkSpaces provizyonlaması. Threat Technique Catalog for AWS: T1496.A009. |
 
 ### 🤖 AI / LLM
 

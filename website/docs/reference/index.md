@@ -2,25 +2,25 @@
 
 > 💡 No SQL or deep AWS knowledge required — just select a hunt from the dropdown and get results instantly.
 
-## 🎯 Built-in Hunts — 112 queries
+## 🎯 Built-in Hunts — 126 queries
 
 Categories are ordered by DFIR triage priority — check detection-tool tampering first, then identity abuse, then data impact.
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 12 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP deletion · alarm suppression · log exfiltration |
-| 🔑 Identity & Access | 26 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration |
-| 🪣 Data & Storage | 21 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication |
-| ⚡ Compute & Serverless | 14 | EC2 mass stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail abuse |
+| 🔑 Identity & Access | 30 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity deletion · AssumeRoot takeover · Cognito user-pool/token abuse · Support case suppression |
+| 🪣 Data & Storage | 26 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS Data API manipulation · storage re-encryption for impact |
+| ⚡ Compute & Serverless | 17 | EC2 mass stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail abuse · IMDS/SSRF weakening · AMI/snapshot deletion · WorkSpaces hijacking |
 | 🤖 AI & LLM Abuse | 6 | Bedrock invocation spikes · model access enablement · invocation-logging tampering · region-sweep reconnaissance · failed-invocation bursts · caller/origin inventory (LLMjacking) |
-| 🌐 Network & Infrastructure | 14 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys |
-| 🕵 Threat Patterns | 4 | Reconnaissance burst · unusual user agents · multi-region spread · first-time API calls |
+| 🌐 Network & Infrastructure | 15 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys · Route 53/domain hijack |
+| 🕵 Threat Patterns | 5 | Reconnaissance burst · unusual user agents · multi-region spread · first-time API calls · first-seen region activity |
 | 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors |
 | 🌍 GeoIP Analysis | 10 | Console logins/denials/writes by country · rare-country access · country/ASN/city breakdown · event_name × country · identity × country · private-IP baseline |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
 <details markdown="1">
-<summary>📋 Full list — all 112 queries (click to expand)</summary>
+<summary>📋 Full list — all 126 queries (click to expand)</summary>
 
 ## Built-in Hunts
 
@@ -71,6 +71,10 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detects SageMaker notebook instance creation and presigned URL generation. iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter environment with the passed role's full AWS permissions. CreatePresignedNotebookInstanceUrl alone can grant access to an existing notebook. |
 | 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Detects Data Pipeline and CodeStar resource creation. Both accept iam:PassRole and can execute arbitrary code with the passed role's permissions. CodeStar:CreateProjectFromTemplate is an undocumented API that creates an admin IAM role. |
 | 26 | 🧩 Step Functions Privilege Escalation | timeseries | Detects Step Functions state machine creation and execution. iam:PassRole + states:CreateStateMachine + states:StartExecution allows running arbitrary Lambda / ECS tasks under the passed role's permissions. |
+| 27 | 🪓 IAM Entity Deletion | timeseries | Detects deletion of IAM users, roles, policies, and MFA devices. Attackers delete IAM entities to remove traces of their activity or lock defenders out. |
+| 28 | 👑 AssumeRoot Usage | timeseries | Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way. |
+| 29 | 🎫 Support Case Manipulation | timeseries | Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise. |
+| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users. |
 
 ### 🪣 Data & Storage
 
@@ -97,6 +101,11 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Detects SQS/SNS queue/topic policy changes that grant access to external accounts. Creates a silent exfiltration channel without triggering high-volume send alerts. |
 | 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Detects EBS snapshots or AMIs shared publicly (group=all). Enables anyone to copy your disk images and extract data. |
 | 21 | 📧 Data Exfiltration Channels | bar | Detects high-volume SNS/SQS/SES/S3 PutObject calls (>=50/hour) that may indicate exfiltration. |
+| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Detects S3 objects re-encrypted with attacker-supplied SSE-C keys, plus bucket default-encryption changes. Without the customer key the victim cannot decrypt — a cloud-native ransomware pattern. |
+| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Detects S3 lifecycle rules that expire objects, plus lifecycle-config deletion. Attackers set a short expiration to silently purge data over time without issuing DeleteObject calls. |
+| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | Detects RDS Data API queries, master-password resets, and snapshot restores. Attackers read data directly, reset credentials to gain access, or restore snapshots into instances they control. |
+| 25 | 🔎 S3 Bucket Enumeration | bar | Detects callers sweeping bucket and object metadata (≥10 List/GetBucket* reads in one hour). A common early step to locate valuable data before exfiltration. |
+| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Detects EBS/RDS snapshots and volumes re-encrypted with an explicit KMS key, plus disabling of default EBS encryption. Re-encrypting with an attacker-held key holds the data for ransom. |
 
 ### ⚡ Compute & Serverless
 
@@ -116,6 +125,9 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | 🐳 ECR Repository / Image Changes | timeseries | Detects ECR repository creation/deletion, policy changes, and image pushes. Injecting malicious images into a production repository is a supply-chain persistence technique. |
 | 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | Detects EventBridge rule and EventBridge Scheduler modifications. Attackers use scheduled rules to establish persistence without a long-running process. |
 | 14 | 💡 Lightsail Instance & Key Abuse | timeseries | Detects Lightsail instance access, key pair operations, and port exposure. Pacu has three dedicated Lightsail modules (enum, download_ssh_keys, generate_temp_access). Lightsail resources operate outside the standard EC2 security boundary. |
+| 15 | 🛰 IMDS Options Weakening | timeseries | Detects ModifyInstanceMetadataOptions calls that make IMDSv2 optional or re-enable the metadata endpoint. Weakening IMDS re-opens the SSRF path to steal instance-role credentials. |
+| 16 | 💥 AMI & Snapshot Deletion | bar | Detects bulk deregistration of AMIs and deletion of EBS snapshots (≥5 in one hour). Destroying golden images and backups removes recovery options during a destructive attack. |
+| 17 | 🖥 WorkSpaces Hijacking | timeseries | Detects Amazon WorkSpaces provisioning and pool creation. Attackers spin up desktops at the victim's expense, an under-monitored compute-hijacking channel outside the EC2 boundary. |
 
 ### 🤖 AI & LLM Abuse
 
@@ -146,6 +158,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | 🏷 ACM Certificate Operations | timeseries | Detects ACM certificate requests and deletions. Attackers use compromised accounts to issue TLS certificates for attacker-controlled domains to build phishing infrastructure. |
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy. |
+| 15 | 🌐 Route 53 & Domain Changes | timeseries | Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing. |
 
 ### 🕵 Threat Patterns
 
@@ -155,6 +168,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 2 | 🤖 Unusual User Agents | bar | Lists rare user agents (<5 events). Custom tooling like Pacu or curl may indicate attacker tooling. |
 | 3 | 🌍 Multi-Region Activity | bar | Detects identities performing writes in 3+ regions in one day. Geographic spread may indicate compromise. |
 | 4 | 🕵 First-Time API Calls (24h) | — | Finds API calls seen in the last 24h but never before. Novel operations may indicate attacker tooling. |
+| 5 | 🗺 First-Seen Region Activity | bar | Finds AWS regions whose first-ever activity falls in the last 24h of the dataset. Operating in a never-before-used region is a classic way to hide cryptomining or staging from region-scoped monitoring. |
 
 ### 📊 Activity & Baseline
 
@@ -190,24 +204,24 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 ---
 
-## 📊 Dashboard Charts — 91 charts
+## 📊 Dashboard Charts — 101 charts
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (events, principals, IPs, root, MFA-less logins, access denied, defense evasion, countries, regions) + global event-volume trend |
-| 🎯 Threat Detection | 11 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP changes · error & throttling trends · write/read ratio |
-| 🔑 Identity & Access | 14 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole |
+| 🎯 Threat Detection | 12 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio |
+| 🔑 Identity & Access | 16 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API logs · top high-risk calls · top actors · high-risk call volume over time |
 | 📊 API Activity | 6 | Top APIs · access-denied actions · region distribution · error-code composition · source IPs · user agents |
-| 🪣 S3 & RDS | 11 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot |
-| 🖥️ Computing | 14 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation |
+| 🪣 S3 & RDS | 15 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact |
+| 🖥️ Computing | 17 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS weakening · AMI/snapshot deletion · WorkSpaces hijacking |
 | 🤖 AI / LLM | 4 | Bedrock invocation trend · model access & logging changes · failed invocations · callers by origin (LLMjacking triage) |
 | 🌐 Network | 5 | Security group changes · NACL/route table changes · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS changes |
 | 🕒 Temporal Analysis | 6 | Event velocity spikes · dormant accounts reactivated · first/last seen by identity/IP/API/service source |
 | 🌍 GeoIP Intelligence | 6 | Impossible travel (multi-country principals) · top countries/cities/ASNs · world map · event_name × country |
 
 <details markdown="1">
-<summary>📋 Full list — all 91 charts (click to expand)</summary>
+<summary>📋 Full list — all 101 charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -241,6 +255,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 9 | Throttling Exception Spikes | Hourly throttling / rate-limit errors broken down by AWS service (DSH-21). ThrottlingException spikes indicate that an identity (or tool) is issuing API calls far faster than expected, which is a hallmark of automated attack tooling performing reconnaissance or enumeration. MITRE ATT&CK: TA0007 Discovery. |
 | 10 | Write/Read Ratio Trend | Hourly breakdown of read vs write API calls (DSH-20). A sustained increase in write_events relative to read_events indicates that an attacker has moved from reconnaissance to active exploitation. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | Hourly Read vs Write event volume over time (DSH-01). Stacked bars show the Read/Write split: a sudden rise in write_events signals that an attacker is transitioning from reconnaissance to active exploitation.  Useful for identifying activity spikes and off-hours operations. |
+| 12 | Organization Membership Changes | Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 
 ### 🔑 Identity & Access
 
@@ -260,6 +275,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | Secrets Access Anomaly | Identities accessing Secrets Manager or SSM Parameter Store ≥10 times in one hour (DSH-23).  Bulk credential reads are a post-exploitation indicator: attackers harvest stored secrets to pivot to other services or accounts. MITRE ATT&CK: TA0006 Credential Access / TA0010 Exfiltration. |
 | 13 | Security-Relevant API Calls | Invocations of known security-sensitive AWS API actions (DSH-12). Covers IAM credential changes, policy modifications, S3 bucket policy changes, security group modifications, key management, STS token operations, security service disabling, Secrets Manager reads, and Organizations management. These calls should be rare in normal operations; unexpected occurrences may indicate privilege escalation, persistence, or data exfiltration. |
 | 14 | IAM Identity Center (SSO) Events | AWS IAM Identity Center management events (DSH-44) from sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com, and identitystore.amazonaws.com. Identity Center is the primary authentication path in multi-account organizations. Key threats: CreatePermissionSet (backdoor admin access), CreateAccountAssignment (assigning accounts to attacker-controlled users), and AttachManagedPolicyToPermissionSet (privilege escalation). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
+| 15 | IAM Entity Deletion | Deletion of IAM users, roles, policies, and MFA devices used to erase traces of attacker-created identities or lock defenders out. Threat Technique Catalog for AWS: T1070.A001. |
+| 16 | AssumeRoot Usage | sts:AssumeRoot calls from the management account into member-account root — a full member-account takeover path. Threat Technique Catalog for AWS: AT1669. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -297,6 +314,10 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 9 | KMS Key Deletion & Disable Events | KMS key deletion, disabling, and rotation management events (DSH-66). ScheduleKeyDeletion — schedules key deletion (7-30 day window to cancel). DisableKey — immediately stops encryption/decryption with the key. DeleteImportedKeyMaterial — destroys the key material for imported keys instantly. DisableKeyRotation — prevents automatic annual key rotation. Any of these events renders all data encrypted under the key permanently inaccessible.  Use CancelKeyDeletion to reverse ScheduleKeyDeletion before the deletion date. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 10 | RDS Deleted without Final Snapshot | RDS instance and cluster deletion with skipFinalSnapshot=true (DSH-56): DeleteDBInstance and DeleteDBCluster events where no final snapshot was taken. Skipping the final snapshot makes the database irrecoverable — no restore point exists after deletion.  Ransomware actors use this to maximise victim pressure when AWS Backup has also been disabled.  Any event here is a critical incident. MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction. |
 | 11 | RDS Snapshot Cross-Account Share | RDS and Aurora snapshot sharing events (DSH-40): ModifyDBSnapshotAttribute and ModifyDBClusterSnapshotAttribute where restore permission was granted to another AWS account (valuesToAdd).  Attackers share snapshots to their own account to exfiltrate an entire database without S3/network-based DLP. Any external account ID in the restore attribute is a critical exfiltration indicator. MITRE ATT&CK: TA0010 Exfiltration. |
+| 12 | S3 SSE-C Ransomware Encryption | S3 objects re-encrypted with attacker-supplied SSE-C keys plus bucket default-encryption changes — cloud-native ransomware. Threat Technique Catalog for AWS: T1486.A001. |
+| 13 | S3 Lifecycle-Triggered Deletion | S3 lifecycle rules that expire objects (and lifecycle-config deletion) used to silently purge data without DeleteObject bursts. Threat Technique Catalog for AWS: T1485.001. |
+| 14 | RDS Query & Instance Manipulation | RDS Data API queries and snapshot restores used to read data directly or restore into an attacker-controlled instance. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
+| 15 | Storage Re-Encryption for Impact | EBS/RDS snapshots and volumes re-encrypted with an explicit attacker-controlled KMS key, plus default-encryption disable. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
 
 ### 🖥️ Computing
 
@@ -316,6 +337,9 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | EBS Direct API Snapshot Block Access | EBS Direct API calls used to exfiltrate snapshot data (DSH-51). Pacu's ebs__download_snapshots uses ListSnapshotBlocks and GetSnapshotBlock to stream a complete EBS disk image block-by-block without creating an EC2 instance, requesting a snapshot copy, or triggering a ModifySnapshotAttribute event — making it invisible to traditional snapshot-sharing detection. Any GetSnapshotBlock or ListSnapshotBlocks call from an unexpected identity or IP address is a critical exfiltration indicator. MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection. |
 | 13 | EKS / ECR Container Platform Events | EKS cluster and ECR container registry events (DSH-48). EKS: UpdateClusterConfig (public API), CreateFargateProfile (malicious workloads), AssociateIdentityProviderConfig (rogue OIDC IdP). ECR: PutImage (backdoored image push), SetRepositoryPolicy (cross-account access), PutRegistryPolicy (org-wide registry exposure). Container platform events are critical for detecting supply-chain attacks and Kubernetes control-plane compromise. MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration. |
 | 14 | CloudFormation Stack Changes | CloudFormation stack and change-set management events (DSH-65). A single UpdateStack can deploy EC2 instances, modify IAM roles, or reconfigure networking — consolidating dozens of individual API calls into one event. CreateStackSet deploys attacker infrastructure across all accounts in an org. ExecuteChangeSet applies a pre-staged change, hiding the blast radius from initial review.  DeleteStack can destroy forensic evidence resources. MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion. |
+| 15 | IMDS Options Weakening | ModifyInstanceMetadataOptions calls that make IMDSv2 optional or re-enable the metadata endpoint, re-opening SSRF credential theft. Threat Technique Catalog for AWS: T1552.005. |
+| 16 | AMI & Snapshot Deletion | Deregistration of AMIs and deletion of EBS snapshots that destroy the recovery baseline during a destructive attack. Threat Technique Catalog for AWS: T1485.A002. |
+| 17 | WorkSpaces Hijacking | Amazon WorkSpaces provisioning used for compute hijacking outside the EC2 security boundary. Threat Technique Catalog for AWS: T1496.A009. |
 
 ### 🤖 AI / LLM
 

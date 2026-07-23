@@ -2,25 +2,25 @@
 
 > 💡 ไม่ต้องใช้ SQL หรือความรู้เชิงลึกเกี่ยวกับ AWS — เพียงเลือก hunt จาก dropdown แล้วรับผลลัพธ์ได้ทันที
 
-## 🎯 Hunts ในตัว — 112 queries
+## 🎯 Hunts ในตัว — 126 queries
 
 หมวดหมู่ถูกจัดเรียงตามลำดับความสำคัญของการ triage แบบ DFIR — ตรวจสอบการดัดแปลงเครื่องมือตรวจจับก่อน จากนั้นจึงตรวจสอบการใช้อัตลักษณ์ในทางมิชอบ แล้วตามด้วยผลกระทบต่อข้อมูล
 
 | หมวดหมู่ | จำนวน Query | ภัยคุกคามสำคัญที่ครอบคลุม |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 12 | การดัดแปลงบริการตรวจสอบ (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · การลบ SCP · การระงับสัญญาณเตือน · การลักลอบนำ log ออก |
-| 🔑 Identity & Access | 26 | การใช้งาน root · การล็อกอินคอนโซล/MFA · การยกระดับสิทธิ์ · แบ็คดอร์ผ่าน trust policy · การใช้ PassRole ในทางมิชอบ · AssumeRole ข้ามบัญชี · SSO/SAML/OIDC · การแจกแจงข้อมูลประจำตัว |
-| 🪣 Data & Storage | 21 | การลบ/ดาวน์โหลด S3 จำนวนมาก · การอ่าน secrets จำนวนมาก · การดัดแปลงการสำรองข้อมูล · การดำเนินการ KMS · การแชร์ snapshot · การลักลอบนำข้อมูลออกผ่าน EBS Direct API · การ export DynamoDB · การจำลอง S3 ข้ามบัญชี |
-| ⚡ Compute & Serverless | 14 | การหยุด/ยกเลิก EC2 จำนวนมาก · การเคลื่อนที่ด้านข้างผ่าน SSM · การดัดแปลง Lambda/ECS/EKS/ECR · การคงอยู่ผ่าน EventBridge · cryptomining · การใช้ Lightsail ในทางมิชอบ |
+| 🔑 Identity & Access | 30 | การใช้งาน root · การล็อกอินคอนโซล/MFA · การยกระดับสิทธิ์ · แบ็คดอร์ผ่าน trust policy · การใช้ PassRole ในทางมิชอบ · AssumeRole ข้ามบัญชี · SSO/SAML/OIDC · การแจกแจงข้อมูลประจำตัว · การลบ IAM entity · การยึดครองผ่าน AssumeRoot · การใช้ user pool/token ของ Cognito ในทางมิชอบ · การระงับ support case |
+| 🪣 Data & Storage | 26 | การลบ/ดาวน์โหลด S3 จำนวนมาก · การอ่าน secrets จำนวนมาก · การดัดแปลงการสำรองข้อมูล · การดำเนินการ KMS · การแชร์ snapshot · การลักลอบนำข้อมูลออกผ่าน EBS Direct API · การ export DynamoDB · การจำลอง S3 ข้ามบัญชี · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ RDS Data API · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ |
+| ⚡ Compute & Serverless | 17 | การหยุด/ยกเลิก EC2 จำนวนมาก · การเคลื่อนที่ด้านข้างผ่าน SSM · การดัดแปลง Lambda/ECS/EKS/ECR · การคงอยู่ผ่าน EventBridge · cryptomining · การใช้ Lightsail ในทางมิชอบ · การลดความเข้มงวดของ IMDS/SSRF · การลบ AMI/snapshot · การยึดครอง WorkSpaces |
 | 🤖 AI & LLM Abuse | 6 | การพุ่งสูงของการเรียกใช้โมเดล Bedrock · การเปิดใช้งานการเข้าถึงโมเดล · การดัดแปลงการบันทึก log การเรียกใช้ · การสอดแนมแบบกวาดทั่วภูมิภาค · การพุ่งสูงของการเรียกใช้ที่ล้มเหลว · บัญชีรายชื่อผู้เรียก/แหล่งที่มา (LLMjacking) |
-| 🌐 Network & Infrastructure | 14 | SG เปิดสู่อินเทอร์เน็ต · การลบ VPC flow log · การยึด CloudFront · อุโมงค์ VPN/TGW แอบแฝง · Elastic IP สำหรับ C2 · คีย์ API Gateway |
-| 🕵 Threat Patterns | 4 | การพุ่งของการสอดแนม · user agents ที่ผิดปกติ · การกระจายข้ามหลายภูมิภาค · การเรียก API ครั้งแรก |
+| 🌐 Network & Infrastructure | 15 | SG เปิดสู่อินเทอร์เน็ต · การลบ VPC flow log · การยึด CloudFront · อุโมงค์ VPN/TGW แอบแฝง · Elastic IP สำหรับ C2 · คีย์ API Gateway · การยึดครอง Route 53/โดเมน |
+| 🕵 Threat Patterns | 5 | การพุ่งของการสอดแนม · user agents ที่ผิดปกติ · การกระจายข้ามหลายภูมิภาค · การเรียก API ครั้งแรก · กิจกรรมภูมิภาคที่พบครั้งแรก |
 | 📊 Activity & Baseline | 3 | เหตุการณ์การเขียนผ่านคอนโซล · การพุ่งขึ้นของ error · error ล่าสุด |
 | 🌍 GeoIP Analysis | 10 | การล็อกอิน/การปฏิเสธ/การเขียนผ่านคอนโซลจัดอันดับตามประเทศ · การเข้าถึงจากประเทศที่พบยาก · การแยกย่อยตามประเทศ/ASN/เมือง · event_name × country · identity × country · เส้นฐาน private-IP |
 | ☁ IaC & Platform | 2 | การโจมตี supply chain ของ CI/CD · การใช้ CloudFormation ในทางมิชอบ |
 
 <details markdown="1">
-<summary>📋 รายการทั้งหมด — ทุก query ทั้ง 112 รายการ (คลิกเพื่อขยาย)</summary>
+<summary>📋 รายการทั้งหมด — ทุก query ทั้ง 126 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Hunts ในตัว
 
@@ -71,6 +71,10 @@
 | 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | ตรวจจับการสร้าง SageMaker notebook instance และการสร้าง presigned URL iam:PassRole + sagemaker:CreateNotebookInstance ให้ environment Jupyter ที่มีสิทธิ์ AWS เต็มรูปแบบของ role ที่ส่งมา CreatePresignedNotebookInstanceUrl เพียงอย่างเดียวก็สามารถให้สิทธิ์เข้าถึง notebook ที่มีอยู่แล้วได้ |
 | 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | ตรวจจับการสร้างทรัพยากร Data Pipeline และ CodeStar ทั้งสองรับ iam:PassRole และสามารถรันโค้ดตามอำเภอใจด้วยสิทธิ์ของ role ที่ส่งมา CodeStar:CreateProjectFromTemplate เป็น API ที่ไม่มีเอกสารซึ่งสร้าง IAM role ระดับ admin |
 | 26 | 🧩 Step Functions Privilege Escalation | timeseries | ตรวจจับการสร้างและการรัน state machine ของ Step Functions iam:PassRole + states:CreateStateMachine + states:StartExecution ทำให้สามารถรัน Lambda/ECS task ตามอำเภอใจภายใต้สิทธิ์ของ role ที่ส่งมา |
+| 27 | 🪓 IAM Entity Deletion | timeseries | ตรวจจับการลบผู้ใช้ IAM, role, policy และอุปกรณ์ MFA ผู้โจมตีลบ IAM entity เพื่อลบร่องรอยกิจกรรมของตนหรือล็อกผู้ป้องกันออก |
+| 28 | 👑 AssumeRoot Usage | timeseries | ตรวจจับการเรียก sts:AssumeRoot จากบัญชี management ไปยัง root ของ member account บัญชี management ที่ถูกบุกรุกสามารถยึดครองทุก member account ได้ด้วยวิธีนี้ |
+| 29 | 🎫 Support Case Manipulation | timeseries | ตรวจจับการปิดและการแสดงความคิดเห็นใน AWS Support case ผู้โจมตีปิด case การละเมิด/การสนับสนุนเพื่อระงับการแจ้งเตือนของ AWS เกี่ยวกับการถูกบุกรุก |
+| 30 | 🪪 Cognito User Pool Manipulation | timeseries | ตรวจจับการเปลี่ยนแปลง user pool และ app client ของ Cognito: การขยายอายุ token, ไคลเอนต์ใหม่ และการสร้างผู้ใช้ admin ผู้โจมตีใช้สิ่งเหล่านี้ในทางมิชอบเพื่อสร้าง token ที่มีอายุยาวหรือฝังผู้ใช้แบ็คดอร์ |
 
 ### 🪣 Data & Storage
 
@@ -97,6 +101,11 @@
 | 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | ตรวจจับการเปลี่ยนแปลง policy ของ queue/topic ของ SQS/SNS ที่ให้สิทธิ์เข้าถึงบัญชีภายนอก สร้างช่องทางการลักลอบนำออกอย่างเงียบ ๆ โดยไม่กระตุ้นสัญญาณเตือนการส่งปริมาณสูง |
 | 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | ตรวจจับ EBS snapshot หรือ AMI ที่แชร์สู่สาธารณะ (group=all) ทำให้ทุกคนสามารถคัดลอก disk image และดึงข้อมูลของคุณได้ |
 | 21 | 📧 Data Exfiltration Channels | bar | ตรวจจับการเรียก SNS/SQS/SES/S3 PutObject ปริมาณสูง (≥50/ชั่วโมง) ที่อาจบ่งชี้การลักลอบนำข้อมูลออก |
+| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | ตรวจจับ object ของ S3 ที่ถูกเข้ารหัสใหม่ด้วยคีย์ SSE-C ที่ผู้โจมตีจัดหาให้ รวมถึงการเปลี่ยนแปลงการเข้ารหัสเริ่มต้นของ bucket หากไม่มีคีย์ของลูกค้า เหยื่อจะไม่สามารถถอดรหัสได้ — รูปแบบ ransomware ที่เกิดขึ้นบนคลาวด์โดยเฉพาะ |
+| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | ตรวจจับ lifecycle rule ของ S3 ที่ทำให้ object หมดอายุ รวมถึงการลบการตั้งค่า lifecycle ผู้โจมตีตั้งค่าการหมดอายุระยะสั้นเพื่อกำจัดข้อมูลอย่างเงียบ ๆ เมื่อเวลาผ่านไปโดยไม่ต้องเรียก DeleteObject |
+| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | ตรวจจับ query ของ RDS Data API, การรีเซ็ตรหัสผ่าน master และการกู้คืน snapshot ผู้โจมตีอ่านข้อมูลโดยตรง รีเซ็ต credential เพื่อเข้าถึง หรือกู้คืน snapshot ไปยัง instance ที่ตนควบคุม |
+| 25 | 🔎 S3 Bucket Enumeration | bar | ตรวจจับผู้เรียกที่กวาด metadata ของ bucket และ object (การอ่าน List/GetBucket* ≥10 ครั้งในหนึ่งชั่วโมง) ขั้นตอนแรกที่พบบ่อยในการค้นหาข้อมูลที่มีค่าก่อนการลักลอบนำออก |
+| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | ตรวจจับ snapshot และ volume ของ EBS/RDS ที่ถูกเข้ารหัสใหม่ด้วยคีย์ KMS ที่ระบุอย่างชัดเจน รวมถึงการปิดใช้งานการเข้ารหัสเริ่มต้นของ EBS การเข้ารหัสใหม่ด้วยคีย์ที่ผู้โจมตีถือครองเป็นการยึดข้อมูลไว้เรียกค่าไถ่ |
 
 ### ⚡ Compute & Serverless
 
@@ -116,6 +125,9 @@
 | 12 | 🐳 ECR Repository / Image Changes | timeseries | ตรวจจับการสร้าง/ลบ repository ของ ECR การเปลี่ยนแปลง policy และการ push image การแทรก image ที่เป็นอันตรายเข้าไปใน production repository เป็นเทคนิคการคงอยู่แบบ supply-chain |
 | 13 | 📅 EventBridge / CloudWatch Rule Changes | timeseries | ตรวจจับการแก้ไข rule ของ EventBridge และ EventBridge Scheduler ผู้โจมตีใช้ rule ที่มีกำหนดการเพื่อสร้างการคงอยู่โดยไม่ต้องมีโปรเซสที่ทำงานต่อเนื่อง |
 | 14 | 💡 Lightsail Instance & Key Abuse | timeseries | ตรวจจับการเข้าถึง Lightsail instance การดำเนินการ key pair และการเปิดพอร์ต Pacu มีโมดูล Lightsail เฉพาะสามโมดูล (enum, download_ssh_keys, generate_temp_access) ทรัพยากร Lightsail ทำงานนอกขอบเขตความปลอดภัยมาตรฐานของ EC2 |
+| 15 | 🛰 IMDS Options Weakening | timeseries | ตรวจจับการเรียก ModifyInstanceMetadataOptions ที่ทำให้ IMDSv2 เป็นทางเลือกหรือเปิดใช้งาน metadata endpoint อีกครั้ง การลดความเข้มงวดของ IMDS เปิดเส้นทาง SSRF อีกครั้งเพื่อขโมย credential ของ instance role |
+| 16 | 💥 AMI & Snapshot Deletion | bar | ตรวจจับการยกเลิกการลงทะเบียน AMI จำนวนมากและการลบ snapshot ของ EBS (≥5 ครั้งในหนึ่งชั่วโมง) การทำลาย golden image และการสำรองข้อมูลขจัดทางเลือกในการกู้คืนระหว่างการโจมตีเชิงทำลาย |
+| 17 | 🖥 WorkSpaces Hijacking | timeseries | ตรวจจับการจัดสรร Amazon WorkSpaces และการสร้าง pool ผู้โจมตีเปิดใช้งาน desktop โดยให้เหยื่อเป็นผู้รับภาระค่าใช้จ่าย ช่องทางการยึดครองการประมวลผลที่ถูกตรวจสอบน้อยอยู่นอกขอบเขตของ EC2 |
 
 ### 🤖 AI & LLM Abuse
 
@@ -146,6 +158,7 @@
 | 12 | 🏷 ACM Certificate Operations | timeseries | ตรวจจับคำขอและการลบใบรับรอง ACM ผู้โจมตีใช้บัญชีที่ถูกบุกรุกออกใบรับรอง TLS สำหรับโดเมนที่ผู้โจมตีควบคุมเพื่อสร้างโครงสร้างพื้นฐาน phishing |
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | ตรวจจับการสร้างคีย์ API Gateway และการจัดการ REST API api_gateway__create_api_keys ของ Pacu สร้าง credential API ถาวรที่อยู่รอดจากการหมุนคีย์ IAM ผู้โจมตียังแก้ไข API authorizer เพื่อลดความเข้มงวดของการควบคุมการเข้าถึง |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | ตรวจจับ error access denied ผ่าน VPC endpoint อาจบ่งชี้ endpoint policy ที่ตั้งค่าผิด |
+| 15 | 🌐 Route 53 & Domain Changes | timeseries | ตรวจจับการแก้ไข DNS record, การเปลี่ยนแปลง hosted zone และการลงทะเบียน/โอนย้ายโดเมน ผู้โจมตีเปลี่ยนเส้นทาง traffic ยึดครอง subdomain ที่ถูกทิ้งร้าง หรือลงทะเบียนโดเมนที่คล้ายกันเพื่อ phishing |
 
 ### 🕵 Threat Patterns
 
@@ -155,6 +168,7 @@
 | 2 | 🤖 Unusual User Agents | bar | แสดงรายการ user agent ที่พบยาก (น้อยกว่า 5 เหตุการณ์) เครื่องมือแบบกำหนดเองอย่าง Pacu หรือ curl อาจบ่งชี้เครื่องมือของผู้โจมตี |
 | 3 | 🌍 Multi-Region Activity | bar | ตรวจจับอัตลักษณ์ที่เขียนใน 3 ภูมิภาคขึ้นไปในหนึ่งวัน การกระจายทางภูมิศาสตร์อาจบ่งชี้การถูกบุกรุก |
 | 4 | 🕵 First-Time API Calls (24h) | — | ค้นหาการเรียก API ที่พบใน 24 ชั่วโมงที่ผ่านมาแต่ไม่เคยพบมาก่อน การดำเนินการใหม่อาจบ่งชี้เครื่องมือของผู้โจมตี |
+| 5 | 🗺 First-Seen Region Activity | bar | ค้นหาภูมิภาค AWS ที่กิจกรรมแรกสุดตกอยู่ใน 24 ชั่วโมงสุดท้ายของชุดข้อมูล การดำเนินการในภูมิภาคที่ไม่เคยใช้มาก่อนเป็นวิธีคลาสสิกในการซ่อน cryptomining หรือการเตรียมการจากการตรวจสอบที่จำกัดขอบเขตตามภูมิภาค |
 
 ### 📊 Activity & Baseline
 
@@ -190,24 +204,24 @@
 
 ---
 
-## 📊 Dashboard Charts — 91 charts
+## 📊 Dashboard Charts — 101 charts
 
 | แท็บ | จำนวนแผนภูมิ | สิ่งที่แสดง |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | การ์ด KPI สำหรับ triage 9 รายการ (เหตุการณ์, principal, IP, root, การล็อกอินไม่มี MFA, access denied, การหลบเลี่ยงการป้องกัน, ประเทศ, ภูมิภาค) + แนวโน้มปริมาณเหตุการณ์ทั่วโลก |
-| 🎯 Threat Detection | 11 | จุดรวมการหลบเลี่ยงการป้องกัน · ช่องว่างของ logging · การดัดแปลง VPC flow log/Config/EventBridge/WAF · การเปลี่ยนแปลง SCP · แนวโน้ม error และ throttling · อัตราส่วน write/read |
-| 🔑 Identity & Access | 14 | การล็อกอินคอนโซล · แนวโน้ม MFA · heatmap การล็อกอิน · ลำดับเหตุการณ์ auth ล้มเหลว→สำเร็จ · การใช้ root · กิจกรรมของ IAM entity · ไทม์ไลน์การยกระดับสิทธิ์ · principal ใหม่ · SSO · AssumeRole ข้ามบัญชี |
+| 🎯 Threat Detection | 12 | จุดรวมการหลบเลี่ยงการป้องกัน · ช่องว่างของ logging · การดัดแปลง VPC flow log/Config/EventBridge/WAF · การเปลี่ยนแปลง SCP/สมาชิกภาพองค์กร · แนวโน้ม error และ throttling · อัตราส่วน write/read |
+| 🔑 Identity & Access | 16 | การล็อกอินคอนโซล · แนวโน้ม MFA · heatmap การล็อกอิน · ลำดับเหตุการณ์ auth ล้มเหลว→สำเร็จ · การใช้ root · กิจกรรม/การลบของ IAM entity · ไทม์ไลน์การยกระดับสิทธิ์ · principal ใหม่ · SSO · AssumeRole ข้ามบัญชี · การใช้ AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | log เหตุการณ์การดัดแปลงบริการความปลอดภัยและการดึง credential · การเรียกความเสี่ยงสูงอันดับต้น · ผู้กระทำอันดับต้น · ปริมาณการเรียกความเสี่ยงสูงตามเวลา |
 | 📊 API Activity | 6 | API อันดับต้น · การกระทำที่ถูก access-denied · การกระจายตามภูมิภาค · องค์ประกอบของ error-code · source IP · user agent |
-| 🪣 S3 & RDS | 11 | การดาวน์โหลด/ลบ S3 จำนวนมาก · การปิดใช้งาน versioning/logging · การจำลองข้ามบัญชี · policy/ACL ของ bucket · การแจกแจง · การตั้งค่าการป้องกัน · การลบ Backup vault · การลบคีย์ KMS · การแชร์ snapshot RDS / การลบ RDS โดยไม่มี snapshot |
-| 🖥️ Computing | 14 | การเปิดใช้งาน EC2/หยุดจำนวนมาก/key pair/instance profile/user-data/การแชร์ snapshot/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation |
+| 🪣 S3 & RDS | 15 | การดาวน์โหลด/ลบ S3 จำนวนมาก · การปิดใช้งาน versioning/logging · การจำลองข้ามบัญชี · policy/ACL ของ bucket · การแจกแจง · การตั้งค่าการป้องกัน · การลบ Backup vault · การลบคีย์ KMS · การแชร์ snapshot RDS / การลบ RDS โดยไม่มี snapshot · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ query/instance ของ RDS · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ |
+| 🖥️ Computing | 17 | การเปิดใช้งาน EC2/หยุดจำนวนมาก/key pair/instance profile/user-data/การแชร์ snapshot/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · การลดความเข้มงวดของ IMDS · การลบ AMI/snapshot · การยึดครอง WorkSpaces |
 | 🤖 AI / LLM | 4 | แนวโน้มการเรียกใช้ Bedrock · การเปลี่ยนแปลงการเข้าถึงโมเดลและ logging · การเรียกใช้ที่ล้มเหลว · ผู้เรียกจัดกลุ่มตามแหล่งที่มา (triage สำหรับ LLMjacking) |
 | 🌐 Network | 5 | การเปลี่ยนแปลง security group · การเปลี่ยนแปลง NACL/route table · โครงสร้างพื้นฐาน VPC · VPC peering/Transit Gateway · การเปลี่ยนแปลง DNS ของ Route53 |
 | 🕒 Temporal Analysis | 6 | การพุ่งสูงของความเร็วเหตุการณ์ · บัญชีที่ไม่ใช้งานถูกเปิดใช้ใหม่ · การพบครั้งแรก/ครั้งสุดท้ายตาม identity/IP/API/แหล่งบริการ |
 | 🌍 GeoIP Intelligence | 6 | การเดินทางที่เป็นไปไม่ได้ (principal หลายประเทศ) · ประเทศ/เมือง/ASN อันดับต้น · แผนที่โลก · event_name × country |
 
 <details markdown="1">
-<summary>📋 รายการทั้งหมด — ทุก chart ทั้ง 91 รายการ (คลิกเพื่อขยาย)</summary>
+<summary>📋 รายการทั้งหมด — ทุก chart ทั้ง 101 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -241,6 +255,7 @@
 | 9 | Throttling Exception Spikes | error การจำกัดอัตรา/throttling รายชั่วโมงแยกย่อยตามบริการ AWS (DSH-21) การพุ่งสูงของ ThrottlingException บ่งชี้ว่าอัตลักษณ์ (หรือเครื่องมือ) กำลังส่งการเรียก API เร็วกว่าที่คาดไว้มาก ซึ่งเป็นลักษณะเฉพาะของเครื่องมือโจมตีอัตโนมัติที่ทำการสอดแนมหรือแจกแจง MITRE ATT&CK: TA0007 Discovery |
 | 10 | Write/Read Ratio Trend | การแยกย่อยรายชั่วโมงของการเรียก API แบบอ่านเทียบกับเขียน (DSH-20) การเพิ่มขึ้นอย่างต่อเนื่องของ write_events เทียบกับ read_events บ่งชี้ว่าผู้โจมตีได้เปลี่ยนจากการสอดแนมไปสู่การโจมตีเชิงรุก MITRE ATT&CK: TA0040 Impact / TA0007 Discovery |
 | 11 | CloudTrail Events Over Time | ปริมาณเหตุการณ์ Read เทียบกับ Write รายชั่วโมงตามเวลา (DSH-01) แท่งกราฟแบบซ้อนแสดงสัดส่วน Read/Write การเพิ่มขึ้นอย่างฉับพลันของ write_events ส่งสัญญาณว่าผู้โจมตีกำลังเปลี่ยนจากการสอดแนมไปสู่การโจมตีเชิงรุก มีประโยชน์สำหรับระบุการพุ่งสูงของกิจกรรมและการดำเนินการนอกเวลาทำการ |
+| 12 | Organization Membership Changes | การเปลี่ยนแปลงสมาชิกภาพของ Organizations ที่แยกบัญชีออกจาก guardrail หรือย้ายไปอยู่ภายใต้ organization ที่ผู้โจมตีควบคุม Threat Technique Catalog for AWS: T1666.A002 / T1666.A003 |
 
 ### 🔑 Identity & Access
 
@@ -260,6 +275,8 @@
 | 12 | Secrets Access Anomaly | อัตลักษณ์ที่เข้าถึง Secrets Manager หรือ SSM Parameter Store ≥10 ครั้งในหนึ่งชั่วโมง (DSH-23) การอ่าน credential จำนวนมากเป็นตัวบ่งชี้หลังการโจมตี — ผู้โจมตีเก็บเกี่ยวข้อมูลลับที่จัดเก็บไว้เพื่อเคลื่อนที่ไปยังบริการหรือบัญชีอื่น MITRE ATT&CK: TA0006 Credential Access / TA0010 Exfiltration |
 | 13 | Security-Relevant API Calls | การเรียกใช้การกระทำ API ของ AWS ที่ทราบว่าละเอียดอ่อนด้านความปลอดภัย (DSH-12) ครอบคลุมการเปลี่ยนแปลง credential ของ IAM, การแก้ไข policy, การเปลี่ยนแปลง policy ของ S3 bucket, การแก้ไข security group, การจัดการคีย์, การดำเนินการ token ของ STS, การปิดใช้งานบริการความปลอดภัย, การอ่าน Secrets Manager และการจัดการ Organizations การเรียกเหล่านี้ควรเกิดขึ้นได้ยากในการดำเนินงานปกติ การเกิดขึ้นที่ไม่คาดคิดอาจบ่งชี้การยกระดับสิทธิ์ การคงอยู่ หรือการลักลอบนำข้อมูลออก |
 | 14 | IAM Identity Center (SSO) Events | เหตุการณ์การจัดการ AWS IAM Identity Center (DSH-44) จาก sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com และ identitystore.amazonaws.com Identity Center เป็นเส้นทางการยืนยันตัวตนหลักในองค์กรที่มีหลายบัญชี ภัยคุกคามสำคัญ: CreatePermissionSet (การเข้าถึง admin แบบแบ็คดอร์), CreateAccountAssignment (การกำหนดบัญชีให้กับผู้ใช้ที่ผู้โจมตีควบคุม) และ AttachManagedPolicyToPermissionSet (การยกระดับสิทธิ์) MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation |
+| 15 | IAM Entity Deletion | การลบผู้ใช้ IAM, role, policy และอุปกรณ์ MFA ที่ใช้ลบร่องรอยของอัตลักษณ์ที่ผู้โจมตีสร้างขึ้นหรือล็อกผู้ป้องกันออก Threat Technique Catalog for AWS: T1070.A001 |
+| 16 | AssumeRoot Usage | การเรียก sts:AssumeRoot จากบัญชี management ไปยัง root ของ member account — เส้นทางการยึดครอง member account แบบเต็มรูปแบบ Threat Technique Catalog for AWS: AT1669 |
 
 ### 🚨 High-Risk API Monitor
 
@@ -297,6 +314,10 @@
 | 9 | KMS Key Deletion & Disable Events | เหตุการณ์การลบ ปิดใช้งาน และการจัดการการหมุนคีย์ KMS (DSH-66) ScheduleKeyDeletion — กำหนดเวลาการลบคีย์ (หน้าต่าง 7-30 วันเพื่อยกเลิก) DisableKey — หยุดการเข้ารหัส/ถอดรหัสด้วยคีย์ทันที DeleteImportedKeyMaterial — ทำลายเนื้อหาคีย์สำหรับคีย์ที่นำเข้าทันที DisableKeyRotation — ป้องกันการหมุนคีย์รายปีอัตโนมัติ เหตุการณ์ใด ๆ เหล่านี้ทำให้ข้อมูลทั้งหมดที่เข้ารหัสด้วยคีย์นั้นไม่สามารถเข้าถึงได้อย่างถาวร ใช้ CancelKeyDeletion เพื่อย้อนกลับ ScheduleKeyDeletion ก่อนวันที่กำหนดลบ MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction |
 | 10 | RDS Deleted without Final Snapshot | การลบ RDS instance และ cluster ด้วย skipFinalSnapshot=true (DSH-56): เหตุการณ์ DeleteDBInstance และ DeleteDBCluster ที่ไม่มีการสร้าง snapshot สุดท้าย การข้าม snapshot สุดท้ายทำให้ฐานข้อมูลไม่สามารถกู้คืนได้ — ไม่มีจุดกู้คืนหลงเหลืออยู่หลังการลบ ผู้ก่อการ ransomware ใช้วิธีนี้เพื่อเพิ่มแรงกดดันต่อเหยื่อสูงสุดเมื่อ AWS Backup ก็ถูกปิดใช้งานด้วยเช่นกัน เหตุการณ์ใด ๆ ที่นี่ถือเป็นเหตุการณ์ที่สำคัญ MITRE ATT&CK: TA0040 Impact / T1485 Data Destruction |
 | 11 | RDS Snapshot Cross-Account Share | เหตุการณ์การแชร์ snapshot ของ RDS และ Aurora (DSH-40): ModifyDBSnapshotAttribute และ ModifyDBClusterSnapshotAttribute ที่ได้รับสิทธิ์การกู้คืนให้กับบัญชี AWS อื่น (valuesToAdd) ผู้โจมตีแชร์ snapshot ไปยังบัญชีของตนเองเพื่อลักลอบนำฐานข้อมูลทั้งหมดออกโดยไม่ต้องใช้ DLP ที่อิงกับ S3/เครือข่าย account ID ภายนอกใด ๆ ในแอตทริบิวต์การกู้คืนเป็นตัวบ่งชี้การลักลอบนำออกที่สำคัญ MITRE ATT&CK: TA0010 Exfiltration |
+| 12 | S3 SSE-C Ransomware Encryption | object ของ S3 ที่ถูกเข้ารหัสใหม่ด้วยคีย์ SSE-C ที่ผู้โจมตีจัดหาให้ รวมถึงการเปลี่ยนแปลงการเข้ารหัสเริ่มต้นของ bucket — ransomware ที่เกิดขึ้นบนคลาวด์โดยเฉพาะ Threat Technique Catalog for AWS: T1486.A001 |
+| 13 | S3 Lifecycle-Triggered Deletion | lifecycle rule ของ S3 ที่ทำให้ object หมดอายุ (และการลบการตั้งค่า lifecycle) ที่ใช้กำจัดข้อมูลอย่างเงียบ ๆ โดยไม่มีการเรียก DeleteObject จำนวนมาก Threat Technique Catalog for AWS: T1485.001 |
+| 14 | RDS Query & Instance Manipulation | query ของ RDS Data API และการกู้คืน snapshot ที่ใช้อ่านข้อมูลโดยตรงหรือกู้คืนไปยัง instance ที่ผู้โจมตีควบคุม Threat Technique Catalog for AWS: AT1023.001 / T1213.A013 |
+| 15 | Storage Re-Encryption for Impact | snapshot และ volume ของ EBS/RDS ที่ถูกเข้ารหัสใหม่ด้วยคีย์ KMS ที่ผู้โจมตีควบคุมอย่างชัดเจน รวมถึงการปิดใช้งานการเข้ารหัสเริ่มต้น Threat Technique Catalog for AWS: T1486.A002 / T1486.A003 |
 
 ### 🖥️ Computing
 
@@ -316,6 +337,9 @@
 | 12 | EBS Direct API Snapshot Block Access | การเรียก EBS Direct API ที่ใช้ลักลอบนำข้อมูล snapshot ออก (DSH-51) ebs__download_snapshots ของ Pacu ใช้ ListSnapshotBlocks และ GetSnapshotBlock เพื่อสตรีมภาพ disk ของ EBS ทั้งหมดทีละ block โดยไม่ต้องสร้าง EC2 instance ขอสำเนา snapshot หรือกระตุ้นเหตุการณ์ ModifySnapshotAttribute — ทำให้มองไม่เห็นจากการตรวจจับการแชร์ snapshot แบบดั้งเดิม การเรียก GetSnapshotBlock หรือ ListSnapshotBlocks ใด ๆ จากอัตลักษณ์หรือ IP ที่ไม่คาดคิดเป็นตัวบ่งชี้การลักลอบนำออกที่สำคัญ MITRE ATT&CK: TA0010 Exfiltration / TA0009 Collection |
 | 13 | EKS / ECR Container Platform Events | เหตุการณ์ EKS cluster และ ECR container registry (DSH-48) EKS: UpdateClusterConfig (API สาธารณะ), CreateFargateProfile (workload ที่เป็นอันตราย), AssociateIdentityProviderConfig (OIDC IdP ปลอม) ECR: PutImage (การ push image ที่มีแบ็คดอร์), SetRepositoryPolicy (การเข้าถึงข้ามบัญชี), PutRegistryPolicy (การเปิดเผย registry ทั้งองค์กร) เหตุการณ์แพลตฟอร์ม container มีความสำคัญสำหรับการตรวจจับการโจมตี supply-chain และการถูกบุกรุก control-plane ของ Kubernetes MITRE ATT&CK: TA0002 Execution / TA0003 Persistence / TA0010 Exfiltration |
 | 14 | CloudFormation Stack Changes | เหตุการณ์การจัดการ CloudFormation stack และ change-set (DSH-65) UpdateStack เพียงครั้งเดียวสามารถ deploy EC2 instance แก้ไข IAM role หรือกำหนดค่าเครือข่ายใหม่ได้ — รวมการเรียก API แยกกันหลายสิบครั้งเป็นเหตุการณ์เดียว CreateStackSet deploy โครงสร้างพื้นฐานของผู้โจมตีไปทั่วทุกบัญชีในองค์กร ExecuteChangeSet ใช้การเปลี่ยนแปลงที่เตรียมไว้ล่วงหน้า ซ่อนขอบเขตผลกระทบจากการทบทวนเบื้องต้น DeleteStack สามารถทำลายทรัพยากรหลักฐานทางนิติวิทยาศาสตร์ MITRE ATT&CK: TA0003 Persistence / TA0002 Execution / TA0005 Defense Evasion |
+| 15 | IMDS Options Weakening | การเรียก ModifyInstanceMetadataOptions ที่ทำให้ IMDSv2 เป็นทางเลือกหรือเปิดใช้งาน metadata endpoint อีกครั้ง เปิดการขโมย credential ผ่าน SSRF อีกครั้ง Threat Technique Catalog for AWS: T1552.005 |
+| 16 | AMI & Snapshot Deletion | การยกเลิกการลงทะเบียน AMI และการลบ snapshot ของ EBS ที่ทำลายเส้นฐานการกู้คืนระหว่างการโจมตีเชิงทำลาย Threat Technique Catalog for AWS: T1485.A002 |
+| 17 | WorkSpaces Hijacking | การจัดสรร Amazon WorkSpaces ที่ใช้สำหรับการยึดครองการประมวลผลนอกขอบเขตความปลอดภัยของ EC2 Threat Technique Catalog for AWS: T1496.A009 |
 
 ### 🤖 AI / LLM
 
