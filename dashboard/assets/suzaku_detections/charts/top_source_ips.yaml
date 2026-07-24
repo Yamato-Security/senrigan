@@ -1,0 +1,66 @@
+# SZK-39: Top Source IPs (with geo context)
+# Every source address is shown with its country, city and ASN — a bare
+# IP tells an analyst nothing, and the geo columns are functionally
+# dependent on it, so adding them never changes the grouping.
+uuid: 5a39c3d4-e5f6-7890-abcd-ef0123450039
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Top Source IPs
+viz_type: table
+description: >
+  Source IP addresses ranked by detection count, each with its country, city
+  and ASN, the principals seen using it, and its active window (SZK-39). An
+  address used by several principals, or one whose window is minutes long, is
+  a strong pivot point.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk39_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk39_users
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk39_rules
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk39_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk39_last
+  groupby:
+    - source_ip
+    - src_country
+    - src_city
+    - src_asn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: source_ip IS NOT NULL
+      filterOptionName: filter_szk39_ip_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT source_ip, src_country, src_city, src_asn, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen
+# FROM suzaku_detections WHERE source_ip IS NOT NULL
+# GROUP BY 1, 2, 3, 4 ORDER BY detections DESC

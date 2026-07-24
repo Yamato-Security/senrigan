@@ -1,0 +1,47 @@
+# SZK-50: Detections by Service / Workload
+# AWS eventSource (iam.amazonaws.com, s3.amazonaws.com, …) or the Azure
+# Workload. Tells you which part of the estate the incident touched.
+uuid: 5a50c3d4-e5f6-7890-abcd-ef0123450050
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by Service / Workload
+viz_type: dist_bar
+description: >
+  Detections grouped by the service that processed the request — CloudTrail's
+  eventSource for AWS, Workload for Azure/M365 (SZK-50). Answers 'which part
+  of the estate was touched' before drilling into individual actions.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk50_detections
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk50_sev
+  groupby:
+    - event_source
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: event_source IS NOT NULL
+      filterOptionName: filter_szk50_source_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Service / Workload
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT event_source, COUNT(*) AS detections, MAX(level_rank) AS max_severity_rank
+# FROM suzaku_detections WHERE event_source IS NOT NULL
+# GROUP BY event_source ORDER BY detections DESC LIMIT 25

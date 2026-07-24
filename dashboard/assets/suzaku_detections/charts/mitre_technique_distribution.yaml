@@ -1,0 +1,47 @@
+# SZK-22: ATT&CK Technique Distribution
+# Top 30 ATT&CK technique IDs. Sub-techniques (T1562.008) are kept
+# distinct from their parent (T1562) exactly as the rules tag them.
+uuid: 5a22c3d4-e5f6-7890-abcd-ef0123450022
+version: 1.0.0
+dataset_uuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+slice_name: ATT&CK Technique Distribution
+viz_type: dist_bar
+description: >
+  The 30 most frequent MITRE ATT&CK technique IDs across the detections
+  (SZK-22). Sub-techniques are kept separate from their parent technique,
+  matching how the Sigma rules tag them.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk22_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk22_rules
+  groupby:
+    - tag_value
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'technique'
+      filterOptionName: filter_szk22_technique
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 30
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: ATT&CK Technique
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, COUNT(*) AS detections, COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_detection_tags WHERE tag_type = 'technique'
+# GROUP BY tag_value ORDER BY detections DESC LIMIT 30

@@ -1,6 +1,6 @@
 .PHONY: help \
         up down build ps ensure-secret \
-        ingest ingest-full ingest-geoip enrich config-import resync \
+        ingest ingest-full ingest-geoip enrich config-import suzaku-import resync \
         logs-agent logs-config-viz logs-superset \
         test lint fmt-check \
         test-ingester test-agent test-config-viz test-frontend \
@@ -72,6 +72,10 @@ enrich: ensure-secret          ## Back-fill GeoIP on existing DB rows
 config-import: ensure-secret   ## Import AWS Config snapshots
 	$(DC) --profile ingest run --rm ingester config-import \
 	    --path /data/config
+
+suzaku-import: ensure-secret   ## Import Suzaku detections (docker/data/suzaku/*.duckdb)
+	$(DC) --profile ingest run --rm ingester suzaku-import \
+	    --path /data/suzaku
 
 resync: ensure-secret          ## Re-sync Superset dataset metadata after re-ingestion
 	$(DC) --profile resync run --rm superset-resync

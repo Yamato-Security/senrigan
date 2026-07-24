@@ -1,0 +1,48 @@
+# SZK-16: Detections by Rule Author
+# Which rule sets are carrying the detection load. Useful when tuning:
+# it shows at a glance whether hits come from the bundled Sigma corpus
+# or from locally-written Yamato Security rules.
+uuid: 5a16c3d4-e5f6-7890-abcd-ef0123450016
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by Rule Author
+viz_type: dist_bar
+description: >
+  Detections grouped by the author recorded in the Sigma rule (SZK-16). Shows
+  which rule sets are producing the findings — helpful when deciding where to
+  tune, and for crediting rule authors in a report.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk16_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk16_rules
+  groupby:
+    - rule_author
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: rule_author IS NOT NULL
+      filterOptionName: filter_szk16_author_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Rule Author
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_author, COUNT(*) AS detections, COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_detections WHERE rule_author IS NOT NULL
+# GROUP BY rule_author ORDER BY detections DESC LIMIT 25

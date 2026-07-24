@@ -1,0 +1,50 @@
+# SZK-33: Top User Agents
+# The tooling behind the detections. Console and SDK strings dominate a
+# healthy environment; Boto3 or curl on an interactive user's calls is
+# worth a second look.
+uuid: 5a33c3d4-e5f6-7890-abcd-ef0123450033
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Top User Agents
+viz_type: dist_bar
+description: >
+  The 25 most common user agents across the detections (SZK-33). Console and
+  official SDK strings are expected; raw HTTP clients or offensive tooling
+  names in this list are a strong lead. See SZK-34 for the rare end of the
+  same distribution.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk33_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk33_users
+  groupby:
+    - user_agent
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_agent IS NOT NULL
+      filterOptionName: filter_szk33_ua_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: User Agent
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_agent, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals
+# FROM suzaku_detections WHERE user_agent IS NOT NULL
+# GROUP BY user_agent ORDER BY detections DESC LIMIT 25

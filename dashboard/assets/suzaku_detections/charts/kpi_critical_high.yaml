@@ -1,0 +1,31 @@
+# SZK-02: Critical + High Detections (KPI)
+# Detections at Sigma level critical or high (level_rank >= 4).
+# This is the triage queue: start here, then widen to medium/low.
+uuid: 5a02c3d4-e5f6-7890-abcd-ef0123450002
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Critical + High Detections
+viz_type: big_number_total
+description: >
+  Detections at Sigma level critical or high (SZK-02). level_rank orders
+  severities numerically (critical=5 … informational=1) so 'at least high' is
+  a single comparison.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*) FILTER (WHERE level_rank >= 4)
+    label: critical_high
+    hasCustomLabel: true
+    optionName: metric_szk02_critical_high
+  adhoc_filters: []
+  subheader: Triage these first
+  granularity_sqla: detected_at
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(*) FILTER (WHERE level_rank >= 4) FROM suzaku_detections

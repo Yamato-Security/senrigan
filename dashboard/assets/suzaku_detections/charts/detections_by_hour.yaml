@@ -1,0 +1,46 @@
+# SZK-44: Detections by Hour of Day (UTC)
+# The heatmap collapsed onto one axis, with max severity per hour so a
+# single critical detection in a quiet hour is not hidden by volume.
+uuid: 5a44c3d4-e5f6-7890-abcd-ef0123450044
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by Hour of Day
+viz_type: dist_bar
+description: >
+  Detections aggregated by hour of day in UTC, with the worst severity seen in
+  each hour (SZK-44). Complements the heatmap: a lone critical detection at
+  03:00 shows up here even though its bar is short.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk44_detections
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk44_sev
+  groupby:
+    - expressionType: SQL
+      sqlExpression: LPAD(CAST(EXTRACT(HOUR FROM detected_at) AS VARCHAR), 2, '0')
+      label: hour_utc
+      hasCustomLabel: true
+  adhoc_filters: []
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 24
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Hour of Day (UTC)
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT LPAD(CAST(EXTRACT(HOUR FROM detected_at) AS VARCHAR), 2, '0') AS hour_utc,
+#        COUNT(*) AS detections, MAX(level_rank) AS max_severity_rank
+# FROM suzaku_detections GROUP BY 1 ORDER BY detections DESC

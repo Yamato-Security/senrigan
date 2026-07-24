@@ -1,0 +1,52 @@
+# SZK-25: Techniques and the Rules That Found Them
+# The bridge from an ATT&CK technique back to the concrete rule and the
+# window it fired in — the step between 'T1098 was observed' and 'here
+# is the evidence'.
+uuid: 5a25c3d4-e5f6-7890-abcd-ef0123450025
+version: 1.0.0
+dataset_uuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+slice_name: Techniques and the Rules That Found Them
+viz_type: table
+description: >
+  Every ATT&CK technique with the rules that reported it, its severity, and
+  when it was first and last seen (SZK-25). Use it to go from a technique on
+  the ATT&CK matrix back to the concrete detections that support it.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk25_detections
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk25_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk25_last
+  groupby:
+    - tag_value
+    - rule_title
+    - level
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'technique'
+      filterOptionName: filter_szk25_technique
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, rule_title, level, COUNT(*) AS detections,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen
+# FROM suzaku_detection_tags WHERE tag_type = 'technique'
+# GROUP BY 1, 2, 3 ORDER BY detections DESC

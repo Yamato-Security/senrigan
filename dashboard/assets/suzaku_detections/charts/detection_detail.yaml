@@ -1,0 +1,52 @@
+# SZK-56: Detection Detail — the full record
+# Every normalised column for each detection, including the cloud
+# provider and the original event ID, so a finding can be traced back
+# to the raw log line it came from.
+# Export this table to CSV for the evidence appendix of a report.
+uuid: 5a56c3d4-e5f6-7890-abcd-ef0123450056
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detection Detail (all fields)
+viz_type: table
+description: >
+  The complete normalised record for each detection — rule, severity, actor,
+  origin, action, outcome and the original event ID (SZK-56). The event_id
+  column is what lets an analyst find the raw log entry behind a finding;
+  export this table for a report's evidence appendix.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk56_severity_rank
+  groupby:
+    - detected_at
+    - level
+    - rule_title
+    - cloud_provider
+    - event_name
+    - event_source
+    - user_name
+    - user_type
+    - source_ip
+    - src_country
+    - src_asn
+    - aws_region
+    - outcome
+    - error_code
+    - event_id
+  adhoc_filters: []
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 2000
+  order_desc: true
+  page_size: 100
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT detected_at, level, rule_title, cloud_provider, event_name, event_source,
+#        user_name, user_type, source_ip, src_country, src_asn, aws_region,
+#        outcome, error_code, event_id
+# FROM suzaku_detections ORDER BY detected_at DESC LIMIT 2000

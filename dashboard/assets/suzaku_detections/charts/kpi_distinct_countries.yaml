@@ -1,0 +1,31 @@
+# SZK-06: Distinct Countries (KPI)
+# Requires Suzaku to have been run with --geo-ip; without it the geo
+# columns are empty and this card reads 0.
+uuid: 5a06c3d4-e5f6-7890-abcd-ef0123450006
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Countries
+viz_type: big_number_total
+description: >
+  Distinct source countries across all detections (SZK-06). Populated only
+  when Suzaku was run with --geo-ip <maxmind-db-dir>; otherwise the geo
+  columns are NULL and this card reads 0.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT src_country)
+    label: distinct_countries
+    hasCustomLabel: true
+    optionName: metric_szk06_distinct_countries
+  adhoc_filters: []
+  subheader: Requires --geo-ip
+  granularity_sqla: detected_at
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT src_country) FROM suzaku_detections

@@ -23,7 +23,7 @@ echo "==> Registering DuckDB database connection..."
 # Use the Python API (DatabaseDAO) to register the DuckDB connection idempotently.
 python3 /app/register_duckdb.py
 
-echo "==> Registering cloudtrail_events dataset..."
+echo "==> Registering datasets (cloudtrail_events + Suzaku detections)..."
 python3 /app/register_dataset.py
 
 echo "==> Importing pre-built dashboard (if available)..."
@@ -38,6 +38,17 @@ if [ -f /app/dashboards/cloudtrail_rare.zip ]; then
   DASHBOARD_ZIP=/app/dashboards/cloudtrail_rare.zip python3 /app/import_dashboard.py
 else
   echo "    Rare Events dashboard ZIP not found — skipping import."
+fi
+
+# The Suzaku dashboard reads suzaku_detections / suzaku_detection_tags, which
+# are populated by `ingester suzaku-import`.  It is imported unconditionally:
+# the ingester creates both tables (empty) on every run, so the charts render
+# "No data" rather than an error until detections are actually imported.
+echo "==> Importing Suzaku Detections dashboard (if available)..."
+if [ -f /app/dashboards/suzaku_detections.zip ]; then
+  DASHBOARD_ZIP=/app/dashboards/suzaku_detections.zip python3 /app/import_dashboard.py
+else
+  echo "    Suzaku Detections dashboard ZIP not found — skipping import."
 fi
 
 echo "==> Bootstrap complete."

@@ -1,0 +1,60 @@
+# SZK-48: First / Last Seen per Source IP
+# The network counterpart of SZK-47, with geo context so an address is
+# never presented without a location.
+uuid: 5a48c3d4-e5f6-7890-abcd-ef0123450048
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: First / Last Seen per Source IP
+viz_type: table
+description: >
+  Each source IP's first and last detection with its geo context and active
+  span (SZK-48). An address that appears for the first time part way through
+  the timeline, and is never seen again, is an excellent indicator of
+  compromise to hand to network defence.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk48_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk48_last
+    - expressionType: SQL
+      sqlExpression: DATEDIFF('minute', MIN(detected_at), MAX(detected_at))
+      label: active_span_minutes
+      hasCustomLabel: true
+      optionName: metric_szk48_span
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk48_detections
+  groupby:
+    - source_ip
+    - src_country
+    - src_city
+    - src_asn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: source_ip IS NOT NULL
+      filterOptionName: filter_szk48_ip_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT source_ip, src_country, src_city, src_asn,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen,
+#        DATEDIFF('minute', MIN(detected_at), MAX(detected_at)) AS active_span_minutes,
+#        COUNT(*) AS detections
+# FROM suzaku_detections WHERE source_ip IS NOT NULL
+# GROUP BY 1, 2, 3, 4 ORDER BY first_seen DESC

@@ -1,0 +1,45 @@
+# SZK-23: ATT&CK Tactics Over Time
+# Daily detections stacked by tactic. This is the kill-chain view of the
+# incident: Discovery early, Credential Access and Privilege Escalation
+# in the middle, Exfiltration or Impact at the end.
+uuid: 5a23c3d4-e5f6-7890-abcd-ef0123450023
+version: 1.0.0
+dataset_uuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+slice_name: ATT&CK Tactics Over Time
+viz_type: echarts_timeseries_bar
+description: >
+  Daily detection volume stacked by MITRE ATT&CK tactic (SZK-23). The
+  progression of the stack over time is the kill chain as the rules saw it —
+  Discovery giving way to Credential Access and Privilege Escalation, then
+  Exfiltration or Impact.
+query_context: ""
+params:
+  x_axis: detected_at
+  time_grain_sqla: P1D
+  granularity_sqla: detected_at
+  time_range: No filter
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk23_detections
+  groupby:
+    - tag_value
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'tactic'
+      filterOptionName: filter_szk23_tactic
+  row_limit: 10000
+  stack: true
+  x_axis_title: Date (UTC)
+  y_axis_title: Detections
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('day', detected_at) AS day_bucket, tag_value, COUNT(*)
+# FROM suzaku_detection_tags WHERE tag_type = 'tactic' GROUP BY 1, 2 ORDER BY 1

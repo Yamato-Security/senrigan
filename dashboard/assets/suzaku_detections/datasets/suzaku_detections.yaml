@@ -1,0 +1,397 @@
+# Superset dataset definition for suzaku_detections.
+# One row per Suzaku rule hit, normalised from the `timeline` table of a
+# `suzaku ... -t duckdb` output. Linked to the shared "CloudTrail DuckDB"
+# connection: the detections live in the same DuckDB file as cloudtrail_events.
+uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: suzaku_detections
+main_dttm_col: detected_at
+description: "Suzaku Sigma-rule detections imported by `ingester suzaku-import`."
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: detected_at
+    verbose_name: "Detected At"
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: "Event timestamp of the detection, normalised to UTC on import"
+
+  - column_name: rule_title
+    verbose_name: "Rule"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Title of the Sigma rule that matched"
+
+  - column_name: rule_id
+    verbose_name: "Rule ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "UUID of the Sigma rule — the key for looking it up in suzaku-rules"
+
+  - column_name: rule_author
+    verbose_name: "Rule Author"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Author recorded in the Sigma rule"
+
+  - column_name: level
+    verbose_name: "Severity"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Sigma level: critical, high, medium, low, informational"
+
+  - column_name: level_rank
+    verbose_name: "Severity Rank"
+    is_dttm: false
+    is_active: true
+    type: INTEGER
+    groupby: true
+    filterable: true
+    description: "Sortable severity: critical=5 ... informational=1, unknown=0"
+
+  - column_name: tags
+    verbose_name: "Tags"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Raw Suzaku tag string (' ¦ '-separated ATT&CK abbreviations)"
+
+  - column_name: mitre_tactics
+    verbose_name: "ATT&CK Tactics"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "ATT&CK tactic abbreviations from the rule's tags"
+
+  - column_name: mitre_techniques
+    verbose_name: "ATT&CK Techniques"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "ATT&CK technique IDs from the rule's tags"
+
+  - column_name: cloud_provider
+    verbose_name: "Cloud"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "aws or azure, inferred from the Suzaku output profile"
+
+  - column_name: event_name
+    verbose_name: "API Action"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail eventName, or the Azure/M365 Operation"
+
+  - column_name: event_source
+    verbose_name: "Service"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail eventSource, or the Azure/M365 Workload"
+
+  - column_name: aws_region
+    verbose_name: "AWS Region"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "AWS region the request was made in"
+
+  - column_name: source_ip
+    verbose_name: "Source IP"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Source IP address of the request"
+
+  - column_name: src_country
+    verbose_name: "Country"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "GeoIP country name (requires Suzaku --geo-ip)"
+
+  - column_name: src_city
+    verbose_name: "City"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "GeoIP city name (requires Suzaku --geo-ip)"
+
+  - column_name: src_asn
+    verbose_name: "ASN"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "GeoIP ASN / network operator (requires Suzaku --geo-ip)"
+
+  - column_name: user_name
+    verbose_name: "Principal"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "IAM user name, or the Azure/M365 user"
+
+  - column_name: user_type
+    verbose_name: "Identity Type"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail identity type: Root, IAMUser, AssumedRole, AWSService, ..."
+
+  - column_name: user_arn
+    verbose_name: "Principal ARN"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Full IAM ARN of the principal"
+
+  - column_name: account_id
+    verbose_name: "Account ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "AWS account ID of the principal"
+
+  - column_name: principal_id
+    verbose_name: "Principal ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail userIdentity principalId"
+
+  - column_name: access_key_id
+    verbose_name: "Access Key ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Access key used for the request — the credential-rotation key"
+
+  - column_name: user_agent
+    verbose_name: "User Agent"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "User agent string of the caller"
+
+  - column_name: error_code
+    verbose_name: "Error Code"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail errorCode, or the Azure/M365 LogonError"
+
+  - column_name: error_message
+    verbose_name: "Error Message"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "CloudTrail errorMessage"
+
+  - column_name: outcome
+    verbose_name: "Outcome"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Success or Failure, derived per cloud on import"
+
+  - column_name: event_id
+    verbose_name: "Event ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "CloudTrail eventID, or the Azure/M365 CorrelationId — traces back to the raw log"
+
+  - column_name: target_object
+    verbose_name: "Target Object"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Azure/M365 object the operation acted on"
+
+  - column_name: record_type
+    verbose_name: "Record Type"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Microsoft 365 Unified Audit Log record type"
+
+  - column_name: app_id
+    verbose_name: "Application ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Azure/M365 application ID"
+
+  - column_name: category
+    verbose_name: "Category"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Azure diagnostic log category"
+
+  - column_name: details
+    verbose_name: "Details"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "Azure/M365 free-form detail field"
+
+  - column_name: source_path
+    verbose_name: "Source File"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Path of the Suzaku .duckdb output this detection was imported from"
+
+  - column_name: source_sha
+    verbose_name: "Source SHA-256"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "SHA-256 of that file — the import idempotency key"
+
+  - column_name: raw_row
+    verbose_name: "Raw Suzaku Row"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: false
+    description: "The original Suzaku row as JSON, verbatim"
+
+  - column_name: detection_id
+    verbose_name: "Detection ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "Deterministic ID joining a detection to its ATT&CK tag rows"
+
+metrics:
+  - metric_name: count
+    verbose_name: "Count"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: "Number of detections"
+
+  - metric_name: detections
+    verbose_name: "Detections"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: "Number of Suzaku detections"
+
+  - metric_name: critical_high
+    verbose_name: "Critical + High"
+    metric_type: count
+    expression: "COUNT(*) FILTER (WHERE level_rank >= 4)"
+    description: "Detections at level critical or high"
+
+  - metric_name: distinct_rules
+    verbose_name: "Distinct Rules"
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT rule_title)"
+    description: "Number of distinct Sigma rules"
+
+  - metric_name: distinct_principals
+    verbose_name: "Distinct Principals"
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT COALESCE(user_arn, user_name))"
+    description: "Number of distinct identities"
+
+  - metric_name: distinct_ips
+    verbose_name: "Distinct Source IPs"
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT source_ip)"
+    description: "Number of distinct source IP addresses"
+
+  - metric_name: max_severity_rank
+    verbose_name: "Max Severity Rank"
+    metric_type: max
+    expression: "MAX(level_rank)"
+    description: "Worst severity reached"

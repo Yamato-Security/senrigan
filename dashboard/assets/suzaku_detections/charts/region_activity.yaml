@@ -1,0 +1,55 @@
+# SZK-40: Detections by AWS Region
+# Detections in a region the organisation does not normally use are a
+# classic sign of resource hijacking — attackers pick quiet regions.
+uuid: 5a40c3d4-e5f6-7890-abcd-ef0123450040
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by AWS Region
+viz_type: dist_bar
+description: >
+  Detections per AWS region, with the worst severity reached in each (SZK-40).
+  Findings in a region the organisation does not normally operate in are a
+  well-known hijacking indicator: attackers deliberately choose regions nobody
+  watches.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk40_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk40_rules
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk40_sev
+  groupby:
+    - aws_region
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: aws_region IS NOT NULL
+      filterOptionName: filter_szk40_region_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 30
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: AWS Region
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT aws_region, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        MAX(level_rank) AS max_severity_rank
+# FROM suzaku_detections WHERE aws_region IS NOT NULL
+# GROUP BY aws_region ORDER BY detections DESC

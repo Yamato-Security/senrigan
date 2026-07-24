@@ -1,0 +1,66 @@
+# SZK-13: Rule Summary — one row per Sigma rule
+# The reference table for 'what did Suzaku detect': every rule with its
+# severity, volume, blast radius (distinct principals / IPs / actions)
+# and the window it fired in.
+uuid: 5a13c3d4-e5f6-7890-abcd-ef0123450013
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Rule Summary
+viz_type: table
+description: >
+  Every Sigma rule that fired, with severity, detection count, distinct
+  principals, source IPs and API actions, and its first/last hit (SZK-13).
+  Sort by distinct_principals to find rules that touched more than one
+  identity — those are rarely noise.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk13_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk13_users
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT source_ip)
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_szk13_ips
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT event_name)
+      label: distinct_actions
+      hasCustomLabel: true
+      optionName: metric_szk13_actions
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk13_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk13_last
+  groupby:
+    - rule_title
+    - level
+    - rule_id
+  adhoc_filters: []
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_title, level, rule_id, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        COUNT(DISTINCT source_ip) AS distinct_ips,
+#        COUNT(DISTINCT event_name) AS distinct_actions,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen
+# FROM suzaku_detections GROUP BY 1, 2, 3 ORDER BY detections DESC

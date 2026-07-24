@@ -1,0 +1,47 @@
+# SZK-24: Tactic × Severity Matrix
+# Where the severe detections actually sit in the kill chain.
+# A critical row under Impact or Exfil is a different conversation from
+# a critical row under Discovery.
+uuid: 5a24c3d4-e5f6-7890-abcd-ef0123450024
+version: 1.0.0
+dataset_uuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+slice_name: Tactic × Severity Matrix
+viz_type: table
+description: >
+  Detections cross-tabulated by ATT&CK tactic and Sigma severity (SZK-24).
+  Shows where the high-severity findings sit in the kill chain — critical hits
+  under Impact or Exfiltration are late-stage and warrant immediate
+  escalation.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk24_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk24_rules
+  groupby:
+    - tag_value
+    - level
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'tactic'
+      filterOptionName: filter_szk24_tactic
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, level, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_detection_tags WHERE tag_type = 'tactic'
+# GROUP BY 1, 2 ORDER BY detections DESC

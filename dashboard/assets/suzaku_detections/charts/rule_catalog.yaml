@@ -1,0 +1,39 @@
+# SZK-17: Rule Catalog — rule_id lookup
+# rule_id is the Sigma rule's UUID. Copy it to find the rule YAML in the
+# suzaku-rules repository when you need to read the detection logic or
+# check its false-positive notes before escalating.
+uuid: 5a17c3d4-e5f6-7890-abcd-ef0123450017
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Rule Catalog (with Rule IDs)
+viz_type: table
+description: >
+  Rule title, Sigma rule UUID, severity, author and ATT&CK tags for every rule
+  that fired (SZK-17). The rule_id is the key for looking the rule up in the
+  suzaku-rules repository to read its detection logic and documented false
+  positives.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk17_detections
+  groupby:
+    - rule_id
+    - rule_title
+    - level
+    - rule_author
+    - tags
+  adhoc_filters: []
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_id, rule_title, level, rule_author, tags, COUNT(*) AS detections
+# FROM suzaku_detections GROUP BY 1, 2, 3, 4, 5 ORDER BY detections DESC

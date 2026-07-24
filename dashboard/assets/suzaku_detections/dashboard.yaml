@@ -1,0 +1,1519 @@
+# Suzaku Detections — Dashboard Definition
+# 7-tab layout: Overview | Rules | MITRE ATT&CK | Identity | Origin |
+# Timeline | Events.  56 charts over two datasets:
+#   * suzaku_detections     — one row per Sigma rule hit
+#   * suzaku_detection_tags — one row per ATT&CK tag on a hit (MITRE tab)
+#
+# Both tables are written by `ingester suzaku-import`, which reads the
+# `.duckdb` timeline produced by
+#   suzaku aws-ct-timeline|azure-timeline -d <logs> -o result -t duckdb
+#
+# Import via: superset import-dashboards -p suzaku_detections.zip -u admin
+# (in Senrigan this happens automatically in dashboard/init/bootstrap.sh).
+uuid: 9b4d7e21-5c68-4a3f-b0d9-1e6c8f2a3457
+version: 1.0.0
+dashboard_title: Suzaku Detections
+description: >
+  Pre-built dashboard for Suzaku cloud-log detections stored in DuckDB. Seven
+  tabs answer the questions an analyst asks of a detection set in order: how
+  bad is it and when did it happen (Overview, Timeline), which rules fired and
+  which are rare (Rules), where does it sit on the ATT&CK matrix (MITRE
+  ATT&CK), who did it (Identity), where did they come from (Origin), and what
+  did they actually attempt (Events).
+published: true
+css: ""
+slug: suzaku-detections
+
+position:
+  DASHBOARD_VERSION_KEY: "v2"
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+      - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    children:
+      - TABS_ID
+  TABS_ID:
+    type: TABS
+    id: TABS_ID
+    children:
+      - TAB-overview
+      - TAB-rules
+      - TAB-mitre
+      - TAB-identity
+      - TAB-origin
+      - TAB-timeline
+      - TAB-events
+
+  # 🔎 Overview — Triage summary: how many detections, how severe, when, and by which rules
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+      - ROW-overview-1
+      - ROW-overview-2
+      - ROW-overview-3
+      - ROW-overview-4
+      - ROW-overview-5
+    meta:
+      text: "\U0001f50e Overview"
+      defaultText: "Tab 1"
+      tooltip: "Triage summary: how many detections, how severe, when, and by which rules"
+  ROW-overview-1:
+    type: ROW
+    id: ROW-overview-1
+    children:
+      - CHART-kpi-total
+      - CHART-kpi-crit-high
+      - CHART-kpi-rules
+      - CHART-kpi-principals
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-overview-2:
+    type: ROW
+    id: ROW-overview-2
+    children:
+      - CHART-kpi-ips
+      - CHART-kpi-countries
+      - CHART-kpi-accounts
+      - CHART-kpi-days
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-overview-3:
+    type: ROW
+    id: ROW-overview-3
+    children:
+      - CHART-detections-over-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-overview-4:
+    type: ROW
+    id: ROW-overview-4
+    children:
+      - CHART-severity-breakdown
+      - CHART-top-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-overview-5:
+    type: ROW
+    id: ROW-overview-5
+    children:
+      - CHART-detection-timeline
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # 📜 Rules — Which Sigma rules fired, how often, how rare, and when they first appeared
+  TAB-rules:
+    type: TAB
+    id: TAB-rules
+    children:
+      - ROW-rules-1
+      - ROW-rules-2
+      - ROW-rules-3
+      - ROW-rules-4
+    meta:
+      text: "\U0001f4dc Rules"
+      defaultText: "Tab 2"
+      tooltip: "Which Sigma rules fired, how often, how rare, and when they first appeared"
+  ROW-rules-1:
+    type: ROW
+    id: ROW-rules-1
+    children:
+      - CHART-rule-summary
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-rules-2:
+    type: ROW
+    id: ROW-rules-2
+    children:
+      - CHART-rules-over-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-rules-3:
+    type: ROW
+    id: ROW-rules-3
+    children:
+      - CHART-rare-rules
+      - CHART-rule-authors
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-rules-4:
+    type: ROW
+    id: ROW-rules-4
+    children:
+      - CHART-rule-catalog
+      - CHART-newly-firing-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # 🎯 MITRE ATT&CK — Tactic and technique coverage across the detections
+  TAB-mitre:
+    type: TAB
+    id: TAB-mitre
+    children:
+      - ROW-mitre-1
+      - ROW-mitre-2
+      - ROW-mitre-3
+      - ROW-mitre-4
+      - ROW-mitre-5
+    meta:
+      text: "\U0001f3af MITRE ATT&CK"
+      defaultText: "Tab 3"
+      tooltip: "Tactic and technique coverage across the detections"
+  ROW-mitre-1:
+    type: ROW
+    id: ROW-mitre-1
+    children:
+      - CHART-kpi-tactics
+      - CHART-kpi-techniques
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-mitre-2:
+    type: ROW
+    id: ROW-mitre-2
+    children:
+      - CHART-mitre-tactics
+      - CHART-mitre-techniques
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-mitre-3:
+    type: ROW
+    id: ROW-mitre-3
+    children:
+      - CHART-mitre-tactic-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-mitre-4:
+    type: ROW
+    id: ROW-mitre-4
+    children:
+      - CHART-mitre-tactic-severity
+      - CHART-mitre-technique-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-mitre-5:
+    type: ROW
+    id: ROW-mitre-5
+    children:
+      - CHART-mitre-tactic-principal
+      - CHART-mitre-groups
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # 👤 Identity — Who triggered the detections: principals, identity types, keys, user agents
+  TAB-identity:
+    type: TAB
+    id: TAB-identity
+    children:
+      - ROW-identity-1
+      - ROW-identity-2
+      - ROW-identity-3
+      - ROW-identity-4
+      - ROW-identity-5
+    meta:
+      text: "\U0001f464 Identity"
+      defaultText: "Tab 4"
+      tooltip: "Who triggered the detections: principals, identity types, keys, user agents"
+  ROW-identity-1:
+    type: ROW
+    id: ROW-identity-1
+    children:
+      - CHART-top-principals
+      - CHART-identity-types
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-identity-2:
+    type: ROW
+    id: ROW-identity-2
+    children:
+      - CHART-principal-summary
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-identity-3:
+    type: ROW
+    id: ROW-identity-3
+    children:
+      - CHART-principal-rule-matrix
+      - CHART-access-keys
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-identity-4:
+    type: ROW
+    id: ROW-identity-4
+    children:
+      - CHART-top-user-agents
+      - CHART-rare-user-agents
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-identity-5:
+    type: ROW
+    id: ROW-identity-5
+    children:
+      - CHART-account-activity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # 🌍 Origin — Where the detections came from: country, city, ASN, source IP, AWS region
+  TAB-origin:
+    type: TAB
+    id: TAB-origin
+    children:
+      - ROW-origin-1
+      - ROW-origin-2
+      - ROW-origin-3
+      - ROW-origin-4
+      - ROW-origin-5
+    meta:
+      text: "\U0001f30d Origin"
+      defaultText: "Tab 5"
+      tooltip: "Where the detections came from: country, city, ASN, source IP, AWS region"
+  ROW-origin-1:
+    type: ROW
+    id: ROW-origin-1
+    children:
+      - CHART-geo-world-map
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-origin-2:
+    type: ROW
+    id: ROW-origin-2
+    children:
+      - CHART-top-countries
+      - CHART-top-asn
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-origin-3:
+    type: ROW
+    id: ROW-origin-3
+    children:
+      - CHART-top-source-ips
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-origin-4:
+    type: ROW
+    id: ROW-origin-4
+    children:
+      - CHART-region-activity
+      - CHART-country-severity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-origin-5:
+    type: ROW
+    id: ROW-origin-5
+    children:
+      - CHART-country-rule-matrix
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # ⏱ Timeline — When the detections happened: heatmap, bursts, first and last seen
+  TAB-timeline:
+    type: TAB
+    id: TAB-timeline
+    children:
+      - ROW-timeline-1
+      - ROW-timeline-2
+      - ROW-timeline-3
+      - ROW-timeline-4
+    meta:
+      text: "\U000023f1 Timeline"
+      defaultText: "Tab 6"
+      tooltip: "When the detections happened: heatmap, bursts, first and last seen"
+  ROW-timeline-1:
+    type: ROW
+    id: ROW-timeline-1
+    children:
+      - CHART-detection-heatmap
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-timeline-2:
+    type: ROW
+    id: ROW-timeline-2
+    children:
+      - CHART-detections-by-hour
+      - CHART-detection-bursts
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-timeline-3:
+    type: ROW
+    id: ROW-timeline-3
+    children:
+      - CHART-daily-severity-trend
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-timeline-4:
+    type: ROW
+    id: ROW-timeline-4
+    children:
+      - CHART-principal-first-last
+      - CHART-source-ip-first-last
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # 🧩 Events — What was actually attempted: actions, services, outcomes, full detail
+  TAB-events:
+    type: TAB
+    id: TAB-events
+    children:
+      - ROW-events-1
+      - ROW-events-2
+      - ROW-events-3
+      - ROW-events-4
+      - ROW-events-5
+    meta:
+      text: "\U0001f9e9 Events"
+      defaultText: "Tab 7"
+      tooltip: "What was actually attempted: actions, services, outcomes, full detail"
+  ROW-events-1:
+    type: ROW
+    id: ROW-events-1
+    children:
+      - CHART-top-event-names
+      - CHART-event-source-breakdown
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-events-2:
+    type: ROW
+    id: ROW-events-2
+    children:
+      - CHART-outcome-breakdown
+      - CHART-error-code-breakdown
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-events-3:
+    type: ROW
+    id: ROW-events-3
+    children:
+      - CHART-event-rule-matrix
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-events-4:
+    type: ROW
+    id: ROW-events-4
+    children:
+      - CHART-azure-workload
+      - CHART-import-provenance
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  ROW-events-5:
+    type: ROW
+    id: ROW-events-5
+    children:
+      - CHART-detection-detail
+    meta:
+      background: BACKGROUND_TRANSPARENT
+
+  # Chart components
+  CHART-kpi-total:
+    type: CHART
+    id: CHART-kpi-total
+    children: []
+    meta:
+      chartId: 1001
+      uuid: 5a01c3d4-e5f6-7890-abcd-ef0123450001
+      width: 3
+      height: 40
+      sliceName: Total Detections
+  CHART-kpi-crit-high:
+    type: CHART
+    id: CHART-kpi-crit-high
+    children: []
+    meta:
+      chartId: 1002
+      uuid: 5a02c3d4-e5f6-7890-abcd-ef0123450002
+      width: 3
+      height: 40
+      sliceName: Critical + High Detections
+  CHART-kpi-rules:
+    type: CHART
+    id: CHART-kpi-rules
+    children: []
+    meta:
+      chartId: 1003
+      uuid: 5a03c3d4-e5f6-7890-abcd-ef0123450003
+      width: 3
+      height: 40
+      sliceName: Distinct Rules Fired
+  CHART-kpi-principals:
+    type: CHART
+    id: CHART-kpi-principals
+    children: []
+    meta:
+      chartId: 1004
+      uuid: 5a04c3d4-e5f6-7890-abcd-ef0123450004
+      width: 3
+      height: 40
+      sliceName: Principals Involved
+  CHART-kpi-ips:
+    type: CHART
+    id: CHART-kpi-ips
+    children: []
+    meta:
+      chartId: 1005
+      uuid: 5a05c3d4-e5f6-7890-abcd-ef0123450005
+      width: 3
+      height: 40
+      sliceName: Source IPs
+  CHART-kpi-countries:
+    type: CHART
+    id: CHART-kpi-countries
+    children: []
+    meta:
+      chartId: 1006
+      uuid: 5a06c3d4-e5f6-7890-abcd-ef0123450006
+      width: 3
+      height: 40
+      sliceName: Countries
+  CHART-kpi-accounts:
+    type: CHART
+    id: CHART-kpi-accounts
+    children: []
+    meta:
+      chartId: 1007
+      uuid: 5a07c3d4-e5f6-7890-abcd-ef0123450007
+      width: 3
+      height: 40
+      sliceName: Accounts / Tenants
+  CHART-kpi-days:
+    type: CHART
+    id: CHART-kpi-days
+    children: []
+    meta:
+      chartId: 1008
+      uuid: 5a08c3d4-e5f6-7890-abcd-ef0123450008
+      width: 3
+      height: 40
+      sliceName: Days With Detections
+  CHART-detections-over-time:
+    type: CHART
+    id: CHART-detections-over-time
+    children: []
+    meta:
+      chartId: 1009
+      uuid: 5a09c3d4-e5f6-7890-abcd-ef0123450009
+      width: 12
+      height: 50
+      sliceName: Detections Over Time by Severity
+  CHART-severity-breakdown:
+    type: CHART
+    id: CHART-severity-breakdown
+    children: []
+    meta:
+      chartId: 1010
+      uuid: 5a10c3d4-e5f6-7890-abcd-ef0123450010
+      width: 6
+      height: 50
+      sliceName: Severity Breakdown
+  CHART-top-rules:
+    type: CHART
+    id: CHART-top-rules
+    children: []
+    meta:
+      chartId: 1011
+      uuid: 5a11c3d4-e5f6-7890-abcd-ef0123450011
+      width: 6
+      height: 50
+      sliceName: Top Rules by Detection Count
+  CHART-detection-timeline:
+    type: CHART
+    id: CHART-detection-timeline
+    children: []
+    meta:
+      chartId: 1012
+      uuid: 5a12c3d4-e5f6-7890-abcd-ef0123450012
+      width: 12
+      height: 80
+      sliceName: Detection Timeline
+  CHART-rule-summary:
+    type: CHART
+    id: CHART-rule-summary
+    children: []
+    meta:
+      chartId: 1013
+      uuid: 5a13c3d4-e5f6-7890-abcd-ef0123450013
+      width: 12
+      height: 70
+      sliceName: Rule Summary
+  CHART-rules-over-time:
+    type: CHART
+    id: CHART-rules-over-time
+    children: []
+    meta:
+      chartId: 1014
+      uuid: 5a14c3d4-e5f6-7890-abcd-ef0123450014
+      width: 12
+      height: 50
+      sliceName: Rule Activity Over Time
+  CHART-rare-rules:
+    type: CHART
+    id: CHART-rare-rules
+    children: []
+    meta:
+      chartId: 1015
+      uuid: 5a15c3d4-e5f6-7890-abcd-ef0123450015
+      width: 6
+      height: 60
+      sliceName: Rare Rules (Least Frequent)
+  CHART-rule-authors:
+    type: CHART
+    id: CHART-rule-authors
+    children: []
+    meta:
+      chartId: 1016
+      uuid: 5a16c3d4-e5f6-7890-abcd-ef0123450016
+      width: 6
+      height: 60
+      sliceName: Detections by Rule Author
+  CHART-rule-catalog:
+    type: CHART
+    id: CHART-rule-catalog
+    children: []
+    meta:
+      chartId: 1017
+      uuid: 5a17c3d4-e5f6-7890-abcd-ef0123450017
+      width: 6
+      height: 60
+      sliceName: Rule Catalog (with Rule IDs)
+  CHART-newly-firing-rules:
+    type: CHART
+    id: CHART-newly-firing-rules
+    children: []
+    meta:
+      chartId: 1018
+      uuid: 5a18c3d4-e5f6-7890-abcd-ef0123450018
+      width: 6
+      height: 60
+      sliceName: Newly Firing Rules
+  CHART-kpi-tactics:
+    type: CHART
+    id: CHART-kpi-tactics
+    children: []
+    meta:
+      chartId: 1019
+      uuid: 5a19c3d4-e5f6-7890-abcd-ef0123450019
+      width: 6
+      height: 40
+      sliceName: ATT&CK Tactics Covered
+  CHART-kpi-techniques:
+    type: CHART
+    id: CHART-kpi-techniques
+    children: []
+    meta:
+      chartId: 1020
+      uuid: 5a20c3d4-e5f6-7890-abcd-ef0123450020
+      width: 6
+      height: 40
+      sliceName: ATT&CK Techniques Covered
+  CHART-mitre-tactics:
+    type: CHART
+    id: CHART-mitre-tactics
+    children: []
+    meta:
+      chartId: 1021
+      uuid: 5a21c3d4-e5f6-7890-abcd-ef0123450021
+      width: 6
+      height: 60
+      sliceName: ATT&CK Tactic Distribution
+  CHART-mitre-techniques:
+    type: CHART
+    id: CHART-mitre-techniques
+    children: []
+    meta:
+      chartId: 1022
+      uuid: 5a22c3d4-e5f6-7890-abcd-ef0123450022
+      width: 6
+      height: 60
+      sliceName: ATT&CK Technique Distribution
+  CHART-mitre-tactic-time:
+    type: CHART
+    id: CHART-mitre-tactic-time
+    children: []
+    meta:
+      chartId: 1023
+      uuid: 5a23c3d4-e5f6-7890-abcd-ef0123450023
+      width: 12
+      height: 50
+      sliceName: ATT&CK Tactics Over Time
+  CHART-mitre-tactic-severity:
+    type: CHART
+    id: CHART-mitre-tactic-severity
+    children: []
+    meta:
+      chartId: 1024
+      uuid: 5a24c3d4-e5f6-7890-abcd-ef0123450024
+      width: 6
+      height: 60
+      sliceName: Tactic × Severity Matrix
+  CHART-mitre-technique-rules:
+    type: CHART
+    id: CHART-mitre-technique-rules
+    children: []
+    meta:
+      chartId: 1025
+      uuid: 5a25c3d4-e5f6-7890-abcd-ef0123450025
+      width: 6
+      height: 60
+      sliceName: Techniques and the Rules That Found Them
+  CHART-mitre-tactic-principal:
+    type: CHART
+    id: CHART-mitre-tactic-principal
+    children: []
+    meta:
+      chartId: 1026
+      uuid: 5a26c3d4-e5f6-7890-abcd-ef0123450026
+      width: 6
+      height: 60
+      sliceName: Tactic × Principal
+  CHART-mitre-groups:
+    type: CHART
+    id: CHART-mitre-groups
+    children: []
+    meta:
+      chartId: 1027
+      uuid: 5a27c3d4-e5f6-7890-abcd-ef0123450027
+      width: 6
+      height: 60
+      sliceName: Attributed Threat Groups
+  CHART-top-principals:
+    type: CHART
+    id: CHART-top-principals
+    children: []
+    meta:
+      chartId: 1028
+      uuid: 5a28c3d4-e5f6-7890-abcd-ef0123450028
+      width: 6
+      height: 60
+      sliceName: Top Principals by Detections
+  CHART-identity-types:
+    type: CHART
+    id: CHART-identity-types
+    children: []
+    meta:
+      chartId: 1029
+      uuid: 5a29c3d4-e5f6-7890-abcd-ef0123450029
+      width: 6
+      height: 60
+      sliceName: Detections by Identity Type
+  CHART-principal-summary:
+    type: CHART
+    id: CHART-principal-summary
+    children: []
+    meta:
+      chartId: 1030
+      uuid: 5a30c3d4-e5f6-7890-abcd-ef0123450030
+      width: 12
+      height: 70
+      sliceName: Principal Summary
+  CHART-principal-rule-matrix:
+    type: CHART
+    id: CHART-principal-rule-matrix
+    children: []
+    meta:
+      chartId: 1031
+      uuid: 5a31c3d4-e5f6-7890-abcd-ef0123450031
+      width: 6
+      height: 60
+      sliceName: Principal × Rule Matrix
+  CHART-access-keys:
+    type: CHART
+    id: CHART-access-keys
+    children: []
+    meta:
+      chartId: 1032
+      uuid: 5a32c3d4-e5f6-7890-abcd-ef0123450032
+      width: 6
+      height: 60
+      sliceName: Access Keys Involved in Detections
+  CHART-top-user-agents:
+    type: CHART
+    id: CHART-top-user-agents
+    children: []
+    meta:
+      chartId: 1033
+      uuid: 5a33c3d4-e5f6-7890-abcd-ef0123450033
+      width: 6
+      height: 60
+      sliceName: Top User Agents
+  CHART-rare-user-agents:
+    type: CHART
+    id: CHART-rare-user-agents
+    children: []
+    meta:
+      chartId: 1034
+      uuid: 5a34c3d4-e5f6-7890-abcd-ef0123450034
+      width: 6
+      height: 60
+      sliceName: Rare User Agents
+  CHART-account-activity:
+    type: CHART
+    id: CHART-account-activity
+    children: []
+    meta:
+      chartId: 1035
+      uuid: 5a35c3d4-e5f6-7890-abcd-ef0123450035
+      width: 12
+      height: 50
+      sliceName: Detections by Account
+  CHART-geo-world-map:
+    type: CHART
+    id: CHART-geo-world-map
+    children: []
+    meta:
+      chartId: 1036
+      uuid: 5a36c3d4-e5f6-7890-abcd-ef0123450036
+      width: 12
+      height: 60
+      sliceName: Detection Origin Map
+  CHART-top-countries:
+    type: CHART
+    id: CHART-top-countries
+    children: []
+    meta:
+      chartId: 1037
+      uuid: 5a37c3d4-e5f6-7890-abcd-ef0123450037
+      width: 6
+      height: 60
+      sliceName: Top Source Countries
+  CHART-top-asn:
+    type: CHART
+    id: CHART-top-asn
+    children: []
+    meta:
+      chartId: 1038
+      uuid: 5a38c3d4-e5f6-7890-abcd-ef0123450038
+      width: 6
+      height: 60
+      sliceName: Top Source Networks (ASN)
+  CHART-top-source-ips:
+    type: CHART
+    id: CHART-top-source-ips
+    children: []
+    meta:
+      chartId: 1039
+      uuid: 5a39c3d4-e5f6-7890-abcd-ef0123450039
+      width: 12
+      height: 70
+      sliceName: Top Source IPs
+  CHART-region-activity:
+    type: CHART
+    id: CHART-region-activity
+    children: []
+    meta:
+      chartId: 1040
+      uuid: 5a40c3d4-e5f6-7890-abcd-ef0123450040
+      width: 6
+      height: 60
+      sliceName: Detections by AWS Region
+  CHART-country-severity:
+    type: CHART
+    id: CHART-country-severity
+    children: []
+    meta:
+      chartId: 1041
+      uuid: 5a41c3d4-e5f6-7890-abcd-ef0123450041
+      width: 6
+      height: 60
+      sliceName: Country × Severity
+  CHART-country-rule-matrix:
+    type: CHART
+    id: CHART-country-rule-matrix
+    children: []
+    meta:
+      chartId: 1042
+      uuid: 5a42c3d4-e5f6-7890-abcd-ef0123450042
+      width: 12
+      height: 60
+      sliceName: Country × Rule
+  CHART-detection-heatmap:
+    type: CHART
+    id: CHART-detection-heatmap
+    children: []
+    meta:
+      chartId: 1043
+      uuid: 5a43c3d4-e5f6-7890-abcd-ef0123450043
+      width: 12
+      height: 60
+      sliceName: Detection Heatmap (Hour x Day)
+  CHART-detections-by-hour:
+    type: CHART
+    id: CHART-detections-by-hour
+    children: []
+    meta:
+      chartId: 1044
+      uuid: 5a44c3d4-e5f6-7890-abcd-ef0123450044
+      width: 6
+      height: 60
+      sliceName: Detections by Hour of Day
+  CHART-detection-bursts:
+    type: CHART
+    id: CHART-detection-bursts
+    children: []
+    meta:
+      chartId: 1045
+      uuid: 5a45c3d4-e5f6-7890-abcd-ef0123450045
+      width: 6
+      height: 60
+      sliceName: Detection Bursts (5-minute buckets)
+  CHART-daily-severity-trend:
+    type: CHART
+    id: CHART-daily-severity-trend
+    children: []
+    meta:
+      chartId: 1046
+      uuid: 5a46c3d4-e5f6-7890-abcd-ef0123450046
+      width: 12
+      height: 50
+      sliceName: Daily Severity Trend
+  CHART-principal-first-last:
+    type: CHART
+    id: CHART-principal-first-last
+    children: []
+    meta:
+      chartId: 1047
+      uuid: 5a47c3d4-e5f6-7890-abcd-ef0123450047
+      width: 6
+      height: 60
+      sliceName: First / Last Seen per Principal
+  CHART-source-ip-first-last:
+    type: CHART
+    id: CHART-source-ip-first-last
+    children: []
+    meta:
+      chartId: 1048
+      uuid: 5a48c3d4-e5f6-7890-abcd-ef0123450048
+      width: 6
+      height: 60
+      sliceName: First / Last Seen per Source IP
+  CHART-top-event-names:
+    type: CHART
+    id: CHART-top-event-names
+    children: []
+    meta:
+      chartId: 1049
+      uuid: 5a49c3d4-e5f6-7890-abcd-ef0123450049
+      width: 6
+      height: 60
+      sliceName: Top API Actions / Operations
+  CHART-event-source-breakdown:
+    type: CHART
+    id: CHART-event-source-breakdown
+    children: []
+    meta:
+      chartId: 1050
+      uuid: 5a50c3d4-e5f6-7890-abcd-ef0123450050
+      width: 6
+      height: 60
+      sliceName: Detections by Service / Workload
+  CHART-outcome-breakdown:
+    type: CHART
+    id: CHART-outcome-breakdown
+    children: []
+    meta:
+      chartId: 1051
+      uuid: 5a51c3d4-e5f6-7890-abcd-ef0123450051
+      width: 6
+      height: 50
+      sliceName: Success vs Failure
+  CHART-error-code-breakdown:
+    type: CHART
+    id: CHART-error-code-breakdown
+    children: []
+    meta:
+      chartId: 1052
+      uuid: 5a52c3d4-e5f6-7890-abcd-ef0123450052
+      width: 6
+      height: 50
+      sliceName: Error Codes on Detections
+  CHART-event-rule-matrix:
+    type: CHART
+    id: CHART-event-rule-matrix
+    children: []
+    meta:
+      chartId: 1053
+      uuid: 5a53c3d4-e5f6-7890-abcd-ef0123450053
+      width: 12
+      height: 60
+      sliceName: Action × Rule Matrix
+  CHART-azure-workload:
+    type: CHART
+    id: CHART-azure-workload
+    children: []
+    meta:
+      chartId: 1054
+      uuid: 5a54c3d4-e5f6-7890-abcd-ef0123450054
+      width: 6
+      height: 60
+      sliceName: Azure / M365 Workload Activity
+  CHART-import-provenance:
+    type: CHART
+    id: CHART-import-provenance
+    children: []
+    meta:
+      chartId: 1055
+      uuid: 5a55c3d4-e5f6-7890-abcd-ef0123450055
+      width: 6
+      height: 60
+      sliceName: Imported Suzaku Runs
+  CHART-detection-detail:
+    type: CHART
+    id: CHART-detection-detail
+    children: []
+    meta:
+      chartId: 1056
+      uuid: 5a56c3d4-e5f6-7890-abcd-ef0123450056
+      width: 12
+      height: 90
+      sliceName: Detection Detail (all fields)
+
+metadata:
+  # Clicking a value (rule, principal, IP, country) in any chart scopes the
+  # whole dashboard — the core DFIR pivot workflow.
+  cross_filters_enabled: true
+  color_scheme: supersetColors
+  native_filter_configuration:
+    - id: NATIVE_FILTER-szk-timerange
+      name: Date Range
+      filterType: filter_time
+      targets:
+        - {}
+      defaultDataMask:
+        filterState:
+          value: "No filter"
+      controlValues:
+        enableEmptyFilter: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Filter every chart by detection time (detected_at)"
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-level
+      name: "Severity  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: level
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected Sigma levels (critical, high, medium, low)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-rule
+      name: "Rule  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: rule_title
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected Sigma rules."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-provider
+      name: "Cloud  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: cloud_provider
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only detections from the selected cloud (aws / azure)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-principal
+      name: "Principal  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: user_name
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected principals."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-identity-type
+      name: "Identity Type  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: user_type
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected identity types (Root, IAMUser, AssumedRole, ...)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-source-ip
+      name: "Source IP  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: source_ip
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected source IP addresses."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-country
+      name: "Country  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: src_country
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected source countries (requires Suzaku --geo-ip)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-action
+      name: "API Action  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: event_name
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected API actions / operations."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-region
+      name: "AWS Region  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: aws_region
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected AWS regions."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-account
+      name: "Account  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: account_id
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected AWS account IDs."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-user-agent
+      name: "User Agent  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: user_agent
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only the selected user agents."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-outcome
+      name: "Outcome  + Include"
+      filterType: filter_select
+      targets:
+        - column:
+            name: outcome
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Include only Success or Failure detections."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-level-not
+      name: "Severity  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: level
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected Sigma levels — the fastest way to mute low-severity noise."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-rule-not
+      name: "Rule  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: rule_title
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected Sigma rules (mute a known-noisy rule)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-principal-not
+      name: "Principal  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: user_name
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected principals (mute known service accounts)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-source-ip-not
+      name: "Source IP  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: source_ip
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected source IP addresses (mute known-good offices)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-country-not
+      name: "Country  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: src_country
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected source countries."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-user-agent-not
+      name: "User Agent  NOT"
+      filterType: filter_select
+      targets:
+        - column:
+            name: user_agent
+          datasetUuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: true
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: "Exclude the selected user agents (mute known automation)."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-tag-type
+      name: "ATT&CK Tag Type"
+      filterType: filter_select
+      targets:
+        - column:
+            name: tag_type
+          datasetUuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - TAB-mitre
+        excluded: []
+      type: NATIVE_FILTER
+      description: "MITRE tab: show tactics, techniques, or attributed groups."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-tag-value
+      name: "ATT&CK Tag"
+      filterType: filter_select
+      targets:
+        - column:
+            name: tag_value
+          datasetUuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - TAB-mitre
+        excluded: []
+      type: NATIVE_FILTER
+      description: "MITRE tab: include only the selected tactics / techniques / groups."
+      chartsInScope: []
+      tabsInScope: []
+    - id: NATIVE_FILTER-szk-tag-level
+      name: "Severity (ATT&CK tab)"
+      filterType: filter_select
+      targets:
+        - column:
+            name: level
+          datasetUuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+      defaultDataMask:
+        filterState:
+          value: null
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - TAB-mitre
+        excluded: []
+      type: NATIVE_FILTER
+      description: "MITRE tab: include only the selected Sigma levels."
+      chartsInScope: []
+      tabsInScope: []

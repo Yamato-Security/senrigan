@@ -1,0 +1,48 @@
+# SZK-41: Country × Severity
+# Splits geography by how bad the findings from it were. A country with
+# few but critical detections outranks one with many low ones.
+# Geo columns are populated only when Suzaku was run with --geo-ip <maxmind-db-dir>; otherwise this chart shows 'No data'.
+uuid: 5a41c3d4-e5f6-7890-abcd-ef0123450041
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Country × Severity
+viz_type: table
+description: >
+  Detections cross-tabulated by source country and Sigma severity (SZK-41).
+  Volume alone can mislead — a country contributing three critical detections
+  matters more than one contributing three hundred low ones. Geo columns are
+  populated only when Suzaku was run with --geo-ip <maxmind-db-dir>; otherwise
+  this chart shows 'No data'.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk41_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk41_rules
+  groupby:
+    - src_country
+    - level
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: src_country IS NOT NULL
+      filterOptionName: filter_szk41_country_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 200
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT src_country, level, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_detections WHERE src_country IS NOT NULL
+# GROUP BY 1, 2 ORDER BY detections DESC

@@ -1,0 +1,55 @@
+# SZK-29: Detections by Identity Type
+# CloudTrail identity types: Root, IAMUser, AssumedRole, AWSService, …
+# Any Root row at all is worth a look; Root plus a high max severity is
+# an escalation.
+uuid: 5a29c3d4-e5f6-7890-abcd-ef0123450029
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by Identity Type
+viz_type: dist_bar
+description: >
+  Detections grouped by CloudTrail identity type — Root, IAMUser, AssumedRole,
+  AWSService and so on (SZK-29). max_severity_rank shows the worst level
+  reached by each type; any Root activity deserves review regardless of count.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk29_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk29_users
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk29_sev
+  groupby:
+    - user_type
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_type IS NOT NULL
+      filterOptionName: filter_szk29_type_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Identity Type
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_type, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        MAX(level_rank) AS max_severity_rank
+# FROM suzaku_detections WHERE user_type IS NOT NULL
+# GROUP BY user_type ORDER BY detections DESC

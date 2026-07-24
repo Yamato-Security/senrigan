@@ -1,0 +1,69 @@
+# SZK-35: Detections by Account / Tenant
+# Per-account rollup for multi-account organisations: which account is
+# carrying the findings, and how bad they get.
+uuid: 5a35c3d4-e5f6-7890-abcd-ef0123450035
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detections by Account
+viz_type: table
+description: >
+  Detections rolled up per AWS account (or Azure tenant), with the worst
+  severity reached and the distinct principals and rules involved (SZK-35). In
+  an organisation-wide import this is the first cut: it tells you which
+  account the incident lives in.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk35_detections
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk35_sev
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk35_users
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk35_rules
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk35_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk35_last
+  groupby:
+    - account_id
+    - cloud_provider
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: account_id IS NOT NULL
+      filterOptionName: filter_szk35_account_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT account_id, cloud_provider, COUNT(*) AS detections,
+#        MAX(level_rank) AS max_severity_rank,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen
+# FROM suzaku_detections WHERE account_id IS NOT NULL
+# GROUP BY 1, 2 ORDER BY detections DESC

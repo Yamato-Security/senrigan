@@ -1,0 +1,42 @@
+# SZK-36: Detection Origin — World Map
+# Country shading is proportional to detection count.
+# country_fieldtype is 'name' because Suzaku's SrcCountry column holds
+# the GeoLite2 country NAME ('Japan'), not an ISO code.
+# Geo columns are populated only when Suzaku was run with --geo-ip <maxmind-db-dir>; otherwise this chart shows 'No data'.
+uuid: 5a36c3d4-e5f6-7890-abcd-ef0123450036
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Detection Origin Map
+viz_type: world_map
+description: >
+  World map of where the detections originated, shaded by detection count
+  (SZK-36). Countries with no business relationship to the organisation are
+  the classic credential-theft indicator. Geo columns are populated only when
+  Suzaku was run with --geo-ip <maxmind-db-dir>; otherwise this chart shows
+  'No data'.
+query_context: ""
+params:
+  entity: src_country
+  country_fieldtype: name
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: detections
+    hasCustomLabel: true
+    optionName: metric_szk36_detections
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: src_country IS NOT NULL
+      filterOptionName: filter_szk36_country_notnull
+  granularity_sqla: detected_at
+  time_range: No filter
+  show_bubbles: false
+  linear_color_scheme: superset_seq_1
+  max_bubble_size: '25'
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT src_country, COUNT(*) AS detections
+# FROM suzaku_detections WHERE src_country IS NOT NULL
+# GROUP BY src_country ORDER BY detections DESC

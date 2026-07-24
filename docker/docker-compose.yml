@@ -32,6 +32,9 @@ services:
       - ./logs:/data/logs:ro
       - ${CONFIG_HOST_PATH:-./data/config-snapshots}:/data/config:ro
       - ${GEOIP_HOST_PATH:-./data/geoip}:/data/geoip:ro
+      # Suzaku `-t duckdb` timeline outputs. Read-only: Senrigan imports from
+      # them and never writes back.
+      - ${SUZAKU_HOST_PATH:-./data/suzaku}:/data/suzaku:ro
     environment:
       DUCKDB_PATH: /data/db/threat_hunting.db
       RUST_LOG: ${RUST_LOG:-info}
@@ -44,6 +47,7 @@ services:
     # docker compose --profile ingest run --rm ingester ingest --path /data/logs --geoip-country /data/geoip
     # docker compose --profile ingest run --rm ingester config-import --path /data/config
     # docker compose --profile ingest run --rm ingester enrich --geoip-country /data/geoip
+    # docker compose --profile ingest run --rm ingester suzaku-import --path /data/suzaku
 
   agent:
     build:

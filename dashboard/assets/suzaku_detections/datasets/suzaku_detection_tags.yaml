@@ -1,0 +1,151 @@
+# Superset dataset definition for suzaku_detection_tags.
+# Suzaku folds a rule's whole tag list into one ' ¦ '-separated string, so
+# grouping a chart by it would produce combination buckets such as
+# "CredAccess ¦ Disc". The importer explodes the list into this tidy long
+# table instead, and the MITRE ATT&CK tab groups by it directly. The
+# identity and geography columns are copied onto each row so those charts
+# need no join — Superset datasets are single-table.
+uuid: 3e8a5c47-91d2-4fb6-8c03-6a7e2d914b58
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: suzaku_detection_tags
+main_dttm_col: detected_at
+description: "MITRE ATT&CK tags of Suzaku detections, one row per tag."
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: detected_at
+    verbose_name: "Detected At"
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: "Event timestamp of the detection this tag belongs to"
+
+  - column_name: tag_type
+    verbose_name: "Tag Type"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "tactic, technique, group, or other"
+
+  - column_name: tag_value
+    verbose_name: "Tag"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "The ATT&CK tactic abbreviation, technique ID, or group ID"
+
+  - column_name: rule_title
+    verbose_name: "Rule"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Title of the Sigma rule carrying this tag"
+
+  - column_name: level
+    verbose_name: "Severity"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Sigma level of the detection"
+
+  - column_name: level_rank
+    verbose_name: "Severity Rank"
+    is_dttm: false
+    is_active: true
+    type: INTEGER
+    groupby: true
+    filterable: true
+    description: "Sortable severity: critical=5 ... informational=1"
+
+  - column_name: cloud_provider
+    verbose_name: "Cloud"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "aws or azure"
+
+  - column_name: user_name
+    verbose_name: "Principal"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Principal of the detection (copied so the tab needs no join)"
+
+  - column_name: source_ip
+    verbose_name: "Source IP"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Source IP of the detection (copied so the tab needs no join)"
+
+  - column_name: src_country
+    verbose_name: "Country"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: "Source country of the detection (copied so the tab needs no join)"
+
+  - column_name: detection_id
+    verbose_name: "Detection ID"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "Identifier of the detection this tag belongs to"
+
+  - column_name: source_sha
+    verbose_name: "Source SHA-256"
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: "SHA-256 of the Suzaku output file this row came from"
+
+metrics:
+  - metric_name: count
+    verbose_name: "Count"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: "Number of tagged detections"
+
+  - metric_name: detections
+    verbose_name: "Detections"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: "Number of tagged detections"
+
+  - metric_name: distinct_rules
+    verbose_name: "Distinct Rules"
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT rule_title)"
+    description: "Number of distinct Sigma rules carrying the tag"

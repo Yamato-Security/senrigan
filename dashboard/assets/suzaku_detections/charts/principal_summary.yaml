@@ -1,0 +1,70 @@
+# SZK-30: Principal Summary — one row per identity
+# The identity-centric counterpart to SZK-13: every principal with its
+# worst severity, rule breadth, origin breadth and active window.
+uuid: 5a30c3d4-e5f6-7890-abcd-ef0123450030
+version: 1.0.0
+dataset_uuid: 7c1f9d2a-6b35-4e88-9a10-0d5f3b7e4c21
+slice_name: Principal Summary
+viz_type: table
+description: >
+  Every principal seen in the detections, with account, identity type, worst
+  severity reached, distinct rules and source IPs, and the window it was
+  active in (SZK-30). Sort by max_severity_rank, then by distinct_rules, to
+  build the list of identities to investigate.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk30_detections
+    - expressionType: SQL
+      sqlExpression: MAX(level_rank)
+      label: max_severity_rank
+      hasCustomLabel: true
+      optionName: metric_szk30_sev
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk30_rules
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT source_ip)
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_szk30_ips
+    - expressionType: SQL
+      sqlExpression: MIN(detected_at)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk30_first
+    - expressionType: SQL
+      sqlExpression: MAX(detected_at)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk30_last
+  groupby:
+    - user_name
+    - user_type
+    - account_id
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_name IS NOT NULL OR user_arn IS NOT NULL
+      filterOptionName: filter_szk30_identity_present
+  granularity_sqla: detected_at
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_name, user_type, account_id, COUNT(*) AS detections,
+#        MAX(level_rank) AS max_severity_rank,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        COUNT(DISTINCT source_ip) AS distinct_ips,
+#        MIN(detected_at) AS first_seen, MAX(detected_at) AS last_seen
+# FROM suzaku_detections WHERE user_name IS NOT NULL OR user_arn IS NOT NULL
+# GROUP BY 1, 2, 3 ORDER BY detections DESC
