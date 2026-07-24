@@ -66,6 +66,39 @@ def _patch_metadata_type(metadata_yaml) -> bytes:
     return yaml.safe_dump(doc, sort_keys=False).encode("utf-8")
 
 
+def _query_metrics(params: dict) -> list:
+    """The metrics a chart's query must run.
+
+    Single-metric visualisations (big_number_total, world_map, heatmap) store
+    their metric under `metric`, not `metrics`.  Falling straight through to
+    the literal "count" for those made the stored query_context compute
+    COUNT(*) instead of the chart's own expression, so a KPI card rendered a
+    different number from the one its definition asks for.
+    """
+    metrics = params.get("metrics")
+    if metrics:
+        return metrics
+    metric = params.get("metric")
+    if metric:
+        return [metric]
+    return ["count"]
+
+
+def _apply_time_params(params: dict, main_dttm_col: str | None) -> dict:
+    """Fill in the time controls Superset needs, from the chart's own dataset.
+
+    The temporal column differs per dataset — cloudtrail_events.event_time vs
+    suzaku_detections.detected_at — so it has to come from the dataset the
+    chart actually reads.  A hardcoded default silently breaks every chart on
+    any other dataset with "column does not exist".
+    """
+    if not params.get("granularity_sqla") and main_dttm_col:
+        params["granularity_sqla"] = main_dttm_col
+    if not params.get("time_range"):
+        params["time_range"] = "No filter"
+    return params
+
+
 def _needs_query_context(query_context, viz_type: str) -> bool:
     """Return True when a chart's stored query_context must be (re)built.
 
@@ -194,7 +227,7 @@ def _generate_query_contexts() -> None:
             continue
 
         params = json.loads(c.params) if c.params else {}
-        metrics = params.get("metrics", ["count"])
+        metrics = _query_metrics(params)
         groupby = params.get("groupby", [])
         columns = groupby.copy()
 
@@ -202,11 +235,10 @@ def _generate_query_contexts() -> None:
         if x_axis and x_axis not in columns:
             columns = [x_axis] + columns
 
-        # Ensure granularity_sqla is set — required by many chart types.
-        if "granularity_sqla" not in params:
-            params["granularity_sqla"] = "event_time"
-        if "time_range" not in params:
-            params["time_range"] = "No filter"
+        # Ensure granularity_sqla is set — required by many chart types — using
+        # the temporal column of the dataset this chart actually reads.
+        table = getattr(c, "table", None)
+        params = _apply_time_params(params, getattr(table, "main_dttm_col", None))
         c.params = json.dumps(params)
 
         # Carry adhoc_filters into the query so WHERE clauses are applied.

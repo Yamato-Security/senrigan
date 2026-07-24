@@ -26,9 +26,11 @@ if INIT_DIR not in sys.path:
     sys.path.insert(0, INIT_DIR)
 
 from import_dashboard import (  # noqa: E402
+    _apply_time_params,
     _first_orderby,
     _needs_query_context,
     _patch_metadata_type,
+    _query_metrics,
 )
 
 IMPORT_DASHBOARD_PATH = os.path.join(INIT_DIR, "import_dashboard.py")
@@ -121,6 +123,63 @@ def test_needs_query_context_no_metrics_empty_orderby_ok() -> None:
     """No metrics -> nothing to order by; empty orderby is not stale."""
     qc = _make_qc(orderby=[], metrics=[])
     assert _needs_query_context(qc, "table") is False
+
+
+# ---------------------------------------------------------------------------
+# _query_metrics — single-metric viz types
+# ---------------------------------------------------------------------------
+
+
+def test_query_metrics_prefers_the_metrics_list() -> None:
+    """Multi-metric charts keep using params.metrics unchanged."""
+    assert _query_metrics({"metrics": [ADHOC_METRIC]}) == [ADHOC_METRIC]
+
+
+def test_query_metrics_falls_back_to_the_single_metric() -> None:
+    """big_number_total / world_map / heatmap store their metric singular.
+
+    Falling through to the literal "count" for those made the stored
+    query_context compute COUNT(*) instead of the chart's own expression, so a
+    KPI card rendered a different number from the one its YAML asks for.
+    """
+    assert _query_metrics({"metric": ADHOC_METRIC}) == [ADHOC_METRIC]
+
+
+def test_query_metrics_defaults_to_count() -> None:
+    """A chart with no metric at all still needs something to query."""
+    assert _query_metrics({}) == ["count"]
+
+
+# ---------------------------------------------------------------------------
+# _apply_time_params — the temporal column is per dataset
+# ---------------------------------------------------------------------------
+
+
+def test_apply_time_params_uses_the_dataset_temporal_column() -> None:
+    """granularity_sqla must come from the chart's own dataset.
+
+    cloudtrail_events uses event_time and suzaku_detections uses detected_at;
+    a hardcoded default silently breaks every chart on the other dataset with
+    "column does not exist".
+    """
+    assert _apply_time_params({}, "detected_at")["granularity_sqla"] == "detected_at"
+    assert _apply_time_params({}, "event_time")["granularity_sqla"] == "event_time"
+
+
+def test_apply_time_params_keeps_an_explicit_value() -> None:
+    """A chart that already declares its temporal column is left alone."""
+    params = _apply_time_params({"granularity_sqla": "detected_at"}, "event_time")
+    assert params["granularity_sqla"] == "detected_at"
+
+
+def test_apply_time_params_tolerates_an_unknown_temporal_column() -> None:
+    """A dataset with no main_dttm_col must not inject a bogus column name."""
+    assert "granularity_sqla" not in _apply_time_params({}, None)
+
+
+def test_apply_time_params_defaults_the_time_range() -> None:
+    """Charts without a time_range must default to no filtering."""
+    assert _apply_time_params({}, "detected_at")["time_range"] == "No filter"
 
 
 # ---------------------------------------------------------------------------
