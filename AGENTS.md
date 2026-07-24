@@ -92,6 +92,9 @@ docker compose --profile ingest run --rm ingester ingest --path /data/logs
 # First-time ingest (AWS Config snapshots)
 docker compose --profile ingest run --rm ingester config-import --path /data/config
 
+# Import Suzaku detections (run Suzaku first, see "Suzaku detections" below)
+docker compose --profile ingest run --rm ingester suzaku-import --path /data/suzaku
+
 # Start agent + dashboard + config_viz
 docker compose up -d --build
 
@@ -105,17 +108,40 @@ docker compose up -d --build
 docker compose --profile resync run --rm superset-resync
 ```
 
-**After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
-Superset never reads those YAML files directly — it only applies them from the compiled
-`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the derived "Rare Events" dashboard),
+**After editing any file under `dashboard/assets/cloudtrail_default/` or
+`dashboard/assets/suzaku_detections/`** (chart/dashboard YAML): Superset never reads those YAML
+files directly — it only applies them from the compiled `cloudtrail_default.zip`,
+`cloudtrail_rare.zip` (the derived "Rare Events" dashboard) and `suzaku_detections.zip`,
 imported into Superset's own metadata DB by the one-shot `superset-init` container.
 Editing the YAML (or even rebuilding the zips) alone has no effect on the running
 dashboards. Always finish with all steps:
 
 ```bash
-cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py \
+    && python3 rebuild_suzaku_zip.py                       # regenerate all three zips
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
+
+### Suzaku detections
+
+The **Suzaku Detections** dashboard visualises the output of
+[Suzaku](https://github.com/Yamato-Security/suzaku), Yamato Security's cloud-log threat-detection
+tool. Suzaku runs separately, matches Sigma rules against the logs, and writes a DuckDB timeline;
+Senrigan imports it and never writes back to it:
+
+```bash
+# 1. Run Suzaku over the same logs (from a Suzaku checkout)
+suzaku aws-ct-timeline -d <cloudtrail-logs> -o result -t duckdb \
+       --geo-ip <maxmind-db-dir>        # optional, fills the Origin tab
+#    Azure / Microsoft 365 works the same way:
+suzaku azure-timeline  -d <azure-logs>  -o result -t duckdb
+
+# 2. Drop result.duckdb into docker/data/suzaku/ and import it
+docker compose --profile ingest run --rm ingester suzaku-import --path /data/suzaku
+```
+
+Re-running an import is safe: unchanged files are skipped by SHA-256, and a changed file replaces
+its previous rows rather than duplicating them.
 
 Development (run from module directories):
 
@@ -145,11 +171,11 @@ npm run build                 # Vite production build → ../static/
 
 ```bash
 # Dashboard (dashboard/) — YAML/asset/config validation suite
-pytest                        # all tests (605 tests)
+pytest                        # all tests (1248 asset/YAML/config validation tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 503 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 655. Test count must not decrease in a PR.
+Approximate test totals: ingester ≈ 232 (Rust), agent ≈ 503 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 1248. Test count must not decrease in a PR.
 
 ---
 
@@ -233,6 +259,60 @@ ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS api_version              
 ### `ingested_files`
 
 `file_path` (PK), `sha256`, `ingested_at` — tracks ingested files for SHA-256-based deduplication.
+Shared by every importer (`ingest`, `config-import`, `suzaku-import`).
+
+### `suzaku_detections` / `suzaku_detection_tags`
+
+Written by `ingester suzaku-import` from the `timeline` table of a Suzaku
+`-t duckdb` output. Suzaku writes every column as `VARCHAR` and uses the literal `"-"` for a
+missing value, so the importer parses timestamps back to `TIMESTAMP`, normalises `"-"` to `NULL`,
+and resolves Suzaku's AWS and Azure/M365 output profiles into one schema
+(`EventName`/`Operation` → `event_name`, `EventSource`/`Workload` → `event_source`,
+`UserName`/`User` → `user_name`, `EventID`/`CorrelationId` → `event_id`, …).
+
+```sql
+CREATE TABLE suzaku_detections (
+    detection_id     VARCHAR PRIMARY KEY,  -- sha256(source_sha:row_index)
+    detected_at      TIMESTAMP,            -- normalised to UTC
+    rule_title       VARCHAR,
+    rule_id          VARCHAR,              -- Sigma rule UUID (look up in suzaku-rules)
+    rule_author      VARCHAR,
+    level            VARCHAR,              -- critical | high | medium | low | informational
+    level_rank       INTEGER,              -- sortable severity: critical=5 … informational=1
+    tags             VARCHAR,              -- raw ' ¦ '-separated Suzaku tag string
+    mitre_tactics    VARCHAR,
+    mitre_techniques VARCHAR,
+    cloud_provider   VARCHAR,              -- aws | azure | unknown (inferred from the profile)
+    event_name       VARCHAR,  event_source VARCHAR,  aws_region VARCHAR,
+    source_ip        VARCHAR,  src_country  VARCHAR,  src_city   VARCHAR,  src_asn VARCHAR,
+    user_name        VARCHAR,  user_type    VARCHAR,  user_arn   VARCHAR,  account_id VARCHAR,
+    principal_id     VARCHAR,  access_key_id VARCHAR, user_agent VARCHAR,
+    error_code       VARCHAR,  error_message VARCHAR, outcome    VARCHAR,  -- Success | Failure
+    event_id         VARCHAR,  target_object VARCHAR, record_type VARCHAR,
+    app_id           VARCHAR,  category      VARCHAR, details    VARCHAR,
+    source_path      VARCHAR,  source_sha    VARCHAR, -- provenance + import idempotency key
+    raw_row          VARCHAR   -- the original Suzaku row as JSON, verbatim
+);
+
+CREATE TABLE suzaku_detection_tags (
+    detection_id VARCHAR, detected_at TIMESTAMP, level VARCHAR, level_rank INTEGER,
+    rule_title VARCHAR, cloud_provider VARCHAR, user_name VARCHAR,
+    source_ip VARCHAR, src_country VARCHAR,
+    tag_type VARCHAR,      -- tactic | technique | group | other
+    tag_value VARCHAR,     -- CredAccess, T1562.001, G0035, …
+    source_sha VARCHAR,
+    PRIMARY KEY (detection_id, tag_type, tag_value)
+);
+```
+
+`suzaku_detection_tags` exists because Suzaku folds a rule's whole tag list into one
+` ¦ `-separated string; grouping a chart by that string produces meaningless combination buckets
+(`"CredAccess ¦ Disc"`). The importer explodes it into a tidy long table, and the ATT&CK tab of the
+Suzaku dashboard groups by it directly. The identity/geography columns are copied onto each tag row
+so those charts need no join — Superset datasets are single-table.
+
+Both tables are created (empty) by `ingest` as well, so the Suzaku dashboard renders "No data"
+rather than a table-not-found error before any detections have been imported.
 
 ### DuckDB Access Rules
 
@@ -281,6 +361,12 @@ ingester ingest --path <dir>
 ingester enrich
                 [--db           <path>]
                 [--geoip-city / --geoip-country / --geoip-asn <path>]
+
+ingester config-import --path <dir>          # AWS Config snapshots
+                [--db <path>] [--no-progress]
+
+ingester suzaku-import --path <dir|file>     # Suzaku `-t duckdb` detection timelines
+                [--db <path>] [--no-progress]
 ```
 
 DB path resolution order: `--db` CLI arg → `DUCKDB_PATH` env var → `/data/db/threat_hunting.db`.
@@ -330,7 +416,7 @@ senrigan/
 │   ├── README.md
 │   ├── Cargo.toml
 │   └── src/
-│       ├── main.rs            # CLI (ingest + enrich + config-import subcommands)
+│       ├── main.rs            # CLI (ingest + enrich + config-import + suzaku-import)
 │       ├── lib.rs
 │       ├── parser.rs          # CloudTrail JSON parsing (serde_json)
 │       ├── db.rs              # DuckDB schema, batch insert (Appender), geo columns
@@ -344,6 +430,9 @@ senrigan/
 │       ├── config_parser.rs   # AWS Config snapshot JSON → typed structs
 │       ├── config_db.rs       # Config tables schema + Appender writes
 │       ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
+│       ├── suzaku_parser.rs   # Suzaku timeline row → normalised detection (pure, no I/O)
+│       ├── suzaku_db.rs       # Suzaku tables schema + Appender writes
+│       ├── suzaku_import.rs   # suzaku-import pipeline: walk → SHA dedup → read → replace
 │       └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
 ├── agent/                     # Python / Streamlit AI-agent UI (multi-page via st.navigation)
 │   ├── AGENTS.md              # Agent-specific TDD context

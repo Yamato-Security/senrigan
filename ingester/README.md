@@ -1,10 +1,11 @@
 # ingester
 
-AWS CloudTrail log and AWS Config snapshot ingestion module for Senrigan.
+AWS CloudTrail log, AWS Config snapshot, and Suzaku detection ingestion module for Senrigan.
 
 - **`ingest`** — Reads CloudTrail log files (`.json` / `.json.gz`), optionally enriches each event with GeoIP data, and inserts all records into DuckDB via high-throughput batch appends.
 - **`enrich`** — Back-fills GeoIP columns on an existing database without re-ingesting.
 - **`config-import`** — Reads AWS Config snapshot JSON files and populates the `config_snapshots`, `config_resources`, and `config_edges` tables.
+- **`suzaku-import`** — Reads [Suzaku](https://github.com/Yamato-Security/suzaku) `-t duckdb` detection timelines and populates the `suzaku_detections` and `suzaku_detection_tags` tables.
 
 This is the **only** component that opens DuckDB in `READ_WRITE` mode.
 
@@ -147,6 +148,56 @@ Example output:
 
 ```
 Config import complete: files_processed=1 files_skipped=0 resources_inserted=134 edges_inserted=46 errors=0 elapsed_secs=0.08
+```
+
+---
+
+### `suzaku-import`
+
+```
+ingester suzaku-import --path <PATH>
+                       [--db <PATH>]        DuckDB file (default: /data/db/threat_hunting.db)
+                       [--no-progress]      Disable progress bar
+```
+
+Imports the detection timelines produced by
+[Suzaku](https://github.com/Yamato-Security/suzaku), Yamato Security's cloud-log
+threat-detection tool. Run Suzaku first, asking for DuckDB output:
+
+```bash
+suzaku aws-ct-timeline -d <cloudtrail-logs> -o result -t duckdb --geo-ip <maxmind-db-dir>
+suzaku azure-timeline  -d <azure-logs>      -o result -t duckdb   # Azure / Microsoft 365
+```
+
+`<PATH>` may be a single Suzaku output file or a directory, which is walked for
+`.duckdb` files. Each file is opened **`READ_ONLY`** — Suzaku's output is an
+input to Senrigan and is never modified.
+
+Suzaku writes one `timeline` table whose columns are the keys of its active
+output profile, with every value stored as `VARCHAR` and a missing value written
+as the literal `"-"`. The importer therefore:
+
+- parses timestamps back to `TIMESTAMP`, normalising `--localtime` output (which
+  carries an explicit offset) to UTC so several Suzaku runs share one timeline;
+- maps the `"-"` placeholder to `NULL`, so it does not become the largest bucket
+  of every dashboard chart;
+- resolves the AWS and Azure/M365 output profiles into one schema
+  (`EventName`/`Operation` → `event_name`, `UserName`/`User` → `user_name`, …),
+  and keeps the untouched original row in `raw_row` so a custom profile loses
+  nothing;
+- ranks severities numerically in `level_rank` (critical=5 … informational=1);
+- explodes the ` ¦ `-separated ATT&CK tag string into `suzaku_detection_tags`,
+  one row per tactic / technique / group.
+
+SHA-256 deduplication via the shared `ingested_files` table skips unchanged
+files. A file whose content *has* changed — a Suzaku re-run over more logs —
+replaces the rows it previously contributed instead of duplicating them, as does
+the same output imported again from a second path.
+
+Example output:
+
+```
+Suzaku import complete: files_processed=2 files_skipped=0 detections_inserted=510 tags_inserted=1258 detections_replaced=0 errors=0 elapsed_secs=0.16
 ```
 
 **DB path resolution order (all subcommands):** `--db` CLI arg → `DUCKDB_PATH` env var → `/data/db/threat_hunting.db`
@@ -364,13 +415,47 @@ Range-filter columns (e.g. `event_time`) rely on DuckDB's automatic zone maps (p
 
 ### `ingested_files`
 
-Shared by both `ingest` and `config-import` for SHA-256 deduplication.
+Shared by `ingest`, `config-import`, and `suzaku-import` for SHA-256 deduplication.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `file_path` | VARCHAR (PK) | Absolute path of the ingested file |
 | `sha256` | VARCHAR | SHA-256 hex digest of the raw file bytes |
 | `ingested_at` | TIMESTAMP | Timestamp when the file was first ingested |
+
+---
+
+### `suzaku_detections`
+
+One row per Suzaku Sigma-rule hit, written by `suzaku-import`. Key columns:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `detection_id` | VARCHAR (PK) | `sha256(source_sha:row_index)` — stable across re-imports |
+| `detected_at` | TIMESTAMP | Event timestamp, normalised to UTC |
+| `rule_title` / `rule_id` / `rule_author` | VARCHAR | The Sigma rule that matched (`rule_id` is its UUID) |
+| `level` / `level_rank` | VARCHAR / INTEGER | Sigma level, plus a sortable rank (critical=5 … informational=1) |
+| `tags` / `mitre_tactics` / `mitre_techniques` | VARCHAR | Raw Suzaku tag string and the ATT&CK subsets of it |
+| `cloud_provider` | VARCHAR | `aws` / `azure` / `unknown`, inferred from the output profile |
+| `event_name` / `event_source` | VARCHAR | CloudTrail eventName/eventSource, or Azure Operation/Workload |
+| `source_ip` / `src_country` / `src_city` / `src_asn` | VARCHAR | Origin, with GeoIP context when Suzaku ran with `--geo-ip` |
+| `user_name` / `user_type` / `user_arn` / `account_id` / `access_key_id` | VARCHAR | The acting principal |
+| `outcome` | VARCHAR | `Success` / `Failure`, derived per cloud |
+| `event_id` | VARCHAR | CloudTrail eventID or Azure CorrelationId — traces back to the raw log |
+| `source_path` / `source_sha` | VARCHAR | Which Suzaku output the row came from (provenance + replace key) |
+| `raw_row` | VARCHAR | The original Suzaku row as JSON, verbatim |
+
+### `suzaku_detection_tags`
+
+One row per ATT&CK tag on a detection, keyed `(detection_id, tag_type, tag_value)`.
+Suzaku folds a rule's whole tag list into a single ` ¦ `-separated string, so grouping a
+chart by it would produce meaningless combination buckets (`"CredAccess ¦ Disc"`); this
+table is the exploded form the dashboard's ATT&CK charts group by. `tag_type` is
+`tactic`, `technique`, `group`, or `other`. The detection's severity, principal and
+geography are copied onto each row so those charts need no join.
+
+Both tables are also created (empty) by `ingest`, so the Suzaku dashboard renders
+"No data" rather than a table-not-found error before any detections are imported.
 
 ---
 
@@ -427,7 +512,7 @@ Directed relationships between resources within the same snapshot.
 ingester/
 ├── Cargo.toml
 ├── src/
-│   ├── main.rs            # CLI entry point (clap) — subcommands: ingest, enrich, config-import
+│   ├── main.rs            # CLI entry point (clap) — subcommands: ingest, enrich, config-import, suzaku-import
 │   ├── lib.rs             # Public API re-exports
 │   ├── parser.rs          # CloudTrail JSON parsing (serde_json)
 │   ├── db.rs              # DuckDB schema management + batch insert (Appender) + geo columns
@@ -440,10 +525,14 @@ ingester/
 │   ├── progress.rs        # Progress bar wrapper (indicatif)
 │   ├── config_parser.rs   # Config snapshot JSON → ParsedSnapshot / ParsedResource / ParsedEdge
 │   ├── config_db.rs       # Config table schema + Appender writes (config_snapshots/resources/edges)
-│   └── config_import.rs   # Config import pipeline (walk → SHA-256 dedup → parse → insert)
+│   ├── config_import.rs   # Config import pipeline (walk → SHA-256 dedup → parse → insert)
+│   ├── suzaku_parser.rs   # Suzaku timeline row → normalised detection (pure: no I/O, no DuckDB)
+│   ├── suzaku_db.rs       # Suzaku table schema + Appender writes (suzaku_detections / _tags)
+│   └── suzaku_import.rs   # Suzaku import pipeline (walk → SHA-256 dedup → READ_ONLY read → replace)
 └── tests/
     ├── cli_test.rs              # CLI integration tests (ingest / enrich)
     ├── config_import_test.rs    # CLI integration tests (config-import)
+    ├── suzaku_import_test.rs    # CLI integration tests (suzaku-import)
     ├── integration_test.rs      # End-to-end ingest tests with a real DuckDB
     ├── testdata/                # CloudTrail JSON / gz fixtures + malformed sample
     └── testdata_config/         # Config snapshot JSON fixtures

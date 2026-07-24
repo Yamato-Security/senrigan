@@ -38,13 +38,16 @@ database via a Docker bind mount.
 
 ### ingester (Rust)
 
-**Purpose:** Parse AWS CloudTrail JSON/gz log files and AWS Config snapshots from the local
-filesystem and store them in DuckDB.
+**Purpose:** Parse AWS CloudTrail JSON/gz log files, AWS Config snapshots, and Suzaku detection
+timelines from the local filesystem and store them in DuckDB.
 
 - Sole writer to DuckDB (`READ_WRITE` mode)
 - Runs as a one-shot CLI command (Docker Compose profile: `ingest`)
 - Handles gz decompression, JSON parsing, schema creation, and batch insertion
-- Three subcommands: `ingest`, `enrich`, `config-import`
+- Four subcommands: `ingest`, `enrich`, `config-import`, `suzaku-import`
+- `suzaku-import` reads another DuckDB file — the `-t duckdb` output of
+  [Suzaku](https://github.com/Yamato-Security/suzaku) — opening it `READ_ONLY`; that output is an
+  input to Senrigan and is never modified
 - Targets: 10 GB in under 5 minutes, 50 GB on 16 GB RAM
 
 ### agent (Python / Streamlit)
@@ -79,7 +82,8 @@ filesystem and store them in DuckDB.
 **Purpose:** BI dashboard for log visualization.
 
 - Reads from DuckDB (`READ_ONLY` mode)
-- Pre-seeded with CloudTrail-specific dashboards
+- Pre-seeded with three dashboards: CloudTrail Threat Hunting (Top Events), its Rare Events
+  mirror, and Suzaku Detections (Sigma-rule hits, 7 tabs / 56 charts)
 - Supports ad-hoc SQL visualization
 
 ## DuckDB Sharing Strategy
@@ -119,19 +123,22 @@ DuckDB is an in-process database. It does not support concurrent writes from mul
 ## Data Flow
 
 ```
-CloudTrail logs (.json / .json.gz)    AWS Config snapshots (.json)
-        │                                       │
-        ▼                                       ▼
-┌───────────────────────────────────────────────────────┐
-│  ingester                                             │
-│                                                       │
-│  ingest subcommand          config-import subcommand  │
-│  1. Walk dir                1. Walk dir               │
-│  2. Detect gz ──→ flate2    2. SHA-256 dedup          │
-│  3. Parse JSON ──→ serde    3. Parse snapshot JSON    │
-│  4. Insert DB ──→ DuckDB    4. Insert snapshots /     │
-│  5. Track  ──→ SHA-256 dedup   resources / edges      │
-└──────────────────────┬────────────────────────────────┘
+CloudTrail logs         AWS Config snapshots      Suzaku timelines
+(.json / .json.gz)      (.json)                   (.duckdb, from `suzaku … -t duckdb`)
+        │                       │                         │
+        ▼                       ▼                         ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  ingester                                                            │
+│                                                                      │
+│  ingest              config-import          suzaku-import            │
+│  1. Walk dir         1. Walk dir            1. Walk dir              │
+│  2. Detect gz        2. SHA-256 dedup       2. SHA-256 dedup         │
+│  3. Parse JSON       3. Parse snapshot      3. Read timeline table   │
+│  4. Insert DB        4. Insert snapshots/      (READ_ONLY)           │
+│  5. Track (SHA-256)     resources / edges   4. Normalise AWS/Azure   │
+│                                                profiles → one schema │
+│                                             5. Replace prior rows    │
+└──────────────────────┬───────────────────────────────────────────────┘
                        │ DuckDB READ_WRITE
                        ▼
              ┌─────────────────┐
@@ -157,6 +164,10 @@ CloudTrail logs (.json / .json.gz)    AWS Config snapshots (.json)
 
 The ingester creates and populates `cloudtrail_events` with **48 columns** (17 core + 7 GeoIP + 24 extended).  
 JSON blobs are stored as **`VARCHAR`**, not DuckDB JSON type — use `json_extract_string()` to query them.
+
+Alongside it, `suzaku-import` maintains `suzaku_detections` (one row per Suzaku Sigma-rule hit) and
+`suzaku_detection_tags` (one row per ATT&CK tag on a hit). Full column lists:
+[AGENTS.md](../AGENTS.md#duckdb-schema).
 
 See the full schema definition in [AGENTS.md](../AGENTS.md#duckdb-schema).
 
@@ -187,6 +198,7 @@ See the full schema definition in [AGENTS.md](../AGENTS.md#duckdb-schema).
 | Volume              | Type         | Purpose                                      |
 | ------------------- | ------------ | -------------------------------------------- |
 | `${DUCKDB_HOST_PATH:-./data/db}` | Bind mount | Shared DuckDB database file  |
+| `${SUZAKU_HOST_PATH:-./data/suzaku}` | Bind mount (`:ro`) | Suzaku `-t duckdb` detection timelines to import |
 | `superset_home`     | Named volume | Superset metadata and configuration          |
 
 > **Note:** DuckDB data uses a **bind mount** (not a named volume). Docker Engine on Linux/WSL2 misresolves relative paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry with a direct bind mount.

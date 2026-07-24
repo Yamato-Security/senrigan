@@ -27,7 +27,7 @@ Optional GeoIP enrichment populates 7 geo columns using MaxMind GeoLite2 databas
 ingester/
 ├── Cargo.toml
 ├── src/
-│   ├── main.rs            # CLI entry point (clap) — ingest + enrich + config-import subcommands
+│   ├── main.rs            # CLI entry point (clap) — ingest + enrich + config-import + suzaku-import
 │   ├── lib.rs             # Public API re-exports
 │   ├── parser.rs          # CloudTrail JSON parsing (serde_json)
 │   ├── db.rs              # DuckDB schema, batch insert (Appender), geo columns
@@ -42,10 +42,14 @@ ingester/
 │   ├── config_parser.rs   # AWS Config snapshot JSON → typed structs
 │   ├── config_db.rs       # Config tables schema + Appender writes
 │   ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
+│   ├── suzaku_parser.rs   # Suzaku timeline row → normalised detection (pure: no I/O, no DuckDB)
+│   ├── suzaku_db.rs       # Suzaku detection tables schema + Appender writes
+│   ├── suzaku_import.rs   # suzaku-import pipeline: walk → SHA dedup → read (READ_ONLY) → replace
 │   └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
 └── tests/
     ├── cli_test.rs              # CLI integration tests (assert_cmd) — ingest + enrich
     ├── config_import_test.rs    # CLI integration tests for config-import subcommand
+    ├── suzaku_import_test.rs    # CLI integration tests for suzaku-import subcommand
     ├── integration_test.rs      # End-to-end pipeline tests
     ├── testdata/
     │   ├── single_event.json     # 1 CloudTrail event
@@ -234,6 +238,25 @@ Integration and CLI tests are in `ingester/tests/`.
 ### CLI (tests/config_import_test.rs)
 - `test_cli_config_import_succeeds_and_prints_summary` — `ingester config-import --path <file>` exits 0 and prints summary (CLI-CI-01)
 - `test_cli_config_import_missing_path_shows_error` — missing `--path` produces usage error (CLI-CI-02)
+
+### suzaku_parser.rs / suzaku_db.rs / suzaku_import.rs
+- `test_clean_*`, `test_level_rank_*`, `test_parse_detected_at_*` — Suzaku's `"-"` placeholder → `NULL`,
+  severity ranking, and UTC timestamp normalisation (including `--localtime` output with an offset)
+- `test_classify_tag_*`, `test_split_tags_*`, `test_tag_rows_*` — ATT&CK tag classification
+  (tactic / technique / group) in both of Suzaku's spellings, and the explode into tag rows
+- `test_map_row_maps_the_aws_profile` / `test_map_row_maps_the_azure_profile` — both shipped output
+  profiles resolve to the same normalised schema
+- `test_map_row_keeps_unknown_columns_in_raw_row` — a custom profile loses nothing
+- `test_suzaku_db_*` — table creation, Appender writes, scoped delete-then-append replacement
+- `test_import_suzaku_*` — walk → SHA dedup → read → replace pipeline, including re-import
+  idempotency and the "same output under two paths" case
+
+### CLI (tests/suzaku_import_test.rs)
+- `test_cli_suzaku_import_succeeds_and_prints_summary` — exits 0 and prints the summary (CLI-SI-01)
+- `test_cli_suzaku_import_writes_normalised_rows` — the detection and its ATT&CK technique are both
+  queryable after the import (CLI-SI-02)
+- `test_cli_suzaku_import_missing_path_shows_error` — missing `--path` produces a usage error (CLI-SI-03)
+- `test_cli_help_lists_suzaku_import` — the subcommand is advertised in `--help` (CLI-SI-04)
 
 ## Testing Patterns
 

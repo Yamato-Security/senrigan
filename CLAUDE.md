@@ -97,6 +97,8 @@ From `docker/`:
 docker compose --profile ingest run --rm ingester ingest --path /data/logs
 # First-time import (AWS Config snapshots)
 docker compose --profile ingest run --rm ingester config-import --path /data/config
+# Import Suzaku detections (`suzaku ... -o result -t duckdb` output, dropped in docker/data/suzaku)
+docker compose --profile ingest run --rm ingester suzaku-import --path /data/suzaku
 # Start agent + dashboard + config_viz
 docker compose up -d --build
 # Re-ingest from scratch
@@ -108,16 +110,18 @@ docker compose up -d --build
 docker compose --profile resync run --rm superset-resync
 ```
 
-**After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
+**After editing any file under `dashboard/assets/cloudtrail_default/` or
+`dashboard/assets/suzaku_detections/`** (chart/dashboard YAML):
 Superset never reads those YAML files directly — it only applies them from the compiled
-`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the "Rare Events" dashboard, derived
-from `cloudtrail_default/` by `rebuild_rare_zip.py` with ascending/bottom-N ordering),
-which are imported into Superset's own metadata DB by the one-shot `superset-init`
-container. Editing the YAML alone (or even rebuilding the zips alone) has no effect on the
-running dashboards. Always finish with all steps:
+`cloudtrail_default.zip`, `cloudtrail_rare.zip` (the "Rare Events" dashboard, derived
+from `cloudtrail_default/` by `rebuild_rare_zip.py` with ascending/bottom-N ordering)
+and `suzaku_detections.zip`, which are imported into Superset's own metadata DB by the
+one-shot `superset-init` container. Editing the YAML alone (or even rebuilding the zips
+alone) has no effect on the running dashboards. Always finish with all steps:
 
 ```bash
-cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py \
+    && python3 rebuild_suzaku_zip.py                       # regenerate all three zips
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
@@ -139,8 +143,8 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 503 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 655 (asset/YAML/config validation suite).
+Approximate test totals (must not decrease in a PR): ingester ≈ 232 (Rust), agent ≈ 503 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 1248 (asset/YAML/config validation suite).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
 
@@ -154,7 +158,9 @@ Every PR must pass: all tests green, no lint warnings, format compliance, and no
 **`VARCHAR`**, not DuckDB JSON type — query them with `json_extract_string(col, '$.field')`.
 GeoIP and extended columns are added via `ALTER TABLE ADD COLUMN IF NOT EXISTS`, so existing DBs
 migrate transparently. `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives SHA-256
-dedup. Full schema: [AGENTS.md](AGENTS.md#duckdb-schema).
+dedup for every importer. `suzaku_detections` (one row per Suzaku Sigma-rule hit) and
+`suzaku_detection_tags` (one row per ATT&CK tag on a hit) are written by `suzaku-import` and power
+the Suzaku Detections dashboard. Full schema: [AGENTS.md](AGENTS.md#duckdb-schema).
 
 The LLM only "sees" the columns listed in `agent/schema.py` (currently the 17 core + 7 GeoIP
 columns — the 24 extended columns are deliberately excluded to keep the prompt small). A column
@@ -203,7 +209,16 @@ ingester ingest --path <dir>
 
 ingester enrich [--db <path>] [--geoip-city/--geoip-country/--geoip-asn <path>]
 ingester config-import --path <dir> [--db <path>]
+ingester suzaku-import --path <dir|file.duckdb> [--db <path>] [--no-progress]
 ```
+
+`suzaku-import` reads the `timeline` table of a Suzaku `-t duckdb` output (run Suzaku separately:
+`suzaku aws-ct-timeline|azure-timeline -d <logs> -o result -t duckdb [--geo-ip <dir>]`), opening it
+**read-only** — Suzaku's output is an input to Senrigan and is never modified. It normalises
+Suzaku's AWS and Azure/M365 output profiles into one schema, parses timestamps to UTC, maps
+Suzaku's `"-"` placeholder to `NULL`, and explodes the ATT&CK tag string into
+`suzaku_detection_tags`. Re-runs are idempotent: unchanged files are skipped by SHA-256, and a
+changed file replaces its previous rows.
 
 DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db`.
 
@@ -219,6 +234,7 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 | `DUCKDB_PATH` | all | — | Overrides default DB path |
 | `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount dir |
 | `GEOIP_CITY/COUNTRY/ASN_PATH` | ingester | — | GeoLite2 mmdb paths |
+| `SUZAKU_HOST_PATH` | docker host | `./data/suzaku` | Host dir holding Suzaku `-t duckdb` outputs |
 | `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
 | `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies (see DEVELOPMENT.md §6) |
 
@@ -238,11 +254,12 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 
 ```
 senrigan/
-├── ingester/    # Rust log ingestion engine (ingest/enrich/config-import subcommands)
+├── ingester/    # Rust log ingestion engine (ingest/enrich/config-import/suzaku-import)
 ├── agent/       # Python/Streamlit AI threat-hunting UI — chat page + Suzaku CT Summary page
 │               #   (llm.py, query.py, report.py, builtin_hunts.yaml, suzaku_summary.py, suzaku_report.py, views/)
 ├── config_viz/  # AWS Config resource graph — FastAPI backend + React 18/Vite/TS frontend (ELK layout)
 ├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/
+│             #   assets/cloudtrail_default/ (CloudTrail) + assets/suzaku_detections/ (Suzaku)
 ├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
                  #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,

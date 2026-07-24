@@ -1,7 +1,8 @@
 # dashboard
 
 BI dashboard module for Senrigan powered by Apache Superset.
-Visualizes CloudTrail log data stored in DuckDB. Always opens DuckDB in **`READ_ONLY`** mode.
+Visualizes CloudTrail log data — and Suzaku Sigma-rule detections — stored in DuckDB.
+Always opens DuckDB in **`READ_ONLY`** mode.
 
 ---
 
@@ -12,6 +13,8 @@ Visualizes CloudTrail log data stored in DuckDB. Always opens DuckDB in **`READ_
   - [Sequence Diagram — First Startup](#sequence-diagram--first-startup)
   - [Sequence Diagram — Re-ingest & Resync](#sequence-diagram--re-ingest--resync)
 - [Pre-built Charts](#pre-built-charts)
+  - [Rare Events dashboard](#rare-events-dashboard)
+  - [Suzaku Detections dashboard](#suzaku-detections-dashboard)
 - [Directory Structure](#directory-structure)
 - [Configuration](#configuration)
 - [Development](#development)
@@ -173,6 +176,44 @@ suffix, and charts without an ordering knob (KPI cards, timeseries, world
 map, heatmap) are mirrored unchanged. Both dashboards share the same
 database and dataset objects.
 
+### Suzaku Detections dashboard
+
+A third dashboard, **Suzaku Detections** (`suzaku_detections.zip`), visualises the
+Sigma-rule detections produced by
+[Suzaku](https://github.com/Yamato-Security/suzaku). Where the CloudTrail
+dashboards show *everything that happened*, this one shows *what a detection
+rule flagged* — and answers, in tab order, the questions an analyst asks of a
+detection set:
+
+| Tab | Charts | Key Content |
+|-----|:------:|-------------|
+| 🔎 Overview | 12 | 8 triage KPIs (total · critical+high · rules · principals · IPs · countries · accounts · active days) · detections over time by severity · severity breakdown · top rules · the event-level detection timeline |
+| 📜 Rules | 6 | Rule summary with blast radius · rule activity over time · **rare rules** (ascending — the one-off hit is usually the real one) · rule authors · rule_id catalog for looking rules up in suzaku-rules · newly firing rules |
+| 🎯 MITRE ATT&CK | 9 | Tactic & technique distribution · tactics over time (the kill chain) · tactic × severity · technique → rule bridge · tactic × principal · attributed threat groups · 2 coverage KPIs |
+| 👤 Identity | 8 | Top principals · identity types · principal summary · principal × rule matrix · **access keys to rotate** · top and rare user agents · per-account rollup |
+| 🌍 Origin | 7 | World map · top countries · top ASNs · source IPs with geo context · AWS region activity · country × severity · country × rule |
+| ⏱ Timeline | 6 | Hour × day-of-week heatmap · detections by hour · 5-minute burst view (automation detection) · daily severity trend · first/last seen per principal and per source IP |
+| 🧩 Events | 8 | Top API actions · services/workloads · success vs failure · error codes · action × rule matrix · Azure/M365 workload activity · import provenance · full detection detail |
+
+The data comes from two datasets written by `ingester suzaku-import`:
+`suzaku_detections` (one row per rule hit) and `suzaku_detection_tags` (one row
+per ATT&CK tag, which is what makes clean per-tactic and per-technique charts
+possible). Both live in the same DuckDB file as `cloudtrail_events` and reuse
+the same "CloudTrail DuckDB" connection.
+
+Populate them by running Suzaku with DuckDB output and importing the result:
+
+```bash
+suzaku aws-ct-timeline -d <logs> -o result -t duckdb --geo-ip <maxmind-db-dir>
+cp result.duckdb docker/data/suzaku/
+docker compose --profile ingest run --rm ingester suzaku-import --path /data/suzaku
+```
+
+Both the AWS (`aws-ct-timeline`) and Azure/Microsoft 365 (`azure-timeline`)
+output profiles are supported — the importer resolves their differing column
+names into one schema, so the same dashboard works for either. The charts are
+empty but render normally before any detections are imported.
+
 ---
 
 ## Directory Structure
@@ -184,19 +225,27 @@ dashboard/
 ├── assets/
 │   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
 │   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
+│   ├── suzaku_detections.zip           # Suzaku Detections dashboard ZIP
 │   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
 │   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
-│   └── cloudtrail_default/             # Source-of-truth dashboard definitions
-│       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
+│   ├── rebuild_suzaku_zip.py           # Regenerate suzaku_detections.zip from suzaku_detections/
+│   ├── cloudtrail_default/             # Source-of-truth dashboard definitions
+│   │   ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
+│   │   ├── metadata.yaml
+│   │   ├── databases/
+│   │   │   └── CloudTrail_DuckDB.yaml  # duckdb+duckdb_engine:// URI, allow_run_async: false
+│   │   ├── datasets/
+│   │   └── charts/                     # 73 chart YAML files (DSH-01 to DSH-78)
+│   └── suzaku_detections/              # Suzaku dashboard definitions
+│       ├── dashboard.yaml              # 7-tab layout, 56 CHART position entries
 │       ├── metadata.yaml
-│       ├── databases/
-│       │   └── CloudTrail_DuckDB.yaml  # duckdb+duckdb_engine:// URI, allow_run_async: false
-│       ├── datasets/
-│       └── charts/                     # 73 chart YAML files (DSH-01 to DSH-78)
+│       ├── databases/                  # Same connection UUID as cloudtrail_default
+│       ├── datasets/                   # suzaku_detections + suzaku_detection_tags
+│       └── charts/                     # 56 chart YAML files (SZK-01 to SZK-56)
 ├── init/
 │   ├── bootstrap.sh                    # Idempotent init script (runs in superset-init)
 │   ├── register_duckdb.py              # Register DuckDB connection; auto-migrates old URI/settings
-│   ├── register_dataset.py             # Register cloudtrail_events dataset
+│   ├── register_dataset.py             # Register all three datasets (CloudTrail + Suzaku)
 │   └── import_dashboard.py             # Import a dashboard ZIP via ImportAssetsCommand (DASHBOARD_ZIP env)
 └── tests/
     ├── test_chart_yaml.py
@@ -207,7 +256,8 @@ dashboard/
     ├── test_rare_generator.py
     ├── test_rare_zip.py
     ├── test_rebuild_zip.py
-    └── test_superset_config.py
+    ├── test_superset_config.py
+    └── test_suzaku_assets.py
 ```
 
 ---
@@ -254,13 +304,16 @@ docker compose --profile resync run --rm superset-resync
 
 ### Modifying dashboard definitions
 
-1. Edit YAML files under `dashboard/assets/cloudtrail_default/`.
-2. Regenerate both ZIPs (the Rare Events dashboard is derived from the
-   same source tree):
+1. Edit YAML files under `dashboard/assets/cloudtrail_default/` or
+   `dashboard/assets/suzaku_detections/`.
+2. Regenerate the ZIPs (the Rare Events dashboard is derived from the
+   CloudTrail source tree; a new Suzaku chart also needs a `FILE_MAP` entry in
+   `rebuild_suzaku_zip.py`, which the test suite checks):
    ```bash
    cd dashboard/assets
    python3 rebuild_zip.py
    python3 rebuild_rare_zip.py
+   python3 rebuild_suzaku_zip.py
    ```
 3. Re-run initialization to import the updated ZIPs:
    ```bash
