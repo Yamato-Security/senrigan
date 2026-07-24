@@ -26,6 +26,7 @@ use crate::geoip::GeoipEnricher;
 use crate::parser::{CloudTrailEvent, parse_cloudtrail_log};
 use crate::path_filter::PathFilter;
 use crate::progress::ProgressReporter;
+use crate::suzaku_db::ensure_suzaku_tables;
 
 /// Number of files parsed in parallel per chunk.
 ///
@@ -260,6 +261,10 @@ fn ingest_core(
     perf_log: bool,
 ) -> Result<IngestStats> {
     ensure_table(conn)?;
+    // Create the (empty) Suzaku detection tables up front so the "Suzaku
+    // Detections" dashboard renders "No data" instead of a table-not-found
+    // error on a database where `suzaku-import` has not been run yet.
+    ensure_suzaku_tables(conn)?;
 
     let start = Instant::now();
     let mut stats = IngestStats::default();

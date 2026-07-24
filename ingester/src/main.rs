@@ -15,6 +15,7 @@ use ingester::field_filter::FieldFilter;
 use ingester::geoip::{GeoipConfig, GeoipEnricher};
 use ingester::ingest::{IngestOptions, ingest};
 use ingester::path_filter::PathFilter;
+use ingester::suzaku_import::{SuzakuImportOptions, import_suzaku};
 
 /// Read an environment variable, returning `None` for both unset and empty values.
 ///
@@ -220,6 +221,31 @@ enum Commands {
         #[arg(long)]
         no_progress: bool,
     },
+
+    /// Import Suzaku detection timelines (`.duckdb`) into DuckDB.
+    ///
+    /// Reads the `timeline` table written by
+    /// `suzaku aws-ct-timeline|azure-timeline -o <out> -t duckdb`, normalises
+    /// the AWS and Azure/M365 output profiles into one schema, and writes the
+    /// `suzaku_detections` and `suzaku_detection_tags` tables that power the
+    /// "Suzaku Detections" dashboard.  Suzaku's output is opened read-only and
+    /// never modified.  Already-imported files (matched by SHA-256) are
+    /// skipped; a changed file replaces its previous rows.
+    #[command(name = "suzaku-import")]
+    SuzakuImport {
+        /// Path to a Suzaku `.duckdb` output file, or a directory to search.
+        #[arg(short, long)]
+        path: PathBuf,
+
+        /// Path to the DuckDB database file.
+        /// Falls back to the DUCKDB_PATH environment variable, then /data/db/threat_hunting.db.
+        #[arg(short, long)]
+        db: Option<PathBuf>,
+
+        /// Disable progress bar output.
+        #[arg(long)]
+        no_progress: bool,
+    },
 }
 
 fn run() -> Result<()> {
@@ -383,6 +409,39 @@ fn run() -> Result<()> {
                 stats.files_skipped,
                 stats.resources_inserted,
                 stats.edges_inserted,
+                stats.errors,
+                stats.elapsed_secs,
+            );
+            Ok(())
+        }
+
+        Commands::SuzakuImport {
+            path,
+            db,
+            no_progress,
+        } => {
+            let db_path = resolve_db_path(db);
+            let conn = Connection::open(&db_path)
+                .with_context(|| format!("Failed to open DuckDB at {}", db_path.display()))?;
+
+            let stats = import_suzaku(
+                &path,
+                &conn,
+                SuzakuImportOptions {
+                    show_progress: !no_progress,
+                },
+            )
+            .context("Suzaku import failed")?;
+
+            println!(
+                "Suzaku import complete: files_processed={} files_skipped={} \
+                 detections_inserted={} tags_inserted={} detections_replaced={} \
+                 errors={} elapsed_secs={:.2}",
+                stats.files_processed,
+                stats.files_skipped,
+                stats.detections_inserted,
+                stats.tags_inserted,
+                stats.detections_replaced,
                 stats.errors,
                 stats.elapsed_secs,
             );

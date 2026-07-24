@@ -14,6 +14,9 @@ pub mod ingest;
 pub mod parser;
 pub mod path_filter;
 pub mod progress;
+pub mod suzaku_db;
+pub mod suzaku_import;
+pub mod suzaku_parser;
 
 /// Shared test utilities.
 ///
