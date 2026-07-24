@@ -14,6 +14,8 @@ This project exists thanks to these wonderful projects and datasets :)
 - [DuckDB](https://duckdb.org/) — embedded analytical database
 - [flaws.cloud](http://flaws.cloud) — intentionally vulnerable AWS CloudTrail dataset
 - [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) — GeoIP databases
+- [MITRE ATT&CK for Cloud](https://attack.mitre.org/matrices/enterprise/cloud/) — MITRE ATT&CK for cloud environments
 - [SIEM on Amazon OpenSearch Service](https://github.com/aws-samples/siem-on-amazon-opensearch-service) — SIEM-like CloudTrail analytics reference implementation
 - [Suzaku](https://github.com/Yamato-Security/suzaku) — Suzaku, a CloudTrail log analysis tool created by Yamato Security
+- [Threat Technique Catalog for AWS](https://aws-samples.github.io/threat-technique-catalog-for-aws/) — Threat Technique Catalog for AWS
 - [Yamato Security](https://github.com/Yamato-Security) — [suzaku-sample-data](https://github.com/Yamato-Security/suzaku-sample-data)
