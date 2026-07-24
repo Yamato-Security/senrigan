@@ -12,11 +12,11 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](https://github.com/Yamato-Security/senrigan/blob/main/agent/requirements.txt)
 
 ## Fitur Utama
-## 🔍 100+ Perburuan Bawaan + Obrolan AI
+## 🔍 120+ Perburuan Bawaan + Obrolan AI
 
 <img src="../assets/img-agent.png" width="800" alt="Antarmuka Obrolan AI">
 
-## 📊 80+ Bagan Dasbor Siap Pakai
+## 🔍 100+ Bagan Dasbor Siap Pakai
 
 <img src="../assets/img-dashboard.png" width="800" alt="Dasbor Superset">
 

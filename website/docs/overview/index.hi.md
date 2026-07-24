@@ -12,11 +12,11 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](https://github.com/Yamato-Security/senrigan/blob/main/agent/requirements.txt)
 
 ## मुख्य विशेषताएं
-## 🔍 100+ अंतर्निहित हंट्स + AI Chat
+## 🔍 120+ अंतर्निहित हंट्स + AI Chat
 
 <img src="../assets/img-agent.png" width="800" alt="AI Chat UI">
 
-## 📊 80+ पूर्व-निर्मित डैशबोर्ड चार्ट
+## 🔍 100+ पूर्व-निर्मित डैशबोर्ड चार्ट
 
 <img src="../assets/img-dashboard.png" width="800" alt="Superset Dashboard">
 

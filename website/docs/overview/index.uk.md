@@ -12,11 +12,11 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue.svg)](https://github.com/Yamato-Security/senrigan/blob/main/agent/requirements.txt)
 
 ## Ключові можливості
-## 🔍 100+ вбудованих полювань + чат зі ШІ
+## 🔍 120+ вбудованих полювань + чат зі ШІ
 
 <img src="../assets/img-agent.png" width="800" alt="Інтерфейс чату зі ШІ">
 
-## 📊 80+ готових діаграм для панелі
+## 🔍 100+ готових діаграм для панелі
 
 <img src="../assets/img-dashboard.png" width="800" alt="Панель Superset">
 

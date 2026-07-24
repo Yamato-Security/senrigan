@@ -11,7 +11,7 @@ hide:
 <p class="hb-tagline">
 <strong>Senrigan</strong> is an <strong>offline, open-source AWS CloudTrail DFIR &amp; threat hunting
 platform</strong> by <a href="https://github.com/Yamato-Security">Yamato Security</a>. Drop in your
-CloudTrail logs and get <strong>100+ ready-to-run threat hunts</strong>, <strong>80+ Superset
+CloudTrail logs and get <strong>120+ ready-to-run threat hunts</strong>, <strong>100+ Superset
 dashboard charts</strong>, AI-assisted analysis and an AWS Config resource graph — all on your
 laptop with a single <code>make up</code>. No SIEM required, no cloud infrastructure needed.
 </p>
