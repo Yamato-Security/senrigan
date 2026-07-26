@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(Optionnel)** Ingestion d'instantanés AWS Config pour la visualisation du graphe de ressources.
-Placez les fichiers d'instantanés AWS Config dans `docker/logs/config/`, puis :
+Placez les fichiers d'instantanés AWS Config dans `docker/data/config-snapshots/`, puis :
 ```bash
 make ingest-config
 ```

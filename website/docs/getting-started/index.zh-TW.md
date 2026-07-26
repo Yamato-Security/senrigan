@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **（選用）** 用於資源圖視覺化的 AWS Config 快照匯入。
-將 AWS Config 快照檔案放置於 `docker/logs/config/`，然後：
+將 AWS Config 快照檔案放置於 `docker/data/config-snapshots/`，然後：
 ```bash
 make ingest-config
 ```

@@ -1,15 +1,22 @@
 .PHONY: help \
         up down build ps ensure-secret \
-        ingest ingest-full ingest-geoip enrich config-import resync \
+        ingest ingest-full ingest-geoip enrich ingest-config config-import resync \
         logs-agent logs-config-viz logs-superset \
         test lint fmt-check \
-        test-ingester test-agent test-config-viz test-frontend \
+        test-ingester test-agent test-config-viz test-frontend test-repo \
         build-ingester \
         clean
 
-DC         := cd docker && DOCKER_CLI_HINTS=false docker compose
-GEOIP_CITY ?= /data/geoip/GeoLite2-City.mmdb
-GEOIP_ASN  ?= /data/geoip/GeoLite2-ASN.mmdb
+# Running `make` with no arguments must explain the tool, not act on it.
+.DEFAULT_GOAL := help
+
+DC            := cd docker && DOCKER_CLI_HINTS=false docker compose
+
+# Container-side paths to the GeoLite2 databases (docker/data/geoip is mounted
+# at /data/geoip). These are file paths, not a directory: the ingester passes
+# each straight to maxminddb and performs no directory lookup.
+GEOIP_CITY    ?= /data/geoip/GeoLite2-City.mmdb
+GEOIP_ASN     ?= /data/geoip/GeoLite2-ASN.mmdb
 
 # ── Service management ─────────────────────────────────
 # docker-compose.yml interpolates ${SUPERSET_SECRET_KEY:?} at parse time, so
@@ -67,11 +74,15 @@ ingest-geoip: ensure-secret    ## Ingest CloudTrail logs with GeoIP enrichment
 
 enrich: ensure-secret          ## Back-fill GeoIP on existing DB rows
 	$(DC) --profile ingest run --rm ingester enrich \
-	    --geoip-country /data/geoip
+	    --geoip-city $(GEOIP_CITY) \
+	    --geoip-asn $(GEOIP_ASN)
 
-config-import: ensure-secret   ## Import AWS Config snapshots
+ingest-config: ensure-secret   ## Import AWS Config snapshots
 	$(DC) --profile ingest run --rm ingester config-import \
 	    --path /data/config
+
+# Kept for compatibility: `config-import` was the original target name.
+config-import: ingest-config
 
 resync: ensure-secret          ## Re-sync Superset dataset metadata after re-ingestion
 	$(DC) --profile resync run --rm superset-resync
@@ -87,7 +98,7 @@ logs-superset: ensure-secret   ## Tail superset logs
 	$(DC) logs -f superset
 
 # ── Development: Tests ─────────────────────────────────
-test: test-ingester test-agent test-config-viz test-frontend  ## Run all tests
+test: test-ingester test-agent test-config-viz test-frontend test-repo  ## Run all tests
 
 test-ingester:   ## Run ingester (Rust) tests
 	cd ingester && cargo test --all
@@ -101,16 +112,21 @@ test-config-viz: ## Run config_viz (Python) tests
 test-frontend:   ## Run config_viz frontend (Vitest) tests
 	cd config_viz/frontend && npm test
 
+test-repo:       ## Run repository consistency tests (Makefile / compose / docs)
+	pytest -v --tb=short
+
 # ── Lint / Format ──────────────────────────────────
 lint:            ## Run all linters (clippy + ruff)
 	cd ingester && cargo clippy --all-targets --all-features -- -D warnings
 	cd agent && ruff check .
 	cd config_viz && ruff check .
+	ruff check tests
 
 fmt-check:       ## Check formatting (rustfmt + black)
 	cd ingester && cargo fmt --all -- --check
 	cd agent && black --check .
 	cd config_viz && black --check .
+	black --check tests
 
 build-ingester:  ## Build ingester release binary
 	cd ingester && cargo build --release

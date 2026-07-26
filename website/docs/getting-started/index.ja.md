@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(任意)** リソースグラフ可視化のための AWS Config スナップショットの取り込み。
-AWS Config スナップショットファイルを `docker/logs/config/` に配置してから、次を実行します。
+AWS Config スナップショットファイルを `docker/data/config-snapshots/` に配置してから、次を実行します。
 ```bash
 make ingest-config
 ```

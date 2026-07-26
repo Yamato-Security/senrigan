@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(선택 사항)** 리소스 그래프 시각화를 위한 AWS Config 스냅샷 수집.
-AWS Config 스냅샷 파일을 `docker/logs/config/`에 배치한 다음:
+AWS Config 스냅샷 파일을 `docker/data/config-snapshots/`에 배치한 다음:
 ```bash
 make ingest-config
 ```

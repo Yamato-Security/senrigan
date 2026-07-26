@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(Необов'язково)** Завантаження знімків AWS Config для візуалізації графу ресурсів.
-Розмістіть файли знімків AWS Config у `docker/logs/config/`, а потім:
+Розмістіть файли знімків AWS Config у `docker/data/config-snapshots/`, а потім:
 ```bash
 make ingest-config
 ```

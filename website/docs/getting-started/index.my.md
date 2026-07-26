@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(ရွေးချယ်နိုင်)** resource graph မြင်ကွင်းဖော်ပြခြင်းအတွက် AWS Config snapshot ingestion။
-AWS Config snapshot ဖိုင်များကို `docker/logs/config/` တွင် ထားရှိပါ၊ ပြီးနောက်:
+AWS Config snapshot ဖိုင်များကို `docker/data/config-snapshots/` တွင် ထားရှိပါ၊ ပြီးနောက်:
 ```bash
 make ingest-config
 ```
