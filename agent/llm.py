@@ -13,9 +13,8 @@ import httpx
 import pandas as pd
 from openai import OpenAI, OpenAIError
 
+from profiles import CLOUDTRAIL_PROFILE, DatasetProfile
 from prompts.analysis_prompt import ANALYSIS_SYSTEM_PROMPT, ANALYSIS_USER_TEMPLATE
-from prompts.system_prompt import SYSTEM_PROMPT
-from schema import get_schema_description
 
 logger = logging.getLogger(__name__)
 
@@ -133,14 +132,17 @@ def _clear_client_cache() -> None:
     _client_cache.clear()
 
 
-def build_system_prompt() -> str:
-    """Build the system prompt including the CloudTrail schema description.
+def build_system_prompt(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> str:
+    """Build the system prompt for *profile*, including its schema description.
+
+    Args:
+        profile: Dataset profile whose table the model should query. Defaults to
+                 the CloudTrail profile, so existing callers are unaffected.
 
     Returns:
-        A formatted system prompt string that instructs the LLM to generate
-        DuckDB-compatible SQL for the cloudtrail_events table.
+        The complete system prompt string.
     """
-    return SYSTEM_PROMPT.format(schema=get_schema_description())
+    return profile.build_system_prompt()
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -220,6 +222,7 @@ def generate_sql(
     api_key: str,
     model: str = "gpt-5.5",
     context: list[dict] | None = None,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> str:
     """Generate a DuckDB SQL query from a natural language question.
 
@@ -232,12 +235,13 @@ def generate_sql(
                     When provided, the most recent MAX_CONTEXT_TURNS entries
                     are injected as user/assistant message pairs before the
                     current query, enabling follow-up questions.
+        profile:    Dataset profile selecting the table and prompt to use.
 
     Returns:
         A DuckDB SQL string. On API error, returns a user-friendly error message.
     """
     client = _create_client(api_key)
-    messages: list[dict] = [{"role": "system", "content": build_system_prompt()}]
+    messages: list[dict] = [{"role": "system", "content": build_system_prompt(profile)}]
     if context:
         messages.extend(_build_context_messages(context, MAX_CONTEXT_TURNS))
     messages.append({"role": "user", "content": user_query})
@@ -257,6 +261,7 @@ def fix_sql_with_llm(
     error_message: str,
     api_key: str,
     model: str = "gpt-5.5",
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> str:
     """Attempt to fix a SQL query that failed validation using the LLM.
 
@@ -268,6 +273,7 @@ def fix_sql_with_llm(
         error_message: The error message produced by the validation failure.
         api_key:       OpenAI API key.
         model:         Model name to use (default: gpt-5.5).
+        profile:       Dataset profile selecting the table and prompt to use.
 
     Returns:
         A corrected DuckDB SQL string. On API error, returns a string
@@ -278,11 +284,11 @@ def fix_sql_with_llm(
         f"The following SQL query failed validation:\n\n"
         f"```sql\n{broken_sql}\n```\n\n"
         f"Error: {error_message}\n\n"
-        f"Please fix the SQL so it is valid DuckDB SQL for the cloudtrail_events table. "
+        f"Please fix the SQL so it is valid DuckDB SQL for the {profile.table} table. "
         f"Return only the corrected SQL, with no explanation."
     )
     messages = [
-        {"role": "system", "content": build_system_prompt()},
+        {"role": "system", "content": build_system_prompt(profile)},
         {"role": "user", "content": user_message},
     ]
     kwargs: dict = {"model": model, "messages": messages}

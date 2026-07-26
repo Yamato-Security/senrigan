@@ -1,0 +1,46 @@
+# SZM-32: Values broken down by GeoIP location (GeoIP runs only).
+uuid: 5a021005-0000-4000-8000-000000000032
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Value by Country and City
+viz_type: table
+description: >
+  Which values came from which location (SZM-32). Empty unless Suzaku ran with GeoIP enrichment.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_geo_value_matrix_occurrences
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_geo_value_matrix_first_seen
+  groupby:
+    - value
+    - src_country
+    - src_city
+    - src_asn
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "src_country IS NOT NULL"
+      filterOptionName: filter_geo_present
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "SUM(occurrence_count)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_geo_value_matrix_sort_key
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

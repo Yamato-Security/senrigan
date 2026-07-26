@@ -1,0 +1,40 @@
+# SZS-22: Which services the abusable calls target.
+uuid: 5a021004-0000-4000-8000-000000000022
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Abused APIs by AWS Service
+viz_type: dist_bar
+description: >
+  Abusable API calls grouped by AWS service (SZS-22). Concentration in IAM or STS points at privilege escalation; in EC2 or S3, at resource abuse or exfiltration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(CASE WHEN outcome = 'success' THEN call_count ELSE 0 END)"
+      label: success
+      hasCustomLabel: true
+      optionName: metric_abused_apis_by_service_success
+    - expressionType: SQL
+      sqlExpression: "SUM(CASE WHEN outcome = 'failed' THEN call_count ELSE 0 END)"
+      label: failed
+      hasCustomLabel: true
+      optionName: metric_abused_apis_by_service_failed
+  groupby:
+    - event_source
+  columns: []
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "is_abused"
+      filterOptionName: filter_abused_only
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Calls
+  y_axis_label: AWS Service
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

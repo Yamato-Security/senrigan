@@ -1,0 +1,41 @@
+# SZS-12: Abusable versus ordinary API usage, per identity.
+uuid: 5a021004-0000-4000-8000-000000000012
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Abused vs Other API Calls per Identity
+viz_type: dist_bar
+description: >
+  For each identity, how much of its API activity Suzaku classifies as abusable (SZS-12). A high abused share on a service account is a strong lead.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(abused_success)"
+      label: abused_success
+      hasCustomLabel: true
+      optionName: metric_abused_vs_other_per_identity_abused_success
+    - expressionType: SQL
+      sqlExpression: "SUM(abused_failed)"
+      label: abused_failed
+      hasCustomLabel: true
+      optionName: metric_abused_vs_other_per_identity_abused_failed
+    - expressionType: SQL
+      sqlExpression: "SUM(other_success) + SUM(other_failed)"
+      label: other
+      hasCustomLabel: true
+      optionName: metric_abused_vs_other_per_identity_other
+  groupby:
+    - user_arn
+  columns: []
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 15
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: API Calls
+  y_axis_label: Identity
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

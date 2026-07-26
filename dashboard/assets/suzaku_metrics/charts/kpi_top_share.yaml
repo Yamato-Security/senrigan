@@ -1,0 +1,23 @@
+# SZM-04: Top Value Share (KPI card)
+uuid: 5a021005-0000-4000-8000-000000000004
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Top Value Share
+viz_type: big_number_total
+description: >
+  Share of the single most common value (SZM-04). A very high share means one value dominates and the interesting activity is in the long tail.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "MAX(percent)"
+    label: top_share
+    hasCustomLabel: true
+    optionName: metric_kpi_top_share_top_share
+  adhoc_filters: []
+  subheader: "% held by the most common value"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

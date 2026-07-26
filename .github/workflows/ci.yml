@@ -116,8 +116,10 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install PyYAML
-        run:  pip install --upgrade pip && pip install --uploaded-prior-to P30D pyyaml
+      - name: Install test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install --uploaded-prior-to P30D pytest pyyaml duckdb black ruff
 
       - name: Validate all dashboard YAML files are well-formed
         run: |
@@ -181,6 +183,20 @@ jobs:
               print(f"ZIP contains all {len(required)} required files. OK")
           EOF
 
+      - name: Check formatting (black)
+        working-directory: dashboard
+        run: black --check .
+
+      - name: Lint (ruff)
+        working-directory: dashboard
+        run: ruff check .
+
+      # Runs the asset-validation suite, which executes every Suzaku dataset and
+      # chart expression against the committed fixtures and fails on a stale ZIP.
+      - name: Run tests (pytest)
+        working-directory: dashboard
+        run: pytest -v --tb=short
+
   # ── Repository-level consistency (Makefile × compose × docs) ───────────────
   repo-consistency:
     name: repo consistency (Makefile / docs)
@@ -196,7 +212,9 @@ jobs:
           python-version: "3.14"
 
       - name: Install dependencies
-        run: pip install --upgrade pip && pip install --uploaded-prior-to P30D pytest pyyaml
+        run: |
+          pip install --upgrade pip
+          pip install --uploaded-prior-to P30D pytest pyyaml duckdb
 
       - name: Run tests (pytest)
         run: pytest -v --tb=short

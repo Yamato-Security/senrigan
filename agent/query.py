@@ -9,12 +9,13 @@ import logging
 import re
 from contextlib import contextmanager
 from datetime import date
-from typing import Generator
+from typing import Generator, Sequence
 
 import duckdb
 import pandas as pd
 
 from llm import fix_sql_with_llm
+from profiles import CLOUDTRAIL_PROFILE, DatasetProfile
 
 logger = logging.getLogger(__name__)
 
@@ -132,10 +133,136 @@ def _strip_trailing_comments(sql: str) -> str:
     return cur
 
 
+def _inject_filter_cte(sql: str, profile: DatasetProfile, conditions: list[str]) -> str:
+    """Wrap *profile*'s table in a CTE applying *conditions* and rewrite *sql*.
+
+    All active filters share a single CTE: two separate CTEs would each have to
+    rewrite the table reference, and the second would rewrite the first's alias.
+
+    Args:
+        sql:        Original SQL (may already contain a ``WITH`` clause).
+        profile:    Dataset profile naming the table and the CTE alias.
+        conditions: SQL boolean expressions, ANDed together. Empty means the
+                    SQL is returned unchanged.
+
+    Returns:
+        The rewritten SQL.
+    """
+    if not conditions:
+        return sql
+
+    where_clause = "\n      AND ".join(conditions)
+    cte_body = (
+        f"{profile.filter_alias} AS (\n"
+        f"    SELECT * FROM {profile.table}\n"
+        f"    WHERE {where_clause}\n"
+        f")"
+    )
+
+    # Replace table references in the original SQL, but never inside
+    # single-quoted string literals (rewriting a literal that merely contains
+    # the table name would silently change query semantics).
+    modified_sql = _sub_outside_string_literals(
+        re.compile(rf"\b{re.escape(profile.table)}\b", re.IGNORECASE),
+        profile.filter_alias,
+        sql,
+    )
+
+    # Prepend the CTE, handling an existing WITH clause correctly.
+    if _WITH_PREFIX_PATTERN.match(modified_sql):
+        # Append the filter CTE as the first entry in the existing WITH chain.
+        return _WITH_PREFIX_PATTERN.sub(f"WITH {cte_body},\n", modified_sql, count=1)
+    return f"WITH {cte_body}\n{modified_sql}"
+
+
+def _date_conditions(
+    profile: DatasetProfile,
+    start_date: date | None,
+    end_date: date | None,
+) -> list[str]:
+    """Return the time-bound conditions for *profile*, inclusive on both sides.
+
+    A VARCHAR timestamp column (Suzaku stores ``Timestamp`` as text — see
+    ``doc/PLAN_SUZAKU_SCHEMA.md`` P3) is CAST first so the comparison is temporal
+    rather than lexicographic.
+    """
+    column = profile.quote(profile.time_column)
+    if profile.time_is_varchar:
+        column = f"CAST({column} AS TIMESTAMP)"
+
+    conditions: list[str] = []
+    if start_date is not None:
+        conditions.append(f"{column} >= TIMESTAMP '{start_date!s} 00:00:00'")
+    if end_date is not None:
+        conditions.append(f"{column} <= TIMESTAMP '{end_date!s} 23:59:59'")
+    return conditions
+
+
+def _level_condition(profile: DatasetProfile, levels: Sequence[str]) -> list[str]:
+    """Return the severity condition for *profile*, or ``[]`` when inactive.
+
+    Selecting every known severity is the same as no filter, so it produces no
+    condition rather than a redundant ``IN`` list.
+
+    Raises:
+        ValueError: If *profile* has no severity column, or a value is not one of
+                    the profile's known severities. The values reach the SQL
+                    string directly, so an unknown one is rejected rather than
+                    quoted and hoped for.
+    """
+    if not levels:
+        return []
+    if not profile.level_column:
+        raise ValueError(f"profile {profile.key!r} has no severity column to filter")
+
+    unknown = [level for level in levels if level not in profile.level_order]
+    if unknown:
+        raise ValueError(f"unknown severity level(s): {unknown!r}")
+
+    if set(levels) == set(profile.level_order):
+        return []
+
+    values = ", ".join(f"'{level}'" for level in levels)
+    return [f"{profile.quote(profile.level_column)} IN ({values})"]
+
+
+def apply_filters(
+    sql: str,
+    *,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    levels: Sequence[str] | None = None,
+) -> str:
+    """Inject every active UI filter into *sql* as one CTE.
+
+    Args:
+        sql:        SQL to rewrite.
+        profile:    Dataset profile describing the table being queried.
+        start_date: Inclusive lower time bound, or ``None``.
+        end_date:   Inclusive upper time bound (end-of-day), or ``None``.
+        levels:     Severities to keep. ``None``/empty means no severity filter;
+                    only valid for a profile with a severity column.
+
+    Returns:
+        The SQL with a filter CTE applied, or the original when no filter is
+        active.
+
+    Raises:
+        ValueError: If *levels* is set for a profile without a severity column,
+                    or contains a value the profile does not define.
+    """
+    conditions = _date_conditions(profile, start_date, end_date)
+    conditions += _level_condition(profile, levels or ())
+    return _inject_filter_cte(sql, profile, conditions)
+
+
 def apply_date_filter(
     sql: str,
     start_date: date | None,
     end_date: date | None,
+    *,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> str:
     """Inject a date-range CTE into *sql* to filter cloudtrail_events by event_time.
 
@@ -157,44 +284,14 @@ def apply_date_filter(
         start_date: Inclusive lower bound for ``event_time``, or ``None``.
         end_date:   Inclusive upper bound for ``event_time`` (end-of-day
                     23:59:59), or ``None``.
+        profile:    Dataset profile describing the table and time column
+                    (defaults to ``cloudtrail_events`` / ``event_time``).
 
     Returns:
         SQL string with the date filter CTE applied, or the original SQL when
         both date arguments are ``None``.
     """
-    if start_date is None and end_date is None:
-        return sql
-
-    # Build WHERE conditions for the CTE.
-    conditions: list[str] = []
-    if start_date is not None:
-        conditions.append(f"event_time >= TIMESTAMP '{start_date!s} 00:00:00'")
-    if end_date is not None:
-        conditions.append(f"event_time <= TIMESTAMP '{end_date!s} 23:59:59'")
-    where_clause = "\n      AND ".join(conditions)
-
-    cte_body = (
-        f"_ct_filtered AS (\n"
-        f"    SELECT * FROM cloudtrail_events\n"
-        f"    WHERE {where_clause}\n"
-        f")"
-    )
-
-    # Replace cloudtrail_events references in the original SQL, but never inside
-    # single-quoted string literals (rewriting a literal that merely contains the
-    # text "cloudtrail_events" would silently change query semantics).
-    modified_sql = _sub_outside_string_literals(
-        re.compile(r"\bcloudtrail_events\b", re.IGNORECASE), "_ct_filtered", sql
-    )
-
-    # Prepend the CTE, handling an existing WITH clause correctly.
-    if _WITH_PREFIX_PATTERN.match(modified_sql):
-        # Append _ct_filtered as the first entry in the existing WITH chain.
-        result = _WITH_PREFIX_PATTERN.sub(f"WITH {cte_body},\n", modified_sql, count=1)
-    else:
-        result = f"WITH {cte_body}\n{modified_sql}"
-
-    return result
+    return apply_filters(sql, profile=profile, start_date=start_date, end_date=end_date)
 
 
 def apply_row_limit(sql: str, limit: int) -> str:
@@ -378,6 +475,7 @@ def execute_with_retry(
     model: str,
     max_retries: int = 2,
     row_limit: int = DEFAULT_ROW_LIMIT,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> tuple[pd.DataFrame, str]:
     """Execute a SQL query with automatic LLM-assisted correction on validation failure.
 
@@ -397,6 +495,8 @@ def execute_with_retry(
         max_retries: Maximum number of LLM correction retries (default: 2).
         row_limit:   Maximum number of rows to return (default: DEFAULT_ROW_LIMIT).
                      Forwarded to :func:`execute_query` on every attempt.
+        profile:     Dataset profile forwarded to the LLM so a correction is
+                     written against the right table.
 
     Returns:
         A tuple ``(DataFrame, final_sql)`` where *final_sql* may differ from
@@ -420,7 +520,7 @@ def execute_with_retry(
                 max_retries,
                 exc,
             )
-            corrected = fix_sql_with_llm(sql, str(exc), api_key, model)
+            corrected = fix_sql_with_llm(sql, str(exc), api_key, model, profile=profile)
             if corrected.startswith("[error]"):
                 raise QueryValidationError(
                     f"LLM-based SQL correction failed: {corrected}"

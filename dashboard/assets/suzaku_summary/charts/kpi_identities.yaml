@@ -1,0 +1,23 @@
+# SZS-01: Profiled Identities (KPI card)
+uuid: 5a021004-0000-4000-8000-000000000001
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Profiled Identities
+viz_type: big_number_total
+description: >
+  How many identities Suzaku profiled (SZS-01). The denominator for every per-identity ratio on this dashboard.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(*)"
+    label: identity_count
+    hasCustomLabel: true
+    optionName: metric_identity_count
+  adhoc_filters: []
+  subheader: "identities in the Suzaku summary"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

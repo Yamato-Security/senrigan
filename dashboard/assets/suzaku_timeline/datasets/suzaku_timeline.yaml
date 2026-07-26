@@ -1,0 +1,308 @@
+# Superset dataset for Suzaku `aws-ct-timeline` output.
+#
+# A VIRTUAL dataset (sql:), not a physical table, for three reasons:
+#   1. Superset needs a real temporal column; Suzaku stores `Timestamp` as
+#      VARCHAR, so it is CAST here once instead of in every chart.
+#   2. Suzaku's identifiers are PascalCase and `AWS-Region` is hyphenated, which
+#      would have to be quoted in every chart expression. They are renamed to
+#      snake_case here, matching the cloudtrail_events charts.
+#   3. Suzaku writes '-' instead of NULL; nullif() turns that back into NULL so
+#      COUNT / COUNT(DISTINCT) and BI filters behave.
+# All three would become unnecessary if Suzaku typed its output — see
+# doc/PLAN_SUZAKU_SCHEMA.md P2/P3/P6.
+#
+# The underlying file is resolved at bootstrap by init/register_suzaku_dbs.py,
+# which rewrites the URI of the database UUID referenced below.
+uuid: 5a021002-0000-4000-8000-000000000001
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000001
+table_name: suzaku_timeline
+main_dttm_col: event_time
+description: >
+  Suzaku aws-ct-timeline detections. One row is one rule match against one
+  CloudTrail event, so an event matching several rules appears several times.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      CAST("Timestamp" AS TIMESTAMP)      AS event_time,
+      "RuleTitle"                         AS rule_title,
+      "RuleID"                            AS rule_id,
+      "RuleAuthor"                        AS rule_author,
+      "Level"                             AS level,
+      CASE "Level"
+          WHEN 'critical' THEN 5
+          WHEN 'high' THEN 4
+          WHEN 'medium' THEN 3
+          WHEN 'low' THEN 2
+          ELSE 1
+      END                                 AS level_rank,
+      "EventName"                          AS event_name,
+      "EventSource"                        AS event_source,
+      "AWS-Region"                         AS aws_region,
+      nullif("ErrorCode", '-')             AS error_code,
+      nullif("ErrorMessage", '-')          AS error_message,
+      "SrcIP"                              AS src_ip,
+      "UserAgent"                          AS user_agent,
+      nullif("UserName", '-')              AS user_name,
+      "UserType"                           AS user_type,
+      "UserAccountID"                      AS user_account_id,
+      "UserARN"                            AS user_arn,
+      "UserPrincipalID"                    AS user_principal_id,
+      nullif("UserAccessKeyID", '-')       AS user_access_key_id,
+      "EventID"                            AS event_id,
+      "Tags"                               AS tags
+  FROM timeline
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: event_time
+    verbose_name: Detection Time
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Detection timestamp (CAST from Suzaku's VARCHAR Timestamp)
+
+  - column_name: rule_title
+    verbose_name: Rule
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Title of the Suzaku rule that matched
+
+  - column_name: rule_id
+    verbose_name: Rule ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: UUID of the matched rule
+
+  - column_name: rule_author
+    verbose_name: Rule Author
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Author of the matched rule
+
+  - column_name: level
+    verbose_name: Severity
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: critical / high / medium / low / informational
+
+  - column_name: level_rank
+    verbose_name: Severity Rank
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Numeric severity (5 = critical) so charts can order by severity
+
+  - column_name: event_name
+    verbose_name: Event Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: CloudTrail API action that triggered the detection
+
+  - column_name: event_source
+    verbose_name: Event Source
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS service that processed the request
+
+  - column_name: aws_region
+    verbose_name: AWS Region
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Region of the request (Suzaku's hyphenated AWS-Region column)
+
+  - column_name: error_code
+    verbose_name: Error Code
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS error code, NULL when the call succeeded
+
+  - column_name: error_message
+    verbose_name: Error Message
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: false
+    filterable: true
+    description: AWS error message, NULL when the call succeeded
+
+  - column_name: src_ip
+    verbose_name: Source IP
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Source IP address of the request
+
+  - column_name: user_agent
+    verbose_name: User Agent
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: User agent string of the caller
+
+  - column_name: user_name
+    verbose_name: User Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: IAM user or role name, NULL when absent
+
+  - column_name: user_type
+    verbose_name: User Type
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Identity type (IAMUser, AssumedRole, Root, …)
+
+  - column_name: user_account_id
+    verbose_name: Account ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS account ID of the identity
+
+  - column_name: user_arn
+    verbose_name: User ARN
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the identity that triggered the detection
+
+  - column_name: user_principal_id
+    verbose_name: Principal ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Principal ID of the identity
+
+  - column_name: user_access_key_id
+    verbose_name: Access Key ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Access key used, NULL when the call was not key-based
+
+  - column_name: event_id
+    verbose_name: Event ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: CloudTrail event ID — not unique across rows
+
+  - column_name: tags
+    verbose_name: Tags
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Tactics and ATT&CK technique IDs joined by ' ¦ '
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of detections (rule matches, not events)
+
+  - metric_name: detection_count
+    verbose_name: Detections
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of detections (alias for count)
+
+  - metric_name: distinct_events
+    verbose_name: Distinct Events
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT event_id)"
+    description: Distinct CloudTrail events — lower than the detection count
+
+  - metric_name: severe_count
+    verbose_name: Critical + High
+    metric_type: count
+    expression: "COUNT(CASE WHEN level IN ('critical', 'high') THEN 1 END)"
+    description: Detections at critical or high severity
+
+  - metric_name: medium_plus_count
+    verbose_name: Medium and Above
+    metric_type: count
+    expression: >
+      COUNT(CASE WHEN level IN ('critical', 'high', 'medium') THEN 1 END)
+    description: Detections at medium severity or above
+
+  - metric_name: distinct_rules
+    verbose_name: Distinct Rules
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT rule_title)"
+    description: Number of distinct rules that matched
+
+  - metric_name: distinct_principals
+    verbose_name: Distinct Principals
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT user_arn)"
+    description: Number of distinct identities involved
+
+  - metric_name: distinct_src_ips
+    verbose_name: Distinct Source IPs
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT src_ip)"
+    description: Number of distinct source IP addresses
+
+  - metric_name: failed_count
+    verbose_name: Failed Calls
+    metric_type: count
+    expression: "COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)"
+    description: Detections whose API call returned an error

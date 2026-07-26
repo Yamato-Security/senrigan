@@ -1,0 +1,23 @@
+# SZS-02: Total Events (KPI card)
+uuid: 5a021004-0000-4000-8000-000000000002
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Total Events
+viz_type: big_number_total
+description: >
+  CloudTrail events across the profiled identities (SZS-02). Establishes the size of the dataset the profiles were built from.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "SUM(num_of_events)"
+    label: total_events
+    hasCustomLabel: true
+    optionName: metric_total_events
+  adhoc_filters: []
+  subheader: "CloudTrail events attributed"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

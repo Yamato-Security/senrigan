@@ -152,31 +152,195 @@ CLOUDTRAIL_COLUMNS: list[dict] = [
 ]
 
 
-def get_column_names() -> list[str]:
-    """Return the list of column names for cloudtrail_events.
+# Columns of Suzaku's ``aws-ct-timeline`` table, in the order Suzaku writes them.
+#
+# Everything is VARCHAR in the file (see doc/PLAN_SUZAKU_SCHEMA.md P3), including
+# the timestamp and the severity, so the descriptions carry the handling rules
+# the LLM would otherwise have to guess: the ``-`` placeholder Suzaku writes
+# instead of NULL (P2) and the " ¦ "-separated Tags string (P5).
+SUZAKU_TIMELINE_COLUMNS: list[dict] = [
+    {
+        "name": "Timestamp",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": (
+            "Detection time as 'YYYY-MM-DD HH:MM:SS' text — CAST to TIMESTAMP for "
+            "any date arithmetic or bucketing"
+        ),
+    },
+    {
+        "name": "RuleTitle",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "Title of the Suzaku rule that matched",
+    },
+    {
+        "name": "RuleAuthor",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Author of the matched rule",
+    },
+    {
+        "name": "Level",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": (
+            "Severity: critical, high, medium, low, informational — text, so order "
+            "it with a CASE rank, never alphabetically"
+        ),
+    },
+    {
+        "name": "EventName",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "CloudTrail API action that triggered the detection",
+    },
+    {
+        "name": "ErrorCode",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": (
+            "AWS error code, or '-' when the call succeeded (Suzaku writes '-', "
+            "not NULL — use ErrorCode <> '-' to find failures)"
+        ),
+    },
+    {
+        "name": "ErrorMessage",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "AWS error message, or '-' when the call succeeded",
+    },
+    {
+        "name": "EventSource",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "AWS service that processed the request (e.g. ec2.amazonaws.com)",
+    },
+    {
+        "name": "AWS-Region",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "Region of the request — the hyphen means it MUST be written as "
+            '"AWS-Region"'
+        ),
+    },
+    {
+        "name": "SrcIP",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Source IP address of the request (no GeoIP columns in this table)",
+    },
+    {
+        "name": "UserAgent",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "User agent string of the caller",
+    },
+    {
+        "name": "UserName",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "IAM user or role name, or '-' when absent",
+    },
+    {
+        "name": "UserType",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Identity type (e.g. IAMUser, AssumedRole, Root)",
+    },
+    {
+        "name": "UserAccountID",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "AWS account ID of the identity",
+    },
+    {
+        "name": "UserARN",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "ARN of the identity that triggered the detection",
+    },
+    {
+        "name": "UserPrincipalID",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Principal ID of the identity",
+    },
+    {
+        "name": "UserAccessKeyID",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "Access key used, or '-' when the call was not key-based",
+    },
+    {
+        "name": "EventID",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": (
+            "CloudTrail event ID — NOT unique: one event matching several rules "
+            "produces one row per match"
+        ),
+    },
+    {
+        "name": "Tags",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": (
+            "Tactic short names and ATT&CK technique IDs joined by ' ¦ ' "
+            "(e.g. 'PrivEsc ¦ Persis ¦ T1078.004') — split with "
+            "string_split(\"Tags\", ' ¦ ') and unnest to analyse them"
+        ),
+    },
+    {
+        "name": "RuleID",
+        "type": "VARCHAR",
+        "nullable": False,
+        "description": "UUID of the matched rule",
+    },
+]
+
+
+def get_column_names(columns: list[dict] | tuple[dict, ...] | None = None) -> list[str]:
+    """Return the column names of a table's schema definition.
+
+    Args:
+        columns: Column metadata to read, defaulting to
+                 :data:`CLOUDTRAIL_COLUMNS` so existing callers are unaffected.
 
     Returns:
         A list of column name strings in schema-definition order.
     """
-    return [col["name"] for col in CLOUDTRAIL_COLUMNS]
+    return [
+        col["name"] for col in (columns if columns is not None else CLOUDTRAIL_COLUMNS)
+    ]
 
 
-def get_schema_description() -> str:
-    """Return a human-readable Markdown table description of cloudtrail_events.
+def get_schema_description(
+    table: str = "cloudtrail_events",
+    columns: list[dict] | tuple[dict, ...] | None = None,
+) -> str:
+    """Return a human-readable Markdown description of *table*'s schema.
 
     The output is intended for use in LLM system prompts so the model
     understands the available columns, their types, and their meaning.
 
+    Args:
+        table:   Table name to describe (default: ``cloudtrail_events``).
+        columns: Column metadata, defaulting to :data:`CLOUDTRAIL_COLUMNS`.
+
     Returns:
         A multi-line string containing the table name and a Markdown column table.
     """
+    if columns is None:
+        columns = CLOUDTRAIL_COLUMNS
     header = (
-        "Table: cloudtrail_events\n\n"
+        f"Table: {table}\n\n"
         "| Column | Type | Nullable | Description |\n"
         "| ------ | ---- | -------- | ----------- |"
     )
     rows = [
         f"| {col['name']} | {col['type']} | {'YES' if col['nullable'] else 'NO'} | {col['description']} |"
-        for col in CLOUDTRAIL_COLUMNS
+        for col in columns
     ]
     return "\n".join([header] + rows)

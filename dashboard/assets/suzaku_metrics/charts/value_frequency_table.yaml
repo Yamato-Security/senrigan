@@ -1,0 +1,54 @@
+# SZM-12: Every value with its count, share and activity window.
+uuid: 5a021005-0000-4000-8000-000000000012
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Value Frequency Table
+viz_type: table
+description: >
+  The full frequency table (SZM-12), with Suzaku's own percentage next to the count and the first/last time each value appeared.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_value_frequency_table_occurrences
+    - expressionType: SQL
+      sqlExpression: "MAX(percent)"
+      label: share_pct
+      hasCustomLabel: true
+      optionName: metric_value_frequency_table_share_pct
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_value_frequency_table_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_value_frequency_table_last_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(active_days)"
+      label: active_days
+      hasCustomLabel: true
+      optionName: metric_value_frequency_table_active_days
+  groupby:
+    - value
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "SUM(occurrence_count)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_value_frequency_table_sort_key
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

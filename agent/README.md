@@ -18,9 +18,9 @@ DuckDB is always opened in **`READ_ONLY`** mode.
 - [SQL Safety Guards](#sql-safety-guards)
 - [Date-Range Filter](#date-range-filter)
 - [Built-in Hunts](#built-in-hunts)
+- [Suzaku Timeline Page](#suzaku-timeline-page)
 - [Report Generation](#report-generation)
 - [Module Structure](#module-structure)
-- [Suzaku CloudTrail Summary Page](#suzaku-cloudtrail-summary-page)
 - [Configuration](#configuration)
 - [Development](#development)
 
@@ -211,6 +211,60 @@ Each entry has:
 
 ---
 
+## Suzaku Timeline Page
+
+The app has two pages, selected in the sidebar navigation:
+
+| Page | Table | Data source |
+|------|-------|-------------|
+| 🔭 **Senrigan** | `cloudtrail_events` | `threat_hunting.db`, written by the ingester |
+| 🕒 **Suzaku Timeline** | `timeline` | a `*.duckdb` file produced by [Suzaku](https://github.com/Yamato-Security/suzaku) |
+
+Both pages run the same machinery — built-in hunts, date range, result filters,
+AI chat, AI analysis, Markdown/HTML report, session export — driven by a
+`DatasetProfile` (`profiles.py`) that describes the table. Their session state is
+namespaced separately, so an investigation on one page is never disturbed by the
+other; the API key, model and row cap are shared.
+
+### Setting it up
+
+```bash
+# 1. Run Suzaku, writing DuckDB output
+suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb
+
+# 2. Copy the result next to Senrigan's own database
+cp timeline.duckdb docker/data/db/
+
+# 3. Reload the page (or `make up`)
+```
+
+The file name does not matter: the producing Suzaku command is detected from the
+schema (`suzaku_db.py`). Several timeline files can coexist — the sidebar lists
+them newest-first, and `SUZAKU_TIMELINE_DB` pins a specific one.
+
+Copy the file only after Suzaku has exited. A leftover `.wal` cannot be replayed
+from the read-only mount the container uses, and the database will not open; the
+page says so explicitly when it detects one.
+
+### What is different about this page
+
+Suzaku's schema forces four deviations, all handled by the profile
+(see [doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) for the upstream
+proposal that would remove them):
+
+- **Severity filter** — `low` and `informational` are ~87% of a real timeline, so
+  the sidebar defaults to `critical` / `high` / `medium`. Without it the page
+  shows noise.
+- **Quoted identifiers** — columns are PascalCase and `AWS-Region` is hyphenated,
+  so generated SQL always double-quotes them.
+- **`CAST` on the timestamp** — `Timestamp` is VARCHAR, so the date filter casts it.
+- **No geo enrichment** — the timeline table has no `geo_*` columns, so the
+  sidebar toggle is hidden rather than silently doing nothing.
+
+`aws-ct-summary` and `aws-ct-metrics` are intentionally *not* pages here: Suzaku
+has already aggregated them, so they are served by the
+[dashboard module](../dashboard/README.md) instead.
+
 ## Report Generation
 
 After one or more queries, the **Download Report** button in the sidebar
@@ -230,15 +284,17 @@ agent/
 ├── llm.py                 # OpenAI API integration (SQL generation, analysis, SQL fix)
 ├── query.py               # Query execution, validation, date filter, row limit, retry
 ├── report.py              # Report generation (Markdown + sensitive data redaction)
-├── schema.py              # CloudTrail table schema description for the system prompt
+├── schema.py              # Column metadata for both tables (system prompt input)
+├── profiles.py            # DatasetProfile — per-table config for the shared pipeline
+├── suzaku_db.py           # Discovery + schema-based detection of Suzaku DuckDB files
 ├── config.py              # Configuration management (env vars)
-├── suzaku_summary.py      # Parsing + aggregation for Suzaku aws-ct-summary JSON (pure functions)
-├── suzaku_report.py       # Markdown / HTML report generation for the Suzaku summary (pure functions)
-├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised)
+├── builtin_hunts.yaml     # Pre-built CloudTrail hunts (categorised)
+├── suzaku_timeline_hunts.yaml  # Pre-built Suzaku timeline hunts (15, categorised)
 ├── views/
-│   └── suzaku_ct_summary.py    # st.navigation page: Suzaku aws-ct-summary viewer (upload + triage)
+│   └── suzaku_timeline.py # Streamlit page for Suzaku aws-ct-timeline output
 ├── prompts/
-│   └── system_prompt.py   # System prompt template for SQL generation
+│   ├── system_prompt.py   # System prompt template for cloudtrail_events
+│   └── suzaku_timeline_prompt.py  # System prompt template for Suzaku's timeline
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── Dockerfile
@@ -249,39 +305,13 @@ agent/
     ├── test_query.py
     ├── test_llm.py
     ├── test_report.py
-    ├── test_suzaku_summary.py
-    ├── test_suzaku_report.py
-    └── test_app.py
+    ├── test_app.py
+    ├── test_profiles.py
+    ├── test_suzaku_db.py
+    ├── test_suzaku_timeline_hunts.py
+    ├── test_suzaku_timeline_view.py
+    └── test_result_card_charts.py
 ```
-
-## Suzaku CloudTrail Summary Page
-
-The app uses `st.navigation` (defined in `app.py`): the sidebar shows
-**🔭 Senrigan** (the chat page) and **☁️ Suzaku CT Summary**. The latter
-visualizes the JSON output of Suzaku's
-[`aws-ct-summary`](https://github.com/Yamato-Security/suzaku) command. It is
-self-contained and read-only: it does not touch DuckDB or OpenAI, and works
-without an API key.
-
-- **Upload** the `aws-ct-summary` JSON via the in-page file uploader (no mounted
-  path or `docker-compose` change required).
-- **Triage table** — one row per identity (`user_arn`), sorted by abused-API
-  count then event count. Select a row to drill down.
-- **Identity detail** — abused APIs (success/failed) with descriptions, an
-  activity timeline, and Top-N breakdowns of source IPs, source countries,
-  regions, user agents, and access-key IDs, with CSV export.
-- **Report export** — download the whole summary as a **Markdown** or
-  self-contained **HTML** report (one section per identity, ordered by triage
-  rank). High-cardinality lists are capped at the top 20 rows per identity.
-  Access-key IDs and source IPs are kept verbatim — in this view they are the
-  indicators of compromise being reported (the summary holds no secret keys).
-
-Parsing/aggregation live in `suzaku_summary.py` and report rendering in
-`suzaku_report.py`, both as pure functions (unit-tested in
-`tests/test_suzaku_summary.py` and `tests/test_suzaku_report.py`); the page
-keeps only Streamlit rendering.
-
----
 
 ## Configuration
 
@@ -292,6 +322,7 @@ keeps only Streamlit rendering.
 | `OPENAI_MODEL` | No | `gpt-5.4` | Model for SQL generation + analysis |
 | `OPENAI_MODEL_LITE` | No | `gpt-5.4-mini` | Lighter model (optional override) |
 | `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | No | — | CA bundle for corporate TLS proxy |
+| `SUZAKU_TIMELINE_DB` | No | — | Pin one Suzaku timeline file instead of auto-detecting |
 
 ---
 

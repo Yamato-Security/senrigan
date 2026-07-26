@@ -1,0 +1,28 @@
+# SZM-11: Share of the total held by each value.
+uuid: 5a021005-0000-4000-8000-000000000011
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Value Share Composition
+viz_type: pie
+description: >
+  How the counted field's total splits across its top values (SZM-11). One dominant slice means the tail is where anomalies live.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "SUM(occurrence_count)"
+    label: occurrences
+    hasCustomLabel: true
+    optionName: metric_value_share_composition_occurrences
+  groupby:
+    - value
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 15
+  color_scheme: supersetColors
+  donut: true
+  show_labels: true
+  label_type: key_percent
+  rich_tooltip: true
+cache_timeout: null

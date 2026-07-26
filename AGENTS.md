@@ -16,9 +16,18 @@ Four Docker containers share one DuckDB file via a **bind mount** (`docker/data/
 | `dashboard` | Apache Superset | READ_ONLY | 8088 |
 | `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK layout) | READ_ONLY | 8502 |
 
-The `agent` container is a multi-page Streamlit app (`st.navigation`): **🔭 Senrigan** (the chat
-hunting page) and **☁️ Suzaku CT Summary** (an upload-based viewer for Suzaku `aws-ct-summary`
-JSON — read-only, no DuckDB, no API key required).
+The `agent` container is a two-page Streamlit app (`st.navigation`): **🔭 Senrigan**, the chat
+hunting page over `cloudtrail_events`, and **🕒 Suzaku Timeline**, the same UI over the `timeline`
+table of a Suzaku `aws-ct-timeline` export. One pipeline serves both, parameterized by a
+`DatasetProfile` (`agent/profiles.py`); see `doc/PLAN_SUZAKU_VIEWS.md` §4.
+
+Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
+`threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
+arbitrary: the producing command is detected from the schema (`agent/suzaku_db.py`, mirrored in
+`dashboard/init/register_suzaku_dbs.py`). `aws-ct-summary` and `aws-ct-metrics` are served by
+dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
+cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
+removed upload-a-JSON viewer.
 
 The bind-mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves
 relative paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry
@@ -153,8 +162,9 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 509 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 655, root `tests/` ≈ 104 (Makefile / compose / docs consistency).
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 713 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 738, root `tests/` ≈ 128 (Makefile / compose / docs / Suzaku-detection
+parity).
 Test count must not decrease in a PR.
 
 ---
@@ -351,9 +361,9 @@ senrigan/
 │       ├── config_db.rs       # Config tables schema + Appender writes
 │       ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
 │       └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
-├── agent/                     # Python / Streamlit AI-agent UI (multi-page via st.navigation)
+├── agent/                     # Python / Streamlit AI-agent UI
 │   ├── AGENTS.md              # Agent-specific TDD context
-│   ├── app.py                 # Entry point: st.navigation (chat page + Suzaku CT Summary page)
+│   ├── app.py                 # Entry point: chat hunting page
 │   ├── handlers.py            # Stateful handler functions
 │   ├── llm.py
 │   ├── query.py
@@ -361,10 +371,6 @@ senrigan/
 │   ├── schema.py
 │   ├── config.py
 │   ├── builtin_hunts.yaml
-│   ├── suzaku_summary.py      # Parse + aggregate Suzaku aws-ct-summary JSON (pure functions)
-│   ├── suzaku_report.py       # Markdown / HTML report for the Suzaku summary (pure functions)
-│   ├── views/
-│   │   └── suzaku_ct_summary.py   # st.navigation page: upload-based Suzaku summary viewer
 │   └── prompts/
 │       ├── system_prompt.py
 │       └── analysis_prompt.py
@@ -411,19 +417,22 @@ senrigan/
 │   ├── Dockerfile
 │   ├── superset_config.py
 │   ├── pytest.ini
-│   ├── assets/                # cloudtrail_default.zip + cloudtrail_rare.zip + YAML definitions
-│   ├── init/                  # bootstrap.sh, register_duckdb.py
+│   ├── assets/                # cloudtrail_default + cloudtrail_rare + suzaku_{timeline,summary,
+│   │                          #   metrics} bundles, their ZIPs, and zip_builder.py
+│   ├── init/                  # bootstrap.sh, register_duckdb.py, register_suzaku_dbs.py
 │   └── tests/                 # YAML/asset/config/Dockerfile validation suite
 ├── doc/                       # Documentation
 │   ├── ARCHITECTURE.md
 │   ├── DEVELOPMENT.md
 │   ├── PRD.md
-│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements
+│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (removed impl; redesign pending)
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
 │   ├── PLAN_THREAT_CATALOG.md # Threat Technique Catalog for AWS coverage + TID annotations
 │   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
+│   ├── PLAN_SUZAKU_VIEWS.md   # Suzaku DuckDB visualization (agent page + 3 dashboards)
+│   ├── PLAN_SUZAKU_SCHEMA.md  # Upstream proposal: improvements to Suzaku's DuckDB schema
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

@@ -1,0 +1,55 @@
+# SZS-23: Every abusable API with Suzaku's own explanation.
+uuid: 5a021004-0000-4000-8000-000000000023
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Abused API Catalogue
+viz_type: table
+description: >
+  Each abusable API that was called, with Suzaku's description of how it is abused (SZS-23) — the highest-value column in the aws-ct-summary output.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(call_count)"
+      label: calls
+      hasCustomLabel: true
+      optionName: metric_abused_api_catalogue_calls
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_arn)"
+      label: identities
+      hasCustomLabel: true
+      optionName: metric_abused_api_catalogue_identities
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_abused_api_catalogue_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_abused_api_catalogue_last_seen
+  groupby:
+    - api
+    - event_source
+    - description
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "is_abused"
+      filterOptionName: filter_abused_only
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "SUM(call_count)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_abused_api_catalogue_sort
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

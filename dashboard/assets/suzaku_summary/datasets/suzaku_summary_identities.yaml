@@ -1,0 +1,246 @@
+# Superset dataset: one row per identity in Suzaku's `aws-ct-summary` output.
+#
+# VIRTUAL (sql:) because the file needs three fixes before a BI tool can use it
+# (see doc/PLAN_SUZAKU_SCHEMA.md):
+#   * P3 — FirstTimestamp / LastTimestamp are VARCHAR; Superset needs a real
+#     temporal column, so they are CAST here once instead of in every chart.
+#   * P5 — Category packs two orthogonal axes (abused/other x success/failed)
+#     into one string, so the four counts are pivoted out to columns.
+#   * P6 — PascalCase identifiers become snake_case, matching every other dataset.
+#
+# The per-identity attribute counts are joined in so the triage table can show
+# "how many IPs / keys / regions did this identity use" without a second chart.
+uuid: 5a021002-0000-4000-8000-000000000002
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000002
+table_name: suzaku_summary_identities
+main_dttm_col: first_seen
+description: >
+  Per-identity CloudTrail threat profile from Suzaku aws-ct-summary, with abused
+  and other API call counts and distinct attribute counts joined in.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      s."UserARN"                                   AS user_arn,
+      s."UserTypes"                                 AS user_types,
+      s."NumOfEvents"                               AS num_of_events,
+      CAST(s."FirstTimestamp" AS TIMESTAMP)         AS first_seen,
+      CAST(s."LastTimestamp" AS TIMESTAMP)          AS last_seen,
+      date_diff('day', CAST(s."FirstTimestamp" AS TIMESTAMP),
+                       CAST(s."LastTimestamp" AS TIMESTAMP)) AS active_days,
+      coalesce(a.abused_success, 0)                 AS abused_success,
+      coalesce(a.abused_failed, 0)                  AS abused_failed,
+      coalesce(a.other_success, 0)                  AS other_success,
+      coalesce(a.other_failed, 0)                   AS other_failed,
+      coalesce(a.abused_apis, 0)                    AS abused_apis,
+      coalesce(t.src_ips, 0)                        AS distinct_src_ips,
+      coalesce(t.user_agents, 0)                    AS distinct_user_agents,
+      coalesce(t.access_keys, 0)                    AS distinct_access_keys,
+      coalesce(t.regions, 0)                        AS distinct_regions
+  FROM summary s
+  LEFT JOIN (
+      SELECT "UserARN",
+             sum(CASE WHEN "Category" = 'abused_success' THEN "Count" ELSE 0 END) AS abused_success,
+             sum(CASE WHEN "Category" = 'abused_failed'  THEN "Count" ELSE 0 END) AS abused_failed,
+             sum(CASE WHEN "Category" = 'other_success'  THEN "Count" ELSE 0 END) AS other_success,
+             sum(CASE WHEN "Category" = 'other_failed'   THEN "Count" ELSE 0 END) AS other_failed,
+             count(DISTINCT CASE WHEN "Category" LIKE 'abused%' THEN "API" END)   AS abused_apis
+      FROM summary_api_calls
+      GROUP BY "UserARN"
+  ) a ON a."UserARN" = s."UserARN"
+  LEFT JOIN (
+      SELECT "UserARN",
+             count(DISTINCT CASE WHEN "Attribute" = 'src_ip'        THEN "Value" END) AS src_ips,
+             count(DISTINCT CASE WHEN "Attribute" = 'user_agent'    THEN "Value" END) AS user_agents,
+             count(DISTINCT CASE WHEN "Attribute" = 'access_key_id' THEN "Value" END) AS access_keys,
+             count(DISTINCT CASE WHEN "Attribute" = 'aws_region'    THEN "Value" END) AS regions
+      FROM summary_attributes
+      GROUP BY "UserARN"
+  ) t ON t."UserARN" = s."UserARN"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: user_arn
+    verbose_name: Identity (ARN)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the IAM identity Suzaku profiled
+
+  - column_name: user_types
+    verbose_name: Identity Type
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Identity type seen for this ARN (Root, IAMUser, AssumedRole)
+
+  - column_name: num_of_events
+    verbose_name: Events
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Total CloudTrail events attributed to this identity
+
+  - column_name: first_seen
+    verbose_name: First Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: First activity timestamp (CAST from Suzaku's VARCHAR)
+
+  - column_name: last_seen
+    verbose_name: Last Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Last activity timestamp (CAST from Suzaku's VARCHAR)
+
+  - column_name: active_days
+    verbose_name: Active Days
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Days between first and last activity
+
+  - column_name: abused_success
+    verbose_name: Abused API Calls (Success)
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Successful calls to APIs Suzaku classifies as abusable
+
+  - column_name: abused_failed
+    verbose_name: Abused API Calls (Failed)
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Failed calls to abusable APIs — permission probing
+
+  - column_name: other_success
+    verbose_name: Other API Calls (Success)
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Successful calls to APIs not classified as abusable
+
+  - column_name: other_failed
+    verbose_name: Other API Calls (Failed)
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Failed calls to APIs not classified as abusable
+
+  - column_name: abused_apis
+    verbose_name: Distinct Abused APIs
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Number of distinct abusable APIs this identity called
+
+  - column_name: distinct_src_ips
+    verbose_name: Source IPs
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Distinct source IP addresses used by this identity
+
+  - column_name: distinct_user_agents
+    verbose_name: User Agents
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Distinct user agent strings used by this identity
+
+  - column_name: distinct_access_keys
+    verbose_name: Access Keys
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Distinct access key IDs used by this identity
+
+  - column_name: distinct_regions
+    verbose_name: Regions
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Distinct AWS regions this identity operated in
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of identities
+
+  - metric_name: identity_count
+    verbose_name: Identities
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of identities (alias for count)
+
+  - metric_name: total_events
+    verbose_name: Total Events
+    metric_type: sum
+    expression: "SUM(num_of_events)"
+    description: CloudTrail events across the selected identities
+
+  - metric_name: abused_success_total
+    verbose_name: Abused (Success)
+    metric_type: sum
+    expression: "SUM(abused_success)"
+    description: Successful abusable-API calls
+
+  - metric_name: abused_failed_total
+    verbose_name: Abused (Failed)
+    metric_type: sum
+    expression: "SUM(abused_failed)"
+    description: Failed abusable-API calls — permission probing
+
+  - metric_name: other_total
+    verbose_name: Other API Calls
+    metric_type: sum
+    expression: "SUM(other_success) + SUM(other_failed)"
+    description: Calls to APIs not classified as abusable
+
+  - metric_name: max_active_days
+    verbose_name: Longest Activity Span (days)
+    metric_type: max
+    expression: "MAX(active_days)"
+    description: Longest first-to-last activity window

@@ -1,0 +1,23 @@
+# SZM-01: Fields Counted (KPI card)
+uuid: 5a021005-0000-4000-8000-000000000001
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Fields Counted
+viz_type: big_number_total
+description: >
+  How many CloudTrail fields this aws-ct-metrics run counted (SZM-01). Suzaku counts whichever field it was given, so this is usually one.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT field)"
+    label: fields
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_fields_fields
+  adhoc_filters: []
+  subheader: "CloudTrail fields in this run"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

@@ -55,11 +55,34 @@ filesystem and store them in DuckDB.
 - Generates SQL from natural language via OpenAI API
 - Executes queries and displays results
 - Generates threat hunting reports (Markdown / PDF)
-- Multi-page Streamlit app (`st.navigation`):
-  - **🔭 Senrigan** — the chat-based hunting page (DuckDB + OpenAI)
-  - **☁️ Suzaku CT Summary** — upload-based viewer for Suzaku `aws-ct-summary` JSON.
-    Read-only, no DuckDB access and no API key required; parsing/aggregation and report
-    generation live in `suzaku_summary.py` / `suzaku_report.py` as pure functions.
+- Two-page Streamlit app (`st.navigation`), both pages driven by one pipeline:
+  - **🔭 Senrigan** — chat-based hunting over `cloudtrail_events` (DuckDB + OpenAI)
+  - **🕒 Suzaku Timeline** — the same UI over the `timeline` table of a
+    [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` export
+- A `DatasetProfile` (`agent/profiles.py`) carries everything table-specific — table
+  name, time column, filter CTE, severity column, system prompt, hunts YAML and the
+  session-state namespace — so neither page duplicates the pipeline. See
+  [PLAN_SUZAKU_VIEWS.md](PLAN_SUZAKU_VIEWS.md) §4.
+
+#### Suzaku output as a third-party read-only input
+
+Suzaku writes `*.duckdb` files that an analyst copies into the same mounted database
+directory. Senrigan reads them as-is: the ingester never touches them and no reader
+opens them writable, so the 1-writer / N-readers invariant is unchanged and re-running
+Suzaku needs no re-ingest.
+
+The files carry no metadata table, so the producing command is inferred from the
+schema. That inference exists twice because the two consumers resolve paths at
+different times — the agent globs on every Streamlit rerun, while Superset stores one
+path per database connection, resolved once by `superset-init`:
+
+| Consumer | Detection lives in | Resolves |
+|----------|-------------------|----------|
+| `agent` | `agent/suzaku_db.py` | at runtime, per rerun |
+| `dashboard` | `dashboard/init/register_suzaku_dbs.py` | once, at bootstrap |
+
+The Superset image cannot import the agent package, so the signature table is
+duplicated and `tests/test_suzaku_detection_parity.py` fails if the copies drift.
 
 ### config_viz (Python / FastAPI + React)
 

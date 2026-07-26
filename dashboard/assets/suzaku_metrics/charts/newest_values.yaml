@@ -1,0 +1,31 @@
+# SZM-21: Values whose first appearance is most recent.
+uuid: 5a021005-0000-4000-8000-000000000021
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Newest Values (Latest First Seen)
+viz_type: dist_bar
+description: >
+  Values that appeared for the first time most recently (SZM-21). A value showing up only at the end of the timeline is new behaviour.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MAX(epoch(first_seen))"
+      label: first_seen_epoch
+      hasCustomLabel: true
+      optionName: metric_newest_values_first_seen_epoch
+  groupby:
+    - value
+  columns: []
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: First Seen (epoch seconds)
+  y_axis_label: Value
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

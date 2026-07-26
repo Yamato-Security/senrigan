@@ -1,0 +1,64 @@
+# SZS-14: First/last seen and attribute spread per identity.
+uuid: 5a021004-0000-4000-8000-000000000014
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Identity Activity Span
+viz_type: table
+description: >
+  How long each identity was active and how widely it operated (SZS-14). Many source IPs or regions for one identity suggests shared or stolen credentials.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_last_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(active_days)"
+      label: active_days
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_active_days
+    - expressionType: SQL
+      sqlExpression: "SUM(distinct_src_ips)"
+      label: source_ips
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_source_ips
+    - expressionType: SQL
+      sqlExpression: "SUM(distinct_user_agents)"
+      label: user_agents
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_user_agents
+    - expressionType: SQL
+      sqlExpression: "SUM(distinct_access_keys)"
+      label: access_keys
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_access_keys
+    - expressionType: SQL
+      sqlExpression: "SUM(distinct_regions)"
+      label: regions
+      hasCustomLabel: true
+      optionName: metric_identity_activity_span_regions
+  groupby:
+    - user_arn
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "MAX(active_days)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_identity_activity_span_sort
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

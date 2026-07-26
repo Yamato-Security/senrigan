@@ -12,6 +12,7 @@ Visualizes CloudTrail log data stored in DuckDB. Always opens DuckDB in **`READ_
   - [Sequence Diagram — First Startup](#sequence-diagram--first-startup)
   - [Sequence Diagram — Re-ingest & Resync](#sequence-diagram--re-ingest--resync)
 - [Pre-built Charts](#pre-built-charts)
+- [Suzaku Dashboards](#suzaku-dashboards)
 - [Directory Structure](#directory-structure)
 - [Configuration](#configuration)
 - [Development](#development)
@@ -175,6 +176,88 @@ database and dataset objects.
 
 ---
 
+## Suzaku Dashboards
+
+Three further dashboards visualize the output of
+[Suzaku](https://github.com/Yamato-Security/suzaku), Yamato Security's CloudTrail
+detection engine. Senrigan reads Suzaku's DuckDB output **as-is** — nothing is
+imported into `threat_hunting.db`, and the files are only ever opened read-only.
+
+| Dashboard | Bundle | Suzaku command | Charts |
+|-----------|--------|----------------|:------:|
+| Suzaku Detection Timeline | `suzaku_timeline.zip` | `aws-ct-timeline` | 0 — empty template, charts land in a follow-up change |
+| Suzaku Identity Summary | `suzaku_summary.zip` | `aws-ct-summary` | 18 across Overview / Identities / API Abuse / Attributes |
+| Suzaku Field Metrics | `suzaku_metrics.zip` | `aws-ct-metrics` | 15 across Overview / Distribution / Rare & Temporal / GeoIP |
+
+### Setting them up
+
+```bash
+# 1. Run Suzaku, writing DuckDB output
+suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb
+suzaku aws-ct-summary  -d <cloudtrail-logs> -o summary.duckdb
+suzaku aws-ct-metrics  -d <cloudtrail-logs> -f eventName -o metrics.duckdb
+
+# 2. Copy the results next to Senrigan's own database
+cp *.duckdb docker/data/db/
+
+# 3. Restart so superset-init registers the new databases
+make up
+```
+
+`make status` reports which Suzaku files it can see.
+
+### How the connection is resolved
+
+File names are arbitrary, so `init/register_suzaku_dbs.py` detects the producing
+command **from the schema** and registers one Superset database per command under
+a fixed name and UUID:
+
+| Suzaku command | Superset database |
+|----------------|-------------------|
+| `aws-ct-timeline` | `Suzaku Timeline DuckDB` |
+| `aws-ct-summary` | `Suzaku Summary DuckDB` |
+| `aws-ct-metrics` | `Suzaku Metrics DuckDB` |
+
+Registration runs **twice**: once before the datasets are created, and once after
+the dashboard ZIPs are imported. The second run matters — importing a bundle
+re-applies its `databases/*.yaml` onto the existing connection (matched by UUID),
+which would otherwise replace the detected path with the YAML's placeholder and
+make every chart fail with an IOError. A bundle whose database was not detected is
+not imported at all, so no connection is ever left pointing at a missing file.
+
+Because the datasets reference the database by UUID, re-running Suzaku under a
+different file name only rewrites a stored URI — no asset changes. When several
+files match one command the newest wins; `SUZAKU_TIMELINE_DB` /
+`SUZAKU_SUMMARY_DB` / `SUZAKU_METRICS_DB` pin a specific file. A bundle whose
+database was not detected is not imported, so an analyst with only one Suzaku
+file does not get dashboards full of errors.
+
+The same detection runs in the agent (`agent/suzaku_db.py`); Superset cannot
+import that package, so the signature table exists twice and
+`tests/test_suzaku_detection_parity.py` keeps the copies identical.
+
+### Why the datasets are virtual
+
+Every Suzaku dataset is a **virtual dataset** (`sql:`) rather than a physical
+table, because Suzaku stores everything as VARCHAR:
+
+- `Timestamp` / `FirstSeen` / `LastSeen` are `CAST` to `TIMESTAMP` — Superset
+  needs a real temporal column for `main_dttm_col`.
+- PascalCase columns are renamed to snake_case, and `AWS-Region` loses its hyphen,
+  so chart params look like the `cloudtrail_events` charts.
+- Suzaku's `'-'` placeholder becomes `NULL`, so `COUNT` and BI filters behave.
+- Packed values are split: `Category` → `is_abused` + `outcome`,
+  `API` → `api` + `event_source`.
+
+[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) is the upstream proposal
+that would make all of this unnecessary.
+
+The metrics dashboard is deliberately **field-agnostic**: Suzaku counts whichever
+field it was given (`-f`), so no chart filters on a literal field name and the
+`Field` native filter drives everything.
+
+---
+
 ## Directory Structure
 
 ```
@@ -184,8 +267,18 @@ dashboard/
 ├── assets/
 │   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
 │   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
+│   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (empty template)
+│   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (18 charts)
+│   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (15 charts)
+│   ├── zip_builder.py                  # Shared deterministic ZIP packaging
 │   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
 │   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
+│   ├── rebuild_suzaku_timeline_zip.py  # Regenerate suzaku_timeline.zip
+│   ├── rebuild_suzaku_summary_zip.py   # Regenerate suzaku_summary.zip
+│   ├── rebuild_suzaku_metrics_zip.py   # Regenerate suzaku_metrics.zip
+│   ├── suzaku_timeline/                # Suzaku timeline definitions (charts/ empty by design)
+│   ├── suzaku_summary/                 # Suzaku summary definitions (3 virtual datasets)
+│   ├── suzaku_metrics/                 # Suzaku metrics definitions (field-agnostic)
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions
 │       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
 │       ├── metadata.yaml
@@ -196,6 +289,7 @@ dashboard/
 ├── init/
 │   ├── bootstrap.sh                    # Idempotent init script (runs in superset-init)
 │   ├── register_duckdb.py              # Register DuckDB connection; auto-migrates old URI/settings
+│   ├── register_suzaku_dbs.py          # Detect Suzaku *.duckdb by schema; register one DB per command
 │   ├── register_dataset.py             # Register cloudtrail_events dataset
 │   └── import_dashboard.py             # Import a dashboard ZIP via ImportAssetsCommand (DASHBOARD_ZIP env)
 └── tests/
@@ -207,6 +301,9 @@ dashboard/
     ├── test_rare_generator.py
     ├── test_rare_zip.py
     ├── test_rebuild_zip.py
+    ├── test_suzaku_signatures.py
+    ├── test_suzaku_bundles.py
+    ├── test_rebuild_suzaku_zips.py
     └── test_superset_config.py
 ```
 
@@ -221,6 +318,9 @@ dashboard/
 | `SUPERSET_ADMIN_PASSWORD` | `admin` | Admin password (**must change in production**) |
 | `DUCKDB_PATH` | `/data/db/threat_hunting.db` | DuckDB file path (in container) |
 | `DUCKDB_HOST_PATH` | `./data/db` | Host-side DuckDB directory (bind mount) |
+| `SUZAKU_TIMELINE_DB` | — | Pin one Suzaku timeline file instead of auto-detecting |
+| `SUZAKU_SUMMARY_DB` | — | Pin one Suzaku summary file instead of auto-detecting |
+| `SUZAKU_METRICS_DB` | — | Pin one Suzaku metrics file instead of auto-detecting |
 
 ### Key design decisions
 
@@ -254,13 +354,19 @@ docker compose --profile resync run --rm superset-resync
 
 ### Modifying dashboard definitions
 
-1. Edit YAML files under `dashboard/assets/cloudtrail_default/`.
-2. Regenerate both ZIPs (the Rare Events dashboard is derived from the
-   same source tree):
+Superset never reads the bundle YAML directly — it only applies the compiled ZIP,
+so editing YAML without rebuilding leaves the running dashboard silently stale.
+`tests/test_rebuild_suzaku_zips.py` fails when a Suzaku ZIP is out of date.
+
+1. Edit YAML files under `dashboard/assets/<bundle>/`.
+2. Regenerate the affected ZIP(s):
    ```bash
    cd dashboard/assets
-   python3 rebuild_zip.py
-   python3 rebuild_rare_zip.py
+   python3 rebuild_zip.py                    # cloudtrail_default.zip
+   python3 rebuild_rare_zip.py               # cloudtrail_rare.zip (derived)
+   python3 rebuild_suzaku_timeline_zip.py    # suzaku_timeline.zip
+   python3 rebuild_suzaku_summary_zip.py     # suzaku_summary.zip
+   python3 rebuild_suzaku_metrics_zip.py     # suzaku_metrics.zip
    ```
 3. Re-run initialization to import the updated ZIPs:
    ```bash
@@ -275,7 +381,7 @@ cd dashboard
 python3 -m pytest tests/ -v
 ```
 
-The test suite (514 tests) covers:
+The test suite (738 tests) covers:
 - `test_chart_yaml.py` — required fields and dataset UUID in all chart YAMLs
 - `test_dashboard_yaml.py` — layout structure, cross-references, native filters
 - `test_dockerfile.py` — base image version, duckdb-engine constraint, uv install, build-time import check
@@ -285,6 +391,10 @@ The test suite (514 tests) covers:
 - `test_rare_zip.py` — Rare Events ZIP structure, ascending semantics, byte determinism
 - `test_rebuild_zip.py` — ZIP structure and chart coverage
 - `test_superset_config.py` — feature flags, dialect registration
+- `test_suzaku_signatures.py` — schema-based detection of Suzaku output, read-only URI contract
+- `test_suzaku_bundles.py` — bundle layout, UUID uniqueness, and every dataset/chart
+  expression executed for real against the committed Suzaku fixtures
+- `test_rebuild_suzaku_zips.py` — Suzaku ZIP structure, byte determinism, staleness
 
 The CI pipeline (`dashboard-yaml` job) validates all YAML files and verifies
 that the ZIP contains all required files on every push.

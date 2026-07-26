@@ -1,0 +1,575 @@
+# Suzaku Field Metrics — Dashboard Definition
+#
+# Layout follows cloudtrail_default: an Overview tab of KPI cards first, then
+# themed tabs. The tabs are shaped by what aws-ct-metrics is — a frequency table
+# — so they are Distribution (the head), Rare & Temporal (the tail and timing)
+# and GeoIP (only populated for enriched runs).
+#
+# Field-agnostic contract: `Field` holds whatever field the analyst passed to
+# Suzaku, so no chart may filter on a literal field name. The Field native filter
+# defaults to the first value instead. dashboard/tests/test_suzaku_bundles.py
+# enforces this.
+#
+# Charts SZM-01..SZM-06 (KPI cards), SZM-10..SZM-12 (Distribution),
+# SZM-20..SZM-22 (Rare & Temporal), SZM-30..SZM-32 (GeoIP).
+#
+# Rebuild after editing:
+#   python3 assets/rebuild_suzaku_metrics_zip.py
+#   cd docker && docker compose run --rm superset-init
+uuid: 5a021003-0000-4000-8000-000000000003
+version: 1.0.0
+dashboard_title: Suzaku Field Metrics
+description: 'Value frequencies for the CloudTrail field Suzaku''s aws-ct-metrics command was asked to
+  count. Field-agnostic by design: the Field filter drives every chart, so a run counting userAgent works
+  exactly as well as one counting eventName.'
+published: true
+css: ''
+slug: suzaku-field-metrics
+position:
+  DASHBOARD_VERSION_KEY: v2
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+    - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    children:
+    - TABS_ID
+  TABS_ID:
+    type: TABS
+    id: TABS_ID
+    children:
+    - TAB-overview
+    - TAB-distribution
+    - TAB-rare
+    - TAB-geo
+  ROW-hdr-overview:
+    type: ROW
+    id: ROW-hdr-overview
+    children:
+    - MARKDOWN-overview
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-overview:
+    type: MARKDOWN
+    id: MARKDOWN-overview
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🚦 Overview
+
+
+        Suzaku `aws-ct-metrics` counts the values of **whichever CloudTrail field it was
+
+        given** (`eventName` in the reference run). Use the **Field** filter if a run
+
+        counted more than one — no chart here assumes a particular field.'
+  CHART-kpi-distinct-fields:
+    type: CHART
+    id: CHART-kpi-distinct-fields
+    children: []
+    meta:
+      chartId: 1
+      uuid: 5a021005-0000-4000-8000-000000000001
+      sliceName: Fields Counted
+      width: 4
+      height: 25
+  CHART-kpi-distinct-values:
+    type: CHART
+    id: CHART-kpi-distinct-values
+    children: []
+    meta:
+      chartId: 2
+      uuid: 5a021005-0000-4000-8000-000000000002
+      sliceName: Distinct Values
+      width: 4
+      height: 25
+  CHART-kpi-total-occurrences:
+    type: CHART
+    id: CHART-kpi-total-occurrences
+    children: []
+    meta:
+      chartId: 3
+      uuid: 5a021005-0000-4000-8000-000000000003
+      sliceName: Total Occurrences
+      width: 4
+      height: 25
+  ROW-overview-1:
+    type: ROW
+    id: ROW-overview-1
+    children:
+    - CHART-kpi-distinct-fields
+    - CHART-kpi-distinct-values
+    - CHART-kpi-total-occurrences
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-kpi-top-share:
+    type: CHART
+    id: CHART-kpi-top-share
+    children: []
+    meta:
+      chartId: 4
+      uuid: 5a021005-0000-4000-8000-000000000004
+      sliceName: Top Value Share
+      width: 4
+      height: 25
+  CHART-kpi-singleton-values:
+    type: CHART
+    id: CHART-kpi-singleton-values
+    children: []
+    meta:
+      chartId: 5
+      uuid: 5a021005-0000-4000-8000-000000000005
+      sliceName: Values Seen Once
+      width: 4
+      height: 25
+  CHART-kpi-distinct-countries:
+    type: CHART
+    id: CHART-kpi-distinct-countries
+    children: []
+    meta:
+      chartId: 6
+      uuid: 5a021005-0000-4000-8000-000000000006
+      sliceName: Source Countries
+      width: 4
+      height: 25
+  ROW-overview-2:
+    type: ROW
+    id: ROW-overview-2
+    children:
+    - CHART-kpi-top-share
+    - CHART-kpi-singleton-values
+    - CHART-kpi-distinct-countries
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+    - ROW-hdr-overview
+    - ROW-overview-1
+    - ROW-overview-2
+    meta:
+      text: 🚦 Overview
+      defaultText: Overview
+      tooltip: At-a-glance KPIs for the counted field
+  ROW-hdr-distribution:
+    type: ROW
+    id: ROW-hdr-distribution
+    children:
+    - MARKDOWN-distribution
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-distribution:
+    type: MARKDOWN
+    id: MARKDOWN-distribution
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 📊 Distribution
+
+
+        The head of the distribution. When one value holds most of the share, the
+
+        interesting activity is in the tail — see the **Rare & Temporal** tab.'
+  CHART-top-values:
+    type: CHART
+    id: CHART-top-values
+    children: []
+    meta:
+      chartId: 7
+      uuid: 5a021005-0000-4000-8000-000000000010
+      sliceName: Top Values by Occurrence
+      width: 6
+      height: 55
+  CHART-value-share-composition:
+    type: CHART
+    id: CHART-value-share-composition
+    children: []
+    meta:
+      chartId: 8
+      uuid: 5a021005-0000-4000-8000-000000000011
+      sliceName: Value Share Composition
+      width: 6
+      height: 55
+  ROW-distribution-1:
+    type: ROW
+    id: ROW-distribution-1
+    children:
+    - CHART-top-values
+    - CHART-value-share-composition
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-value-frequency-table:
+    type: CHART
+    id: CHART-value-frequency-table
+    children: []
+    meta:
+      chartId: 9
+      uuid: 5a021005-0000-4000-8000-000000000012
+      sliceName: Value Frequency Table
+      width: 12
+      height: 75
+  ROW-distribution-2:
+    type: ROW
+    id: ROW-distribution-2
+    children:
+    - CHART-value-frequency-table
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-distribution:
+    type: TAB
+    id: TAB-distribution
+    children:
+    - ROW-hdr-distribution
+    - ROW-distribution-1
+    - ROW-distribution-2
+    meta:
+      text: 📊 Distribution
+      defaultText: Distribution
+      tooltip: How occurrences spread across the field's values
+  ROW-hdr-rare:
+    type: ROW
+    id: ROW-hdr-rare
+    children:
+    - MARKDOWN-rare
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-rare:
+    type: MARKDOWN
+    id: MARKDOWN-rare
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 💎 Rare & Temporal
+
+
+        Same reasoning as the CloudTrail *Rare Events* dashboard: in a large dataset,
+
+        what happened once is more often worth reading than what happened a million times.'
+  CHART-rare-values:
+    type: CHART
+    id: CHART-rare-values
+    children: []
+    meta:
+      chartId: 10
+      uuid: 5a021005-0000-4000-8000-000000000020
+      sliceName: Rare Values (Bottom-N)
+      width: 12
+      height: 75
+  ROW-rare-1:
+    type: ROW
+    id: ROW-rare-1
+    children:
+    - CHART-rare-values
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-newest-values:
+    type: CHART
+    id: CHART-newest-values
+    children: []
+    meta:
+      chartId: 11
+      uuid: 5a021005-0000-4000-8000-000000000021
+      sliceName: Newest Values (Latest First Seen)
+      width: 12
+      height: 55
+  ROW-rare-2:
+    type: ROW
+    id: ROW-rare-2
+    children:
+    - CHART-newest-values
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-value-activity-span:
+    type: CHART
+    id: CHART-value-activity-span
+    children: []
+    meta:
+      chartId: 12
+      uuid: 5a021005-0000-4000-8000-000000000022
+      sliceName: Value Activity Span
+      width: 12
+      height: 75
+  ROW-rare-3:
+    type: ROW
+    id: ROW-rare-3
+    children:
+    - CHART-value-activity-span
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-rare:
+    type: TAB
+    id: TAB-rare
+    children:
+    - ROW-hdr-rare
+    - ROW-rare-1
+    - ROW-rare-2
+    - ROW-rare-3
+    meta:
+      text: 💎 Rare & Temporal
+      defaultText: Rare & Temporal
+      tooltip: The long tail, and when each value appeared
+  ROW-hdr-geo:
+    type: ROW
+    id: ROW-hdr-geo
+    children:
+    - MARKDOWN-geo
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-geo:
+    type: MARKDOWN
+    id: MARKDOWN-geo
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🌍 GeoIP
+
+
+        These charts are empty unless Suzaku ran with GeoIP enrichment. The columns
+
+        exist either way, so an empty chart here means "not enriched", not "no traffic".'
+  CHART-top-countries:
+    type: CHART
+    id: CHART-top-countries
+    children: []
+    meta:
+      chartId: 13
+      uuid: 5a021005-0000-4000-8000-000000000030
+      sliceName: Top Source Countries
+      width: 6
+      height: 55
+  CHART-top-asns:
+    type: CHART
+    id: CHART-top-asns
+    children: []
+    meta:
+      chartId: 14
+      uuid: 5a021005-0000-4000-8000-000000000031
+      sliceName: Top Source ASNs
+      width: 6
+      height: 55
+  ROW-geo-1:
+    type: ROW
+    id: ROW-geo-1
+    children:
+    - CHART-top-countries
+    - CHART-top-asns
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-geo-value-matrix:
+    type: CHART
+    id: CHART-geo-value-matrix
+    children: []
+    meta:
+      chartId: 15
+      uuid: 5a021005-0000-4000-8000-000000000032
+      sliceName: Value by Country and City
+      width: 12
+      height: 75
+  ROW-geo-2:
+    type: ROW
+    id: ROW-geo-2
+    children:
+    - CHART-geo-value-matrix
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-geo:
+    type: TAB
+    id: TAB-geo
+    children:
+    - ROW-hdr-geo
+    - ROW-geo-1
+    - ROW-geo-2
+    meta:
+      text: 🌍 GeoIP
+      defaultText: GeoIP
+      tooltip: Source country, city and ASN — populated only for GeoIP-enriched runs
+metadata:
+  cross_filters_enabled: true
+  color_scheme: supersetColors
+  native_filter_configuration:
+  - id: NATIVE_FILTER-timerange
+    name: Date Range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      filterState:
+        value: No filter
+    controlValues:
+      enableEmptyFilter: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter every chart by first-seen timestamp
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-field
+    name: Field
+    filterType: filter_select
+    targets:
+    - column:
+        name: field
+      datasetUuid: 5a021002-0000-4000-8000-000000000005
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: true
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Which CloudTrail field's value counts to show
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-value
+    name: Value
+    filterType: filter_select
+    targets:
+    - column:
+        name: value
+      datasetUuid: 5a021002-0000-4000-8000-000000000005
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Restrict the dashboard to specific values
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-country
+    name: Source Country
+    filterType: filter_select
+    targets:
+    - column:
+        name: src_country
+      datasetUuid: 5a021002-0000-4000-8000-000000000005
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: GeoIP country — only populated for enriched runs
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-asn
+    name: Source ASN
+    filterType: filter_select
+    targets:
+    - column:
+        name: src_asn
+      datasetUuid: 5a021002-0000-4000-8000-000000000005
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: GeoIP autonomous system — only populated for enriched runs
+    chartsInScope: []
+    tabsInScope: []
+  charts:
+  - slice_name: Fields Counted
+    viz_type: big_number_total
+    description: How many CloudTrail fields this aws-ct-metrics run counted (SZM-01). Suzaku counts whichever
+      field it was given, so this is usually one.
+  - slice_name: Distinct Values
+    viz_type: big_number_total
+    description: Cardinality of the counted field (SZM-02). High cardinality on an action field means
+      broad API surface use.
+  - slice_name: Total Occurrences
+    viz_type: big_number_total
+    description: Events behind the counts (SZM-03). The denominator for every share on this dashboard.
+  - slice_name: Top Value Share
+    viz_type: big_number_total
+    description: Share of the single most common value (SZM-04). A very high share means one value dominates
+      and the interesting activity is in the long tail.
+  - slice_name: Values Seen Once
+    viz_type: big_number_total
+    description: Values that occurred exactly once (SZM-05). In a large dataset, rarity is the cheapest
+      anomaly signal — see the Rare Values table.
+  - slice_name: Source Countries
+    viz_type: big_number_total
+    description: Distinct source countries (SZM-06). Zero means Suzaku ran without GeoIP enrichment, not
+      that traffic was local.
+  - slice_name: Top Values by Occurrence
+    viz_type: dist_bar
+    description: The most frequently seen values (SZM-10). Use the Field filter to switch field when a
+      run counted more than one.
+  - slice_name: Value Share Composition
+    viz_type: pie
+    description: How the counted field's total splits across its top values (SZM-11). One dominant slice
+      means the tail is where anomalies live.
+  - slice_name: Value Frequency Table
+    viz_type: table
+    description: The full frequency table (SZM-12), with Suzaku's own percentage next to the count and
+      the first/last time each value appeared.
+  - slice_name: Rare Values (Bottom-N)
+    viz_type: table
+    description: 'The least frequent values (SZM-20). Same reasoning as the CloudTrail Rare Events dashboard:
+      what happened once is more often interesting than what happened a mi'
+  - slice_name: Newest Values (Latest First Seen)
+    viz_type: dist_bar
+    description: Values that appeared for the first time most recently (SZM-21). A value showing up only
+      at the end of the timeline is new behaviour.
+  - slice_name: Value Activity Span
+    viz_type: table
+    description: First seen, last seen and span per value (SZM-22). A short span with a high count is
+      a burst; a long span with a low count is background noise.
+  - slice_name: Top Source Countries
+    viz_type: dist_bar
+    description: Occurrences grouped by source country (SZM-30). Empty unless Suzaku ran with GeoIP enrichment
+      — the columns exist either way.
+  - slice_name: Top Source ASNs
+    viz_type: dist_bar
+    description: Occurrences grouped by source ASN (SZM-31). Hosting and VPN providers appearing high
+      here are worth a second look.
+  - slice_name: Value by Country and City
+    viz_type: table
+    description: Which values came from which location (SZM-32). Empty unless Suzaku ran with GeoIP enrichment.

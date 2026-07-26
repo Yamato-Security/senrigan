@@ -10,6 +10,11 @@ defined directly in ``app.py``.  Extracting them here:
 
 All handlers read and write ``st.session_state`` directly — they are designed
 to be called from within a running Streamlit application.
+
+Every handler takes a ``profile`` (see ``profiles.py``) that selects the table to
+query, the filters to inject, and the session-state namespace to read and write.
+It defaults to :data:`~profiles.CLOUDTRAIL_PROFILE`, whose namespace is
+un-prefixed, so the CloudTrail hunting page behaves exactly as before.
 """
 
 import logging
@@ -20,9 +25,10 @@ import streamlit as st
 
 from geo import enrich_with_geo
 from llm import MAX_CONTEXT_TURNS, generate_analysis, generate_sql
+from profiles import CLOUDTRAIL_PROFILE, DatasetProfile
 from query import (
     QueryValidationError,
-    apply_date_filter,
+    apply_filters,
     apply_row_limit,
     duckdb_connection,
     execute_query,
@@ -31,6 +37,27 @@ from query import (
 from report import ReportEntry
 
 logger = logging.getLogger(__name__)
+
+
+def _get(profile: DatasetProfile, name: str, default=None):
+    """Read *name* from this profile's session-state namespace."""
+    return st.session_state.get(profile.state_key(name), default)
+
+
+def _set(profile: DatasetProfile, name: str, value) -> None:
+    """Write *value* to *name* in this profile's session-state namespace."""
+    st.session_state[profile.state_key(name)] = value
+
+
+def _active_filters(profile: DatasetProfile, sql: str) -> str:
+    """Apply the profile's active UI filters (date range, severity) to *sql*."""
+    return apply_filters(
+        sql,
+        profile=profile,
+        start_date=_get(profile, "date_start"),
+        end_date=_get(profile, "date_end"),
+        levels=_get(profile, "levels") or (),
+    )
 
 
 def _format_row_info(
@@ -58,20 +85,29 @@ def _format_row_info(
 
 
 def _maybe_enrich_geo(
-    conn: duckdb.DuckDBPyConnection, results: pd.DataFrame
+    conn: duckdb.DuckDBPyConnection,
+    results: pd.DataFrame,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> pd.DataFrame:
     """Geo-enrich *results* when the sidebar toggle is on.
 
     Enrichment is best-effort: any failure is logged and the original
     results are returned unchanged — it must never fail the query itself.
 
+    Profiles whose table carries no ``geo_*`` columns (Suzaku's ``timeline``)
+    skip enrichment entirely: the lookup joins against ``cloudtrail_events``,
+    which is not in that database at all.
+
     Args:
         conn:    The open DuckDB connection the query ran on.
         results: The query result DataFrame.
+        profile: Dataset profile the query ran against.
 
     Returns:
         The (possibly) enriched DataFrame.
     """
+    if not profile.supports_geo_enrich:
+        return results
     if not st.session_state.get("geo_enrich", True):
         return results
     try:
@@ -82,7 +118,10 @@ def _maybe_enrich_geo(
 
 
 def _execute_sql_safely(
-    db_path: str, sql: str, row_limit: int
+    db_path: str,
+    sql: str,
+    row_limit: int,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> tuple[pd.DataFrame, str | None]:
     """Execute *sql* read-only, converting known failures to a user message.
 
@@ -92,6 +131,7 @@ def _execute_sql_safely(
         db_path:   Path to the DuckDB database file.
         sql:       The SQL query to execute.
         row_limit: Maximum number of rows to return.
+        profile:   Dataset profile the query targets.
 
     Returns:
         A tuple ``(results, error_message)`` — *error_message* is ``None`` on
@@ -100,7 +140,7 @@ def _execute_sql_safely(
     try:
         with duckdb_connection(db_path) as conn:
             results = execute_query(conn, sql, row_limit=row_limit)
-            return _maybe_enrich_geo(conn, results), None
+            return _maybe_enrich_geo(conn, results, profile), None
     except QueryValidationError as exc:
         return pd.DataFrame(), f"🚫 SQL validation error: {exc}"
     except TimeoutError:
@@ -118,6 +158,7 @@ def _handle_direct_sql(
     label: str = "",
     category: str = "",
     techniques: list[dict] | None = None,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> None:
     """Execute a pre-built SQL query directly without requiring an API key.
 
@@ -139,39 +180,39 @@ def _handle_direct_sql(
         category:     Category group (e.g. "🔑 Identity & Access").
         techniques:   Threat Technique Catalog mappings for the preset
                       (list of dicts with tid / name / summary / url keys).
+        profile:      Dataset profile selecting the table, filters and state.
     """
-    # Apply date range filter (wraps sql in a date-scoped CTE when active).
-    sql = apply_date_filter(sql, st.session_state.date_start, st.session_state.date_end)
+    # Apply the active UI filters (date range, severity) as a scoped CTE.
+    sql = _active_filters(profile, sql)
     # Pre-compute the effective SQL (with row_limit applied) so that last_sql
     # and the chat message always reflect what was actually executed.
-    effective_sql = apply_row_limit(sql, st.session_state.row_limit)
+    row_limit = st.session_state.row_limit
+    effective_sql = apply_row_limit(sql, row_limit)
 
     with st.spinner("⚡ Running direct SQL…"):
-        results, error_message = _execute_sql_safely(
-            db_path, sql, st.session_state.row_limit
-        )
+        results, error_message = _execute_sql_safely(db_path, sql, row_limit, profile)
 
-    st.session_state.last_sql = effective_sql
-    st.session_state.last_results = results if error_message is None else None
-    st.session_state.last_summary = ""
+    _set(profile, "last_sql", effective_sql)
+    _set(profile, "last_results", results if error_message is None else None)
+    _set(profile, "last_summary", "")
 
     # Append a chat message only in non-bulk (chat) mode.
     if not bulk_mode:
         if error_message:
             assistant_content = error_message
         else:
-            row_info = _format_row_info(results, st.session_state.row_limit)
+            row_info = _format_row_info(results, row_limit)
             assistant_content = (
                 f"**Direct SQL query executed.** **Results:** {row_info}"
             )
 
-        st.session_state.messages.append(
+        _get(profile, "messages").append(
             {"role": "assistant", "content": assistant_content}
         )
 
     if error_message is None:
         source = "bulk" if bulk_mode else "chat"
-        st.session_state.query_history.append(
+        _get(profile, "query_history").append(
             ReportEntry(
                 sql=effective_sql,
                 results=results,
@@ -186,12 +227,14 @@ def _handle_direct_sql(
         )
         if not bulk_mode:
             # Link this message to its query_history entry for interleaved rendering.
-            st.session_state.messages[-1]["query_index"] = (
-                len(st.session_state.query_history) - 1
+            _get(profile, "messages")[-1]["query_index"] = (
+                len(_get(profile, "query_history")) - 1
             )
 
 
-def _handle_edit_rerun_sql(sql: str, db_path: str) -> None:
+def _handle_edit_rerun_sql(
+    sql: str, db_path: str, profile: DatasetProfile = CLOUDTRAIL_PROFILE
+) -> None:
     """Execute a manually edited SQL query, with optional AI analysis.
 
     Runs the edited SQL against the DuckDB database in read-only mode without
@@ -204,6 +247,7 @@ def _handle_edit_rerun_sql(sql: str, db_path: str) -> None:
     Args:
         sql:     The edited SQL query string from the SQL editor text area.
         db_path: Path to the DuckDB database file.
+        profile: Dataset profile selecting the table, prompt and state.
     """
     api_key = st.session_state.api_key
     model = st.session_state.model
@@ -211,14 +255,14 @@ def _handle_edit_rerun_sql(sql: str, db_path: str) -> None:
     effective_sql = apply_row_limit(sql, row_limit)
 
     with st.spinner("▶ Running SQL…"):
-        results, error_message = _execute_sql_safely(db_path, sql, row_limit)
+        results, error_message = _execute_sql_safely(db_path, sql, row_limit, profile)
 
-    st.session_state.last_sql = effective_sql
-    st.session_state.last_results = results if error_message is None else None
+    _set(profile, "last_sql", effective_sql)
+    _set(profile, "last_results", results if error_message is None else None)
 
     if error_message:
-        st.session_state.last_summary = ""
-        st.session_state.messages.append(
+        _set(profile, "last_summary", "")
+        _get(profile, "messages").append(
             {"role": "assistant", "content": error_message}
         )
         return
@@ -233,22 +277,24 @@ def _handle_edit_rerun_sql(sql: str, db_path: str) -> None:
             )
 
     # Clear last_summary — the analysis is shown in the AI Analysis section via query_history.
-    st.session_state.last_summary = ""
+    _set(profile, "last_summary", "")
 
     assistant_content = f"**Re-run SQL executed.** **Results:** {row_info}"
-    st.session_state.messages.append(
+    _get(profile, "messages").append(
         {"role": "assistant", "content": assistant_content}
     )
-    st.session_state.query_history.append(
+    _get(profile, "query_history").append(
         ReportEntry(sql=effective_sql, results=results, analysis=summary)
     )
     # Link this message to its query_history entry for interleaved rendering.
-    st.session_state.messages[-1]["query_index"] = (
-        len(st.session_state.query_history) - 1
+    _get(profile, "messages")[-1]["query_index"] = (
+        len(_get(profile, "query_history")) - 1
     )
 
 
-def _analyze_entry_results(entry_idx: int) -> None:
+def _analyze_entry_results(
+    entry_idx: int, profile: DatasetProfile = CLOUDTRAIL_PROFILE
+) -> None:
     """Analyze a specific query_history entry by index using AI.
 
     Reads the entry's sql and results, calls generate_analysis(), and stores
@@ -256,13 +302,14 @@ def _analyze_entry_results(entry_idx: int) -> None:
     entry_idx refers to the last entry (backward compatibility).
 
     Args:
-        entry_idx: 0-based index into st.session_state.query_history.
+        entry_idx: 0-based index into the profile's query_history.
+        profile:   Dataset profile whose history holds the entry.
     """
     api_key = st.session_state.api_key
     model = st.session_state.model
 
     if not api_key:
-        st.session_state.messages.append(
+        _get(profile, "messages").append(
             {
                 "role": "assistant",
                 "content": "⚠️ Please enter your OpenAI API key in the sidebar first.",
@@ -270,7 +317,7 @@ def _analyze_entry_results(entry_idx: int) -> None:
         )
         return
 
-    entry = st.session_state.query_history[entry_idx]
+    entry = _get(profile, "query_history")[entry_idx]
     if entry.results is None or (
         hasattr(entry.results, "empty") and entry.results.empty
     ):
@@ -283,11 +330,13 @@ def _analyze_entry_results(entry_idx: int) -> None:
 
     entry.analysis = summary
 
-    if entry_idx == len(st.session_state.query_history) - 1:
-        st.session_state.last_summary = summary
+    if entry_idx == len(_get(profile, "query_history")) - 1:
+        _set(profile, "last_summary", summary)
 
 
-def _handle_user_query(user_input: str, db_path: str) -> None:
+def _handle_user_query(
+    user_input: str, db_path: str, profile: DatasetProfile = CLOUDTRAIL_PROFILE
+) -> None:
     """Process a user query: generate SQL, execute, summarise, and update state.
 
     Implements the AGT-01 → AGT-02 → AGT-03 → AGT-04 → AGT-05 pipeline.
@@ -306,12 +355,13 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
     Args:
         user_input: The natural language question from the user.
         db_path:    Path to the DuckDB database file.
+        profile:    Dataset profile selecting the table, prompt and state.
     """
     api_key = st.session_state.api_key
     model = st.session_state.model
 
     if not api_key:
-        st.session_state.messages.append(
+        _get(profile, "messages").append(
             {
                 "role": "assistant",
                 "content": "⚠️ Please enter your OpenAI API key in the sidebar first.",
@@ -322,16 +372,22 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
     # Step 1: Generate SQL (AGT-02), injecting prior conversation context.
     # Take a snapshot so that the context passed to the LLM is not mutated
     # by the append at the end of this function.
-    context = list(st.session_state.conversation_context)
+    context = list(_get(profile, "conversation_context", []))
     with st.spinner("🤖 Generating SQL…"):
-        sql = generate_sql(user_input, api_key=api_key, model=model, context=context)
+        sql = generate_sql(
+            user_input,
+            api_key=api_key,
+            model=model,
+            context=context,
+            profile=profile,
+        )
 
-    # Apply date range filter to the AI-generated SQL (wraps in CTE when active).
-    sql = apply_date_filter(sql, st.session_state.date_start, st.session_state.date_end)
+    # Apply the active UI filters to the AI-generated SQL (CTE when active).
+    sql = _active_filters(profile, sql)
 
     original_sql = sql  # preserve to detect LLM corrections later
     final_sql = sql
-    st.session_state.last_sql = sql
+    _set(profile, "last_sql", sql)
 
     # Step 2: Execute query with automatic SQL correction on validation failure (AGT-03/04).
     results = pd.DataFrame()
@@ -345,14 +401,15 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
                 api_key=api_key,
                 model=model,
                 row_limit=st.session_state.row_limit,
+                profile=profile,
             )
-            results = _maybe_enrich_geo(conn, results)
+            results = _maybe_enrich_geo(conn, results, profile)
         if final_sql != original_sql:
             sql = final_sql
         # Store the effective SQL (with row_limit applied) so the SQL editor
         # shows exactly what was executed, not the pre-limit original.
         effective_sql = apply_row_limit(sql, st.session_state.row_limit)
-        st.session_state.last_sql = effective_sql
+        _set(profile, "last_sql", effective_sql)
     except QueryValidationError as exc:
         error_message = f"🚫 SQL validation error: {exc}"
     except TimeoutError:
@@ -360,7 +417,7 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
     except Exception as exc:  # noqa: BLE001
         error_message = f"❌ Query execution error: {exc}"
 
-    st.session_state.last_results = results if error_message is None else None
+    _set(profile, "last_results", results if error_message is None else None)
 
     # Step 3: Generate fact-based analysis (AGT-05) — stored in query_history only.
     summary = ""
@@ -370,7 +427,7 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
                 effective_sql, results, api_key=api_key, model=model
             )
     # Clear last_summary — the analysis is displayed via query_history in the AI Analysis section.
-    st.session_state.last_summary = ""
+    _set(profile, "last_summary", "")
 
     # Step 4: Append to chat history and query history.
     if error_message:
@@ -384,25 +441,24 @@ def _handle_user_query(user_input: str, db_path: str) -> None:
         )
         assistant_content = f"**Results:** {row_info}" + retry_notice
 
-    st.session_state.messages.append(
+    _get(profile, "messages").append(
         {"role": "assistant", "content": assistant_content}
     )
 
     if error_message is None:
-        st.session_state.query_history.append(
+        _get(profile, "query_history").append(
             ReportEntry(sql=effective_sql, results=results, analysis=summary)
         )
         # Link this message to its query_history entry for interleaved rendering.
-        st.session_state.messages[-1]["query_index"] = (
-            len(st.session_state.query_history) - 1
+        _get(profile, "messages")[-1]["query_index"] = (
+            len(_get(profile, "query_history")) - 1
         )
         # Update conversation context for follow-up queries.
         summary_text = summary if summary else "(no summary)"
-        st.session_state.conversation_context.append(
+        context_entries = _get(profile, "conversation_context")
+        context_entries.append(
             {"user_query": user_input, "sql": effective_sql, "summary": summary_text}
         )
         # Keep only the most recent MAX_CONTEXT_TURNS entries.
-        if len(st.session_state.conversation_context) > MAX_CONTEXT_TURNS:
-            st.session_state.conversation_context = (
-                st.session_state.conversation_context[-MAX_CONTEXT_TURNS:]
-            )
+        if len(context_entries) > MAX_CONTEXT_TURNS:
+            _set(profile, "conversation_context", context_entries[-MAX_CONTEXT_TURNS:])

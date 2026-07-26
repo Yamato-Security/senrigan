@@ -1,0 +1,23 @@
+# SZM-03: Total Occurrences (KPI card)
+uuid: 5a021005-0000-4000-8000-000000000003
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Total Occurrences
+viz_type: big_number_total
+description: >
+  Events behind the counts (SZM-03). The denominator for every share on this dashboard.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "SUM(occurrence_count)"
+    label: occurrences
+    hasCustomLabel: true
+    optionName: metric_kpi_total_occurrences_occurrences
+  adhoc_filters: []
+  subheader: "events covered by these counts"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

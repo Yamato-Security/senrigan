@@ -1,0 +1,31 @@
+# SZM-10: Most frequent values of the counted field.
+uuid: 5a021005-0000-4000-8000-000000000010
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Top Values by Occurrence
+viz_type: dist_bar
+description: >
+  The most frequently seen values (SZM-10). Use the Field filter to switch field when a run counted more than one.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_top_values_occurrences
+  groupby:
+    - value
+  columns: []
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Occurrences
+  y_axis_label: Value
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

@@ -1,0 +1,27 @@
+# Superset database connection for Suzaku `aws-ct-summary` DuckDB output.
+#
+# The path below is a PLACEHOLDER and is never the file that gets queried.
+# init/register_suzaku_dbs.py detects the real file by schema and rewrites this
+# URI on the same UUID — before the dashboards are imported, and again after,
+# because importing a bundle re-applies this YAML onto the existing connection.
+#
+# It is deliberately an obviously-fake path: if it ever shows up in an error, the
+# post-import registration step did not run, rather than the analyst having named
+# their file wrongly. Dataset and chart YAMLs only ever reference the UUID.
+uuid: 5a021001-0000-4000-8000-000000000002
+version: 1.0.0
+database_name: Suzaku Summary DuckDB
+sqlalchemy_uri: "duckdb+duckdb_engine:////data/db/_placeholder_rewritten_at_bootstrap.duckdb"
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_csv_upload: false
+extra:
+  metadata_params: {}
+  engine_params:
+    connect_args:
+      read_only: true
+  schemas_allowed_for_file_upload: []

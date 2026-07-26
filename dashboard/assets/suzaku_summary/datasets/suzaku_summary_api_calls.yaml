@@ -1,0 +1,187 @@
+# Superset dataset: per-identity API call counts from Suzaku `aws-ct-summary`.
+#
+# VIRTUAL (sql:) to undo three packed encodings in the source file
+# (doc/PLAN_SUZAKU_SCHEMA.md P5):
+#   * Category = 'abused_success' packs two orthogonal axes -> is_abused + outcome.
+#   * API = 'RunInstances (ec2.amazonaws.com)' packs action + service -> api +
+#     event_source (the timeline table already keeps these separate).
+#   * FirstSeen / LastSeen are VARCHAR -> CAST to TIMESTAMP (P3).
+#
+# `description` is Suzaku's own explanation of why an API is abusable and is the
+# highest-value column in this file — it is surfaced in the catalogue table.
+uuid: 5a021002-0000-4000-8000-000000000003
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000002
+table_name: suzaku_summary_api_calls
+main_dttm_col: first_seen
+description: >
+  API calls per identity from Suzaku aws-ct-summary, split into abused/other and
+  success/failed, with the action and the AWS service in separate columns.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      "UserARN"                                                            AS user_arn,
+      "Category"                                                           AS category,
+      "Category" LIKE 'abused%'                                            AS is_abused,
+      CASE WHEN "Category" LIKE '%failed' THEN 'failed' ELSE 'success' END  AS outcome,
+      trim(regexp_extract("API", '^([^(]+)', 1))                           AS api,
+      coalesce(nullif(regexp_extract("API", '\(([^)]+)\)', 1), ''),
+               'unknown')                                                  AS event_source,
+      "API"                                                                AS api_full,
+      "Description"                                                        AS description,
+      "Count"                                                              AS call_count,
+      CAST("FirstSeen" AS TIMESTAMP)                                       AS first_seen,
+      CAST("LastSeen" AS TIMESTAMP)                                        AS last_seen
+  FROM summary_api_calls
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: user_arn
+    verbose_name: Identity (ARN)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the identity that made the calls
+
+  - column_name: category
+    verbose_name: Category (raw)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Suzaku's packed category (abused_success, other_failed, …)
+
+  - column_name: is_abused
+    verbose_name: Abusable API
+    is_dttm: false
+    is_active: true
+    type: BOOLEAN
+    groupby: true
+    filterable: true
+    description: Whether Suzaku classifies this API as abusable
+
+  - column_name: outcome
+    verbose_name: Outcome
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: success or failed
+
+  - column_name: api
+    verbose_name: API Action
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: API action name, without the service suffix
+
+  - column_name: event_source
+    verbose_name: AWS Service
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS service that served the call (e.g. ec2.amazonaws.com)
+
+  - column_name: api_full
+    verbose_name: API (raw)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Suzaku's packed "Action (service)" string
+
+  - column_name: description
+    verbose_name: Why It Matters
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Suzaku's explanation of how the API is abused
+
+  - column_name: call_count
+    verbose_name: Calls
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Number of calls to this API by this identity
+
+  - column_name: first_seen
+    verbose_name: First Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: First call timestamp
+
+  - column_name: last_seen
+    verbose_name: Last Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Last call timestamp
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of API/identity rows
+
+  - metric_name: call_total
+    verbose_name: Calls
+    metric_type: sum
+    expression: "SUM(call_count)"
+    description: Total API calls
+
+  - metric_name: abused_call_total
+    verbose_name: Abused API Calls
+    metric_type: sum
+    expression: "SUM(CASE WHEN is_abused THEN call_count ELSE 0 END)"
+    description: Calls to APIs Suzaku classifies as abusable
+
+  - metric_name: failed_call_total
+    verbose_name: Failed Calls
+    metric_type: sum
+    expression: "SUM(CASE WHEN outcome = 'failed' THEN call_count ELSE 0 END)"
+    description: Calls that returned an error
+
+  - metric_name: abused_failed_total
+    verbose_name: Failed Abuse Attempts
+    metric_type: sum
+    expression: >
+      SUM(CASE WHEN is_abused AND outcome = 'failed' THEN call_count ELSE 0 END)
+    description: Failed calls to abusable APIs — the clearest probing signal
+
+  - metric_name: distinct_abused_apis
+    verbose_name: Distinct Abused APIs
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT CASE WHEN is_abused THEN api END)"
+    description: Number of distinct abusable APIs called
+
+  - metric_name: distinct_identities
+    verbose_name: Distinct Identities
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT user_arn)"
+    description: Number of identities involved

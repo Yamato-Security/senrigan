@@ -1,0 +1,49 @@
+# SZM-22: How long each value stayed in use.
+uuid: 5a021005-0000-4000-8000-000000000022
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Value Activity Span
+viz_type: table
+description: >
+  First seen, last seen and span per value (SZM-22). A short span with a high count is a burst; a long span with a low count is background noise.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_value_activity_span_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_value_activity_span_last_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(active_days)"
+      label: active_days
+      hasCustomLabel: true
+      optionName: metric_value_activity_span_active_days
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_value_activity_span_occurrences
+  groupby:
+    - value
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "MAX(active_days)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_value_activity_span_sort_key
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null
