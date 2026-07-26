@@ -384,3 +384,19 @@ def test_charts_declare_a_row_limit(bundle: Path) -> None:
         if chart["viz_type"] == "big_number_total":
             continue  # a single aggregate, no rows to cap
         assert (chart.get("params") or {}).get("row_limit"), path.name
+
+
+@pytest.mark.parametrize("bundle", ALL_BUNDLE_DIRS, ids=lambda p: p.name)
+def test_database_uri_is_an_obvious_placeholder(bundle: Path) -> None:
+    """The bundle's URI must never look like a real Suzaku file name.
+
+    Superset re-applies this YAML onto the existing connection on every import,
+    so the path here is overwritten by `register_suzaku_dbs.py` afterwards. A
+    plausible-looking placeholder hides that: it works exactly as long as the
+    analyst happens to name their file the same way, which is how the original
+    bug went unnoticed.
+    """
+    uri = _load(_databases(bundle)[0])["sqlalchemy_uri"]
+    assert (
+        "_placeholder_rewritten_at_bootstrap" in uri
+    ), f"{bundle.name}: placeholder URI must be obviously fake, got {uri}"

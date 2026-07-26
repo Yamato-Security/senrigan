@@ -196,3 +196,36 @@ def test_superset_is_imported_lazily() -> None:
     for line in source.splitlines():
         if line.startswith(("import superset", "from superset")):
             pytest.fail(f"top-level Superset import: {line!r}")
+
+
+# ---------------------------------------------------------------------------
+# --list mode: bootstrap needs the detected commands before importing bundles
+# ---------------------------------------------------------------------------
+
+
+def test_list_mode_prints_one_command_per_line(tmp_path: Path, capsys) -> None:
+    """bootstrap.sh imports a bundle only when its command was detected."""
+    _make_db(tmp_path / "anything.duckdb", TIMELINE_TABLES)
+    _make_db(tmp_path / "other-name.duckdb", METRICS_TABLES)
+
+    szdb.print_detected(str(tmp_path))
+
+    printed = {line for line in capsys.readouterr().out.split() if line}
+    assert printed == {"aws-ct-timeline", "aws-ct-metrics"}
+
+
+def test_list_mode_prints_nothing_when_no_database_is_present(
+    tmp_path: Path, capsys
+) -> None:
+    """No Suzaku files means no bundle may be imported."""
+    szdb.print_detected(str(tmp_path))
+    assert capsys.readouterr().out.strip() == ""
+
+
+def test_bundle_names_map_to_commands() -> None:
+    """bootstrap.sh iterates bundles; the mapping must live with the detection."""
+    assert szdb.BUNDLE_COMMANDS == {
+        "suzaku_timeline": "aws-ct-timeline",
+        "suzaku_summary": "aws-ct-summary",
+        "suzaku_metrics": "aws-ct-metrics",
+    }

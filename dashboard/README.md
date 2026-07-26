@@ -218,6 +218,13 @@ a fixed name and UUID:
 | `aws-ct-summary` | `Suzaku Summary DuckDB` |
 | `aws-ct-metrics` | `Suzaku Metrics DuckDB` |
 
+Registration runs **twice**: once before the datasets are created, and once after
+the dashboard ZIPs are imported. The second run matters — importing a bundle
+re-applies its `databases/*.yaml` onto the existing connection (matched by UUID),
+which would otherwise replace the detected path with the YAML's placeholder and
+make every chart fail with an IOError. A bundle whose database was not detected is
+not imported at all, so no connection is ever left pointing at a missing file.
+
 Because the datasets reference the database by UUID, re-running Suzaku under a
 different file name only rewrites a stored URI — no asset changes. When several
 files match one command the newest wins; `SUZAKU_TIMELINE_DB` /

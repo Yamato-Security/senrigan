@@ -46,17 +46,37 @@ else
   echo "    Rare Events dashboard ZIP not found — skipping import."
 fi
 
-# Suzaku dashboards — imported only when the matching database was registered,
-# so an operator with just one Suzaku file does not get dashboards full of errors.
+# Suzaku dashboards — the ZIPs are always present (they are committed), so the
+# guard is which Suzaku databases were actually detected. Importing a bundle
+# whose database was never copied in would register a connection pointing at a
+# non-existent file, and every chart on that dashboard would raise an IOError.
+SUZAKU_DETECTED="$(python3 /app/register_suzaku_dbs.py --list)"
+
 for suzaku_bundle in suzaku_timeline suzaku_summary suzaku_metrics; do
+  case "$suzaku_bundle" in
+    suzaku_timeline) suzaku_command="aws-ct-timeline" ;;
+    suzaku_summary)  suzaku_command="aws-ct-summary"  ;;
+    suzaku_metrics)  suzaku_command="aws-ct-metrics"  ;;
+  esac
+
   zip_path="/app/dashboards/${suzaku_bundle}.zip"
-  if [ -f "$zip_path" ]; then
+  if ! echo "$SUZAKU_DETECTED" | grep -qx "$suzaku_command"; then
+    echo "    No ${suzaku_command} database — skipping ${suzaku_bundle} dashboard."
+  elif [ -f "$zip_path" ]; then
     echo "==> Importing ${suzaku_bundle} dashboard..."
     DASHBOARD_ZIP="$zip_path" python3 /app/import_dashboard.py
   else
     echo "    ${suzaku_bundle}.zip not found — skipping."
   fi
 done
+
+# Importing a bundle applies its databases/*.yaml onto the existing connection
+# (matched by UUID), overwriting the detected path with the placeholder shipped
+# in the YAML. Re-run registration so the real, schema-detected file wins.
+if [ -n "$SUZAKU_DETECTED" ]; then
+  echo "==> Re-applying detected Suzaku database paths..."
+  python3 /app/register_suzaku_dbs.py
+fi
 
 echo "==> Bootstrap complete."
 

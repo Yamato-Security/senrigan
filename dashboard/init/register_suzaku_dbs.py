@@ -17,6 +17,18 @@ copy of the table in ``agent/suzaku_db.py`` (the Superset image cannot import th
 agent package) and ``tests/test_suzaku_detection_parity.py`` asserts the two stay
 identical.
 
+Run it **twice** from ``bootstrap.sh``: once before the dataset step so the
+databases exist, and once after the dashboard ZIPs are imported. Superset's
+``ImportAssetsCommand`` applies the bundle's ``databases/*.yaml`` onto the
+existing object (matched by UUID), which replaces the detected path with the
+placeholder shipped in the YAML — so the second run is what makes an
+arbitrarily-named Suzaku file actually work.
+
+``--list`` prints the detected commands and exits, without importing Superset;
+``bootstrap.sh`` uses it to skip a bundle whose database was never copied in.
+Importing that bundle anyway would register a database pointing at a file that
+does not exist, and every chart on it would fail with an IOError.
+
 Superset imports happen lazily inside :func:`main` so this module can be
 imported — and its detection tested — outside the container. The
 app-context-before-model-import pattern matches ``register_duckdb.py``.
@@ -71,6 +83,14 @@ DATABASE_UUIDS: dict[str, str] = {
     "aws-ct-timeline": "5a021001-0000-4000-8000-000000000001",
     "aws-ct-summary": "5a021001-0000-4000-8000-000000000002",
     "aws-ct-metrics": "5a021001-0000-4000-8000-000000000003",
+}
+
+# Superset asset bundle -> the Suzaku command whose database it needs.
+# bootstrap.sh imports a bundle only when its command was detected.
+BUNDLE_COMMANDS: dict[str, str] = {
+    "suzaku_timeline": "aws-ct-timeline",
+    "suzaku_summary": "aws-ct-summary",
+    "suzaku_metrics": "aws-ct-metrics",
 }
 
 # Environment variable pinning one file per command, overriding discovery.
@@ -209,8 +229,26 @@ def build_extra() -> dict:
     }
 
 
+def print_detected(directory: str = DB_DIR) -> None:
+    """Print the Suzaku commands detected in *directory*, one per line.
+
+    Used by ``bootstrap.sh`` (``--list``) to decide which dashboard bundles to
+    import. Deliberately does not touch Superset, so it stays fast and cannot
+    fail on a half-initialised metadata database.
+
+    Args:
+        directory: Directory to scan.
+    """
+    for command in sorted(discover_databases(directory)):
+        print(command)
+
+
 def main() -> None:
-    """Register (or update) one Superset database per detected Suzaku command."""
+    """Register (or update) one Superset database per detected Suzaku command.
+
+    Idempotent, and safe to run repeatedly: the second run after the ZIP imports
+    is what restores the detected file path over the bundle's placeholder.
+    """
     found = discover_databases()
     if not found:
         print(f"    No Suzaku DuckDB files detected in {DB_DIR} — skipping.")
@@ -272,5 +310,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--list" in sys.argv[1:]:
+        print_detected()
+    else:
+        main()
     sys.exit(0)

@@ -165,3 +165,32 @@ def test_bootstrap_stays_fail_fast() -> None:
 def test_register_suzaku_script_exists() -> None:
     """bootstrap.sh calls it, and the compose file mounts it."""
     assert os.path.exists(REGISTER_SUZAKU_PATH)
+
+
+def test_bootstrap_reasserts_suzaku_uris_after_importing_bundles() -> None:
+    """Importing a bundle overwrites its database URI with the YAML placeholder.
+
+    Superset's ImportAssetsCommand applies databases/*.yaml onto the existing
+    object (matched by UUID), so the real path detected before the import is
+    replaced by the placeholder shipped in the bundle. Registration therefore has
+    to run again afterwards, or every Suzaku chart raises an IOError against a
+    file name that only exists in the YAML.
+    """
+    text = _bootstrap_text()
+    last_register = text.rindex("register_suzaku_dbs.py")
+    last_suzaku_import = text.rindex("DASHBOARD_ZIP")
+    assert (
+        last_register > last_suzaku_import
+    ), "register_suzaku_dbs.py must run again after the Suzaku ZIP imports"
+
+
+def test_bootstrap_imports_a_suzaku_bundle_only_when_detected() -> None:
+    """A bundle whose database is absent must not be imported at all.
+
+    The ZIP is always present — it is committed — so testing for the file is not
+    a guard. Importing it anyway registers a database pointing at a file that was
+    never copied in, and every chart on that dashboard fails with an IOError.
+    """
+    text = _bootstrap_text()
+    assert "--list" in text, "bootstrap must ask which commands were detected"
+    assert "SUZAKU_DETECTED" in text
