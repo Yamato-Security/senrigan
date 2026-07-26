@@ -236,7 +236,7 @@
 | 5 | MFA-less Console Logins | 선택한 범위에서 MFA 없는 콘솔 로그인 수(KPI-85). 자격 증명 침해의 직접적인 지표입니다 — MFA-less Login Trend를 자세히 살펴보세요. |
 | 6 | Access Denied Events | 선택한 범위에서 인가 실패 이벤트 수(KPI-86). 급증은 정찰이나 권한 탐색을 시사합니다 — 주체/IP로 피벗하세요. |
 | 7 | Defense-Evasion Hits | 선택한 범위에서 감사/모니터링 변조 이벤트 수(KPI-87). 최우선 트리아지 신호입니다 — 0이 아닌 값은 탐지가 비활성화되었을 수 있음을 의미합니다. Security Monitoring & Control Changes를 자세히 살펴보세요. MITRE ATT&CK: TA0005 Defense Evasion. |
-| 8 | Distinct Countries | 선택한 범위에서 고유 소스 국가의 수(KPI-88). GeoIP 보강(make ingest-geoip)이 필요합니다. 넓은 분포는 예기치 않은 지리적 출처에서의 접근을 시사합니다. |
+| 8 | Distinct Countries | 선택한 범위에서 고유 소스 국가의 수(KPI-88). GeoIP 보강(docker/data/geoip/)이 필요합니다. 넓은 분포는 예기치 않은 지리적 출처에서의 접근을 시사합니다. |
 | 9 | Active Regions | 선택한 범위에서 활동이 있는 고유 AWS 리전의 수(KPI-89). 사용하지 않는 리전에서의 활동은 리소스 남용이나 공격자의 준비 단계를 나타낼 수 있습니다. |
 | 10 | CloudTrail Events Over Time | 시간 경과에 따른 시간당 Read 대 Write 이벤트량(DSH-01). 누적 막대는 Read/Write 분할을 보여줍니다 — write_events의 급격한 증가는 공격자가 정찰에서 적극적인 공격으로 전환하고 있음을 나타냅니다. 활동 급증이나 업무 외 시간 작업을 식별하는 데 유용합니다. |
 

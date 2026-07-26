@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**Крок 2.** Клонуйте репозиторій, завантажте журнали та запустіть усі служби.
+**Крок 2.** Клонуйте репозиторій і розмістіть свої дані.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+Два необов'язкові каталоги нижче виявляються автоматично. Заповніть їх **перед** наступним кроком — жодної додаткової команди виконувати не потрібно.
+
+| Каталог | Вміст | Що додає |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | Визначає країну, місто та ASN за вихідними IP-адресами |
+| `docker/data/config-snapshots/` | Файли `.json` знімків AWS Config | Будує граф ресурсів AWS Config |
+
+**Крок 3.** Завантажте журнали та запустіть служби.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**Крок 3.** 🪽 Відкрийте браузер і починайте полювання!🪽
+**Крок 4.** 🪽 Відкрийте браузер і починайте полювання!🪽
 
 - http://localhost:8501 — Вбудовані запити та AI Chat
 - http://localhost:8088 — Інформаційна панель (`admin` / `admin`)
 - http://localhost:8502 — Граф ресурсів AWS Config
 
-**(Необов'язково)** Збагачення GeoIP.
-Розмістіть [файли GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) у `docker/data/geoip/`, а потім:
+---
 
-```bash
-make ingest-geoip
-```
+## Щоденні команди
 
-**(Необов'язково)** Завантаження знімків AWS Config для візуалізації графу ресурсів.
-Розмістіть файли знімків AWS Config у `docker/data/config-snapshots/`, а потім:
-```bash
-make ingest-config
-```
+`make` без аргументів виводить цей перелік. `make help-all` показує всі цілі.
+
+| Команда | Призначення |
+|---|---|
+| `make ingest` | Завантажити журнали CloudTrail з `docker/logs/` у DuckDB |
+| `make up` | Запустити інтерфейс, інформаційну панель і граф ресурсів |
+| `make down` | Зупинити все |
+| `make logs` | Стежити за журналами служб (`SERVICE=agent` для однієї) |
+| `make reset` | Видалити базу даних і почати спочатку |
+
 ---
 
 ## Корпоративний проксі / користувацький сертифікат CA

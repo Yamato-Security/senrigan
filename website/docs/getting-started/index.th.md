@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**ขั้นตอนที่ 2.** โคลน repository, นำเข้า logs, และเริ่มบริการทั้งหมด
+**ขั้นตอนที่ 2.** โคลน repository และวางข้อมูลของคุณให้เรียบร้อย
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+ไดเรกทอรีทางเลือกสองรายการด้านล่างจะถูกตรวจพบโดยอัตโนมัติ วางไฟล์ **ก่อน** ขั้นตอนถัดไป — ไม่ต้องรันคำสั่งเพิ่มเติม
+
+| ไดเรกทอรี | เนื้อหา | สิ่งที่เพิ่มเข้ามา |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | แปลง source IP เป็นประเทศ เมือง และ ASN |
+| `docker/data/config-snapshots/` | ไฟล์ `.json` ของ AWS Config snapshot | สร้างกราฟทรัพยากร AWS Config |
+
+**ขั้นตอนที่ 3.** นำเข้า logs และเริ่มบริการ
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**ขั้นตอนที่ 3.** 🪽 เปิดเบราว์เซอร์ของคุณแล้วเริ่มล่าภัยคุกคามได้เลย!🪽
+**ขั้นตอนที่ 4.** 🪽 เปิดเบราว์เซอร์ของคุณแล้วเริ่มล่าภัยคุกคามได้เลย!🪽
 
 - http://localhost:8501 — คิวรีที่มีมาให้ในตัวและ AI Chat
 - http://localhost:8088 — Dashboard (`admin` / `admin`)
 - http://localhost:8502 — กราฟทรัพยากร AWS Config
 
-**(ทางเลือก)** การเสริมข้อมูล GeoIP
-วางไฟล์ [GeoLite2 `.mmdb` files](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) ไว้ใน `docker/data/geoip/` จากนั้น:
+---
 
-```bash
-make ingest-geoip
-```
+## คำสั่งที่ใช้บ่อย
 
-**(ทางเลือก)** การนำเข้า AWS Config snapshot สำหรับการแสดงผลกราฟทรัพยากร
-วางไฟล์ AWS Config snapshot ไว้ใน `docker/data/config-snapshots/` จากนั้น:
-```bash
-make ingest-config
-```
+การรัน `make` โดยไม่ใส่อาร์กิวเมนต์จะแสดงรายการนี้ และ `make help-all` จะแสดง target ทั้งหมด
+
+| คำสั่ง | การทำงาน |
+|---|---|
+| `make ingest` | โหลด CloudTrail logs จาก `docker/logs/` เข้า DuckDB |
+| `make up` | เริ่ม UI แดชบอร์ด และกราฟทรัพยากร |
+| `make down` | หยุดทั้งหมด |
+| `make logs` | ติดตาม logs ของบริการ (ใช้ `SERVICE=agent` สำหรับบริการเดียว) |
+| `make reset` | ลบฐานข้อมูลแล้วเริ่มใหม่ |
+
 ---
 
 ## พร็อกซีองค์กร / ใบรับรอง CA แบบกำหนดเอง

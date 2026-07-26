@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**Adım 2.** Depoyu klonlayın, günlükleri içe aktarın ve tüm hizmetleri başlatın.
+**Adım 2.** Depoyu klonlayın ve verilerinizi yerleştirin.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+Aşağıdaki iki isteğe bağlı dizin otomatik olarak algılanır. Bir sonraki adımdan **önce** doldurun — çalıştırmanız gereken ek bir komut yoktur.
+
+| Dizin | İçerik | Sağladığı |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | Kaynak IP'leri ülke, şehir ve ASN bilgisine çözümler |
+| `docker/data/config-snapshots/` | AWS Config anlık görüntü `.json` dosyaları | AWS Config kaynak grafiğini oluşturur |
+
+**Adım 3.** Günlükleri içe aktarın ve hizmetleri başlatın.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**Adım 3.** 🪽 Tarayıcınızı açın ve avlanmaya başlayın!🪽
+**Adım 4.** 🪽 Tarayıcınızı açın ve avlanmaya başlayın!🪽
 
 - http://localhost:8501 — Yerleşik sorgular ve AI Chat
 - http://localhost:8088 — Dashboard (`admin` / `admin`)
 - http://localhost:8502 — AWS Config kaynak grafiği
 
-**(İsteğe bağlı)** GeoIP zenginleştirmesi.
-[GeoLite2 `.mmdb` dosyalarını](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) `docker/data/geoip/` dizinine yerleştirin, ardından:
+---
 
-```bash
-make ingest-geoip
-```
+## Günlük komutlar
 
-**(İsteğe bağlı)** Kaynak grafiği görselleştirmesi için AWS Config anlık görüntüsü içe aktarımı.
-AWS Config anlık görüntü dosyalarını `docker/data/config-snapshots/` dizinine yerleştirin, ardından:
-```bash
-make ingest-config
-```
+Argümansız `make` bu listeyi yazdırır. `make help-all` tüm hedefleri gösterir.
+
+| Komut | İşlevi |
+|---|---|
+| `make ingest` | `docker/logs/` içindeki CloudTrail günlüklerini DuckDB'ye yükler |
+| `make up` | Arayüzü, panoyu ve kaynak grafiğini başlatır |
+| `make down` | Her şeyi durdurur |
+| `make logs` | Hizmet günlüklerini izler (tek hizmet için `SERVICE=agent`) |
+| `make reset` | Veritabanını siler ve baştan başlar |
+
 ---
 
 ## Kurumsal Proxy / Özel CA Sertifikası

@@ -236,7 +236,7 @@
 | 5 | MFA-less Console Logins | चयनित सीमा में बिना MFA के console logins की संख्या (KPI-85)। क्रेडेंशियल समझौते का प्रत्यक्ष संकेतक — MFA-less Login Trend में गहराई से जाएँ। |
 | 6 | Access Denied Events | चयनित सीमा में authorization-विफलता इवेंट की संख्या (KPI-86)। एक स्पाइक recon या privilege probing का सुझाव देती है — principal/IP द्वारा pivot करें। |
 | 7 | Defense-Evasion Hits | चयनित सीमा में audit/monitoring छेड़छाड़ इवेंट की संख्या (KPI-87)। उच्चतम-प्राथमिकता triage संकेत — कोई भी गैर-शून्य मान इसका अर्थ है कि detection अक्षम किया गया हो सकता है। Security Monitoring & Control Changes में गहराई से जाएँ। MITRE ATT&CK: TA0005 Defense Evasion। |
-| 8 | Distinct Countries | चयनित सीमा में अद्वितीय source countries की गणना (KPI-88)। GeoIP संवर्धन की आवश्यकता है (make ingest-geoip)। व्यापक प्रसार अप्रत्याशित भौगोलिक मूलों से पहुँच का सुझाव देता है। |
+| 8 | Distinct Countries | चयनित सीमा में अद्वितीय source countries की गणना (KPI-88)। GeoIP संवर्धन की आवश्यकता है (docker/data/geoip/)। व्यापक प्रसार अप्रत्याशित भौगोलिक मूलों से पहुँच का सुझाव देता है। |
 | 9 | Active Regions | चयनित सीमा में गतिविधि के साथ अलग AWS regions की गणना (KPI-89)। अप्रयुक्त regions में गतिविधि संसाधन दुरुपयोग या हमलावर staging का संकेत दे सकती है। |
 | 10 | CloudTrail Events Over Time | समय के साथ प्रति घंटा Read बनाम Write इवेंट वॉल्यूम (DSH-01)। स्टैक किए गए bars Read/Write विभाजन दिखाते हैं: write_events में अचानक वृद्धि यह संकेत देती है कि एक हमलावर recon से सक्रिय शोषण की ओर बढ़ रहा है। गतिविधि स्पाइक्स और ऑफ-ऑवर्स संचालन की पहचान के लिए उपयोगी। |
 

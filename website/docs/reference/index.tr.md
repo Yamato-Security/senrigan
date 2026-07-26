@@ -236,7 +236,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 5 | MFA-less Console Logins | Seçili aralıkta MFA olmadan yapılan konsol oturum açma sayısı (KPI-85). Kimlik bilgisi ele geçirilmesinin doğrudan bir göstergesi — MFA-less Login Trend'e derinlemesine inin. |
 | 6 | Access Denied Events | Seçili aralıktaki yetkilendirme başarısızlığı olay sayısı (KPI-86). Bir sıçrama keşif veya ayrıcalık sondajına işaret eder — principal/IP'ye göre pivot yapın. |
 | 7 | Defense-Evasion Hits | Seçili aralıktaki denetim/izleme kurcalama olayı sayısı (KPI-87). En yüksek öncelikli triyaj sinyali — sıfır olmayan herhangi bir değer, tespitin devre dışı bırakılmış olabileceği anlamına gelir. Security Monitoring & Control Changes'e derinlemesine inin. MITRE ATT&CK: TA0005 Defense Evasion. |
-| 8 | Distinct Countries | Seçili aralıktaki benzersiz kaynak ülke sayısı (KPI-88). GeoIP zenginleştirmesi gerektirir (make ingest-geoip). Geniş bir yayılma, beklenmedik coğrafi kökenlerden erişime işaret eder. |
+| 8 | Distinct Countries | Seçili aralıktaki benzersiz kaynak ülke sayısı (KPI-88). GeoIP zenginleştirmesi gerektirir (docker/data/geoip/). Geniş bir yayılma, beklenmedik coğrafi kökenlerden erişime işaret eder. |
 | 9 | Active Regions | Seçili aralıkta etkinliğin olduğu farklı AWS bölgesi sayısı (KPI-89). Kullanılmayan bölgelerdeki etkinlik, kaynak istismarına veya saldırgan hazırlığına işaret edebilir. |
 | 10 | CloudTrail Events Over Time | Zaman içinde saatlik Okuma ve Yazma olay hacmi (DSH-01). Yığın çubuklar Okuma/Yazma ayrımını gösterir: write_events'teki ani bir artış, bir saldırganın keşiften aktif istismara geçtiğinin sinyalidir. Etkinlik sıçramalarını ve mesai dışı işlemleri belirlemek için kullanışlıdır. |
 

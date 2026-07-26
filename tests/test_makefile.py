@@ -59,11 +59,17 @@ def test_geoip_flags_point_at_mmdb_files():
     """
     offenders: list[str] = []
 
-    for flag, value in re.findall(
-        r"(--geoip-(?:city|country|asn))\s+(\S+)", makefile_text()
-    ):
-        if not expand_variables(value).endswith(".mmdb"):
-            offenders.append(f"{flag} {value}")
+    for line in makefile_text().splitlines():
+        if line.lstrip().startswith("#"):
+            continue  # prose about the flags, not a use of them
+
+        # The value is either a literal path or a $(VAR) reference. It ends at
+        # the comma or paren of an enclosing $(if ...), not just at whitespace.
+        for flag, value in re.findall(
+            r"(--geoip-(?:city|country|asn))\s+((?:\$\([A-Z_]+\)|[^\s,)])+)", line
+        ):
+            if not expand_variables(value).endswith(".mmdb"):
+                offenders.append(f"{flag} {value}")
 
     assert not offenders, "GeoIP flags not pointing at an .mmdb file: " + ", ".join(
         offenders

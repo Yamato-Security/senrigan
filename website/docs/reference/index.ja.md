@@ -236,7 +236,7 @@
 | 5 | MFA-less Console Logins | 選択した範囲での MFA なしコンソールログインの数 (KPI-85)。認証情報侵害の直接的な指標です — MFA-less Login Trend を掘り下げてください。 |
 | 6 | Access Denied Events | 選択した範囲での認可失敗イベントの数 (KPI-86)。急増は偵察や権限探索を示唆します — プリンシパル/IP でピボットしてください。 |
 | 7 | Defense-Evasion Hits | 選択した範囲での監査/監視改ざんイベントの数 (KPI-87)。最優先のトリアージシグナルです — 0 以外の値は検知が無効化された可能性を意味します。Security Monitoring & Control Changes を掘り下げてください。MITRE ATT&CK: TA0005 Defense Evasion。 |
-| 8 | Distinct Countries | 選択した範囲でのユニークなソース国の数 (KPI-88)。GeoIP エンリッチメント (make ingest-geoip) が必要です。広い分布は予期しない地理的発信元からのアクセスを示唆します。 |
+| 8 | Distinct Countries | 選択した範囲でのユニークなソース国の数 (KPI-88)。GeoIP エンリッチメント (docker/data/geoip/) が必要です。広い分布は予期しない地理的発信元からのアクセスを示唆します。 |
 | 9 | Active Regions | 選択した範囲でアクティビティがあるユニークな AWS リージョンの数 (KPI-89)。未使用リージョンでのアクティビティは、リソースの悪用や攻撃者のステージングを示す可能性があります。 |
 | 10 | CloudTrail Events Over Time | 時系列での時間別 Read 対 Write イベント量 (DSH-01)。積み上げ棒グラフは Read/Write の内訳を示します — write_events の急上昇は、攻撃者が偵察からアクティブな攻撃に移行していることを示します。アクティビティの急増や時間外の操作を特定するのに役立ちます。 |
 

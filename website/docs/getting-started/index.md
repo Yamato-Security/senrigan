@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**Step 2.** Clone the repository, ingest logs, and start all services.
+**Step 2.** Clone the repository and put your data in place.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+The two optional directories below are detected automatically. Fill them in **before** the next step — there is no extra command to run.
+
+| Directory | Contents | What it adds |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | Resolves source IPs to country, city, and ASN |
+| `docker/data/config-snapshots/` | AWS Config snapshot `.json` files | Builds the AWS Config resource graph |
+
+**Step 3.** Ingest the logs and start the services.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**Step 3.** 🪽 Open your browser and start hunting!🪽
+**Step 4.** 🪽 Open your browser and start hunting!🪽
 
 - http://localhost:8501 — Built-in queries and AI Chat
 - http://localhost:8088 — Dashboard (`admin` / `admin`)
 - http://localhost:8502 — AWS Config resource graph
 
-**(Optional)** GeoIP enrichment.
-Place [GeoLite2 `.mmdb` files](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) in `docker/data/geoip/`, then:
+---
 
-```bash
-make ingest-geoip
-```
+## Everyday commands
 
-**(Optional)** AWS Config snapshot ingestion for resource graph visualization.
-Place AWS Config snapshot files in `docker/data/config-snapshots/`, then:
-```bash
-make ingest-config
-```
+Running `make` with no arguments prints this list. `make help-all` shows every target.
+
+| Command | What it does |
+|---|---|
+| `make ingest` | Load CloudTrail logs from `docker/logs/` into DuckDB |
+| `make up` | Start the UI, dashboard, and resource graph |
+| `make down` | Stop everything |
+| `make logs` | Tail service logs (`SERVICE=agent` for just one) |
+| `make reset` | Delete the database and start over |
+
 ---
 
 ## Corporate Proxy / Custom CA Certificate
