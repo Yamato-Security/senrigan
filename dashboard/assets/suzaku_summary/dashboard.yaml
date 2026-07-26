@@ -1,0 +1,663 @@
+# Suzaku Identity Summary — Dashboard Definition
+#
+# Layout follows cloudtrail_default: an Overview tab of KPI cards first, then
+# themed tabs. The tabs are shaped by what aws-ct-summary actually contains —
+# identities, their API calls split into abusable/other, and their attributes —
+# rather than by the CloudTrail categories used in the main dashboard.
+#
+# Charts SZS-01..SZS-06 (KPI cards), SZS-10..SZS-14 (Identities),
+# SZS-20..SZS-23 (API Abuse), SZS-30..SZS-32 (Attributes).
+#
+# Generated layout: edit charts/*.yaml and this file, then rebuild the ZIP:
+#   python3 assets/rebuild_suzaku_summary_zip.py
+#   cd docker && docker compose run --rm superset-init
+uuid: 5a021003-0000-4000-8000-000000000002
+version: 1.0.0
+dashboard_title: Suzaku Identity Summary
+description: 'Per-identity CloudTrail threat profiles from Suzaku''s aws-ct-summary command. Suzaku has
+  already aggregated this data, so the dashboard is the right place for it: an Overview KPI row, then
+  Identities, API Abuse and Attributes tabs.'
+published: true
+css: ''
+slug: suzaku-identity-summary
+position:
+  DASHBOARD_VERSION_KEY: v2
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+    - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    children:
+    - TABS_ID
+  TABS_ID:
+    type: TABS
+    id: TABS_ID
+    children:
+    - TAB-overview
+    - TAB-identities
+    - TAB-api-abuse
+    - TAB-attributes
+  ROW-hdr-overview:
+    type: ROW
+    id: ROW-hdr-overview
+    children:
+    - MARKDOWN-overview
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-overview:
+    type: MARKDOWN
+    id: MARKDOWN-overview
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🚦 Overview
+
+
+        Suzaku `aws-ct-summary` profiles every identity that appears in the
+
+        CloudTrail logs. Start here, then use the **Identities** tab to pick a target
+
+        and the **API Abuse** tab to see what it did.'
+  CHART-kpi-identities:
+    type: CHART
+    id: CHART-kpi-identities
+    children: []
+    meta:
+      chartId: 1
+      uuid: 5a021004-0000-4000-8000-000000000001
+      sliceName: Profiled Identities
+      width: 4
+      height: 25
+  CHART-kpi-total-events:
+    type: CHART
+    id: CHART-kpi-total-events
+    children: []
+    meta:
+      chartId: 2
+      uuid: 5a021004-0000-4000-8000-000000000002
+      sliceName: Total Events
+      width: 4
+      height: 25
+  CHART-kpi-abused-apis:
+    type: CHART
+    id: CHART-kpi-abused-apis
+    children: []
+    meta:
+      chartId: 3
+      uuid: 5a021004-0000-4000-8000-000000000003
+      sliceName: Distinct Abused APIs
+      width: 4
+      height: 25
+  ROW-overview-1:
+    type: ROW
+    id: ROW-overview-1
+    children:
+    - CHART-kpi-identities
+    - CHART-kpi-total-events
+    - CHART-kpi-abused-apis
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-kpi-failed-abuse:
+    type: CHART
+    id: CHART-kpi-failed-abuse
+    children: []
+    meta:
+      chartId: 4
+      uuid: 5a021004-0000-4000-8000-000000000004
+      sliceName: Failed Abuse Attempts
+      width: 4
+      height: 25
+  CHART-kpi-source-ips:
+    type: CHART
+    id: CHART-kpi-source-ips
+    children: []
+    meta:
+      chartId: 5
+      uuid: 5a021004-0000-4000-8000-000000000005
+      sliceName: Distinct Source IPs
+      width: 4
+      height: 25
+  CHART-kpi-access-keys:
+    type: CHART
+    id: CHART-kpi-access-keys
+    children: []
+    meta:
+      chartId: 6
+      uuid: 5a021004-0000-4000-8000-000000000006
+      sliceName: Distinct Access Keys
+      width: 4
+      height: 25
+  ROW-overview-2:
+    type: ROW
+    id: ROW-overview-2
+    children:
+    - CHART-kpi-failed-abuse
+    - CHART-kpi-source-ips
+    - CHART-kpi-access-keys
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+    - ROW-hdr-overview
+    - ROW-overview-1
+    - ROW-overview-2
+    meta:
+      text: 🚦 Overview
+      defaultText: Overview
+      tooltip: At-a-glance KPIs — start here, then drill into the themed tabs
+  ROW-hdr-identities:
+    type: ROW
+    id: ROW-hdr-identities
+    children:
+    - MARKDOWN-identities
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-identities:
+    type: MARKDOWN
+    id: MARKDOWN-identities
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 👤 Identities
+
+
+        One row per identity. **Abused (Failed)** is usually the most informative
+
+        column: denied calls to abusable APIs are permission probing.'
+  CHART-identity-triage:
+    type: CHART
+    id: CHART-identity-triage
+    children: []
+    meta:
+      chartId: 7
+      uuid: 5a021004-0000-4000-8000-000000000010
+      sliceName: Identity Triage Table
+      width: 12
+      height: 75
+  ROW-identities-1:
+    type: ROW
+    id: ROW-identities-1
+    children:
+    - CHART-identity-triage
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-top-identities-by-events:
+    type: CHART
+    id: CHART-top-identities-by-events
+    children: []
+    meta:
+      chartId: 8
+      uuid: 5a021004-0000-4000-8000-000000000011
+      sliceName: Top Identities by Event Volume
+      width: 6
+      height: 55
+  CHART-identity-type-composition:
+    type: CHART
+    id: CHART-identity-type-composition
+    children: []
+    meta:
+      chartId: 9
+      uuid: 5a021004-0000-4000-8000-000000000013
+      sliceName: Identity Type Composition
+      width: 6
+      height: 55
+  ROW-identities-2:
+    type: ROW
+    id: ROW-identities-2
+    children:
+    - CHART-top-identities-by-events
+    - CHART-identity-type-composition
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-abused-vs-other-per-identity:
+    type: CHART
+    id: CHART-abused-vs-other-per-identity
+    children: []
+    meta:
+      chartId: 10
+      uuid: 5a021004-0000-4000-8000-000000000012
+      sliceName: Abused vs Other API Calls per Identity
+      width: 12
+      height: 55
+  ROW-identities-3:
+    type: ROW
+    id: ROW-identities-3
+    children:
+    - CHART-abused-vs-other-per-identity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-identity-activity-span:
+    type: CHART
+    id: CHART-identity-activity-span
+    children: []
+    meta:
+      chartId: 11
+      uuid: 5a021004-0000-4000-8000-000000000014
+      sliceName: Identity Activity Span
+      width: 12
+      height: 75
+  ROW-identities-4:
+    type: ROW
+    id: ROW-identities-4
+    children:
+    - CHART-identity-activity-span
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-identities:
+    type: TAB
+    id: TAB-identities
+    children:
+    - ROW-hdr-identities
+    - ROW-identities-1
+    - ROW-identities-2
+    - ROW-identities-3
+    - ROW-identities-4
+    meta:
+      text: 👤 Identities
+      defaultText: Identities
+      tooltip: Who Suzaku profiled, how busy they were, and how widely they operated
+  ROW-hdr-api-abuse:
+    type: ROW
+    id: ROW-hdr-api-abuse
+    children:
+    - MARKDOWN-api-abuse
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-api-abuse:
+    type: MARKDOWN
+    id: MARKDOWN-api-abuse
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### ⚠️ API Abuse
+
+
+        Suzaku classifies APIs as *abusable* or *other*. The catalogue table carries
+
+        Suzaku''s own explanation of why each abusable API matters.'
+  CHART-top-abused-apis:
+    type: CHART
+    id: CHART-top-abused-apis
+    children: []
+    meta:
+      chartId: 12
+      uuid: 5a021004-0000-4000-8000-000000000020
+      sliceName: Top Abused APIs
+      width: 6
+      height: 55
+  CHART-top-failed-apis:
+    type: CHART
+    id: CHART-top-failed-apis
+    children: []
+    meta:
+      chartId: 13
+      uuid: 5a021004-0000-4000-8000-000000000021
+      sliceName: Top Failed API Calls
+      width: 6
+      height: 55
+  ROW-api-abuse-1:
+    type: ROW
+    id: ROW-api-abuse-1
+    children:
+    - CHART-top-abused-apis
+    - CHART-top-failed-apis
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-abused-apis-by-service:
+    type: CHART
+    id: CHART-abused-apis-by-service
+    children: []
+    meta:
+      chartId: 14
+      uuid: 5a021004-0000-4000-8000-000000000022
+      sliceName: Abused APIs by AWS Service
+      width: 12
+      height: 55
+  ROW-api-abuse-2:
+    type: ROW
+    id: ROW-api-abuse-2
+    children:
+    - CHART-abused-apis-by-service
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-abused-api-catalogue:
+    type: CHART
+    id: CHART-abused-api-catalogue
+    children: []
+    meta:
+      chartId: 15
+      uuid: 5a021004-0000-4000-8000-000000000023
+      sliceName: Abused API Catalogue
+      width: 12
+      height: 75
+  ROW-api-abuse-3:
+    type: ROW
+    id: ROW-api-abuse-3
+    children:
+    - CHART-abused-api-catalogue
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-api-abuse:
+    type: TAB
+    id: TAB-api-abuse
+    children:
+    - ROW-hdr-api-abuse
+    - ROW-api-abuse-1
+    - ROW-api-abuse-2
+    - ROW-api-abuse-3
+    meta:
+      text: ⚠️ API Abuse
+      defaultText: API Abuse
+      tooltip: Which abusable APIs were called, by which service, and what failed
+  ROW-hdr-attributes:
+    type: ROW
+    id: ROW-hdr-attributes
+    children:
+    - MARKDOWN-attributes
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-attributes:
+    type: MARKDOWN
+    id: MARKDOWN-attributes
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🔎 Attributes
+
+
+        Use the **Attribute** filter to switch between source IPs, user agents, AWS
+
+        regions and access key IDs. The rare-values table is the anomaly view.'
+  CHART-top-attribute-values:
+    type: CHART
+    id: CHART-top-attribute-values
+    children: []
+    meta:
+      chartId: 16
+      uuid: 5a021004-0000-4000-8000-000000000030
+      sliceName: Top Attribute Values
+      width: 12
+      height: 55
+  ROW-attributes-1:
+    type: ROW
+    id: ROW-attributes-1
+    children:
+    - CHART-top-attribute-values
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rare-attribute-values:
+    type: CHART
+    id: CHART-rare-attribute-values
+    children: []
+    meta:
+      chartId: 17
+      uuid: 5a021004-0000-4000-8000-000000000031
+      sliceName: Rare Attribute Values
+      width: 12
+      height: 75
+  ROW-attributes-2:
+    type: ROW
+    id: ROW-attributes-2
+    children:
+    - CHART-rare-attribute-values
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-attribute-first-last-seen:
+    type: CHART
+    id: CHART-attribute-first-last-seen
+    children: []
+    meta:
+      chartId: 18
+      uuid: 5a021004-0000-4000-8000-000000000032
+      sliceName: Attribute First / Last Seen
+      width: 12
+      height: 75
+  ROW-attributes-3:
+    type: ROW
+    id: ROW-attributes-3
+    children:
+    - CHART-attribute-first-last-seen
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-attributes:
+    type: TAB
+    id: TAB-attributes
+    children:
+    - ROW-hdr-attributes
+    - ROW-attributes-1
+    - ROW-attributes-2
+    - ROW-attributes-3
+    meta:
+      text: 🔎 Attributes
+      defaultText: Attributes
+      tooltip: Source IPs, user agents, regions and access keys — common and rare
+metadata:
+  cross_filters_enabled: true
+  color_scheme: supersetColors
+  native_filter_configuration:
+  - id: NATIVE_FILTER-timerange
+    name: Date Range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      filterState:
+        value: No filter
+    controlValues:
+      enableEmptyFilter: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter every chart by its first-seen timestamp
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-identity
+    name: Identity (ARN)
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_arn
+      datasetUuid: 5a021002-0000-4000-8000-000000000002
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Narrow the dashboard to one or more identities
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-identity-type
+    name: Identity Type
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_types
+      datasetUuid: 5a021002-0000-4000-8000-000000000002
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: 'Filter by identity type: Root, IAMUser, AssumedRole'
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-outcome
+    name: API Outcome
+    filterType: filter_select
+    targets:
+    - column:
+        name: outcome
+      datasetUuid: 5a021002-0000-4000-8000-000000000003
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: success or failed — failed calls to abusable APIs are probing
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-aws-service
+    name: AWS Service
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_source
+      datasetUuid: 5a021002-0000-4000-8000-000000000003
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Restrict the API Abuse tab to one AWS service
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-attribute
+    name: Attribute
+    filterType: filter_select
+    targets:
+    - column:
+        name: attribute
+      datasetUuid: 5a021002-0000-4000-8000-000000000004
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: true
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Which attribute kind the Attributes tab shows (src_ip, user_agent, …)
+    chartsInScope: []
+    tabsInScope: []
+  charts:
+  - slice_name: Profiled Identities
+    viz_type: big_number_total
+    description: How many identities Suzaku profiled (SZS-01). The denominator for every per-identity
+      ratio on this dashboard.
+  - slice_name: Total Events
+    viz_type: big_number_total
+    description: CloudTrail events across the profiled identities (SZS-02). Establishes the size of the
+      dataset the profiles were built from.
+  - slice_name: Distinct Abused APIs
+    viz_type: big_number_total
+    description: Number of distinct APIs Suzaku classifies as abusable that were actually called (SZS-03).
+      A rising count means broader adversary capability.
+  - slice_name: Failed Abuse Attempts
+    viz_type: big_number_total
+    description: Calls to abusable APIs that were denied (SZS-04). The clearest permission-probing signal
+      in the summary output.
+  - slice_name: Distinct Source IPs
+    viz_type: big_number_total
+    description: 'Distinct source IP addresses across all identities (SZS-05). Compare with the identity
+      count: many IPs per identity suggests shared or roaming credentials.'
+  - slice_name: Distinct Access Keys
+    viz_type: big_number_total
+    description: Distinct access key IDs observed (SZS-06). Long-lived keys are the most commonly leaked
+      AWS credential.
+  - slice_name: Identity Triage Table
+    viz_type: table
+    description: 'Every profiled identity with its event volume, abusable-API usage and activity window
+      (SZS-10). Sort by Abused (Failed) to find probing, by Abused (Success) to '
+  - slice_name: Top Identities by Event Volume
+    viz_type: dist_bar
+    description: The busiest identities (SZS-11). Volume alone is not suspicious, but an unexpected identity
+      at the top of this chart usually is.
+  - slice_name: Identity Type Composition
+    viz_type: pie
+    description: Split of profiled identities by type (SZS-13). Root appearing at all is worth a look;
+      a large AssumedRole share is normal in an automated account.
+  - slice_name: Abused vs Other API Calls per Identity
+    viz_type: dist_bar
+    description: For each identity, how much of its API activity Suzaku classifies as abusable (SZS-12).
+      A high abused share on a service account is a strong lead.
+  - slice_name: Identity Activity Span
+    viz_type: table
+    description: How long each identity was active and how widely it operated (SZS-14). Many source IPs
+      or regions for one identity suggests shared or stolen credentials.
+  - slice_name: Top Abused APIs
+    viz_type: dist_bar
+    description: The abusable APIs called most often (SZS-20). Read alongside the API catalogue table,
+      which carries Suzaku's explanation of why each one matters.
+  - slice_name: Top Failed API Calls
+    viz_type: dist_bar
+    description: APIs whose calls were denied most often (SZS-21). Repeated denials on sensitive APIs
+      are permission probing, not misconfiguration.
+  - slice_name: Abused APIs by AWS Service
+    viz_type: dist_bar
+    description: Abusable API calls grouped by AWS service (SZS-22). Concentration in IAM or STS points
+      at privilege escalation; in EC2 or S3, at resource abuse or exfiltration.
+  - slice_name: Abused API Catalogue
+    viz_type: table
+    description: Each abusable API that was called, with Suzaku's description of how it is abused (SZS-23)
+      — the highest-value column in the aws-ct-summary output.
+  - slice_name: Top Attribute Values
+    viz_type: dist_bar
+    description: The most frequently observed values for whichever attribute is selected in the Attribute
+      filter (SZS-30) — source IPs by default.
+  - slice_name: Rare Attribute Values
+    viz_type: table
+    description: 'Values seen only a handful of times (SZS-31). The same reasoning as the Rare Events
+      dashboard: in a large dataset, rarity is the cheapest anomaly signal.'
+  - slice_name: Attribute First / Last Seen
+    viz_type: table
+    description: First and last observation of every attribute value (SZS-32). A value that appears only
+      at the end of the timeline is a new — and therefore interesting — one.

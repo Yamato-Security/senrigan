@@ -1,0 +1,27 @@
+# SZS-03: Distinct Abused APIs (KPI card)
+uuid: 5a021004-0000-4000-8000-000000000003
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Distinct Abused APIs
+viz_type: big_number_total
+description: >
+  Number of distinct APIs Suzaku classifies as abusable that were actually called (SZS-03). A rising count means broader adversary capability.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT api)"
+    label: abused_apis
+    hasCustomLabel: true
+    optionName: metric_abused_apis
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "is_abused"
+      filterOptionName: filter_abused_only
+  subheader: "abusable APIs actually called"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

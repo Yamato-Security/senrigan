@@ -298,5 +298,7 @@ nav:
       - Modules: overview/modules.md
       - Architecture: overview/architecture.md
   - Getting Started: getting-started/index.md
-  - Reference: reference/index.md
+  - Reference:
+      - Hunts & Charts: reference/index.md
+      - Suzaku Integration: reference/suzaku.md
   - Resources: resources/index.md

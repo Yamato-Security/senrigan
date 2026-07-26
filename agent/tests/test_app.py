@@ -15,6 +15,8 @@ from unittest.mock import MagicMock, patch
 import duckdb
 import pandas as pd
 
+from profiles import CLOUDTRAIL_PROFILE
+
 
 def test_session_state_initialization():
     """Session state is populated with expected keys on startup.
@@ -640,6 +642,9 @@ def test_handle_user_query_passes_context_to_generate_sql(tmp_duckdb):
         api_key="sk-test",
         model="gpt-5.4",
         context=existing_context,
+        # The dataset profile selects the table and system prompt; the
+        # CloudTrail page always passes its own (see profiles.py).
+        profile=CLOUDTRAIL_PROFILE,
     )
 
 

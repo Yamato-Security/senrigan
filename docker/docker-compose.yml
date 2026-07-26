@@ -130,6 +130,7 @@ services:
       - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
       - ../dashboard/init/bootstrap.sh:/app/bootstrap.sh:ro
       - ../dashboard/init/register_duckdb.py:/app/register_duckdb.py:ro
+      - ../dashboard/init/register_suzaku_dbs.py:/app/register_suzaku_dbs.py:ro
       - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
       - ../dashboard/init/import_dashboard.py:/app/import_dashboard.py:ro
     environment:

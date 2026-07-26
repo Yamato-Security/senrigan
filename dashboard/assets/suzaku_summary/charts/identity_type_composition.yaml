@@ -1,0 +1,28 @@
+# SZS-13: Composition of identity types.
+uuid: 5a021004-0000-4000-8000-000000000013
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Identity Type Composition
+viz_type: pie
+description: >
+  Split of profiled identities by type (SZS-13). Root appearing at all is worth a look; a large AssumedRole share is normal in an automated account.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(*)"
+    label: identities
+    hasCustomLabel: true
+    optionName: metric_identity_type_composition_identities
+  groupby:
+    - user_types
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 25
+  color_scheme: supersetColors
+  donut: true
+  show_labels: true
+  label_type: key_percent
+  rich_tooltip: true
+cache_timeout: null

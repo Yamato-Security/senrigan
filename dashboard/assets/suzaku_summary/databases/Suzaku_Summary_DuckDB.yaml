@@ -1,0 +1,22 @@
+# Superset database connection for Suzaku `aws-ct-summary` DuckDB output.
+#
+# The path here is a placeholder: init/register_suzaku_dbs.py detects the real
+# file by schema at bootstrap and rewrites the URI on this same UUID. Dataset and
+# chart YAMLs therefore never contain a file path.
+uuid: 5a021001-0000-4000-8000-000000000002
+version: 1.0.0
+database_name: Suzaku Summary DuckDB
+sqlalchemy_uri: "duckdb+duckdb_engine:////data/db/suzaku-aws-ct-summary.duckdb"
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_csv_upload: false
+extra:
+  metadata_params: {}
+  engine_params:
+    connect_args:
+      read_only: true
+  schemas_allowed_for_file_upload: []

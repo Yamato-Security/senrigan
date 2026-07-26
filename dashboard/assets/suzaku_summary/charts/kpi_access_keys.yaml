@@ -1,0 +1,27 @@
+# SZS-06: Distinct Access Keys (KPI card)
+uuid: 5a021004-0000-4000-8000-000000000006
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000004
+slice_name: Distinct Access Keys
+viz_type: big_number_total
+description: >
+  Distinct access key IDs observed (SZS-06). Long-lived keys are the most commonly leaked AWS credential.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT value)"
+    label: access_keys
+    hasCustomLabel: true
+    optionName: metric_access_keys
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "attribute = 'access_key_id'"
+      filterOptionName: filter_attr_access_key
+  subheader: "long-lived access keys in use"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

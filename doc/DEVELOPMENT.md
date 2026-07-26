@@ -288,12 +288,9 @@ senrigan/
 │   ├── config.py              # Configuration (env vars)
 │   ├── builtin_hunts.yaml     # Pre-built hunt queries
 │   ├── prompts/               # Prompt templates (system_prompt.py, analysis_prompt.py)
-│   ├── suzaku_summary.py      # Suzaku aws-ct-summary parsing/aggregation (pure functions)
-│   ├── suzaku_report.py       # Suzaku summary Markdown/HTML report (pure functions)
-│   ├── views/                 # st.navigation pages (suzaku_ct_summary.py)
 │   ├── requirements.txt       # Python dependencies
 │   ├── requirements-dev.txt   # Dev dependencies
-│   └── tests/                 # pytest tests (~351 tests)
+│   └── tests/                 # pytest tests
 ├── config_viz/
 │   ├── PLAN.md                # Phase A/B/C implementation plan
 │   ├── README.md              # Module documentation

@@ -36,18 +36,21 @@ agent/
 ├── query.py               # DuckDB query execution, validation, date filter, row limit, retry
 ├── geo.py                 # Automatic GeoIP enrichment of IP columns in query results
 ├── report.py              # Threat hunting report generation (Markdown + sensitive data redaction)
-├── schema.py              # CloudTrail table schema description for the system prompt
+├── schema.py              # Column metadata for cloudtrail_events and Suzaku's timeline
+├── profiles.py            # DatasetProfile — table, filters, prompt, state namespace per page
+├── suzaku_db.py           # Discovery + schema-based detection of Suzaku *.duckdb files
 ├── config.py              # Configuration management (env vars)
-├── suzaku_summary.py      # Suzaku aws-ct-summary JSON parsing (pure functions)
-├── suzaku_report.py       # Suzaku CT Summary report generation (pure functions)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised; each maps to
 │                          #   Threat Technique Catalog for AWS techniques via `techniques:`)
+├── suzaku_timeline_hunts.yaml  # 15 pre-built hunts for Suzaku's timeline table (same schema)
+├── views/
+│   ├── __init__.py
+│   └── suzaku_timeline.py # Page: hunting over Suzaku aws-ct-timeline output
 ├── prompts/
 │   ├── __init__.py
-│   ├── system_prompt.py   # System prompt template for SQL generation
+│   ├── system_prompt.py   # System prompt template for cloudtrail_events
+│   ├── suzaku_timeline_prompt.py  # System prompt template for Suzaku's timeline
 │   └── analysis_prompt.py # System prompt + user template for analysis
-├── views/
-│   └── suzaku_ct_summary.py # ☁️ Suzaku CT Summary page (upload-based, no DuckDB/API key)
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── Dockerfile
@@ -66,13 +69,16 @@ agent/
     ├── test_builtin_hunts_phase1.py … test_builtin_hunts_phase6.py
     ├── test_builtin_hunts_techniques.py  # Threat Technique Catalog metadata + rendering
     ├── test_console_login_oauth2.py
-    ├── test_suzaku_summary.py
-    └── test_suzaku_report.py
+    ├── test_profiles.py               # DatasetProfile, filter injection, prompt selection
+    ├── test_suzaku_db.py              # Suzaku detection, discovery, env overrides
+    ├── test_suzaku_timeline_hunts.py  # Every Suzaku hunt executed against the fixture
+    ├── test_suzaku_timeline_view.py   # Page wiring + session-state isolation between pages
+    └── test_result_card_charts.py     # Charts must not nest expanders; time-column detection
 ```
 
 ## Implemented Tests
 
-440 tests across 15 test files (counts below are approximate — run
+713 tests across 20 test files (counts below are approximate — run
 `python3 -m pytest <file> --collect-only -q` for exact numbers). Key coverage areas per module:
 
 ### config.py (`test_config.py` — 10 tests)

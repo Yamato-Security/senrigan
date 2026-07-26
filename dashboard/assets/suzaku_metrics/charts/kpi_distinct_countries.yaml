@@ -1,0 +1,23 @@
+# SZM-06: Source Countries (KPI card)
+uuid: 5a021005-0000-4000-8000-000000000006
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Source Countries
+viz_type: big_number_total
+description: >
+  Distinct source countries (SZM-06). Zero means Suzaku ran without GeoIP enrichment, not that traffic was local.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT src_country)"
+    label: countries
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_countries_countries
+  adhoc_filters: []
+  subheader: "countries (0 without GeoIP)"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

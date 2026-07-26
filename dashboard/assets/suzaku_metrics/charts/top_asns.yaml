@@ -1,0 +1,35 @@
+# SZM-31: Occurrences per autonomous system (GeoIP runs only).
+uuid: 5a021005-0000-4000-8000-000000000031
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Top Source ASNs
+viz_type: dist_bar
+description: >
+  Occurrences grouped by source ASN (SZM-31). Hosting and VPN providers appearing high here are worth a second look.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_top_asns_occurrences
+  groupby:
+    - src_asn
+  columns: []
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "src_country IS NOT NULL"
+      filterOptionName: filter_geo_present
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Occurrences
+  y_axis_label: ASN
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

@@ -1,0 +1,35 @@
+# SZS-20: Most-called abusable APIs.
+uuid: 5a021004-0000-4000-8000-000000000020
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Top Abused APIs
+viz_type: dist_bar
+description: >
+  The abusable APIs called most often (SZS-20). Read alongside the API catalogue table, which carries Suzaku's explanation of why each one matters.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(call_count)"
+      label: calls
+      hasCustomLabel: true
+      optionName: metric_top_abused_apis_calls
+  groupby:
+    - api
+  columns: []
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "is_abused"
+      filterOptionName: filter_abused_only
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Calls
+  y_axis_label: API Action
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

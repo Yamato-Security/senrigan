@@ -124,3 +124,44 @@ def test_databases_yaml_uri_uses_explicit_driver() -> None:
         f"'duckdb+duckdb_engine://' to avoid SA2 entry-point failure.  "
         f"Current: '{uri}'"
     )
+
+
+# ---------------------------------------------------------------------------
+# Suzaku registration and dashboard import (PLAN_SUZAKU_VIEWS.md §5.5, 16-17)
+# ---------------------------------------------------------------------------
+
+REGISTER_SUZAKU_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "init", "register_suzaku_dbs.py"
+)
+
+
+def _bootstrap_text() -> str:
+    """Return bootstrap.sh as text."""
+    with open(BOOTSTRAP_SH_PATH, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def test_bootstrap_registers_suzaku_databases_before_datasets() -> None:
+    """Test 16: a dataset cannot be attached to a database that is not there yet."""
+    text = _bootstrap_text()
+    assert "register_suzaku_dbs.py" in text
+    assert text.index("register_suzaku_dbs.py") < text.index("register_dataset.py")
+
+
+def test_bootstrap_guards_every_suzaku_zip_import() -> None:
+    """Test 17: importing a ZIP that does not exist aborts the bootstrap."""
+    text = _bootstrap_text()
+    for bundle in ("suzaku_timeline", "suzaku_summary", "suzaku_metrics"):
+        assert bundle in text
+    # The loop tests for the file before importing it.
+    assert 'if [ -f "$zip_path" ]' in text
+
+
+def test_bootstrap_stays_fail_fast() -> None:
+    """`set -e` is what makes a failed migration stop the container."""
+    assert "set -e" in _bootstrap_text()
+
+
+def test_register_suzaku_script_exists() -> None:
+    """bootstrap.sh calls it, and the compose file mounts it."""
+    assert os.path.exists(REGISTER_SUZAKU_PATH)

@@ -1,0 +1,46 @@
+# SZS-31: Least frequent values — the rare-event view.
+uuid: 5a021004-0000-4000-8000-000000000031
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000004
+slice_name: Rare Attribute Values
+viz_type: table
+description: >
+  Values seen only a handful of times (SZS-31). The same reasoning as the Rare Events dashboard: in a large dataset, rarity is the cheapest anomaly signal.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_rare_attribute_values_occurrences
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_rare_attribute_values_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_rare_attribute_values_last_seen
+  groupby:
+    - attribute
+    - value
+    - user_arn
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: false
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "SUM(occurrence_count)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_rare_attribute_values_sort
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

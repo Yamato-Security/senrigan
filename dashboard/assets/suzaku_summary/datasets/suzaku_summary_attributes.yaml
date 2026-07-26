@@ -1,0 +1,116 @@
+# Superset dataset: per-identity attribute values from Suzaku `aws-ct-summary`.
+#
+# One row per (identity, attribute, value): source IPs, user agents, regions and
+# access key IDs, each with an occurrence count and a first/last seen window.
+# VIRTUAL (sql:) only to CAST the VARCHAR timestamps and rename the PascalCase
+# columns (doc/PLAN_SUZAKU_SCHEMA.md P3/P6).
+#
+# `attribute` is deliberately left as data rather than pivoted into columns: a
+# future Suzaku release adding a new attribute kind then appears in the dashboard
+# through its native filter, with no YAML change.
+uuid: 5a021002-0000-4000-8000-000000000004
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000002
+table_name: suzaku_summary_attributes
+main_dttm_col: first_seen
+description: >
+  Attribute values (source IP, user agent, AWS region, access key ID) per
+  identity from Suzaku aws-ct-summary, with occurrence counts.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      "UserARN"                       AS user_arn,
+      "Attribute"                     AS attribute,
+      "Value"                         AS value,
+      "Count"                         AS occurrence_count,
+      CAST("FirstSeen" AS TIMESTAMP)  AS first_seen,
+      CAST("LastSeen" AS TIMESTAMP)   AS last_seen
+  FROM summary_attributes
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: user_arn
+    verbose_name: Identity (ARN)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the identity the value was observed for
+
+  - column_name: attribute
+    verbose_name: Attribute
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Attribute kind (src_ip, user_agent, aws_region, access_key_id)
+
+  - column_name: value
+    verbose_name: Value
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: The observed value
+
+  - column_name: occurrence_count
+    verbose_name: Occurrences
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: How often the value was seen for this identity
+
+  - column_name: first_seen
+    verbose_name: First Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: First time the value was observed
+
+  - column_name: last_seen
+    verbose_name: Last Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Last time the value was observed
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of identity/attribute/value rows
+
+  - metric_name: occurrence_total
+    verbose_name: Occurrences
+    metric_type: sum
+    expression: "SUM(occurrence_count)"
+    description: Total occurrences
+
+  - metric_name: distinct_values
+    verbose_name: Distinct Values
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT value)"
+    description: Number of distinct values
+
+  - metric_name: distinct_identities
+    verbose_name: Distinct Identities
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT user_arn)"
+    description: Number of identities the value was seen for

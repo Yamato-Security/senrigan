@@ -3,7 +3,7 @@
         ingest ingest-full ingest-geoip enrich ingest-config config-import resync \
         logs-agent logs-config-viz logs-superset \
         check test lint fmt-check \
-        test-ingester test-agent test-config-viz test-frontend test-repo \
+        test-ingester test-agent test-config-viz test-dashboard test-frontend test-repo \
         build-ingester \
         clean
 
@@ -36,7 +36,8 @@ host_dir = $(if $(filter /%,$(1)),$(1),docker/$(patsubst ./%,%,$(1)))
 
 GEOIP_HOST_DIR   := $(call host_dir,$(GEOIP_HOST_PATH))
 CONFIG_HOST_DIR  := $(call host_dir,$(CONFIG_HOST_PATH))
-DB_FILE          := $(call host_dir,$(DUCKDB_HOST_PATH))/threat_hunting.db
+DB_HOST_DIR      := $(call host_dir,$(DUCKDB_HOST_PATH))
+DB_FILE          := $(DB_HOST_DIR)/threat_hunting.db
 
 # docker-compose.yml mounts ./logs read-only at /data/logs and offers no
 # override, so this path is fixed.
@@ -46,6 +47,12 @@ CITY_MMDB        := $(wildcard $(GEOIP_HOST_DIR)/GeoLite2-City.mmdb)
 COUNTRY_MMDB     := $(wildcard $(GEOIP_HOST_DIR)/GeoLite2-Country.mmdb)
 ASN_MMDB         := $(wildcard $(GEOIP_HOST_DIR)/GeoLite2-ASN.mmdb)
 CONFIG_SNAPSHOTS := $(wildcard $(CONFIG_HOST_DIR)/*)
+
+# Suzaku (https://github.com/Yamato-Security/suzaku) writes .duckdb files that
+# the analyst copies in by hand. Senrigan reads them as-is, so there is nothing
+# to run — `status` just reports what it can see. The names are arbitrary: the
+# agent and superset-init both detect the producing command from the schema.
+SUZAKU_DBS       := $(wildcard $(DB_HOST_DIR)/*.duckdb)
 
 # City supersedes Country: the ingester ignores the country database whenever
 # the city one is set, so never pass both. $(strip) matters — a line
@@ -93,6 +100,10 @@ up: ensure-secret              ## Start the UI, dashboard, and resource graph
 	@echo ""
 	@echo "  🔍  \033[36mhttp://localhost:8501\033[0m  — Built-in queries and AI Chat"
 	@echo "  📊  \033[36mhttp://localhost:8088/dashboard/list\033[0m  — Dashboard  \033[2m(admin / admin)\033[0m"
+ifneq ($(SUZAKU_DBS),)
+	@echo ""
+	@echo "  🕒  Suzaku output detected — see the Suzaku pages in both UIs."
+endif
 	@echo ""
 
 down: ensure-secret            ## Stop all services
@@ -156,7 +167,14 @@ status: ensure-secret          ## Show container, database, and detection status
 	    printf '  Database  not found at %s — run: make ingest\n' '$(DB_FILE)'; \
 	fi
 	@printf '  GeoIP     %s\n' '$(if $(GEOIP_FLAGS),enabled from $(GEOIP_HOST_DIR)/,no database in $(GEOIP_HOST_DIR)/)'
-	@printf '  Config    %s\n\n' '$(if $(CONFIG_SNAPSHOTS),$(words $(CONFIG_SNAPSHOTS)) snapshot file(s) in $(CONFIG_HOST_DIR)/,none in $(CONFIG_HOST_DIR)/)'
+	@printf '  Config    %s\n' '$(if $(CONFIG_SNAPSHOTS),$(words $(CONFIG_SNAPSHOTS)) snapshot file(s) in $(CONFIG_HOST_DIR)/,none in $(CONFIG_HOST_DIR)/)'
+ifneq ($(SUZAKU_DBS),)
+	@printf '  Suzaku    %s file(s) in %s/:\n' '$(words $(SUZAKU_DBS))' '$(DB_HOST_DIR)'
+	@for db in $(SUZAKU_DBS); do printf '              %s\n' "$$db"; done
+else
+	@printf '  Suzaku    no *.duckdb in %s/ — copy Suzaku output there to visualize it\n' '$(DB_HOST_DIR)'
+endif
+	@printf '\n'
 
 # Kept for compatibility: `ps` predates `status`.
 ps: status
@@ -183,7 +201,7 @@ logs-agent logs-config-viz logs-superset: logs
 
 check: test lint fmt-check  ## Run everything CI enforces (tests + lint + format)
 
-test: test-ingester test-agent test-config-viz test-frontend test-repo  ## Run all tests
+test: test-ingester test-agent test-config-viz test-dashboard test-frontend test-repo  ## Run all tests
 
 test-ingester:   ## Run ingester (Rust) tests
 	cd ingester && cargo test --all
@@ -193,6 +211,9 @@ test-agent:      ## Run agent (Python) tests
 
 test-config-viz: ## Run config_viz (Python) tests
 	cd config_viz && pytest -v --tb=short
+
+test-dashboard:  ## Run dashboard asset-validation tests
+	cd dashboard && pytest -v --tb=short
 
 test-frontend:   ## Run config_viz frontend (Vitest) tests
 	cd config_viz/frontend && npm test
@@ -204,13 +225,15 @@ lint:            ## Run all linters (clippy + ruff)
 	cd ingester && cargo clippy --all-targets --all-features -- -D warnings
 	cd agent && ruff check .
 	cd config_viz && ruff check .
-	ruff check tests
+	cd dashboard && ruff check .
+	ruff check tests sample
 
 fmt-check:       ## Check formatting (rustfmt + black)
 	cd ingester && cargo fmt --all -- --check
 	cd agent && black --check .
 	cd config_viz && black --check .
-	black --check tests
+	cd dashboard && black --check .
+	black --check tests sample
 
 build-ingester:  ## Build ingester release binary
 	cd ingester && cargo build --release

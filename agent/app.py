@@ -26,8 +26,10 @@ from handlers import (
     _handle_user_query,
 )
 from llm import MAX_CONTEXT_TURNS  # noqa: F401
+from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE, DatasetProfile
 from query import DEFAULT_ROW_LIMIT
 from report import ReportEntry, generate_report, generate_html_report
+from suzaku_db import SuzakuKind, discover
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,8 @@ SESSION_STATE_DEFAULTS: dict = {
     "db_variant": DB_VARIANT_FULL,  # active DB variant; "Lite" only available when DUCKDB_PATH_LITE is set
     "analyst_notes": {},  # UI-01: dict[int, str] — query_index → analyst note text
     "bulk_progress": None,  # UI-04: None | {"current": int, "total": int, "label": str}
+    "levels": [],  # severity filter (Suzaku only; empty = no filter)
+    "suzaku_db": "",  # path of the selected Suzaku DuckDB file
 }
 
 
@@ -108,26 +112,65 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
             barmode="group",
         )
 
-    with st.expander("📊 Bar Chart", expanded=True):
-        st.plotly_chart(fig, use_container_width=True)
+    # Rendered inline, not in an expander: the caller (a result card) is already
+    # an expander, and Streamlit forbids nesting them.
+    st.markdown("**📊 Bar Chart**")
+    st.plotly_chart(fig, use_container_width=True)
+
+
+# Column names a time-series chart can bucket on, in priority order. Results come
+# from different tables (``cloudtrail_events.event_time``, Suzaku's
+# ``Timestamp``) and hunts frequently bucket in SQL and return an alias.
+_TIME_COLUMN_CANDIDATES: tuple[str, ...] = (
+    "event_time",
+    "timestamp",
+    "day",
+    "hour",
+    "week",
+    "month",
+    "bucket",
+    "first_seen",
+    "last_seen",
+)
+
+
+def _find_time_column(df: pd.DataFrame) -> str | None:
+    """Return the column a time-series chart should bucket, or None.
+
+    Matching is case-insensitive and follows :data:`_TIME_COLUMN_CANDIDATES`, so
+    a query aliasing its bucket as ``day`` charts just as well as one returning
+    a raw timestamp.
+
+    Args:
+        df: The query result DataFrame.
+
+    Returns:
+        The column name to plot, or ``None`` when nothing looks temporal.
+    """
+    lowered = {str(column).lower(): column for column in df.columns}
+    for candidate in _TIME_COLUMN_CANDIDATES:
+        if candidate in lowered:
+            return lowered[candidate]
+    return None
 
 
 def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
-    """Render a time-series bar chart by bucketing the event_time column.
+    """Render a time-series chart by bucketing the result's time column.
 
-    Skips rendering when the DataFrame has no event_time column, when the
+    Skips rendering when the DataFrame has no recognisable time column, when the
     timestamps cannot be parsed, or when there is only one distinct bucket
     (a single-bar chart provides no visual value).
 
     Args:
-        df:           The query result DataFrame containing an event_time column.
+        df:           The query result DataFrame.
         chart_config: Chart configuration dict; uses bucket='day' by default.
     """
-    if "event_time" not in df.columns:
+    time_column = _find_time_column(df)
+    if time_column is None:
         return
 
     bucket = chart_config.get("bucket", "day")
-    ts = pd.to_datetime(df["event_time"], errors="coerce").dropna()
+    ts = pd.to_datetime(df[time_column], errors="coerce").dropna()
     if ts.empty:
         return
 
@@ -145,8 +188,9 @@ def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
     chart_df = counts.reset_index()
     chart_df.columns = ["bucket", "count"]
 
-    with st.expander(title, expanded=True):
-        st.line_chart(chart_df, x="bucket", y="count")
+    # Inline for the same reason as the bar chart: no expander nesting.
+    st.markdown(f"**{title}**")
+    st.line_chart(chart_df, x="bucket", y="count")
 
 
 def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
@@ -190,15 +234,26 @@ def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _init_session_state() -> None:
-    """Initialize Streamlit session state with default values.
+def _init_session_state(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
+    """Initialize this profile's session-state namespace with default values.
 
     Idempotent: only sets keys that are not already present, so existing
-    session data is never overwritten on page reload.
+    session data is never overwritten on page reload. Per-page keys are
+    prefixed by the profile (see ``profiles.py``), so the two pages keep
+    independent history, filters and reports while sharing the API key,
+    model and row cap.
+
+    Args:
+        profile: Dataset profile whose namespace to initialize.
     """
     for key, default in SESSION_STATE_DEFAULTS.items():
-        if key not in st.session_state:
-            st.session_state[key] = default
+        namespaced = profile.state_key(key)
+        if namespaced not in st.session_state:
+            if key == "levels":
+                default = list(profile.default_levels)
+            elif key == "row_limit":
+                default = profile.default_row_limit
+            st.session_state[namespaced] = default
 
 
 def _format_technique_caption(technique: dict) -> str:
@@ -253,22 +308,28 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
     ]
 
 
-def _load_builtin_prompts() -> list[dict]:
-    """Load built-in threat hunting prompts from the YAML file.
+def _load_builtin_prompts(
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
+) -> list[dict]:
+    """Load built-in hunt prompts for *profile* from its YAML file.
+
+    Args:
+        profile: Dataset profile whose ``hunts_path`` to read.
 
     Returns:
         A list of dicts, each containing 'label' and 'prompt' keys.
         Falls back to a minimal built-in list if the file is not found.
     """
+    path = profile.hunts_path
     try:
-        with open(_BUILTIN_PROMPTS_PATH, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             prompts = yaml.safe_load(f)
         if isinstance(prompts, list):
             return prompts
     except FileNotFoundError:
-        logger.warning("builtin_hunts.yaml not found at %s", _BUILTIN_PROMPTS_PATH)
+        logger.warning("hunts YAML not found at %s", path)
     except yaml.YAMLError as exc:
-        logger.error("Failed to parse builtin_hunts.yaml: %s", exc)
+        logger.error("Failed to parse %s: %s", path, exc)
 
     # Fallback minimal list
     return [
@@ -287,6 +348,27 @@ def _load_builtin_prompts() -> list[dict]:
             ),
         },
     ]
+
+
+def _clear_session(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
+    """Reset one page's chat, results, notes and context.
+
+    Only the profile's own namespace is touched, so clearing the Suzaku page
+    leaves a CloudTrail investigation — and the shared API key — intact.
+
+    Args:
+        profile: Dataset profile whose session state to clear.
+    """
+    for key, value in (
+        ("messages", []),
+        ("query_history", []),
+        ("last_sql", ""),
+        ("last_results", None),
+        ("last_summary", ""),
+        ("conversation_context", []),
+        ("analyst_notes", {}),
+    ):
+        st.session_state[profile.state_key(key)] = value
 
 
 def _export_session(
@@ -324,29 +406,123 @@ def _export_session(
 # ---------------------------------------------------------------------------
 
 
-def _get_duckdb_path() -> str:
-    """Resolve the DuckDB path for the active session variant.
+def _get_duckdb_path(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> str:
+    """Resolve the DuckDB path this profile's queries should run against.
 
-    When ``DUCKDB_PATH_LITE`` is set and the user has selected the Lite
-    variant in the sidebar, return that path. Otherwise return the
-    Full path from ``DUCKDB_PATH`` (or the Docker-standard default).
+    For Suzaku profiles the path is a file the analyst copied into the mounted
+    directory and picked in the sidebar; it is stored in the profile's session
+    namespace by :func:`_render_suzaku_db_selector`.
+
+    For the CloudTrail profile the path follows the Full/Lite variant: when
+    ``DUCKDB_PATH_LITE`` is set and the user selected Lite in the sidebar, that
+    path is returned, otherwise the Full path from ``DUCKDB_PATH``.
+
+    Args:
+        profile: Dataset profile being queried.
+
+    Returns:
+        The DuckDB file path, or ``""`` when no Suzaku database was selected.
     """
+    if profile.key != CLOUDTRAIL_PROFILE.key:
+        return str(st.session_state.get(profile.state_key("suzaku_db"), "") or "")
     variant = st.session_state.get("db_variant", DB_VARIANT_FULL)
     return get_duckdb_path_for_variant(variant)
 
 
-def render_sidebar() -> None:
+@st.cache_data(show_spinner=False, ttl=30)
+def _discover_suzaku_dbs(directory: str) -> list[dict]:
+    """Return discovered Suzaku databases as plain dicts, cached briefly.
+
+    Discovery opens every ``*.duckdb`` file in *directory*, so it is cached for
+    30 s rather than repeated on each Streamlit rerun. Plain dicts are returned
+    because ``st.cache_data`` pickles its result.
+
+    Args:
+        directory: Directory to scan.
+
+    Returns:
+        One dict per file with path, label, kinds, rows, error and hint.
+    """
+    return [
+        {
+            "path": str(info.path),
+            "label": info.label,
+            "kinds": sorted(kind.value for kind in info.kinds),
+            "rows": sum(info.row_counts.values()),
+            "error": info.error,
+            "hint": info.hint,
+        }
+        for info in discover(directory)
+    ]
+
+
+def _render_suzaku_db_selector(profile: DatasetProfile, kind: SuzakuKind) -> bool:
+    """Render the Suzaku database picker and store the choice in session state.
+
+    Args:
+        profile: Dataset profile whose namespace holds the selection.
+        kind:    The Suzaku kind this page can read.
+
+    Returns:
+        True when a usable database is selected, False when the page should
+        render its empty state instead.
+    """
+    directory = str(Path(get_duckdb_path_for_variant(DB_VARIANT_FULL)).parent)
+    found = _discover_suzaku_dbs(directory)
+    matching = [db for db in found if kind.value in db["kinds"]]
+
+    st.subheader("🗄️ Suzaku Database")
+    if not matching:
+        st.warning(f"No `{kind.value}` database found in `{directory}`.")
+        for db in found:
+            if db["error"]:
+                st.caption(f"⚠️ `{Path(db['path']).name}` — {db['hint']}")
+        return False
+
+    paths = [db["path"] for db in matching]
+    stored = st.session_state.get(profile.state_key("suzaku_db"), "")
+    index = paths.index(stored) if stored in paths else 0
+    selected = st.selectbox(
+        "File",
+        options=paths,
+        index=index,
+        format_func=lambda path: Path(path).name,
+        key=f"_{profile.key}_db_select",
+        help="Every *.duckdb file in the mounted database directory whose schema "
+        "matches this Suzaku command. Newest first.",
+    )
+    st.session_state[profile.state_key("suzaku_db")] = selected
+
+    chosen = next(db for db in matching if db["path"] == selected)
+    st.caption(f"📁 `{selected}`")
+    st.caption(f"{chosen['rows']:,} rows")
+    if chosen["hint"]:
+        st.caption(f"⚠️ {chosen['hint']}")
+    return True
+
+
+def render_sidebar(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
     """Render the sidebar: API key, model selection, presets, report, session export.
 
     Handles AGT-07 (preset prompts), AGT-08 (session export), AGT-09 (API key).
+
+    Every widget key is prefixed with the profile key so the two pages do not
+    share widget state, and every history read goes through the profile's
+    session namespace.
+
+    Args:
+        profile: Dataset profile the page is querying.
     """
+    prefix = profile.key
     with st.sidebar:
         # Database variant selector — only shown when a Lite DB has been
         # configured via the DUCKDB_PATH_LITE environment variable.
         # The Lite variant points at a DuckDB file produced by
         # `ingester ingest --strip-fields`, where pagination/idempotency
         # noise has been removed from request_parameters / response_elements.
-        lite_path = get_duckdb_path_lite()
+        lite_path = (
+            get_duckdb_path_lite() if profile.key == CLOUDTRAIL_PROFILE.key else None
+        )
         if lite_path:
             st.subheader("🗄️ Database")
             variants = [DB_VARIANT_FULL, DB_VARIANT_LITE]
@@ -375,7 +551,7 @@ def render_sidebar() -> None:
 
         # AGT-07: Preset threat hunting prompts (v2 — category grouping + Direct SQL)
         st.subheader("🎯 Preset Hunt Queries")
-        prompts = _load_builtin_prompts()
+        prompts = _load_builtin_prompts(profile)
 
         # Build category list preserving insertion order
         categories: list[str] = []
@@ -389,7 +565,7 @@ def render_sidebar() -> None:
         # Read current category from session state so bulk-run buttons can be
         # rendered ABOVE the selectbox while still reflecting the current selection.
         current_category = st.session_state.get(
-            "_preset_category", "— All categories —"
+            f"_{prefix}_preset_category", "— All categories —"
         )
 
         # Filter prompts by current category
@@ -407,18 +583,20 @@ def render_sidebar() -> None:
             if all_sql_queries and st.button(
                 f"⚡ Run All Hunts ({len(all_sql_queries)} queries)",
                 use_container_width=True,
+                key=f"_{prefix}_run_all_hunts",
                 help="Run all built-in hunt queries across every category",
             ):
-                st.session_state["_pending_bulk_queries"] = all_sql_queries
+                st.session_state[f"_{prefix}_pending_bulk_queries"] = all_sql_queries
                 st.rerun()
         elif sql_queries:
             # "Run All" — runs every SQL query in the selected category
             if st.button(
                 f"⚡ Run All ({len(sql_queries)} queries)",
                 use_container_width=True,
+                key=f"_{prefix}_run_all_category",
                 help="Run all queries in this category",
             ):
-                st.session_state["_pending_bulk_queries"] = [
+                st.session_state[f"_{prefix}_pending_bulk_queries"] = [
                     {
                         "sql": p["sql"].strip(),
                         "description": p.get("description", ""),
@@ -435,7 +613,7 @@ def render_sidebar() -> None:
         selected_category = st.selectbox(
             "Category",
             options=["— All categories —"] + categories,
-            key="_preset_category",
+            key=f"_{prefix}_preset_category",
         )
 
         # Re-filter when the selectbox value differs from what was used above
@@ -452,7 +630,7 @@ def render_sidebar() -> None:
         selected_label = st.selectbox(
             "Preset",
             options=preset_labels,
-            key="_preset_label",
+            key=f"_{prefix}_preset_label",
         )
 
         if selected_label != "— Select a preset —":
@@ -473,16 +651,23 @@ def render_sidebar() -> None:
                     if st.button(
                         "⚡ Direct SQL",
                         use_container_width=True,
+                        key=f"_{prefix}_direct_sql",
                         help="Run without an API key",
                     ):
-                        st.session_state["_pending_direct_sql"] = matched["sql"].strip()
-                        st.session_state["_pending_preset_description"] = desc
-                        st.session_state["_pending_chart_config"] = matched.get("chart")
-                        st.session_state["_pending_preset_label"] = matched["label"]
-                        st.session_state["_pending_preset_category"] = matched.get(
-                            "category", ""
+                        st.session_state[f"_{prefix}_pending_direct_sql"] = matched[
+                            "sql"
+                        ].strip()
+                        st.session_state[f"_{prefix}_pending_preset_description"] = desc
+                        st.session_state[f"_{prefix}_pending_chart_config"] = (
+                            matched.get("chart")
                         )
-                        st.session_state["_pending_preset_techniques"] = (
+                        st.session_state[f"_{prefix}_pending_preset_label"] = matched[
+                            "label"
+                        ]
+                        st.session_state[f"_{prefix}_pending_preset_category"] = (
+                            matched.get("category", "")
+                        )
+                        st.session_state[f"_{prefix}_pending_preset_techniques"] = (
                             matched.get("techniques") or []
                         )
                         st.rerun()
@@ -491,13 +676,14 @@ def render_sidebar() -> None:
                         "⚡ Direct SQL",
                         disabled=True,
                         use_container_width=True,
+                        key=f"_{prefix}_direct_sql_disabled",
                         help="No pre-built SQL for this preset",
                     )
 
         # UI-04: progress bar slot — positioned right below preset queries.
         # Created here (inside the sidebar) so it always appears at this fixed
         # position. render_chat() retrieves and updates it during bulk execution.
-        st.session_state["_bulk_progress_slot"] = st.empty()
+        st.session_state[f"_{prefix}_bulk_progress_slot"] = st.empty()
 
         # Date range filter — placed below preset queries
         st.subheader("📅 Date Range Filter")
@@ -506,23 +692,23 @@ def render_sidebar() -> None:
         with dc1:
             new_start = st.date_input(
                 "From",
-                value=st.session_state.date_start,
+                value=st.session_state[profile.state_key("date_start")],
                 max_value=today,
                 format="YYYY-MM-DD",
-                key="_date_start_input",
+                key=f"_{prefix}_date_start_input",
             )
         with dc2:
             new_end = st.date_input(
                 "To",
-                value=st.session_state.date_end,
+                value=st.session_state[profile.state_key("date_end")],
                 max_value=today,
                 format="YYYY-MM-DD",
-                key="_date_end_input",
+                key=f"_{prefix}_date_end_input",
             )
 
         # Persist date selections
-        st.session_state.date_start = new_start or None
-        st.session_state.date_end = new_end or None
+        st.session_state[profile.state_key("date_start")] = new_start or None
+        st.session_state[profile.state_key("date_end")] = new_end or None
 
         if new_start and new_end and new_start > new_end:
             st.error("⚠️ 'From' date must be before or equal to 'To' date.")
@@ -531,35 +717,52 @@ def render_sidebar() -> None:
             end_s = str(new_end) if new_end else "—"
             st.caption(f"🔍 Active filter: **{start_s}** → **{end_s}**")
 
+        # Severity filter — only for a dataset that has severities (Suzaku).
+        # low + informational dominate the row count, so they start unselected:
+        # without this the page shows noise, not detections.
+        if profile.level_column:
+            st.subheader("🎚 Severity Filter")
+            selected_levels = st.multiselect(
+                profile.level_column,
+                options=list(profile.level_order),
+                default=st.session_state[profile.state_key("levels")],
+                key=f"_{prefix}_levels_input",
+                help=(
+                    "Severities to keep. Selecting all of them is the same as no "
+                    "filter. `low` and `informational` are the bulk of the data."
+                ),
+            )
+            st.session_state[profile.state_key("levels")] = selected_levels
+            if not selected_levels:
+                st.caption("🔍 No severity filter — every level is included.")
+
         st.divider()
 
         # AGT-06: Markdown / HTML report download
         st.subheader("📄 Report")
-        if st.session_state.query_history:
-            report_md = generate_report(
-                st.session_state.query_history,
-                title="Senrigan Threat Hunting Report",
-            )
-            report_html = generate_html_report(
-                st.session_state.query_history,
-                title="Senrigan Threat Hunting Report",
-            )
+        history = st.session_state[profile.state_key("query_history")]
+        report_title = f"Senrigan {profile.label} Report"
+        if history:
+            report_md = generate_report(history, title=report_title)
+            report_html = generate_html_report(history, title=report_title)
             dl1, dl2 = st.columns(2)
             with dl1:
                 st.download_button(
                     label="⬇ Markdown",
                     data=report_md,
-                    file_name="threat_hunting_report.md",
+                    file_name=f"{profile.key}_report.md",
                     mime="text/markdown",
                     use_container_width=True,
+                    key=f"_{prefix}_report_md",
                 )
             with dl2:
                 st.download_button(
                     label="⬇ HTML",
                     data=report_html,
-                    file_name="threat_hunting_report.html",
+                    file_name=f"{profile.key}_report.html",
                     mime="text/html",
                     use_container_width=True,
+                    key=f"_{prefix}_report_html",
                 )
         else:
             st.caption("Run at least one query to generate a report.")
@@ -570,30 +773,30 @@ def render_sidebar() -> None:
         st.subheader("💾 Session")
         col1, col2 = st.columns(2)
         with col1:
-            if st.session_state.query_history:
+            if history:
                 session_json = _export_session(
-                    st.session_state.query_history,
-                    title="Senrigan Session",
+                    history,
+                    title=f"Senrigan {profile.label} Session",
                 )
                 st.download_button(
                     label="Export JSON",
                     data=session_json,
-                    file_name="session.json",
+                    file_name=f"{profile.key}_session.json",
                     mime="application/json",
                     use_container_width=True,
+                    key=f"_{prefix}_export_json",
                 )
             else:
-                st.button("Export JSON", disabled=True, use_container_width=True)
+                st.button(
+                    "Export JSON",
+                    disabled=True,
+                    use_container_width=True,
+                    key=f"_{prefix}_export_json_disabled",
+                )
 
         with col2:
-            if st.button("🗑 Clear", use_container_width=True):
-                st.session_state.messages = []
-                st.session_state.query_history = []
-                st.session_state.last_sql = ""
-                st.session_state.last_results = None
-                st.session_state.last_summary = ""
-                st.session_state.conversation_context = []
-                st.session_state.analyst_notes = {}
+            if st.button("🗑 Clear", use_container_width=True, key=f"_{prefix}_clear"):
+                _clear_session(profile)
                 st.rerun()
 
         st.divider()
@@ -606,6 +809,7 @@ def render_sidebar() -> None:
             max_value=100_000,
             value=st.session_state.row_limit,
             step=100,
+            key=f"_{prefix}_row_limit_input",
             help=(
                 "Maximum number of rows returned per query. "
                 "Overrides any LIMIT clause already present in the SQL."
@@ -614,17 +818,21 @@ def render_sidebar() -> None:
         if int(new_row_limit) != st.session_state.row_limit:
             st.session_state.row_limit = int(new_row_limit)
 
-        # Automatic GeoIP context for IP columns (see agent/geo.py)
-        st.session_state.geo_enrich = st.checkbox(
-            "🌍 Auto geo-enrich IP columns",
-            value=st.session_state.geo_enrich,
-            help=(
-                "When results contain an IP address column, automatically add "
-                "the GeoIP columns (country, city, ISP organization) stored on "
-                "cloudtrail_events next to it. No effect when the database was "
-                "ingested without GeoLite2 databases."
-            ),
-        )
+        # Automatic GeoIP context for IP columns (see agent/geo.py).
+        # Hidden for datasets whose table has no geo_* columns: the lookup joins
+        # against cloudtrail_events, which a Suzaku database does not contain.
+        if profile.supports_geo_enrich:
+            st.session_state.geo_enrich = st.checkbox(
+                "🌍 Auto geo-enrich IP columns",
+                value=st.session_state.geo_enrich,
+                key=f"_{prefix}_geo_enrich",
+                help=(
+                    "When results contain an IP address column, automatically add "
+                    "the GeoIP columns (country, city, ISP organization) stored "
+                    "on cloudtrail_events next to it. No effect when the "
+                    "database was ingested without GeoLite2 databases."
+                ),
+            )
 
         st.divider()
 
@@ -634,6 +842,7 @@ def render_sidebar() -> None:
             "OpenAI API Key",
             value=st.session_state.api_key,
             type="password",
+            key=f"_{prefix}_api_key_input",
             help="Your OpenAI API key. Never stored outside this browser session.",
         )
         if api_key_input != st.session_state.api_key:
@@ -643,6 +852,7 @@ def render_sidebar() -> None:
         selected_model = st.selectbox(
             "Model",
             options=MODEL_OPTIONS,
+            key=f"_{prefix}_model_select",
             index=(
                 MODEL_OPTIONS.index(st.session_state.model)
                 if st.session_state.model in MODEL_OPTIONS
@@ -707,15 +917,21 @@ def _apply_entry_filter(
     return out
 
 
-def _render_query_filter() -> tuple[str, str]:
+def _render_query_filter(
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
+) -> tuple[str, str]:
     """Render the compact filter bar at the top of the main area.
 
     Provides result-state filtering (All / Results / No results) and a
     free-text keyword filter applied against label, category, and description.
 
+    Args:
+        profile: Dataset profile the page is querying; scopes the widget keys.
+
     Returns:
         Tuple of (result_filter, keyword).
     """
+    prefix = profile.key
     st.subheader("🔍 Query Results Filter", divider=False)
     c1, c2, c3 = st.columns([3, 4, 1], vertical_alignment="bottom")
     with c1:
@@ -723,20 +939,25 @@ def _render_query_filter() -> tuple[str, str]:
             "Show",
             options=["All", "✅ Results", "⬜ No results"],
             horizontal=True,
-            key="_qf_result_filter",
+            key=f"_{prefix}_qf_result_filter",
             label_visibility="collapsed",
         )
     with c2:
         keyword = st.text_input(
             "Keyword",
             placeholder="🔍 label / category / description…",
-            key="_qf_keyword",
+            key=f"_{prefix}_qf_keyword",
             label_visibility="collapsed",
         )
     with c3:
-        if st.button("✕ Clear", use_container_width=True, help="Clear filters"):
-            st.session_state["_qf_result_filter"] = "All"
-            st.session_state["_qf_keyword"] = ""
+        if st.button(
+            "✕ Clear",
+            use_container_width=True,
+            key=f"_{prefix}_qf_clear",
+            help="Clear filters",
+        ):
+            st.session_state[f"_{prefix}_qf_result_filter"] = "All"
+            st.session_state[f"_{prefix}_qf_keyword"] = ""
             st.rerun()
     return result_filter or "All", keyword or ""
 
@@ -766,6 +987,7 @@ def _render_result_card(
     query_idx: int,
     entry: ReportEntry,
     expanded: bool = True,
+    profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> None:
     """Render a single query result as an expander card.
 
@@ -777,7 +999,9 @@ def _render_result_card(
         query_idx: 0-based index into query_history.
         entry:     The ReportEntry to render.
         expanded:  Whether the expander starts open.
+        profile:   Dataset profile owning the entry; scopes state and widget keys.
     """
+    prefix = profile.key
     title = _build_expander_title(entry, query_idx + 1)
     with st.expander(title, expanded=expanded):
         # Category + label as large heading inside the card
@@ -809,8 +1033,9 @@ def _render_result_card(
 
         # UI-01: Analyst note text area
         st.divider()
-        note_key = f"analyst_note_{query_idx}"
-        current_note = st.session_state.analyst_notes.get(query_idx, entry.analyst_note)
+        note_key = f"{prefix}_analyst_note_{query_idx}"
+        notes = st.session_state[profile.state_key("analyst_notes")]
+        current_note = notes.get(query_idx, entry.analyst_note)
         new_note = st.text_area(
             "📝 Analyst Note (Markdown)",
             value=current_note,
@@ -820,7 +1045,7 @@ def _render_result_card(
             label_visibility="visible",
         )
         if new_note != current_note:
-            st.session_state.analyst_notes[query_idx] = new_note
+            notes[query_idx] = new_note
             entry.analyst_note = new_note
 
         # Ask AI button — shown for every card that has no analysis yet.
@@ -828,7 +1053,7 @@ def _render_result_card(
             has_api_key = bool(st.session_state.api_key)
             if st.button(
                 "🤖 Ask AI — Analyze These Results",
-                key=f"ask_ai_btn_{query_idx}",
+                key=f"{prefix}_ask_ai_btn_{query_idx}",
                 use_container_width=True,
                 disabled=not has_api_key,
                 help=(
@@ -837,32 +1062,43 @@ def _render_result_card(
                     else "Enter your OpenAI API key in the sidebar to enable AI analysis."
                 ),
             ):
-                st.session_state["_pending_ai_analysis_idx"] = query_idx
+                st.session_state[f"_{prefix}_pending_ai_analysis_idx"] = query_idx
                 st.rerun()
 
 
-def render_chat() -> None:
+def render_chat(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
     """Render the main chat area.
 
     Displays chat history (AGT-01), SQL editor (AGT-03), results table (AGT-04),
     AI analysis (AGT-05), bulk results section (UI-03), and progress bar (UI-04).
+
+    Args:
+        profile: Dataset profile the page is querying. Selects the table, the
+                 filters, the session namespace and the widget keys.
     """
+    prefix = profile.key
 
     # ---- Filter bar (always visible at the top) ----
-    result_filter, keyword = _render_query_filter()
+    result_filter, keyword = _render_query_filter(profile)
 
-    db_path = _get_duckdb_path()
+    db_path = _get_duckdb_path(profile)
 
     # Handle any pending preset injected from the sidebar
-    pending_preset = st.session_state.pop("_pending_preset", None)
+    pending_preset = st.session_state.pop(f"_{prefix}_pending_preset", None)
 
     # Handle direct SQL execution from a built-in preset (no AI needed)
-    pending_direct_sql = st.session_state.pop("_pending_direct_sql", None)
-    pending_preset_description = st.session_state.pop("_pending_preset_description", "")
-    pending_chart_config = st.session_state.pop("_pending_chart_config", None)
-    pending_preset_label = st.session_state.pop("_pending_preset_label", "")
-    pending_preset_category = st.session_state.pop("_pending_preset_category", "")
-    pending_preset_techniques = st.session_state.pop("_pending_preset_techniques", [])
+    pending_direct_sql = st.session_state.pop(f"_{prefix}_pending_direct_sql", None)
+    pending_preset_description = st.session_state.pop(
+        f"_{prefix}_pending_preset_description", ""
+    )
+    pending_chart_config = st.session_state.pop(f"_{prefix}_pending_chart_config", None)
+    pending_preset_label = st.session_state.pop(f"_{prefix}_pending_preset_label", "")
+    pending_preset_category = st.session_state.pop(
+        f"_{prefix}_pending_preset_category", ""
+    )
+    pending_preset_techniques = st.session_state.pop(
+        f"_{prefix}_pending_preset_techniques", []
+    )
     if pending_direct_sql:
         _handle_direct_sql(
             pending_direct_sql,
@@ -873,17 +1109,18 @@ def render_chat() -> None:
             category=pending_preset_category,
             techniques=pending_preset_techniques,
             bulk_mode=True,  # no chat bubble — show in Query Results section
+            profile=profile,
         )
         st.rerun()
 
     # Handle bulk execution of all SQL queries in a selected category (UI-03/04)
-    pending_bulk_queries = st.session_state.pop("_pending_bulk_queries", None)
+    pending_bulk_queries = st.session_state.pop(f"_{prefix}_pending_bulk_queries", None)
     if pending_bulk_queries:
         total = len(pending_bulk_queries)
         # UI-04: use the slot created by render_sidebar() just below preset queries.
         # Falls back to a new sidebar placeholder if the slot is missing (e.g. tests).
         progress_placeholder = (
-            st.session_state.get("_bulk_progress_slot") or st.sidebar.empty()
+            st.session_state.get(f"_{prefix}_bulk_progress_slot") or st.sidebar.empty()
         )
         for i, q in enumerate(pending_bulk_queries, 1):
             with progress_placeholder.container():
@@ -900,37 +1137,37 @@ def render_chat() -> None:
                 label=q["label"],
                 category=q.get("category", ""),
                 techniques=q.get("techniques") or [],
+                profile=profile,
             )
         progress_placeholder.empty()
         st.rerun()
 
     # Handle AI analysis request triggered from a result card's Ask AI button.
-    pending_ai_analysis_idx = st.session_state.pop("_pending_ai_analysis_idx", None)
+    pending_ai_analysis_idx = st.session_state.pop(
+        f"_{prefix}_pending_ai_analysis_idx", None
+    )
     if pending_ai_analysis_idx is not None:
-        _analyze_entry_results(pending_ai_analysis_idx)
+        _analyze_entry_results(pending_ai_analysis_idx, profile)
         st.rerun()
 
     # ---- Chat history interleaved with query results (AGT-01 / AGT-04) ----
-    query_history_len = len(st.session_state.query_history)
+    history = st.session_state[profile.state_key("query_history")]
+    query_history_len = len(history)
 
-    for msg in st.session_state.messages:
+    for msg in st.session_state[profile.state_key("messages")]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
         query_idx = msg.get("query_index")
         if query_idx is not None and query_idx < query_history_len:
-            entry = st.session_state.query_history[query_idx]
+            entry = history[query_idx]
             if entry.source == "chat":
-                _render_result_card(query_idx, entry)
+                _render_result_card(query_idx, entry, profile=profile)
 
     # ---- Bulk results section (UI-03) ----
     # ---- Direct SQL / Bulk results section (UI-03) ----
     # All non-chat entries (source != "chat") are shown here, collapsed by default.
-    nonchat_entries = [
-        (i, e)
-        for i, e in enumerate(st.session_state.query_history)
-        if e.source != "chat"
-    ]
+    nonchat_entries = [(i, e) for i, e in enumerate(history) if e.source != "chat"]
     if nonchat_entries:
         filtered_entries = _apply_entry_filter(nonchat_entries, result_filter, keyword)
         st.divider()
@@ -941,32 +1178,39 @@ def render_chat() -> None:
         )
         if filtered_entries:
             for idx, entry in filtered_entries:
-                _render_result_card(idx, entry, expanded=False)
+                _render_result_card(idx, entry, expanded=False, profile=profile)
         else:
             st.caption("No queries match the current filter.")
 
     # ---- SQL editor for the last query (AGT-03) ----
-    if st.session_state.last_sql:
+    last_sql = st.session_state[profile.state_key("last_sql")]
+    if last_sql:
         with st.expander("🛠 Edit & Re-run SQL", expanded=False):
             edited_sql = st.text_area(
                 "SQL",
-                value=st.session_state.last_sql,
+                value=last_sql,
                 height=150,
                 label_visibility="collapsed",
+                key=f"_{prefix}_sql_editor",
             )
-            if st.button("▶ Run Edited SQL"):
-                _handle_edit_rerun_sql(edited_sql, db_path)
+            if st.button("▶ Run Edited SQL", key=f"_{prefix}_run_edited_sql"):
+                _handle_edit_rerun_sql(edited_sql, db_path, profile)
                 st.rerun()
 
     # ---- Chat input (AGT-01) ----
-    user_input = st.chat_input("Ask a threat hunting question…") or pending_preset
+    user_input = (
+        st.chat_input("Ask a threat hunting question…", key=f"_{prefix}_chat_input")
+        or pending_preset
+    )
 
     if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.session_state[profile.state_key("messages")].append(
+            {"role": "user", "content": user_input}
+        )
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        _handle_user_query(user_input, db_path)
+        _handle_user_query(user_input, db_path, profile)
         st.rerun()
 
 
@@ -976,33 +1220,54 @@ def render_chat() -> None:
 
 
 def _chat_page() -> None:
-    """Render the AI threat-hunting chat page (the default page)."""
-    _init_session_state()
-    render_sidebar()
-    render_chat()
+    """Render the AI threat-hunting chat page for CloudTrail events."""
+    _init_session_state(CLOUDTRAIL_PROFILE)
+    render_sidebar(CLOUDTRAIL_PROFILE)
+    render_chat(CLOUDTRAIL_PROFILE)
+
+
+def _suzaku_timeline_page() -> None:
+    """Render the Suzaku ``aws-ct-timeline`` hunting page."""
+    from views.suzaku_timeline import render  # noqa: PLC0415
+
+    render()
+
+
+def build_pages() -> list:
+    """Return the navigation pages, CloudTrail first.
+
+    Both pages share the hunting UI; they differ only in their
+    :class:`~profiles.DatasetProfile` (see ``profiles.py``).
+
+    Returns:
+        A list of ``st.Page`` objects for :func:`st.navigation`.
+    """
+    return [
+        st.Page(
+            _chat_page,
+            title=CLOUDTRAIL_PROFILE.label,
+            icon=CLOUDTRAIL_PROFILE.icon,
+            url_path="senrigan",
+            default=True,
+        ),
+        st.Page(
+            _suzaku_timeline_page,
+            title=SUZAKU_TIMELINE_PROFILE.label,
+            icon=SUZAKU_TIMELINE_PROFILE.icon,
+            url_path="suzaku-timeline",
+        ),
+    ]
 
 
 def main() -> None:
-    """Configure page chrome and dispatch to the selected page.
-
-    Uses ``st.navigation`` so the sidebar entries have explicit titles and
-    icons (e.g. the default page is labelled "Senrigan", not "app").
-    """
+    """Configure page chrome and run the multi-page navigation."""
     st.set_page_config(
         page_title="Senrigan",
         page_icon="🔭",
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    pages = [
-        st.Page(_chat_page, title="Senrigan", icon="🔭", default=True),
-        st.Page(
-            "views/suzaku_ct_summary.py",
-            title="Suzaku CT Summary",
-            icon="☁️",
-        ),
-    ]
-    st.navigation(pages).run()
+    st.navigation(build_pages()).run()
 
 
 if __name__ == "__main__":

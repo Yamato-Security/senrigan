@@ -1,0 +1,23 @@
+# SZM-02: Distinct Values (KPI card)
+uuid: 5a021005-0000-4000-8000-000000000002
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000005
+slice_name: Distinct Values
+viz_type: big_number_total
+description: >
+  Cardinality of the counted field (SZM-02). High cardinality on an action field means broad API surface use.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "COUNT(DISTINCT value)"
+    label: values
+    hasCustomLabel: true
+    optionName: metric_kpi_distinct_values_values
+  adhoc_filters: []
+  subheader: "distinct values observed"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

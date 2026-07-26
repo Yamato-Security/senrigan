@@ -1,0 +1,170 @@
+# Superset dataset for Suzaku `aws-ct-metrics` output.
+#
+# `Field` holds whatever field the analyst passed to Suzaku (`eventName` in the
+# reference run), so this dataset — and every chart built on it — is deliberately
+# field-agnostic: the dashboard filters on `field` rather than assuming one.
+#
+# VIRTUAL (sql:) to CAST the VARCHAR timestamps (doc/PLAN_SUZAKU_SCHEMA.md P3),
+# rename the PascalCase columns (P6), and turn Suzaku's empty-string geo columns
+# into NULL so "unknown" is distinguishable from "empty" (P2/P8).
+uuid: 5a021002-0000-4000-8000-000000000005
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000003
+table_name: suzaku_metrics
+main_dttm_col: first_seen
+description: >
+  Value frequencies for the CloudTrail field(s) Suzaku was asked to count, with
+  first/last seen timestamps and optional GeoIP attributes.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      "Field"                                        AS field,
+      "Value"                                        AS value,
+      "Count"                                        AS occurrence_count,
+      "Percent"                                      AS percent,
+      CAST("FirstSeen" AS TIMESTAMP)                 AS first_seen,
+      CAST("LastSeen" AS TIMESTAMP)                  AS last_seen,
+      date_diff('day', CAST("FirstSeen" AS TIMESTAMP),
+                       CAST("LastSeen" AS TIMESTAMP)) AS active_days,
+      nullif("SrcASN", '')                           AS src_asn,
+      nullif("SrcCity", '')                          AS src_city,
+      nullif("SrcCountry", '')                       AS src_country
+  FROM metrics
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: field
+    verbose_name: Field
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: CloudTrail field these value counts are for (whatever Suzaku was given)
+
+  - column_name: value
+    verbose_name: Value
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: One observed value of the field
+
+  - column_name: occurrence_count
+    verbose_name: Occurrences
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: How many events carried this value
+
+  - column_name: percent
+    verbose_name: Share (%)
+    is_dttm: false
+    is_active: true
+    type: DOUBLE
+    groupby: false
+    filterable: true
+    description: >
+      Suzaku's rounded share of the total, in percent. Rounded to two decimals at
+      write time, so a sum across values lands near — not exactly on — 100.
+
+  - column_name: first_seen
+    verbose_name: First Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: First event carrying this value
+
+  - column_name: last_seen
+    verbose_name: Last Seen
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: Last event carrying this value
+
+  - column_name: active_days
+    verbose_name: Active Days
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Days between first and last occurrence
+
+  - column_name: src_asn
+    verbose_name: Source ASN
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: GeoIP ASN, NULL unless Suzaku enriched the run
+
+  - column_name: src_city
+    verbose_name: Source City
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: GeoIP city, NULL unless Suzaku enriched the run
+
+  - column_name: src_country
+    verbose_name: Source Country
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: GeoIP country, NULL unless Suzaku enriched the run
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of distinct values
+
+  - metric_name: occurrence_total
+    verbose_name: Occurrences
+    metric_type: sum
+    expression: "SUM(occurrence_count)"
+    description: Total events covered
+
+  - metric_name: distinct_values
+    verbose_name: Distinct Values
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT value)"
+    description: Cardinality of the field
+
+  - metric_name: distinct_fields
+    verbose_name: Distinct Fields
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT field)"
+    description: How many fields this run counted
+
+  - metric_name: top_share
+    verbose_name: Top Value Share (%)
+    metric_type: max
+    expression: "MAX(percent)"
+    description: Share of the single most common value
+
+  - metric_name: singleton_values
+    verbose_name: Values Seen Once
+    metric_type: count
+    expression: "COUNT(CASE WHEN occurrence_count = 1 THEN 1 END)"
+    description: Values that occurred exactly once — the rare-event view

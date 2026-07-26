@@ -1,0 +1,35 @@
+# SZS-21: APIs that most often returned an error.
+uuid: 5a021004-0000-4000-8000-000000000021
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Top Failed API Calls
+viz_type: dist_bar
+description: >
+  APIs whose calls were denied most often (SZS-21). Repeated denials on sensitive APIs are permission probing, not misconfiguration.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(call_count)"
+      label: failed_calls
+      hasCustomLabel: true
+      optionName: metric_top_failed_apis_failed_calls
+  groupby:
+    - api
+  columns: []
+  adhoc_filters: 
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "outcome = 'failed'"
+      filterOptionName: filter_failed_only
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Failed Calls
+  y_axis_label: API Action
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

@@ -1,0 +1,60 @@
+# SZS-10: Identity triage table — the starting point of the investigation.
+uuid: 5a021004-0000-4000-8000-000000000010
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Identity Triage Table
+viz_type: table
+description: >
+  Every profiled identity with its event volume, abusable-API usage and activity window (SZS-10). Sort by Abused (Failed) to find probing, by Abused (Success) to find capability actually exercised.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(num_of_events)"
+      label: events
+      hasCustomLabel: true
+      optionName: metric_identity_triage_events
+    - expressionType: SQL
+      sqlExpression: "SUM(abused_success)"
+      label: abused_success
+      hasCustomLabel: true
+      optionName: metric_identity_triage_abused_success
+    - expressionType: SQL
+      sqlExpression: "SUM(abused_failed)"
+      label: abused_failed
+      hasCustomLabel: true
+      optionName: metric_identity_triage_abused_failed
+    - expressionType: SQL
+      sqlExpression: "SUM(abused_apis)"
+      label: abused_apis
+      hasCustomLabel: true
+      optionName: metric_identity_triage_abused_apis
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_identity_triage_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_identity_triage_last_seen
+  groupby:
+    - user_arn
+    - user_types
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "SUM(abused_success) + SUM(abused_failed)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_identity_triage_sort
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

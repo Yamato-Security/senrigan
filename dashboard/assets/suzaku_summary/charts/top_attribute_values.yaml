@@ -1,0 +1,31 @@
+# SZS-30: Most frequent values for the selected attribute.
+uuid: 5a021004-0000-4000-8000-000000000030
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000004
+slice_name: Top Attribute Values
+viz_type: dist_bar
+description: >
+  The most frequently observed values for whichever attribute is selected in the Attribute filter (SZS-30) — source IPs by default.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_top_attribute_values_occurrences
+  groupby:
+    - value
+  columns: []
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Occurrences
+  y_axis_label: Value
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

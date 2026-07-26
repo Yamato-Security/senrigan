@@ -1,0 +1,5 @@
+# Superset dashboard export metadata.
+# This file identifies the export format version and type.
+version: 1.0.0
+type: Dashboard
+timestamp: "2026-07-27T00:00:00+00:00"

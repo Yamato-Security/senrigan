@@ -1,0 +1,50 @@
+# SZS-32: When each value was first and last observed.
+uuid: 5a021004-0000-4000-8000-000000000032
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000004
+slice_name: Attribute First / Last Seen
+viz_type: table
+description: >
+  First and last observation of every attribute value (SZS-32). A value that appears only at the end of the timeline is a new — and therefore interesting — one.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_attribute_first_last_seen_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_attribute_first_last_seen_last_seen
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_attribute_first_last_seen_occurrences
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT user_arn)"
+      label: identities
+      hasCustomLabel: true
+      optionName: metric_attribute_first_last_seen_identities
+  groupby:
+    - attribute
+    - value
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "MIN(first_seen)"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_attribute_first_last_seen_sort
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null

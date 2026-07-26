@@ -1,0 +1,31 @@
+# SZS-11: Identities ranked by CloudTrail event volume.
+uuid: 5a021004-0000-4000-8000-000000000011
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000002
+slice_name: Top Identities by Event Volume
+viz_type: dist_bar
+description: >
+  The busiest identities (SZS-11). Volume alone is not suspicious, but an unexpected identity at the top of this chart usually is.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "SUM(num_of_events)"
+      label: events
+      hasCustomLabel: true
+      optionName: metric_top_identities_by_events_events
+  groupby:
+    - user_arn
+  columns: []
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: "No filter"
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Events
+  y_axis_label: Identity
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

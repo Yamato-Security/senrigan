@@ -1,0 +1,27 @@
+# SZS-04: Failed Abuse Attempts (KPI card)
+uuid: 5a021004-0000-4000-8000-000000000004
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000003
+slice_name: Failed Abuse Attempts
+viz_type: big_number_total
+description: >
+  Calls to abusable APIs that were denied (SZS-04). The clearest permission-probing signal in the summary output.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: "SUM(call_count)"
+    label: failed_abuse
+    hasCustomLabel: true
+    optionName: metric_failed_abuse
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "is_abused AND outcome = 'failed'"
+      filterOptionName: filter_abused_failed
+  subheader: "denied calls to abusable APIs"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

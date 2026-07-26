@@ -1,0 +1,85 @@
+# Suzaku Detection Timeline — Dashboard Definition (EMPTY TEMPLATE)
+#
+# Intentionally chart-free. The charts for this dashboard are drafted in a
+# separate PR (see doc/PLAN_SUZAKU_VIEWS.md §5.3); this bundle ships the
+# database, the virtual dataset and an importable shell so that:
+#   * `register_suzaku_dbs.py` has something to attach the timeline database to,
+#   * the follow-up PR only has to add charts/*.yaml plus their position entries,
+#   * an operator with only a timeline file still sees the dashboard appear.
+#
+# dashboard/tests/test_suzaku_bundles.py asserts this bundle stays chart-free —
+# that test is what the follow-up PR flips when the charts land.
+uuid: 5a021003-0000-4000-8000-000000000001
+version: 1.0.0
+dashboard_title: Suzaku Detection Timeline
+description: >
+  Detections produced by Suzaku's aws-ct-timeline command. One row is one rule
+  match against one CloudTrail event. Charts are added in a follow-up change;
+  until then use SQL Lab against the "Suzaku Timeline DuckDB" connection, or the
+  Suzaku Timeline page in the Senrigan agent (http://localhost:8501).
+published: true
+css: ""
+slug: suzaku-detection-timeline
+
+position:
+  DASHBOARD_VERSION_KEY: "v2"
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+      - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    children:
+      - TABS_ID
+  TABS_ID:
+    type: TABS
+    id: TABS_ID
+    children:
+      - TAB-overview
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+      - ROW-hdr-overview
+    meta:
+      text: "🕒 Overview"
+      defaultText: Overview
+      tooltip: Suzaku detection overview — charts are added in a follow-up change
+  ROW-hdr-overview:
+    type: ROW
+    id: ROW-hdr-overview
+    children:
+      - MARKDOWN-placeholder
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-placeholder:
+    type: MARKDOWN
+    id: MARKDOWN-placeholder
+    children: []
+    meta:
+      width: 12
+      height: 30
+      code: |
+        ### 🕒 Suzaku Detection Timeline
+
+        This dashboard is an empty template — its charts arrive in a follow-up
+        change.
+
+        In the meantime:
+
+        - **SQL Lab** → database **Suzaku Timeline DuckDB**, dataset
+          `suzaku_timeline` (already type-normalized: `event_time` is a real
+          timestamp, columns are snake_case, Suzaku's `'-'` placeholders are NULL).
+        - **Senrigan agent** → the **🕒 Suzaku Timeline** page at
+          [localhost:8501](http://localhost:8501) ships 15 built-in hunts,
+          severity filtering and HTML/Markdown reports over the same data.
+        - **Suzaku Summary / Metrics** dashboards cover the pre-aggregated
+          `aws-ct-summary` and `aws-ct-metrics` output.
+
+metadata:
+  cross_filters_enabled: true
+  color_scheme: supersetColors
+  native_filter_configuration: []
+  charts: {}
