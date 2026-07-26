@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(İsteğe bağlı)** Kaynak grafiği görselleştirmesi için AWS Config anlık görüntüsü içe aktarımı.
-AWS Config anlık görüntü dosyalarını `docker/logs/config/` dizinine yerleştirin, ardından:
+AWS Config anlık görüntü dosyalarını `docker/data/config-snapshots/` dizinine yerleştirin, ardından:
 ```bash
 make ingest-config
 ```

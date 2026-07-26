@@ -148,8 +148,9 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 503 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 655. Test count must not decrease in a PR.
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 509 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 655, root `tests/` ≈ 5 (Makefile / compose / docs consistency).
+Test count must not decrease in a PR.
 
 ---
 

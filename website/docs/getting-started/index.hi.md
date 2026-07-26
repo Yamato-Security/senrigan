@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(वैकल्पिक)** संसाधन ग्राफ़ विज़ुअलाइज़ेशन के लिए AWS Config snapshot इनजेशन।
-AWS Config snapshot फ़ाइलों को `docker/logs/config/` में रखें, फिर:
+AWS Config snapshot फ़ाइलों को `docker/data/config-snapshots/` में रखें, फिर:
 ```bash
 make ingest-config
 ```

@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(Opsional)** Pemasukan snapshot AWS Config untuk visualisasi grafik sumber daya.
-Tempatkan file snapshot AWS Config di `docker/logs/config/`, lalu:
+Tempatkan file snapshot AWS Config di `docker/data/config-snapshots/`, lalu:
 ```bash
 make ingest-config
 ```

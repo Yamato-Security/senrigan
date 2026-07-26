@@ -53,7 +53,7 @@ make ingest-geoip
 ```
 
 **(اختياري)** استيراد لقطات AWS Config لتصوّر رسم بياني للموارد.
-ضع ملفات لقطات AWS Config في `docker/logs/config/`، ثم:
+ضع ملفات لقطات AWS Config في `docker/data/config-snapshots/`، ثم:
 ```bash
 make ingest-config
 ```
