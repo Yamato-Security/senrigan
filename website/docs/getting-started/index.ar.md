@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**الخطوة 2.** انسخ المستودع، واستورد السجلات، وابدأ جميع الخدمات.
+**الخطوة 2.** انسخ المستودع وضع بياناتك في مكانها.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+يتم اكتشاف المجلدين الاختياريين أدناه تلقائيًا. املأهما **قبل** الخطوة التالية — لا يوجد أمر إضافي لتشغيله.
+
+| المجلد | المحتوى | ما يضيفه |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | يحوّل عناوين IP المصدر إلى الدولة والمدينة و ASN |
+| `docker/data/config-snapshots/` | ملفات `.json` للقطات AWS Config | ينشئ رسم موارد AWS Config البياني |
+
+**الخطوة 3.** استورد السجلات وابدأ الخدمات.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**الخطوة 3.** 🪽 افتح متصفحك وابدأ التصيّد!🪽
+**الخطوة 4.** 🪽 افتح متصفحك وابدأ التصيّد!🪽
 
 - http://localhost:8501 — الاستعلامات المدمجة ودردشة الذكاء الاصطناعي
 - http://localhost:8088 — لوحة المعلومات (`admin` / `admin`)
 - http://localhost:8502 — رسم بياني لموارد AWS Config
 
-**(اختياري)** إثراء GeoIP.
-ضع [ملفات GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) في `docker/data/geoip/`، ثم:
+---
 
-```bash
-make ingest-geoip
-```
+## الأوامر اليومية
 
-**(اختياري)** استيراد لقطات AWS Config لتصوّر رسم بياني للموارد.
-ضع ملفات لقطات AWS Config في `docker/data/config-snapshots/`، ثم:
-```bash
-make ingest-config
-```
+تشغيل `make` بدون وسائط يطبع هذه القائمة، و`make help-all` يعرض جميع الأهداف.
+
+| الأمر | الوظيفة |
+|---|---|
+| `make ingest` | تحميل سجلات CloudTrail من `docker/logs/` إلى DuckDB |
+| `make up` | بدء الواجهة ولوحة المعلومات ورسم الموارد البياني |
+| `make down` | إيقاف كل شيء |
+| `make logs` | متابعة سجلات الخدمات (`SERVICE=agent` لخدمة واحدة) |
+| `make reset` | حذف قاعدة البيانات والبدء من جديد |
+
 ---
 
 ## وكيل الشركة / شهادة CA مخصصة

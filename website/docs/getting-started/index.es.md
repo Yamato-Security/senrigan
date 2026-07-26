@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**Paso 2.** Clona el repositorio, ingiere los registros e inicia todos los servicios.
+**Paso 2.** Clona el repositorio y coloca tus datos.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+Los dos directorios opcionales siguientes se detectan automáticamente. Rellénalos **antes** del siguiente paso: no hay ningún comando adicional que ejecutar.
+
+| Directorio | Contenido | Qué añade |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | Resuelve las IP de origen a país, ciudad y ASN |
+| `docker/data/config-snapshots/` | Archivos `.json` de instantáneas de AWS Config | Construye el grafo de recursos de AWS Config |
+
+**Paso 3.** Ingiere los registros e inicia los servicios.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**Paso 3.** 🪽 ¡Abre tu navegador y comienza a cazar!🪽
+**Paso 4.** 🪽 ¡Abre tu navegador y comienza a cazar!🪽
 
 - http://localhost:8501 — Consultas integradas y AI Chat
 - http://localhost:8088 — Panel (`admin` / `admin`)
 - http://localhost:8502 — Grafo de recursos de AWS Config
 
-**(Opcional)** Enriquecimiento con GeoIP.
-Coloca los [archivos `.mmdb` de GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) en `docker/data/geoip/`, luego:
+---
 
-```bash
-make ingest-geoip
-```
+## Comandos de uso diario
 
-**(Opcional)** Ingesta de instantáneas de AWS Config para la visualización del grafo de recursos.
-Coloca los archivos de instantáneas de AWS Config en `docker/data/config-snapshots/`, luego:
-```bash
-make ingest-config
-```
+`make` sin argumentos imprime esta lista. `make help-all` muestra todos los objetivos.
+
+| Comando | Qué hace |
+|---|---|
+| `make ingest` | Cargar los registros de CloudTrail de `docker/logs/` en DuckDB |
+| `make up` | Iniciar la interfaz, el panel y el grafo de recursos |
+| `make down` | Detener todo |
+| `make logs` | Seguir los registros de los servicios (`SERVICE=agent` para uno solo) |
+| `make reset` | Eliminar la base de datos y empezar de nuevo |
+
 ---
 
 ## Proxy corporativo / Certificado CA personalizado

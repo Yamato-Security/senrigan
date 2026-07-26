@@ -11,7 +11,8 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
 > [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md),
 > [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md), [PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md),
-> and [PLAN_THREAT_CATALOG.md](doc/PLAN_THREAT_CATALOG.md).
+> [PLAN_THREAT_CATALOG.md](doc/PLAN_THREAT_CATALOG.md),
+> and [PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md).
 
 ---
 
@@ -90,23 +91,31 @@ transformations.
 
 ## Essential Commands
 
-From `docker/`:
+From the repository root. `make` with no arguments prints the five commands below;
+`make help-all` lists every target grouped by section.
 
 ```bash
-# First-time ingest (CloudTrail)
-docker compose --profile ingest run --rm ingester ingest --path /data/logs
-# First-time import (AWS Config snapshots)
-docker compose --profile ingest run --rm ingester config-import --path /data/config
-# Start agent + dashboard + config_viz
-docker compose up -d --build
-# Re-ingest from scratch
-docker compose down
-rm -f data/db/threat_hunting.db data/db/threat_hunting.db.wal
-docker compose --profile ingest run --rm ingester ingest --path /data/logs
-docker compose up -d --build
-# Fix a blank dashboard after re-ingest (re-syncs column metadata)
-docker compose --profile resync run --rm superset-resync
+make ingest    # Load CloudTrail logs from docker/logs/ into DuckDB
+make up        # Start agent + dashboard + config_viz
+make down      # Stop everything
+make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
+make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
+make status    # Container state, database size, and what ingest would detect
+make resync    # Fix a blank dashboard after re-ingest (re-syncs column metadata)
 ```
+
+`make ingest` takes **no flags**. It reads the compose bind-mount directories and enables
+the matching ingester options itself, echoing what it found and what it skipped:
+
+| Directory | Effect on `make ingest` |
+|-----------|-------------------------|
+| `docker/data/geoip/GeoLite2-{City,Country,ASN}.mmdb` | adds the matching `--geoip-*` flags (City supersedes Country) |
+| `docker/data/config-snapshots/` non-empty | runs `config-import` as a second pass |
+
+Explicit overrides live under `##@ Advanced ingest` in `make help-all`
+(`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`). Detection paths follow
+`GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching
+`docker/docker-compose.yml`. See [doc/PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md).
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
 Superset never reads those YAML files directly — it only applies them from the compiled
@@ -121,7 +130,7 @@ cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   #
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
-Per-module dev loops:
+Per-module dev loops (`make check` runs everything CI enforces in one go):
 
 ```bash
 # Rust (ingester/)
@@ -141,7 +150,7 @@ npm run build                 # Vite production build → ../static/
 
 Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 509 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 655 (asset/YAML/config validation suite),
-root `tests/` ≈ 5 (Makefile / compose / docs consistency — run with `make test-repo`).
+root `tests/` ≈ 104 (Makefile / compose / docs consistency — run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
 
@@ -247,7 +256,7 @@ senrigan/
 ├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
                  #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
-                 #   PLAN_THREAT_CATALOG
+                 #   PLAN_THREAT_CATALOG, PLAN_MAKEFILE_UX
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

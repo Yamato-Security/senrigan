@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**步驟 2.** 複製儲存庫、匯入日誌並啟動所有服務。
+**步驟 2.** 複製儲存庫並放置您的資料。
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+以下兩個選用目錄會被自動偵測。請在下一步**之前**放入檔案 — 不需要執行額外的指令。
+
+| 目錄 | 放置內容 | 啟用的功能 |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | 將來源 IP 解析為國家、城市與 ASN |
+| `docker/data/config-snapshots/` | AWS Config 快照 `.json` 檔案 | 建立 AWS Config 資源圖 |
+
+**步驟 3.** 匯入日誌並啟動服務。
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**步驟 3.** 🪽 開啟瀏覽器並開始狩獵！🪽
+**步驟 4.** 🪽 開啟瀏覽器並開始狩獵！🪽
 
 - http://localhost:8501 — 內建查詢與 AI Chat
 - http://localhost:8088 — 儀表板（`admin` / `admin`）
 - http://localhost:8502 — AWS Config 資源圖
 
-**（選用）** GeoIP 強化。
-將 [GeoLite2 `.mmdb` 檔案](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) 放置於 `docker/data/geoip/`，然後：
+---
 
-```bash
-make ingest-geoip
-```
+## 日常指令
 
-**（選用）** 用於資源圖視覺化的 AWS Config 快照匯入。
-將 AWS Config 快照檔案放置於 `docker/data/config-snapshots/`，然後：
-```bash
-make ingest-config
-```
+不加參數執行 `make` 會印出這份清單。`make help-all` 會顯示所有目標。
+
+| 指令 | 作用 |
+|---|---|
+| `make ingest` | 將 `docker/logs/` 的 CloudTrail 日誌匯入 DuckDB |
+| `make up` | 啟動 UI、儀表板與資源圖 |
+| `make down` | 停止所有服務 |
+| `make logs` | 追蹤服務日誌（只看單一服務用 `SERVICE=agent`） |
+| `make reset` | 刪除資料庫並重新開始 |
+
 ---
 
 ## 企業代理伺服器 / 自訂 CA 憑證

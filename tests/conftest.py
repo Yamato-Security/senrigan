@@ -8,6 +8,7 @@ of the per-module suites.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -38,10 +39,87 @@ def make_database() -> str:
     return result.stdout
 
 
+def run_make(*args: str, env: dict[str, str] | None = None) -> str:
+    """Expand a target with ``make -n`` and return the recipe it would run.
+
+    ``-n`` guarantees no recipe is executed, so these tests never start a
+    container or touch the DuckDB file.
+    """
+    result = subprocess.run(
+        ["make", "-n", *args],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, **(env or {})},
+    )
+    return result.stdout + result.stderr
+
+
 def default_goal() -> str | None:
     """Return the goal ``make`` runs when invoked with no arguments."""
     match = re.search(r"^\.DEFAULT_GOAL := (\S+)$", make_database(), re.MULTILINE)
     return match.group(1) if match else None
+
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def help_output(*args: str) -> str:
+    """Run a help target for real and return its output with ANSI stripped.
+
+    Only the help targets are executed here. They print and nothing else — no
+    prerequisites, no Docker, no writes to ``docker/.env``.
+    """
+    result = subprocess.run(
+        ["make", *args],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return _ANSI_RE.sub("", result.stdout)
+
+
+def phony_targets() -> set[str]:
+    """Return the target names listed in the Makefile's ``.PHONY`` block."""
+    match = re.search(
+        r"^\.PHONY:((?:[^\n\\]*\\\n)*[^\n]*)", makefile_text(), re.MULTILINE
+    )
+    if not match:
+        return set()
+    return set(match.group(1).replace("\\\n", " ").split())
+
+
+def documented_targets() -> dict[str, str]:
+    """Return ``{target: description}`` for every target carrying a ``##`` comment."""
+    return {
+        name: description.strip()
+        for name, description in re.findall(
+            r"^([a-zA-Z0-9][a-zA-Z0-9_-]*)\s*:[^=\n]*##\s*(.+)$",
+            makefile_text(),
+            re.MULTILINE,
+        )
+    }
+
+
+def help_sections() -> dict[str, list[str]]:
+    """Return ``{section: [target, ...]}`` as declared by ``##@`` headers."""
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+
+    for line in makefile_text().splitlines():
+        section = re.match(r"^##@\s*(.+)$", line)
+        if section:
+            current = section.group(1).strip()
+            sections.setdefault(current, [])
+            continue
+
+        target = re.match(r"^([a-zA-Z0-9][a-zA-Z0-9_-]*)\s*:[^=\n]*##\s", line)
+        if target and current is not None:
+            sections[current].append(target.group(1))
+
+    return sections
 
 
 def declared_targets() -> set[str]:

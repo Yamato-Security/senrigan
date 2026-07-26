@@ -22,41 +22,51 @@
 aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
 ```
 
-**Étape 2.** Clonez le dépôt, ingérez les journaux et démarrez tous les services.
+**Étape 2.** Clonez le dépôt et mettez vos données en place.
 
 ```bash
 # Clone the repository
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded logs into the Docker logs directory
+# Place the downloaded CloudTrail logs here
 cp -r <local-output-dir>/ docker/logs/
+```
 
-# Ingest CloudTrail logs into DuckDB
+Les deux répertoires optionnels ci-dessous sont détectés automatiquement. Remplissez-les **avant** l'étape suivante — aucune commande supplémentaire n'est nécessaire.
+
+| Répertoire | Contenu | Ce que cela ajoute |
+|---|---|---|
+| `docker/data/geoip/` | [GeoLite2 `.mmdb`](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) | Résout les IP sources en pays, ville et ASN |
+| `docker/data/config-snapshots/` | Fichiers `.json` d'instantanés AWS Config | Construit le graphe de ressources AWS Config |
+
+**Étape 3.** Ingérez les journaux et démarrez les services.
+
+```bash
 make ingest
-
-# Start all services (agent + dashboard)
 make up
 ```
 
-**Étape 3.** 🪽 Ouvrez votre navigateur et commencez la chasse !🪽
+**Étape 4.** 🪽 Ouvrez votre navigateur et commencez la chasse !🪽
 
 - http://localhost:8501 — Requêtes intégrées et Chat IA
 - http://localhost:8088 — Tableau de bord (`admin` / `admin`)
 - http://localhost:8502 — Graphe de ressources AWS Config
 
-**(Optionnel)** Enrichissement GeoIP.
-Placez les [fichiers `.mmdb` GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) dans `docker/data/geoip/`, puis :
+---
 
-```bash
-make ingest-geoip
-```
+## Commandes du quotidien
 
-**(Optionnel)** Ingestion d'instantanés AWS Config pour la visualisation du graphe de ressources.
-Placez les fichiers d'instantanés AWS Config dans `docker/data/config-snapshots/`, puis :
-```bash
-make ingest-config
-```
+`make` sans argument affiche cette liste. `make help-all` montre toutes les cibles.
+
+| Commande | Rôle |
+|---|---|
+| `make ingest` | Charger les journaux CloudTrail de `docker/logs/` dans DuckDB |
+| `make up` | Démarrer l'interface, le tableau de bord et le graphe de ressources |
+| `make down` | Tout arrêter |
+| `make logs` | Suivre les journaux des services (`SERVICE=agent` pour un seul) |
+| `make reset` | Supprimer la base de données et recommencer |
+
 ---
 
 ## Proxy d'entreprise / Certificat CA personnalisé

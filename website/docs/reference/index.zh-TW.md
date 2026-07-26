@@ -236,7 +236,7 @@
 | 5 | MFA-less Console Logins | 所選範圍內未使用 MFA 的主控台登入次數（KPI-85）。憑證遭入侵的直接指標——深入至 MFA-less Login Trend。 |
 | 6 | Access Denied Events | 所選範圍內授權失敗事件的數量（KPI-86）。激增暗示偵察或權限測試——依主體/IP 深入分析。 |
 | 7 | Defense-Evasion Hits | 所選範圍內稽核/監控竄改事件的數量（KPI-87）。優先順序最高的分流訊號——任何非零值都表示偵測功能可能已被停用。深入至 Security Monitoring & Control Changes。MITRE ATT&CK：TA0005 Defense Evasion。 |
-| 8 | Distinct Countries | 所選範圍內不重複來源國家的數量（KPI-88）。需要 GeoIP 資料填充（make ingest-geoip）。廣泛的分布暗示來自非預期地理來源的存取。 |
+| 8 | Distinct Countries | 所選範圍內不重複來源國家的數量（KPI-88）。需要 GeoIP 資料填充（docker/data/geoip/）。廣泛的分布暗示來自非預期地理來源的存取。 |
 | 9 | Active Regions | 所選範圍內有活動的不同 AWS 區域數量（KPI-89）。未使用區域中的活動可能表示資源濫用或攻擊者的前置準備。 |
 | 10 | CloudTrail Events Over Time | 隨時間變化的每小時讀取與寫入事件量（DSH-01）。堆疊長條圖顯示讀取/寫入的比例：write_events 的驟然上升表示攻擊者正從偵察轉向主動的攻擊利用。有助於識別活動激增及非上班時間的操作。 |
 

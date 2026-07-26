@@ -236,7 +236,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 5 | MFA-less Console Logins | Number of console logins without MFA in the selected range (KPI-85). A direct indicator of credential compromise — drill into MFA-less Login Trend. |
 | 6 | Access Denied Events | Number of authorization-failure events in the selected range (KPI-86). A spike suggests reconnaissance or privilege probing — pivot by principal/IP. |
 | 7 | Defense-Evasion Hits | Number of audit/monitoring tampering events in the selected range (KPI-87). Highest-priority triage signal — any non-zero value means detection may have been disabled. Drill into Security Monitoring & Control Changes. MITRE ATT&CK: TA0005 Defense Evasion. |
-| 8 | Distinct Countries | Count of unique source countries in the selected range (KPI-88). Requires GeoIP enrichment (make ingest-geoip). A wide spread suggests access from unexpected geographic origins. |
+| 8 | Distinct Countries | Count of unique source countries in the selected range (KPI-88). Requires GeoIP enrichment (docker/data/geoip/). A wide spread suggests access from unexpected geographic origins. |
 | 9 | Active Regions | Count of distinct AWS regions with activity in the selected range (KPI-89). Activity in unused regions can indicate resource abuse or attacker staging. |
 | 10 | CloudTrail Events Over Time | Hourly Read vs Write event volume over time (DSH-01). Stacked bars show the Read/Write split: a sudden rise in write_events signals that an attacker is transitioning from reconnaissance to active exploitation.  Useful for identifying activity spikes and off-hours operations. |
 

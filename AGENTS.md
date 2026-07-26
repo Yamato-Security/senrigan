@@ -83,27 +83,32 @@ When implementing a feature:
 
 ## Essential Commands
 
-Run from `docker/`:
+Run from the repository root. `make` with no arguments prints the five user-facing
+commands; `make help-all` lists every target grouped by section.
 
 ```bash
-# First-time ingest (CloudTrail)
-docker compose --profile ingest run --rm ingester ingest --path /data/logs
-
-# First-time ingest (AWS Config snapshots)
-docker compose --profile ingest run --rm ingester config-import --path /data/config
-
-# Start agent + dashboard + config_viz
-docker compose up -d --build
-
-# Re-ingest from scratch
-docker compose down
-rm -f data/db/threat_hunting.db data/db/threat_hunting.db.wal
-docker compose --profile ingest run --rm ingester ingest --path /data/logs
-docker compose up -d --build
-
-# Fix blank dashboard after re-ingest (re-syncs column metadata)
-docker compose --profile resync run --rm superset-resync
+make ingest    # Load CloudTrail logs from docker/logs/ into DuckDB
+make up        # Start agent + dashboard + config_viz
+make down      # Stop everything
+make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
+make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
+make status    # Container state, database size, and what ingest would detect
+make resync    # Fix blank dashboard after re-ingest (re-syncs column metadata)
+make check     # Everything CI enforces: tests + lint + format
 ```
+
+`make ingest` takes **no flags** — it reads the compose bind-mount directories and enables
+the matching ingester options itself, echoing what it found and what it skipped:
+
+| Directory | Effect on `make ingest` |
+|-----------|-------------------------|
+| `docker/data/geoip/GeoLite2-{City,Country,ASN}.mmdb` | adds the matching `--geoip-*` flags (City supersedes Country) |
+| `docker/data/config-snapshots/` non-empty | runs `config-import` as a second pass |
+
+Explicit overrides (`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`) live under
+`##@ Advanced ingest` in `make help-all`. Detection paths follow `GEOIP_HOST_PATH` /
+`CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching `docker/docker-compose.yml`.
+Rationale and history: [doc/PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md).
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
 Superset never reads those YAML files directly — it only applies them from the compiled
@@ -149,7 +154,7 @@ pytest                        # all tests (605 tests)
 ```
 
 Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 509 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 655, root `tests/` ≈ 5 (Makefile / compose / docs consistency).
+114 frontend, dashboard ≈ 655, root `tests/` ≈ 104 (Makefile / compose / docs consistency).
 Test count must not decrease in a PR.
 
 ---
@@ -418,6 +423,7 @@ senrigan/
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
 │   ├── PLAN_THREAT_CATALOG.md # Threat Technique Catalog for AWS coverage + TID annotations
+│   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/
