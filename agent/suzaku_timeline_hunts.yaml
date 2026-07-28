@@ -11,10 +11,12 @@
 #
 # SQL conventions for this dataset (see doc/PLAN_SUZAKU_SCHEMA.md for the reasons):
 #   - Table: timeline — every row is one rule match against one CloudTrail event.
-#   - ALL identifiers are double-quoted: PascalCase columns, and "AWS-Region" is hyphenated.
-#   - "Timestamp" is VARCHAR — CAST("Timestamp" AS TIMESTAMP) for any date arithmetic.
-#   - "Level" is text; order it with a CASE rank, never alphabetically.
-#   - Suzaku writes '-' instead of NULL, so absence is tested with <> '-'.
+#   - ALL identifiers are double-quoted: the columns are PascalCase.
+#   - "Timestamp" is a real TIMESTAMP — used directly, never CAST.
+#   - "Level" is the ordered ENUM suzaku_level: ORDER BY "Level" DESC is severity
+#     order, but a threshold needs the cast, "Level" >= 'high'::suzaku_level.
+#   - Absent values are NULL, so absence is tested with IS NULL / IS NOT NULL.
+#   - "Tactics" / "TechniqueIDs" / "OtherTags" are VARCHAR[] — unnest or list_contains.
 #   - "EventID" is NOT unique (one event can match several rules).
 #   - The table holds millions of rows: every query has both ORDER BY and LIMIT.
 
@@ -39,10 +41,10 @@
         "EventName",
         "UserARN",
         "SrcIP",
-        "AWS-Region",
+        "AwsRegion",
         "ErrorCode"
     FROM timeline
-    WHERE "Level" IN ('critical', 'high')
+    WHERE "Level" >= 'high'::suzaku_level
     ORDER BY "Timestamp" DESC
     LIMIT 200
 
@@ -66,13 +68,7 @@
         max("Timestamp")             AS last_seen
     FROM timeline
     GROUP BY "Level"
-    ORDER BY CASE "Level"
-               WHEN 'critical' THEN 5
-               WHEN 'high' THEN 4
-               WHEN 'medium' THEN 3
-               WHEN 'low' THEN 2
-               ELSE 1
-             END DESC
+    ORDER BY "Level" DESC
     LIMIT 10
 
 - category: "\U0001f6a8 Triage"
@@ -86,11 +82,11 @@
     the rest, so I can see which days spiked.
   sql: |
     SELECT
-        date_trunc('day', CAST("Timestamp" AS TIMESTAMP)) AS day,
-        count(*)                                                      AS detections,
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))        AS high_plus,
-        count(*) FILTER (WHERE "Level" = 'medium')                     AS medium,
-        count(DISTINCT "UserARN")                                     AS principals
+        date_trunc('day', "Timestamp")                                 AS day,
+        count(*)                                                       AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)         AS high_plus,
+        count(*) FILTER (WHERE "Level" = 'medium')                      AS medium,
+        count(DISTINCT "UserARN")                                      AS principals
     FROM timeline
     GROUP BY day
     ORDER BY day DESC
@@ -120,7 +116,7 @@
         min("Timestamp")            AS first_seen,
         max("Timestamp")            AS last_seen
     FROM timeline
-    WHERE "Level" IN ('critical', 'high', 'medium')
+    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY detections DESC
     LIMIT 50
@@ -142,14 +138,7 @@
     FROM timeline
     GROUP BY "RuleTitle", "Level"
     HAVING count(*) = 1
-    ORDER BY CASE "Level"
-               WHEN 'critical' THEN 5
-               WHEN 'high' THEN 4
-               WHEN 'medium' THEN 3
-               WHEN 'low' THEN 2
-               ELSE 1
-             END DESC,
-             seen_at DESC
+    ORDER BY "Level" DESC, seen_at DESC
     LIMIT 200
 
 - category: "\U0001f4dc Rules"
@@ -164,14 +153,10 @@
         "Level",
         min("Timestamp")  AS first_seen,
         max("Timestamp")  AS last_seen,
-        date_diff(
-            'day',
-            CAST(min("Timestamp") AS TIMESTAMP),
-            CAST(max("Timestamp") AS TIMESTAMP)
-        )                 AS active_days,
+        date_diff('day', min("Timestamp"), max("Timestamp")) AS active_days,
         count(*)          AS detections
     FROM timeline
-    WHERE "Level" IN ('critical', 'high', 'medium')
+    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY first_seen DESC
     LIMIT 100
@@ -199,15 +184,15 @@
     SELECT
         "UserARN",
         "UserType",
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))  AS severe,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)  AS severe,
         count(*) FILTER (WHERE "Level" = 'medium')               AS medium,
-        count(*)                                                AS detections,
-        count(DISTINCT "RuleTitle")                             AS rules,
-        count(DISTINCT "SrcIP")                                 AS source_ips,
-        min("Timestamp")                                        AS first_seen,
-        max("Timestamp")                                        AS last_seen
+        count(*)                                                 AS detections,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        count(DISTINCT "SrcIP")                                  AS source_ips,
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen
     FROM timeline
-    WHERE "UserARN" <> '-'
+    WHERE "UserARN" IS NOT NULL
     GROUP BY "UserARN", "UserType"
     ORDER BY severe DESC, detections DESC
     LIMIT 50
@@ -232,7 +217,7 @@
         "UserARN",
         "SrcIP",
         "UserAgent",
-        "AWS-Region"
+        "AwsRegion"
     FROM timeline
     WHERE lower("UserType") = 'root' OR "UserARN" LIKE '%:root'
     ORDER BY "Timestamp" DESC
@@ -252,15 +237,15 @@
   sql: |
     SELECT
         "UserAccessKeyID",
-        min("UserARN")                                          AS user_arn,
-        count(*)                                                AS detections,
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))  AS severe,
-        count(DISTINCT "SrcIP")                                 AS source_ips,
-        count(DISTINCT "RuleTitle")                             AS rules,
-        min("Timestamp")                                        AS first_seen,
-        max("Timestamp")                                        AS last_seen
+        min("UserARN")                                           AS user_arn,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "SrcIP")                                  AS source_ips,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen
     FROM timeline
-    WHERE "UserAccessKeyID" <> '-' AND "UserAccessKeyID" <> ''
+    WHERE "UserAccessKeyID" IS NOT NULL
     GROUP BY "UserAccessKeyID"
     ORDER BY severe DESC, detections DESC
     LIMIT 100
@@ -282,14 +267,14 @@
   sql: |
     SELECT
         "SrcIP",
-        count(DISTINCT "RuleTitle")                             AS rules,
-        count(*)                                                AS detections,
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))  AS severe,
-        count(DISTINCT "UserARN")                               AS principals,
-        min("Timestamp")                                        AS first_seen,
-        max("Timestamp")                                        AS last_seen
+        count(DISTINCT "RuleTitle")                              AS rules,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "UserARN")                                AS principals,
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen
     FROM timeline
-    WHERE "Level" IN ('critical', 'high', 'medium') AND "SrcIP" <> '-'
+    WHERE "Level" >= 'medium'::suzaku_level AND "SrcIP" IS NOT NULL
     GROUP BY "SrcIP"
     ORDER BY rules DESC, severe DESC
     LIMIT 100
@@ -308,12 +293,12 @@
   sql: |
     SELECT
         "UserAgent",
-        count(*)                                                AS detections,
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))  AS severe,
-        count(DISTINCT "UserARN")                               AS principals,
-        count(DISTINCT "SrcIP")                                 AS source_ips
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "UserARN")                                AS principals,
+        count(DISTINCT "SrcIP")                                  AS source_ips
     FROM timeline
-    WHERE "Level" IN ('critical', 'high', 'medium') AND "UserAgent" <> '-'
+    WHERE "Level" >= 'medium'::suzaku_level AND "UserAgent" IS NOT NULL
     GROUP BY "UserAgent"
     ORDER BY severe DESC, detections DESC
     LIMIT 100
@@ -331,15 +316,15 @@
     Suzaku detections, showing only days with more than one region.
   sql: |
     SELECT
-        date_trunc('day', CAST("Timestamp" AS TIMESTAMP)) AS day,
+        date_trunc('day', "Timestamp")             AS day,
         "UserARN",
-        count(DISTINCT "AWS-Region")                                  AS regions,
-        count(*)                                                      AS detections,
-        string_agg(DISTINCT "AWS-Region", ', ')                       AS region_list
+        count(DISTINCT "AwsRegion")                AS regions,
+        count(*)                                   AS detections,
+        string_agg(DISTINCT "AwsRegion", ', ')     AS region_list
     FROM timeline
-    WHERE "UserARN" <> '-'
+    WHERE "UserARN" IS NOT NULL
     GROUP BY day, "UserARN"
-    HAVING count(DISTINCT "AWS-Region") > 1
+    HAVING count(DISTINCT "AwsRegion") > 1
     ORDER BY regions DESC, day DESC
     LIMIT 100
 
@@ -368,7 +353,7 @@
         min("Timestamp")             AS first_seen,
         max("Timestamp")             AS last_seen
     FROM timeline
-    WHERE "ErrorCode" <> '-'
+    WHERE "ErrorCode" IS NOT NULL
     GROUP BY "ErrorCode", "UserARN"
     ORDER BY failures DESC
     LIMIT 100
@@ -385,18 +370,39 @@
     x: "detections"
     y: "technique"
   prompt: |
-    Split the Suzaku Tags column and count detections per ATT&CK technique ID,
-    showing the severities involved.
+    Count Suzaku detections per ATT&CK technique ID, showing the severities
+    involved.
   sql: |
     SELECT
-        tag                                                     AS technique,
-        count(*)                                                AS detections,
-        count(*) FILTER (WHERE "Level" IN ('critical', 'high'))  AS severe,
-        count(DISTINCT "RuleTitle")                             AS rules,
-        count(DISTINCT "UserARN")                               AS principals
-    FROM timeline, unnest(string_split("Tags", ' ¦ ')) AS t(tag)
-    WHERE tag LIKE 'T1%'
-    GROUP BY tag
+        technique,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        count(DISTINCT "UserARN")                                AS principals
+    FROM timeline, unnest("TechniqueIDs") AS t(technique)
+    GROUP BY technique
+    ORDER BY severe DESC, detections DESC
+    LIMIT 100
+
+- category: "\U0001f9ec ATT&CK"
+  label: "\U0001f3f4 Tactic Breakdown"
+  description: "Which ATT&CK tactics the detections cover — where in the kill chain this dataset sits."
+  chart:
+    type: bar
+    x: "detections"
+    y: "tactic"
+  prompt: |
+    Count Suzaku detections per ATT&CK tactic, with the distinct rules and
+    principals behind each one.
+  sql: |
+    SELECT
+        tactic,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        count(DISTINCT "UserARN")                                AS principals
+    FROM timeline, unnest("Tactics") AS t(tactic)
+    GROUP BY tactic
     ORDER BY severe DESC, detections DESC
     LIMIT 100
 
@@ -410,10 +416,10 @@
     SELECT
         "RuleTitle",
         "Level",
-        string_agg(DISTINCT tag, ', ')  AS techniques,
-        count(*)                        AS detections
-    FROM timeline, unnest(string_split("Tags", ' ¦ ')) AS t(tag)
-    WHERE tag LIKE 'T1%' AND "Level" IN ('critical', 'high', 'medium')
+        string_agg(DISTINCT technique, ', ')  AS techniques,
+        count(*)                              AS detections
+    FROM timeline, unnest("TechniqueIDs") AS t(technique)
+    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY detections DESC
     LIMIT 100

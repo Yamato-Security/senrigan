@@ -6,6 +6,9 @@ the Streamlit agent, which can glob on every rerun — the Suzaku files have to 
 discovered and registered at bootstrap. The registration is keyed by a fixed
 name and UUID so chart and dataset YAMLs never reference a file path.
 
+The producing command is read from the file's own ``suzaku_meta`` table, so the
+synthetic databases below carry one.
+
 The module under test imports Superset lazily (inside ``main()``), so its
 detection logic is importable outside the container.
 """
@@ -45,19 +48,43 @@ TIMELINE_TABLES = {
 }
 SUMMARY_TABLES = {
     "summary": ["UserARN", "NumOfEvents"],
-    "summary_api_calls": ["UserARN", "Category", "API", "Count"],
+    "summary_api_calls": ["UserARN", "IsAbused", "Outcome", "API", "Count"],
     "summary_attributes": ["UserARN", "Attribute", "Value", "Count"],
 }
 METRICS_TABLES = {"metrics": ["Field", "Value", "Count", "Percent"]}
 
 
-def _make_db(path: Path, tables: dict[str, list[str]]) -> Path:
-    """Create a DuckDB file whose schema matches *tables*."""
+def _make_db(
+    path: Path,
+    tables: dict[str, list[str]],
+    command: str | None = None,
+    schema_version: int = 1,
+) -> Path:
+    """Create a DuckDB file whose schema matches *tables*.
+
+    Args:
+        path:           File to create.
+        tables:         Payload tables to create, as ``{name: [column, ...]}``.
+        command:        Value for ``suzaku_meta.command``; omit the table when None.
+        schema_version: Value for ``suzaku_meta.schema_version``.
+
+    Returns:
+        *path*, for chaining.
+    """
     conn = duckdb.connect(str(path))
     try:
         for table, columns in tables.items():
             defs = ", ".join(f'"{column}" VARCHAR' for column in columns)
             conn.execute(f'CREATE TABLE "{table}" ({defs})')
+        if command is not None:
+            conn.execute(
+                f"CREATE TABLE {szdb.META_TABLE} "
+                "(schema_version INTEGER, command VARCHAR)"
+            )
+            conn.execute(
+                f"INSERT INTO {szdb.META_TABLE} VALUES (?, ?)",
+                [schema_version, command],
+            )
     finally:
         conn.close()
     return path
@@ -77,19 +104,23 @@ def _make_db(path: Path, tables: dict[str, list[str]]) -> Path:
     ],
 )
 def test_classifies_each_real_fixture(fixture_name: str, command: str) -> None:
-    """Test 1: the signatures must match real Suzaku output."""
-    assert szdb.detect_commands_in(FIXTURE_DIR / fixture_name) == {command}
+    """Test 1: detection must work on real Suzaku output."""
+    assert szdb.detect_command_in(FIXTURE_DIR / fixture_name) == command
 
 
 def test_partial_summary_export_is_not_a_summary(tmp_path: Path) -> None:
-    """Test 2: two of the three summary tables must not be claimed."""
+    """Test 2: a file claiming a command it has no tables for is unusable.
+
+    The dataset YAMLs query all three summary tables, so a truncated export
+    would register a database whose every chart fails with a binder error.
+    """
     partial = {
         name: columns
         for name, columns in SUMMARY_TABLES.items()
         if name != "summary_attributes"
     }
-    db = _make_db(tmp_path / "partial.duckdb", partial)
-    assert szdb.detect_commands_in(db) == set()
+    db = _make_db(tmp_path / "partial.duckdb", partial, command="aws-ct-summary")
+    assert szdb.detect_command_in(db) is None
 
 
 def test_senrigan_database_is_never_a_suzaku_command(tmp_path: Path) -> None:
@@ -97,15 +128,39 @@ def test_senrigan_database_is_never_a_suzaku_command(tmp_path: Path) -> None:
     db = _make_db(
         tmp_path / "senrigan.duckdb",
         {**TIMELINE_TABLES, "cloudtrail_events": ["event_time"]},
+        command="aws-ct-timeline",
     )
-    assert szdb.detect_commands_in(db) == set()
+    assert szdb.detect_command_in(db) is None
+
+
+def test_file_without_suzaku_meta_is_unrecognised(tmp_path: Path) -> None:
+    """Detection reads the metadata table; a file without one is not Suzaku's."""
+    db = _make_db(tmp_path / "legacy.duckdb", TIMELINE_TABLES)
+    assert szdb.detect_command_in(db) is None
+
+
+def test_newer_schema_version_is_refused(tmp_path: Path) -> None:
+    """A layout this bootstrap cannot read must not be mis-visualized."""
+    db = _make_db(
+        tmp_path / "future.duckdb",
+        TIMELINE_TABLES,
+        command="aws-ct-timeline",
+        schema_version=szdb.SUPPORTED_SCHEMA_VERSION + 1,
+    )
+    assert szdb.detect_command_in(db) is None
+
+
+def test_unknown_command_is_unrecognised(tmp_path: Path) -> None:
+    """Suzaku's Azure output has no Senrigan dashboard to register."""
+    db = _make_db(tmp_path / "azure.duckdb", TIMELINE_TABLES, command="azure-timeline")
+    assert szdb.detect_command_in(db) is None
 
 
 def test_unreadable_file_is_skipped_not_raised(tmp_path: Path) -> None:
     """A stray non-DuckDB file must not abort the whole bootstrap."""
     broken = tmp_path / "broken.duckdb"
     broken.write_text("not a database", encoding="utf-8")
-    assert szdb.detect_commands_in(broken) == set()
+    assert szdb.detect_command_in(broken) is None
 
 
 # ---------------------------------------------------------------------------
@@ -115,9 +170,9 @@ def test_unreadable_file_is_skipped_not_raised(tmp_path: Path) -> None:
 
 def test_discover_maps_each_command_to_one_file(tmp_path: Path) -> None:
     """One database per command, newest first when several match."""
-    older = _make_db(tmp_path / "old.duckdb", TIMELINE_TABLES)
-    newer = _make_db(tmp_path / "new.duckdb", TIMELINE_TABLES)
-    _make_db(tmp_path / "metrics.duckdb", METRICS_TABLES)
+    older = _make_db(tmp_path / "old.duckdb", TIMELINE_TABLES, "aws-ct-timeline")
+    newer = _make_db(tmp_path / "new.duckdb", TIMELINE_TABLES, "aws-ct-timeline")
+    _make_db(tmp_path / "metrics.duckdb", METRICS_TABLES, "aws-ct-metrics")
     os.utime(older, (1_000_000, 1_000_000))
     os.utime(newer, (2_000_000, 2_000_000))
 
@@ -130,7 +185,11 @@ def test_discover_maps_each_command_to_one_file(tmp_path: Path) -> None:
 
 def test_discover_skips_the_senrigan_database(tmp_path: Path) -> None:
     """Only ``*.duckdb`` is scanned, so threat_hunting.db is never touched."""
-    _make_db(tmp_path / "threat_hunting.db", {"cloudtrail_events": ["event_time"]})
+    _make_db(
+        tmp_path / "threat_hunting.db",
+        {"cloudtrail_events": ["event_time"]},
+        command="aws-ct-timeline",
+    )
     assert szdb.discover_databases(str(tmp_path)) == {}
 
 
@@ -141,8 +200,8 @@ def test_discover_on_missing_directory_is_empty(tmp_path: Path) -> None:
 
 def test_env_override_pins_a_file(tmp_path: Path, monkeypatch) -> None:
     """An explicit SUZAKU_*_DB must win over mtime ordering."""
-    pinned = _make_db(tmp_path / "pinned.duckdb", TIMELINE_TABLES)
-    newer = _make_db(tmp_path / "newer.duckdb", TIMELINE_TABLES)
+    pinned = _make_db(tmp_path / "pinned.duckdb", TIMELINE_TABLES, "aws-ct-timeline")
+    newer = _make_db(tmp_path / "newer.duckdb", TIMELINE_TABLES, "aws-ct-timeline")
     os.utime(pinned, (1_000_000, 1_000_000))
     os.utime(newer, (2_000_000, 2_000_000))
     monkeypatch.setenv("SUZAKU_TIMELINE_DB", str(pinned))
@@ -157,8 +216,8 @@ def test_env_override_pins_a_file(tmp_path: Path, monkeypatch) -> None:
 
 def test_every_command_has_a_database_name_and_uuid() -> None:
     """Dataset YAMLs reference the database by UUID, so both must be fixed."""
-    assert set(szdb.SUZAKU_SIGNATURES) == set(szdb.DATABASE_NAMES)
-    assert set(szdb.SUZAKU_SIGNATURES) == set(szdb.DATABASE_UUIDS)
+    assert set(szdb.SUZAKU_TABLES) == set(szdb.DATABASE_NAMES)
+    assert set(szdb.SUZAKU_TABLES) == set(szdb.DATABASE_UUIDS)
 
     names = list(szdb.DATABASE_NAMES.values())
     uuids = list(szdb.DATABASE_UUIDS.values())
@@ -205,8 +264,8 @@ def test_superset_is_imported_lazily() -> None:
 
 def test_list_mode_prints_one_command_per_line(tmp_path: Path, capsys) -> None:
     """bootstrap.sh imports a bundle only when its command was detected."""
-    _make_db(tmp_path / "anything.duckdb", TIMELINE_TABLES)
-    _make_db(tmp_path / "other-name.duckdb", METRICS_TABLES)
+    _make_db(tmp_path / "anything.duckdb", TIMELINE_TABLES, "aws-ct-timeline")
+    _make_db(tmp_path / "other-name.duckdb", METRICS_TABLES, "aws-ct-metrics")
 
     szdb.print_detected(str(tmp_path))
 

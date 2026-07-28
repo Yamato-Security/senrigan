@@ -154,18 +154,23 @@ CLOUDTRAIL_COLUMNS: list[dict] = [
 
 # Columns of Suzaku's ``aws-ct-timeline`` table, in the order Suzaku writes them.
 #
-# Everything is VARCHAR in the file (see doc/PLAN_SUZAKU_SCHEMA.md P3), including
-# the timestamp and the severity, so the descriptions carry the handling rules
-# the LLM would otherwise have to guess: the ``-`` placeholder Suzaku writes
-# instead of NULL (P2) and the " ¦ "-separated Tags string (P5).
+# Since Suzaku's DuckDB schema_version 1 the file is typed rather than rendered:
+# ``Timestamp`` is a real TIMESTAMP, ``Level`` is an ordered ENUM, absent values
+# are NULL rather than the ``-`` placeholder the CSV writer still uses, and the
+# packed ``Tags`` string is split into three ``VARCHAR[]`` columns. The
+# descriptions below carry what remains non-obvious to the LLM.
+#
+# The three GeoIP columns Suzaku adds under ``--geo-ip`` are deliberately absent:
+# they exist only in an enriched run, and a prompt promising a column that is not
+# there produces SQL that fails to bind.
 SUZAKU_TIMELINE_COLUMNS: list[dict] = [
     {
         "name": "Timestamp",
-        "type": "VARCHAR",
-        "nullable": False,
+        "type": "TIMESTAMP",
+        "nullable": True,
         "description": (
-            "Detection time as 'YYYY-MM-DD HH:MM:SS' text — CAST to TIMESTAMP for "
-            "any date arithmetic or bucketing"
+            "Detection time, in the timezone named by suzaku_meta.timestamp_tz "
+            "(UTC unless Suzaku ran with --localtime)"
         ),
     },
     {
@@ -182,48 +187,44 @@ SUZAKU_TIMELINE_COLUMNS: list[dict] = [
     },
     {
         "name": "Level",
-        "type": "VARCHAR",
-        "nullable": False,
+        "type": "ENUM (suzaku_level)",
+        "nullable": True,
         "description": (
-            "Severity: critical, high, medium, low, informational — text, so order "
-            "it with a CASE rank, never alphabetically"
+            "Severity, as an ordered ENUM: informational < low < medium < high < "
+            'critical. ORDER BY "Level" DESC is already severity order — but a '
+            "threshold needs the cast, \"Level\" >= 'high'::suzaku_level, because "
+            "a bare string literal compares alphabetically"
         ),
     },
     {
         "name": "EventName",
         "type": "VARCHAR",
-        "nullable": False,
+        "nullable": True,
         "description": "CloudTrail API action that triggered the detection",
     },
     {
         "name": "ErrorCode",
         "type": "VARCHAR",
-        "nullable": False,
-        "description": (
-            "AWS error code, or '-' when the call succeeded (Suzaku writes '-', "
-            "not NULL — use ErrorCode <> '-' to find failures)"
-        ),
+        "nullable": True,
+        "description": "AWS error code, NULL when the call succeeded",
     },
     {
         "name": "ErrorMessage",
         "type": "VARCHAR",
-        "nullable": False,
-        "description": "AWS error message, or '-' when the call succeeded",
+        "nullable": True,
+        "description": "AWS error message, NULL when the call succeeded",
     },
     {
         "name": "EventSource",
         "type": "VARCHAR",
-        "nullable": False,
+        "nullable": True,
         "description": "AWS service that processed the request (e.g. ec2.amazonaws.com)",
     },
     {
-        "name": "AWS-Region",
+        "name": "AwsRegion",
         "type": "VARCHAR",
         "nullable": True,
-        "description": (
-            "Region of the request — the hyphen means it MUST be written as "
-            '"AWS-Region"'
-        ),
+        "description": "Region of the request (e.g. us-east-1)",
     },
     {
         "name": "SrcIP",
@@ -240,8 +241,8 @@ SUZAKU_TIMELINE_COLUMNS: list[dict] = [
     {
         "name": "UserName",
         "type": "VARCHAR",
-        "nullable": False,
-        "description": "IAM user or role name, or '-' when absent",
+        "nullable": True,
+        "description": "IAM user or role name, NULL when the identity has none",
     },
     {
         "name": "UserType",
@@ -270,27 +271,41 @@ SUZAKU_TIMELINE_COLUMNS: list[dict] = [
     {
         "name": "UserAccessKeyID",
         "type": "VARCHAR",
-        "nullable": False,
-        "description": "Access key used, or '-' when the call was not key-based",
+        "nullable": True,
+        "description": "Access key used, NULL when the call was not key-based",
     },
     {
         "name": "EventID",
         "type": "VARCHAR",
-        "nullable": False,
+        "nullable": True,
         "description": (
             "CloudTrail event ID — NOT unique: one event matching several rules "
             "produces one row per match"
         ),
     },
     {
-        "name": "Tags",
-        "type": "VARCHAR",
+        "name": "Tactics",
+        "type": "VARCHAR[]",
         "nullable": False,
         "description": (
-            "Tactic short names and ATT&CK technique IDs joined by ' ¦ ' "
-            "(e.g. 'PrivEsc ¦ Persis ¦ T1078.004') — split with "
-            "string_split(\"Tags\", ' ¦ ') and unnest to analyse them"
+            "MITRE ATT&CK tactic short names (e.g. ['PrivEsc', 'Persis']) — a "
+            "list, empty when the rule has none; unnest it or use list_contains"
         ),
+    },
+    {
+        "name": "TechniqueIDs",
+        "type": "VARCHAR[]",
+        "nullable": False,
+        "description": (
+            "MITRE ATT&CK technique IDs (e.g. ['T1078.004']) — a list, empty when "
+            "the rule has none"
+        ),
+    },
+    {
+        "name": "OtherTags",
+        "type": "VARCHAR[]",
+        "nullable": False,
+        "description": "Remaining rule tags that are neither a tactic nor a technique",
     },
     {
         "name": "RuleID",

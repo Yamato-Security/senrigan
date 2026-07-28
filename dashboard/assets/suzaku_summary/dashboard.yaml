@@ -585,7 +585,7 @@ metadata:
       - ROOT_ID
       excluded: []
     type: NATIVE_FILTER
-    description: Which attribute kind the Attributes tab shows (src_ip, user_agent, …)
+    description: Which attribute kind the Attributes tab shows (SrcIP, UserAgent, …)
     chartsInScope: []
     tabsInScope: []
   charts:

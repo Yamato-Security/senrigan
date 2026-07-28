@@ -1,12 +1,13 @@
 # Superset dataset: one row per identity in Suzaku's `aws-ct-summary` output.
 #
-# VIRTUAL (sql:) because the file needs three fixes before a BI tool can use it
-# (see doc/PLAN_SUZAKU_SCHEMA.md):
-#   * P3 — FirstTimestamp / LastTimestamp are VARCHAR; Superset needs a real
-#     temporal column, so they are CAST here once instead of in every chart.
-#   * P5 — Category packs two orthogonal axes (abused/other x success/failed)
-#     into one string, so the four counts are pivoted out to columns.
-#   * P6 — PascalCase identifiers become snake_case, matching every other dataset.
+# VIRTUAL (sql:) because the file still needs two things before a BI tool can use
+# it (see doc/PLAN_SUZAKU_SCHEMA.md):
+#   * P5 — the abused/other x success/failed counts live one row per API call in
+#     `summary_api_calls`, so they are pivoted to columns here.
+#   * P6 — PascalCase identifiers become snake_case, matching every other dataset;
+#     `UserTypes` is a VARCHAR[], which Superset cannot group by, so it is joined.
+# What it no longer needs: a CAST for the timestamps, and the `Category` string
+# split — the file ships `IsAbused` and `Outcome` already.
 #
 # The per-identity attribute counts are joined in so the triage table can show
 # "how many IPs / keys / regions did this identity use" without a second chart.
@@ -25,12 +26,11 @@ schema: null
 sql: |
   SELECT
       s."UserARN"                                   AS user_arn,
-      s."UserTypes"                                 AS user_types,
+      array_to_string(s."UserTypes", ', ')          AS user_types,
       s."NumOfEvents"                               AS num_of_events,
-      CAST(s."FirstTimestamp" AS TIMESTAMP)         AS first_seen,
-      CAST(s."LastTimestamp" AS TIMESTAMP)          AS last_seen,
-      date_diff('day', CAST(s."FirstTimestamp" AS TIMESTAMP),
-                       CAST(s."LastTimestamp" AS TIMESTAMP)) AS active_days,
+      s."FirstTimestamp"                            AS first_seen,
+      s."LastTimestamp"                             AS last_seen,
+      date_diff('day', s."FirstTimestamp", s."LastTimestamp") AS active_days,
       coalesce(a.abused_success, 0)                 AS abused_success,
       coalesce(a.abused_failed, 0)                  AS abused_failed,
       coalesce(a.other_success, 0)                  AS other_success,
@@ -43,20 +43,20 @@ sql: |
   FROM summary s
   LEFT JOIN (
       SELECT "UserARN",
-             sum(CASE WHEN "Category" = 'abused_success' THEN "Count" ELSE 0 END) AS abused_success,
-             sum(CASE WHEN "Category" = 'abused_failed'  THEN "Count" ELSE 0 END) AS abused_failed,
-             sum(CASE WHEN "Category" = 'other_success'  THEN "Count" ELSE 0 END) AS other_success,
-             sum(CASE WHEN "Category" = 'other_failed'   THEN "Count" ELSE 0 END) AS other_failed,
-             count(DISTINCT CASE WHEN "Category" LIKE 'abused%' THEN "API" END)   AS abused_apis
+             sum("Count") FILTER (WHERE "IsAbused" AND "Outcome" = 'success')     AS abused_success,
+             sum("Count") FILTER (WHERE "IsAbused" AND "Outcome" = 'failed')      AS abused_failed,
+             sum("Count") FILTER (WHERE NOT "IsAbused" AND "Outcome" = 'success') AS other_success,
+             sum("Count") FILTER (WHERE NOT "IsAbused" AND "Outcome" = 'failed')  AS other_failed,
+             count(DISTINCT "API") FILTER (WHERE "IsAbused")                      AS abused_apis
       FROM summary_api_calls
       GROUP BY "UserARN"
   ) a ON a."UserARN" = s."UserARN"
   LEFT JOIN (
       SELECT "UserARN",
-             count(DISTINCT CASE WHEN "Attribute" = 'src_ip'        THEN "Value" END) AS src_ips,
-             count(DISTINCT CASE WHEN "Attribute" = 'user_agent'    THEN "Value" END) AS user_agents,
-             count(DISTINCT CASE WHEN "Attribute" = 'access_key_id' THEN "Value" END) AS access_keys,
-             count(DISTINCT CASE WHEN "Attribute" = 'aws_region'    THEN "Value" END) AS regions
+             count(DISTINCT "Value") FILTER (WHERE "Attribute" = 'SrcIP')           AS src_ips,
+             count(DISTINCT "Value") FILTER (WHERE "Attribute" = 'UserAgent')       AS user_agents,
+             count(DISTINCT "Value") FILTER (WHERE "Attribute" = 'UserAccessKeyID') AS access_keys,
+             count(DISTINCT "Value") FILTER (WHERE "Attribute" = 'AwsRegion')       AS regions
       FROM summary_attributes
       GROUP BY "UserARN"
   ) t ON t."UserARN" = s."UserARN"
@@ -83,7 +83,8 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: Identity type seen for this ARN (Root, IAMUser, AssumedRole)
+    description: >
+      Identity types seen for this ARN (Root, IAMUser, AssumedRole), comma-joined
 
   - column_name: num_of_events
     verbose_name: Events
@@ -101,7 +102,7 @@ columns:
     type: TIMESTAMP
     groupby: true
     filterable: true
-    description: First activity timestamp (CAST from Suzaku's VARCHAR)
+    description: First activity timestamp
 
   - column_name: last_seen
     verbose_name: Last Seen
@@ -110,7 +111,7 @@ columns:
     type: TIMESTAMP
     groupby: true
     filterable: true
-    description: Last activity timestamp (CAST from Suzaku's VARCHAR)
+    description: Last activity timestamp
 
   - column_name: active_days
     verbose_name: Active Days

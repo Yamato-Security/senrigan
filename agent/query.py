@@ -182,9 +182,9 @@ def _date_conditions(
 ) -> list[str]:
     """Return the time-bound conditions for *profile*, inclusive on both sides.
 
-    A VARCHAR timestamp column (Suzaku stores ``Timestamp`` as text — see
-    ``doc/PLAN_SUZAKU_SCHEMA.md`` P3) is CAST first so the comparison is temporal
-    rather than lexicographic.
+    A profile whose time column is text — none ship today, but the field exists
+    for a dataset that stores its timestamps rendered — is CAST first so the
+    comparison is temporal rather than lexicographic.
     """
     column = profile.quote(profile.time_column)
     if profile.time_is_varchar:

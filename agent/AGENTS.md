@@ -38,7 +38,7 @@ agent/
 ├── report.py              # Threat hunting report generation (Markdown + sensitive data redaction)
 ├── schema.py              # Column metadata for cloudtrail_events and Suzaku's timeline
 ├── profiles.py            # DatasetProfile — table, filters, prompt, state namespace per page
-├── suzaku_db.py           # Discovery + schema-based detection of Suzaku *.duckdb files
+├── suzaku_db.py           # Discovery + suzaku_meta-based detection of Suzaku *.duckdb files
 ├── config.py              # Configuration management (env vars)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised; each maps to
 │                          #   Threat Technique Catalog for AWS techniques via `techniques:`)

@@ -563,18 +563,21 @@ instance required):
 | `test_init_scripts.py` | `init/bootstrap.sh`, `register_duckdb.py` wiring |
 | `test_dockerfile.py` | Dockerfile build expectations |
 | `test_rebuild_zip.py` | `cloudtrail_default.zip` import bundle integrity |
-| `test_suzaku_signatures.py` | Schema-based detection of Suzaku output; read-only URI contract |
+| `test_suzaku_signatures.py` | `suzaku_meta`-based detection of Suzaku output; read-only URI contract |
 | `test_suzaku_bundles.py` | Suzaku bundle layout, UUID uniqueness, and every dataset/chart SQL expression executed against the committed fixtures |
 | `test_rebuild_suzaku_zips.py` | Suzaku ZIP structure, byte determinism, and staleness against the sources |
 
 ```bash
 cd dashboard
-pytest                          # ~738 tests
+pytest                          # ~749 tests
 ```
 
 The Suzaku bundle tests read the trimmed fixtures under `sample/suzaku/fixtures/`
-(regenerate with `python3 sample/suzaku/generate_fixtures.py`), so they need
-`duckdb` installed. They are the only place a chart's `sqlExpression` is actually
+(regenerate from full-size runs in `sample/suzaku/` with
+`python3 sample/suzaku/generate_fixtures.py`), so they need `duckdb` installed.
+The generator reproduces two schema details the code under test depends on: the
+named `suzaku_level` ENUM, which a plain CTAS loses, and the `--geo-ip` columns on
+`metrics`, which the metrics dashboard requires. They are the only place a chart's `sqlExpression` is actually
 executed — Superset renders an invalid expression as an empty chart with a badge,
 which is easy to miss in an 18-chart dashboard.
 
@@ -593,6 +596,5 @@ Root `tests/` additionally holds two cross-module guards worth knowing about:
 
 | Test file | Guards |
 |-----------|--------|
-| `test_suzaku_detection_parity.py` | The Suzaku signature table exists in both `agent/suzaku_db.py` and `dashboard/init/register_suzaku_dbs.py` (the Superset image cannot import the agent package) — this test fails if the copies drift |
-| `test_suzaku_fixtures.py` | The committed Suzaku fixtures stay small, and `.gitignore` keeps full-size runs (236 MiB DuckDB, 1.3 GB JSON) unstageable |
+| `test_suzaku_detection_parity.py` | The Suzaku detection constants exist in both `agent/suzaku_db.py` and `dashboard/init/register_suzaku_dbs.py` (the Superset image cannot import the agent package) — this test fails if the copies drift |
 

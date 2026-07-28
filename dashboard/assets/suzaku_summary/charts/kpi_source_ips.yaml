@@ -17,7 +17,7 @@ params:
   adhoc_filters:
     - clause: WHERE
       expressionType: SQL
-      sqlExpression: "attribute = 'src_ip'"
+      sqlExpression: "attribute = 'SrcIP'"
       filterOptionName: filter_attr_src_ip
   subheader: "distinct source IP addresses"
   time_range: "No filter"

@@ -23,8 +23,9 @@ table of a Suzaku `aws-ct-timeline` export. One pipeline serves both, parameteri
 
 Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
 `threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
-arbitrary: the producing command is detected from the schema (`agent/suzaku_db.py`, mirrored in
-`dashboard/init/register_suzaku_dbs.py`). `aws-ct-summary` and `aws-ct-metrics` are served by
+arbitrary: the producing command is read from the file's own `suzaku_meta` table
+(`agent/suzaku_db.py`, mirrored in `dashboard/init/register_suzaku_dbs.py`), which also carries the
+`schema_version` both readers check before trusting the columns. `aws-ct-summary` and `aws-ct-metrics` are served by
 dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
 cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
 removed upload-a-JSON viewer.
@@ -162,8 +163,8 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 713 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 738, root `tests/` ≈ 128 (Makefile / compose / docs / Suzaku-detection
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 730 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 749, root `tests/` ≈ 115 (Makefile / compose / docs / Suzaku-detection
 parity).
 Test count must not decrease in a PR.
 
@@ -432,7 +433,7 @@ senrigan/
 │   ├── PLAN_THREAT_CATALOG.md # Threat Technique Catalog for AWS coverage + TID annotations
 │   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
 │   ├── PLAN_SUZAKU_VIEWS.md   # Suzaku DuckDB visualization (agent page + 3 dashboards)
-│   ├── PLAN_SUZAKU_SCHEMA.md  # Upstream proposal: improvements to Suzaku's DuckDB schema
+│   ├── PLAN_SUZAKU_SCHEMA.md  # Suzaku's DuckDB schema (proposal; shipped as suzaku PR #180)
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

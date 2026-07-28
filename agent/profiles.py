@@ -118,9 +118,9 @@ class DatasetProfile:
     def quote(self, identifier: str) -> str:
         """Return *identifier* quoted when this profile's table requires it.
 
-        Suzaku's columns are PascalCase and ``AWS-Region`` is hyphenated, so
-        every reference must be double-quoted; ``cloudtrail_events`` columns are
-        snake_case and stay bare, keeping generated SQL readable.
+        Suzaku's columns are PascalCase, so every reference must be
+        double-quoted; ``cloudtrail_events`` columns are snake_case and stay
+        bare, keeping generated SQL readable.
 
         Args:
             identifier: A column name.
@@ -140,21 +140,6 @@ class DatasetProfile:
     def build_system_prompt(self) -> str:
         """Return the system prompt for this profile with the schema injected."""
         return self.system_prompt.format(schema=self.schema_description())
-
-    def level_rank_sql(self) -> str:
-        """Return a ``CASE`` expression ranking :attr:`level_column` by severity.
-
-        Raises:
-            ValueError: If this profile has no severity column.
-        """
-        if not self.level_column:
-            raise ValueError(f"profile {self.key!r} has no severity column")
-        column = self.quote(self.level_column)
-        branches = " ".join(
-            f"WHEN '{level}' THEN {rank}"
-            for rank, level in enumerate(reversed(self.level_order), start=1)
-        )
-        return f"CASE {column} {branches} ELSE 0 END"
 
 
 CLOUDTRAIL_PROFILE = DatasetProfile(
@@ -181,7 +166,6 @@ SUZAKU_TIMELINE_PROFILE = DatasetProfile(
     time_column="Timestamp",
     columns=SUZAKU_TIMELINE_COLUMNS,
     hunts_filename="suzaku_timeline_hunts.yaml",
-    time_is_varchar=True,
     quote_identifiers=True,
     level_column="Level",
     level_order=("critical", "high", "medium", "low", "informational"),

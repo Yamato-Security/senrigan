@@ -195,7 +195,7 @@ imported into `threat_hunting.db`, and the files are only ever opened read-only.
 # 1. Run Suzaku, writing DuckDB output
 suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb
 suzaku aws-ct-summary  -d <cloudtrail-logs> -o summary.duckdb
-suzaku aws-ct-metrics  -d <cloudtrail-logs> -f eventName -o metrics.duckdb
+suzaku aws-ct-metrics  -d <cloudtrail-logs> -f eventName -o metrics.duckdb --geo-ip  # --geo-ip is required
 
 # 2. Copy the results next to Senrigan's own database
 cp *.duckdb docker/data/db/
@@ -208,9 +208,9 @@ make up
 
 ### How the connection is resolved
 
-File names are arbitrary, so `init/register_suzaku_dbs.py` detects the producing
-command **from the schema** and registers one Superset database per command under
-a fixed name and UUID:
+File names are arbitrary, so `init/register_suzaku_dbs.py` reads the producing
+command from the file's own **`suzaku_meta`** table and registers one Superset
+database per command under a fixed name and UUID:
 
 | Suzaku command | Superset database |
 |----------------|-------------------|
@@ -232,29 +232,41 @@ files match one command the newest wins; `SUZAKU_TIMELINE_DB` /
 database was not detected is not imported, so an analyst with only one Suzaku
 file does not get dashboards full of errors.
 
+A file whose `suzaku_meta.schema_version` is newer than this release understands
+is skipped rather than registered — misreading a renamed column silently is worse
+than a missing dashboard.
+
 The same detection runs in the agent (`agent/suzaku_db.py`); Superset cannot
-import that package, so the signature table exists twice and
+import that package, so the detection constants exist twice and
 `tests/test_suzaku_detection_parity.py` keeps the copies identical.
 
 ### Why the datasets are virtual
 
-Every Suzaku dataset is a **virtual dataset** (`sql:`) rather than a physical
-table, because Suzaku stores everything as VARCHAR:
+Suzaku's DuckDB output is typed at the source since `schema_version` 1 — real
+`TIMESTAMP`s, an ordered `suzaku_level` ENUM, `NULL` instead of `'-'`, and
+`IsAbused` / `Outcome` / `EventSource` as their own columns — so the datasets no
+longer cast or unpack anything. Two reasons to stay **virtual** (`sql:`) remain:
 
-- `Timestamp` / `FirstSeen` / `LastSeen` are `CAST` to `TIMESTAMP` — Superset
-  needs a real temporal column for `main_dttm_col`.
-- PascalCase columns are renamed to snake_case, and `AWS-Region` loses its hyphen,
-  so chart params look like the `cloudtrail_events` charts.
-- Suzaku's `'-'` placeholder becomes `NULL`, so `COUNT` and BI filters behave.
-- Packed values are split: `Category` → `is_abused` + `outcome`,
-  `API` → `api` + `event_source`.
+- PascalCase columns are renamed to snake_case, so chart params look like the
+  `cloudtrail_events` charts.
+- `VARCHAR[]` columns (`Tactics`, `TechniqueIDs`, `OtherTags`, `UserTypes`) are
+  joined into strings — Superset cannot group by a list.
 
-[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) is the upstream proposal
-that would make all of this unnecessary.
+`suzaku_summary_identities` additionally pivots the per-API-call counts of
+`summary_api_calls` into one row per identity.
+
+[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) records the schema and
+which proposals upstream adopted.
 
 The metrics dashboard is deliberately **field-agnostic**: Suzaku counts whichever
 field it was given (`-f`), so no chart filters on a literal field name and the
 `Field` native filter drives everything.
+
+> **The metrics dashboard requires `--geo-ip`.** Suzaku writes `SrcASN`,
+> `SrcCity` and `SrcCountry` to `metrics` only for a GeoIP-enriched run, and
+> `suzaku_metrics` selects them, so a file produced without `--geo-ip` makes
+> every chart on that dashboard fail. Run
+> `suzaku aws-ct-metrics -d <logs> -o metrics -t duckdb --geo-ip`.
 
 ---
 
@@ -391,7 +403,7 @@ The test suite (738 tests) covers:
 - `test_rare_zip.py` — Rare Events ZIP structure, ascending semantics, byte determinism
 - `test_rebuild_zip.py` — ZIP structure and chart coverage
 - `test_superset_config.py` — feature flags, dialect registration
-- `test_suzaku_signatures.py` — schema-based detection of Suzaku output, read-only URI contract
+- `test_suzaku_signatures.py` — `suzaku_meta`-based detection of Suzaku output, read-only URI contract
 - `test_suzaku_bundles.py` — bundle layout, UUID uniqueness, and every dataset/chart
   expression executed for real against the committed Suzaku fixtures
 - `test_rebuild_suzaku_zips.py` — Suzaku ZIP structure, byte determinism, staleness
