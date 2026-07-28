@@ -447,7 +447,7 @@ def _discover_suzaku_dbs(directory: str) -> list[dict]:
         {
             "path": str(info.path),
             "label": info.label,
-            "kinds": sorted(kind.value for kind in info.kinds),
+            "kinds": [info.kind.value] if info.kind else [],
             "rows": sum(info.row_counts.values()),
             "error": info.error,
             "hint": info.hint,
@@ -917,6 +917,22 @@ def _apply_entry_filter(
     return out
 
 
+def _reset_query_filter(prefix: str) -> None:
+    """Reset the query filter widgets to their defaults.
+
+    Used as the ``on_click`` callback of the "✕ Clear" button rather than being
+    run inline: Streamlit refuses an assignment to a widget's session-state key
+    once that widget has been instantiated in the current run, and both filter
+    widgets are rendered before the button. A callback runs *between* runs, so
+    the keys are writable and the next run picks the new values up.
+
+    Args:
+        prefix: The profile key scoping the widget keys.
+    """
+    st.session_state[f"_{prefix}_qf_result_filter"] = "All"
+    st.session_state[f"_{prefix}_qf_keyword"] = ""
+
+
 def _render_query_filter(
     profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> tuple[str, str]:
@@ -950,15 +966,16 @@ def _render_query_filter(
             label_visibility="collapsed",
         )
     with c3:
-        if st.button(
+        # The reset runs in on_click, not here: see _reset_query_filter. Clicking
+        # a button already triggers a rerun, so no explicit st.rerun() is needed.
+        st.button(
             "✕ Clear",
             use_container_width=True,
             key=f"_{prefix}_qf_clear",
             help="Clear filters",
-        ):
-            st.session_state[f"_{prefix}_qf_result_filter"] = "All"
-            st.session_state[f"_{prefix}_qf_keyword"] = ""
-            st.rerun()
+            on_click=_reset_query_filter,
+            args=(prefix,),
+        )
     return result_filter or "All", keyword or ""
 
 

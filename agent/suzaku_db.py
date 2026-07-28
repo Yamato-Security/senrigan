@@ -1,18 +1,20 @@
-"""Discovery and schema-based kind detection for Suzaku DuckDB output.
+"""Discovery and kind detection for Suzaku DuckDB output.
 
 `Suzaku <https://github.com/Yamato-Security/suzaku>`_ writes its ``aws-ct-*``
 results as DuckDB files. Senrigan reads them as-is: they are third-party,
 read-only artifacts that the ingester never touches, which keeps the
 1-writer / N-readers invariant intact.
 
-The files carry no metadata table, so the producing command has to be inferred
-from the schema — see ``doc/PLAN_SUZAKU_SCHEMA.md`` P1 for the upstream proposal
-that would turn this heuristic into a single column read.
+Since Suzaku's DuckDB ``schema_version`` 1 every file carries a one-row
+``suzaku_meta`` table naming the command that produced it, so the producing
+command is *read* rather than inferred from a table signature. ``schema_version``
+is checked before anything else: a file written by a layout Senrigan does not
+know is refused rather than mis-visualized.
 
 This module is pure Python with no Streamlit dependency so it stays unit
-testable. ``dashboard/init/register_suzaku_dbs.py`` holds a second copy of
-:data:`SUZAKU_SIGNATURES` (the Superset image cannot import this package); the
-root test suite asserts the two stay identical.
+testable. ``dashboard/init/register_suzaku_dbs.py`` holds a second copy of the
+detection constants (the Superset image cannot import this package); the root
+test suite asserts the two stay identical.
 """
 
 from __future__ import annotations
@@ -21,7 +23,6 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Mapping
 
 import duckdb
 
@@ -30,38 +31,37 @@ import duckdb
 DEFAULT_DB_DIR = Path("/data/db")
 
 # Senrigan's own table. A file containing it is the ingester's output, never a
-# Suzaku export, whatever else it happens to contain.
+# Suzaku export, whatever its metadata claims.
 SENRIGAN_TABLE = "cloudtrail_events"
+
+# Suzaku's provenance table and the layout version Senrigan is written against
+# (suzaku's src/core/duckdb_out.rs: SCHEMA_VERSION).
+#
+# Keep in sync with dashboard/init/register_suzaku_dbs.py (guarded by
+# tests/test_suzaku_detection_parity.py).
+META_TABLE = "suzaku_meta"
+SUPPORTED_SCHEMA_VERSION = 1
 
 
 class SuzakuKind(str, Enum):
-    """The Suzaku subcommand that produced a DuckDB file."""
+    """The Suzaku subcommand that produced a DuckDB file.
+
+    The value is exactly what Suzaku writes to ``suzaku_meta.command``.
+    """
 
     TIMELINE = "aws-ct-timeline"
     SUMMARY = "aws-ct-summary"
     METRICS = "aws-ct-metrics"
 
 
-# Signature per kind: every listed table must exist and must contain at least
-# the listed columns. Extra tables and extra columns are allowed so a future
-# Suzaku release that adds either still matches.
+# Payload tables per kind. Only these are row-counted: counting every table in
+# an arbitrary file is pointless, and `suzaku_meta` is always one row.
 #
-# Keep in sync with dashboard/init/register_suzaku_dbs.py (guarded by
-# tests/test_suzaku_detection_parity.py).
-SUZAKU_SIGNATURES: dict[SuzakuKind, dict[str, frozenset[str]]] = {
-    SuzakuKind.TIMELINE: {
-        "timeline": frozenset(
-            {"Timestamp", "RuleTitle", "Level", "RuleID", "EventName"}
-        ),
-    },
-    SuzakuKind.SUMMARY: {
-        "summary": frozenset({"UserARN", "NumOfEvents"}),
-        "summary_api_calls": frozenset({"UserARN", "Category", "API", "Count"}),
-        "summary_attributes": frozenset({"UserARN", "Attribute", "Value", "Count"}),
-    },
-    SuzakuKind.METRICS: {
-        "metrics": frozenset({"Field", "Value", "Count", "Percent"}),
-    },
+# Keep in sync with dashboard/init/register_suzaku_dbs.py.
+SUZAKU_TABLES: dict[SuzakuKind, tuple[str, ...]] = {
+    SuzakuKind.TIMELINE: ("timeline",),
+    SuzakuKind.SUMMARY: ("summary", "summary_api_calls", "summary_attributes"),
+    SuzakuKind.METRICS: ("metrics",),
 }
 
 # Environment variable pinning one file per kind, overriding discovery. Useful
@@ -79,15 +79,16 @@ class DbInfo:
 
     Attributes:
         path:       The inspected file.
-        kinds:      Suzaku kinds the schema matches; empty when unrecognised.
+        kind:       Suzaku command that wrote it, or None when unrecognised.
         tables:     ``{table_name: [column, ...]}`` as stored in the file.
-        row_counts: ``{table_name: rows}`` for the tables of a matched kind.
+        row_counts: ``{table_name: rows}`` for the payload tables of *kind*.
         error:      DuckDB's message when the file could not be read, else "".
-        hint:       Operator-facing explanation of *error*, or of a stale WAL.
+        hint:       Operator-facing explanation of *error*, of a rejected schema
+                    version, or of a stale WAL.
     """
 
     path: Path
-    kinds: set[SuzakuKind] = field(default_factory=set)
+    kind: SuzakuKind | None = None
     tables: dict[str, list[str]] = field(default_factory=dict)
     row_counts: dict[str, int] = field(default_factory=dict)
     error: str = ""
@@ -98,43 +99,28 @@ class DbInfo:
         """Return a one-line description for a selectbox or a status line."""
         if self.error:
             return f"{self.path.name} — unreadable"
-        kinds = ", ".join(sorted(kind.value for kind in self.kinds)) or "unrecognised"
+        kind = self.kind.value if self.kind else "unrecognised"
         rows = sum(self.row_counts.values())
-        return f"{self.path.name} — {kinds} ({rows:,} rows)"
+        return f"{self.path.name} — {kind} ({rows:,} rows)"
 
 
-def detect_kinds(tables: Mapping[str, Iterable[str]]) -> set[SuzakuKind]:
-    """Return every Suzaku kind whose signature *tables* satisfies.
-
-    Matching is case-insensitive on both table and column names because DuckDB
-    identifiers are, and tolerant of extras so added tables or columns in a
-    later Suzaku release do not break detection.
+def detect_kind(command: str | None) -> SuzakuKind | None:
+    """Return the kind *command* names, or ``None`` when it is not one of ours.
 
     Args:
-        tables: ``{table_name: columns}`` describing one database.
+        command: The ``suzaku_meta.command`` value, or None when absent.
 
     Returns:
-        The matching kinds — empty when the schema is not recognisable as
-        Suzaku output, including when it is Senrigan's own database.
+        The matching :class:`SuzakuKind`, or ``None`` for an unknown command —
+        Suzaku's Azure subcommands, or one added after this release.
     """
-    normalised = {
-        name.lower(): {column.lower() for column in columns}
-        for name, columns in tables.items()
-    }
-
-    # Senrigan's own database can never be a Suzaku export.
-    if SENRIGAN_TABLE in normalised:
-        return set()
-
-    matched: set[SuzakuKind] = set()
-    for kind, signature in SUZAKU_SIGNATURES.items():
-        if all(
-            table.lower() in normalised
-            and {column.lower() for column in required} <= normalised[table.lower()]
-            for table, required in signature.items()
-        ):
-            matched.add(kind)
-    return matched
+    if not command:
+        return None
+    normalised = command.strip().lower()
+    for kind in SuzakuKind:
+        if kind.value == normalised:
+            return kind
+    return None
 
 
 def _wal_hint(path: Path) -> str:
@@ -168,6 +154,28 @@ def _error_hint(message: str) -> str:
             "here — re-run the command with DuckDB output."
         )
     return "The file could not be opened read-only. See the error above."
+
+
+def _read_meta(conn: duckdb.DuckDBPyConnection) -> tuple[int | None, str | None]:
+    """Return ``(schema_version, command)`` from ``suzaku_meta``.
+
+    Args:
+        conn: An open read-only connection.
+
+    Returns:
+        ``(None, None)`` when the table is missing — which is what any DuckDB
+        file that is not Suzaku output looks like.
+    """
+    try:
+        row = conn.execute(
+            f"SELECT schema_version, command FROM {META_TABLE} LIMIT 1"
+        ).fetchone()
+    except duckdb.Error:
+        return (None, None)
+    if not row:
+        return (None, None)
+    version, command = row
+    return (int(version) if version is not None else None, command)
 
 
 def inspect_db(path: Path) -> DbInfo:
@@ -207,21 +215,36 @@ def inspect_db(path: Path) -> DbInfo:
         for table_name, column_name in rows:
             tables.setdefault(table_name, []).append(column_name)
 
-        kinds = detect_kinds(tables)
+        version, command = _read_meta(conn)
+        kind = detect_kind(command)
+        hint = _wal_hint(path)
 
-        # Row counts only for the tables a matched signature names: counting a
-        # multi-million-row table is cheap in DuckDB, counting every unrelated
-        # table in an unrecognised file is pointless.
-        wanted = {
-            table.lower()
-            for kind in kinds
-            for table in SUZAKU_SIGNATURES[kind]  # signature tables only
-        }
+        if any(name.lower() == SENRIGAN_TABLE for name in tables):
+            # Senrigan's own database can never be a Suzaku export.
+            kind = None
+        elif version is None:
+            kind = None
+            hint = hint or (
+                f"No {META_TABLE} table. Senrigan reads Suzaku output from "
+                "schema_version 1 onwards — re-export with a current Suzaku."
+            )
+        elif version > SUPPORTED_SCHEMA_VERSION:
+            kind = None
+            hint = (
+                f"This file declares schema_version {version}; Senrigan reads "
+                f"up to {SUPPORTED_SCHEMA_VERSION}. Upgrade Senrigan rather "
+                "than risk misreading the columns."
+            )
+
         row_counts: dict[str, int] = {}
-        for table in tables:
-            if table.lower() in wanted:
-                (count,) = conn.execute(f'SELECT count(*) FROM "{table}"').fetchone()
-                row_counts[table] = int(count)
+        if kind is not None:
+            wanted = {name.lower() for name in SUZAKU_TABLES[kind]}
+            for table in tables:
+                if table.lower() in wanted:
+                    (count,) = conn.execute(
+                        f'SELECT count(*) FROM "{table}"'
+                    ).fetchone()
+                    row_counts[table] = int(count)
     except Exception as exc:  # noqa: BLE001 — a readable file can still be odd
         message = str(exc)
         return DbInfo(path=path, error=message, hint=_error_hint(message))
@@ -230,10 +253,10 @@ def inspect_db(path: Path) -> DbInfo:
 
     return DbInfo(
         path=path,
-        kinds=kinds,
+        kind=kind,
         tables=tables,
         row_counts=row_counts,
-        hint=_wal_hint(path),
+        hint=hint,
     )
 
 
@@ -241,7 +264,7 @@ def discover(directory: Path | str = DEFAULT_DB_DIR) -> list[DbInfo]:
     """Inspect every ``*.duckdb`` file in *directory*, newest first.
 
     Only the ``.duckdb`` extension is scanned, which naturally excludes
-    Senrigan's own ``threat_hunting.db``; :func:`detect_kinds` rejects it a
+    Senrigan's own ``threat_hunting.db``; :func:`inspect_db` rejects it a
     second time by table name.
 
     Args:
@@ -278,10 +301,10 @@ def find_db(kind: SuzakuKind, directory: Path | str = DEFAULT_DB_DIR) -> DbInfo 
     override = os.environ.get(ENV_OVERRIDES[kind])
     if override:
         info = inspect_db(Path(override))
-        if not info.error and kind in info.kinds:
+        if not info.error and info.kind is kind:
             return info
 
     for info in discover(directory):
-        if kind in info.kinds:
+        if info.kind is kind:
             return info
     return None

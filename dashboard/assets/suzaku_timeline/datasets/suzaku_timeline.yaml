@@ -1,15 +1,14 @@
 # Superset dataset for Suzaku `aws-ct-timeline` output.
 #
-# A VIRTUAL dataset (sql:), not a physical table, for three reasons:
-#   1. Superset needs a real temporal column; Suzaku stores `Timestamp` as
-#      VARCHAR, so it is CAST here once instead of in every chart.
-#   2. Suzaku's identifiers are PascalCase and `AWS-Region` is hyphenated, which
-#      would have to be quoted in every chart expression. They are renamed to
-#      snake_case here, matching the cloudtrail_events charts.
-#   3. Suzaku writes '-' instead of NULL; nullif() turns that back into NULL so
-#      COUNT / COUNT(DISTINCT) and BI filters behave.
-# All three would become unnecessary if Suzaku typed its output — see
-# doc/PLAN_SUZAKU_SCHEMA.md P2/P3/P6.
+# A VIRTUAL dataset (sql:), not a physical table, for two reasons that survive
+# Suzaku's typed DuckDB output (schema_version 1):
+#   1. Suzaku's identifiers are PascalCase, which would have to be quoted in every
+#      chart expression. They are renamed to snake_case here, matching the
+#      cloudtrail_events charts.
+#   2. `Tactics` / `TechniqueIDs` / `OtherTags` are VARCHAR[], and Superset cannot
+#      group by a list — they are joined back into readable strings here.
+# What the file no longer needs: a CAST for the timestamp, a nullif() for the `-`
+# placeholder, and a hand-written severity rank (see doc/PLAN_SUZAKU_SCHEMA.md).
 #
 # The underlying file is resolved at bootstrap by init/register_suzaku_dbs.py,
 # which rewrites the URI of the database UUID referenced below.
@@ -27,33 +26,35 @@ cache_timeout: null
 schema: null
 sql: |
   SELECT
-      CAST("Timestamp" AS TIMESTAMP)      AS event_time,
-      "RuleTitle"                         AS rule_title,
-      "RuleID"                            AS rule_id,
-      "RuleAuthor"                        AS rule_author,
-      "Level"                             AS level,
+      "Timestamp"                          AS event_time,
+      "RuleTitle"                          AS rule_title,
+      "RuleID"                             AS rule_id,
+      "RuleAuthor"                         AS rule_author,
+      "Level"::VARCHAR                     AS level,
       CASE "Level"
           WHEN 'critical' THEN 5
           WHEN 'high' THEN 4
           WHEN 'medium' THEN 3
           WHEN 'low' THEN 2
           ELSE 1
-      END                                 AS level_rank,
+      END                                  AS level_rank,
       "EventName"                          AS event_name,
       "EventSource"                        AS event_source,
-      "AWS-Region"                         AS aws_region,
-      nullif("ErrorCode", '-')             AS error_code,
-      nullif("ErrorMessage", '-')          AS error_message,
+      "AwsRegion"                          AS aws_region,
+      "ErrorCode"                          AS error_code,
+      "ErrorMessage"                       AS error_message,
       "SrcIP"                              AS src_ip,
       "UserAgent"                          AS user_agent,
-      nullif("UserName", '-')              AS user_name,
+      "UserName"                           AS user_name,
       "UserType"                           AS user_type,
       "UserAccountID"                      AS user_account_id,
       "UserARN"                            AS user_arn,
       "UserPrincipalID"                    AS user_principal_id,
-      nullif("UserAccessKeyID", '-')       AS user_access_key_id,
+      "UserAccessKeyID"                    AS user_access_key_id,
       "EventID"                            AS event_id,
-      "Tags"                               AS tags
+      array_to_string("Tactics", ', ')      AS tactics,
+      array_to_string("TechniqueIDs", ', ') AS technique_ids,
+      array_to_string("OtherTags", ', ')    AS other_tags
   FROM timeline
 params: null
 template_params: null
@@ -69,7 +70,8 @@ columns:
     type: TIMESTAMP
     groupby: true
     filterable: true
-    description: Detection timestamp (CAST from Suzaku's VARCHAR Timestamp)
+    description: >
+      Detection timestamp, in the timezone named by suzaku_meta.timestamp_tz
 
   - column_name: rule_title
     verbose_name: Rule
@@ -105,7 +107,9 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: critical / high / medium / low / informational
+    description: >
+      critical / high / medium / low / informational (Suzaku's ordered
+      suzaku_level ENUM, rendered as text for the BI layer)
 
   - column_name: level_rank
     verbose_name: Severity Rank
@@ -141,7 +145,7 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: Region of the request (Suzaku's hyphenated AWS-Region column)
+    description: Region of the request
 
   - column_name: error_code
     verbose_name: Error Code
@@ -242,14 +246,32 @@ columns:
     filterable: true
     description: CloudTrail event ID — not unique across rows
 
-  - column_name: tags
-    verbose_name: Tags
+  - column_name: tactics
+    verbose_name: Tactics
     is_dttm: false
     is_active: true
     type: VARCHAR
     groupby: true
     filterable: true
-    description: Tactics and ATT&CK technique IDs joined by ' ¦ '
+    description: MITRE ATT&CK tactic short names of the matched rule, comma-joined
+
+  - column_name: technique_ids
+    verbose_name: Technique IDs
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: MITRE ATT&CK technique IDs of the matched rule, comma-joined
+
+  - column_name: other_tags
+    verbose_name: Other Tags
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Rule tags that are neither a tactic nor a technique, comma-joined
 
 metrics:
   - metric_name: count

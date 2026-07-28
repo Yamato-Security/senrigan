@@ -1,16 +1,15 @@
-"""Keeps the two Suzaku schema-signature tables identical.
+"""Keeps the two Suzaku detection tables identical.
 
-Covers PLAN_SUZAKU_VIEWS.md §5.5 (test 18). Suzaku's DuckDB output carries no
-metadata table, so the producing command has to be inferred from the schema — and
-that inference is needed in two places that cannot share code:
+Covers PLAN_SUZAKU_VIEWS.md §5.5 (test 18). Suzaku names the producing command in
+its ``suzaku_meta`` table, but reading it is needed in two places that cannot
+share code:
 
 * ``agent/suzaku_db.py`` — the Streamlit app rediscovers files on every rerun.
 * ``dashboard/init/register_suzaku_dbs.py`` — Superset resolves a file path once,
   at bootstrap, and the Superset image cannot import the agent package.
 
-Two copies drift silently: a column added to one table would make the agent
-recognise a file the dashboard rejects. This test is the guard. The whole problem
-disappears if Suzaku ships a metadata table (doc/PLAN_SUZAKU_SCHEMA.md P1).
+Two copies drift silently: a supported schema version bumped on one side only
+would make the agent read a file the dashboard refuses. This test is the guard.
 """
 
 from __future__ import annotations
@@ -33,30 +32,31 @@ def _load(path, name: str):
     return module
 
 
-def _normalise(signatures: dict) -> dict[str, dict[str, list[str]]]:
-    """Return ``{command: {table: sorted(columns)}}`` with lowercase keys.
-
-    The agent keys its table by a ``SuzakuKind`` enum and the dashboard by the
-    command string, so both are reduced to the command string here.
-    """
-    out: dict[str, dict[str, list[str]]] = {}
-    for command, tables in signatures.items():
-        key = getattr(command, "value", command)
-        out[str(key)] = {
-            table.lower(): sorted(column.lower() for column in columns)
-            for table, columns in tables.items()
-        }
-    return out
+def _by_command(mapping: dict) -> dict[str, list[str]]:
+    """Return ``{command: sorted(tables)}`` with the enum keys reduced to strings."""
+    return {
+        str(getattr(key, "value", key)): sorted(tables)
+        for key, tables in mapping.items()
+    }
 
 
 agent_module = _load(AGENT_MODULE, "_parity_agent_suzaku_db")
 dashboard_module = _load(DASHBOARD_MODULE, "_parity_register_suzaku_dbs")
 
 
-def test_signature_tables_are_identical() -> None:
-    """The agent and the dashboard must classify a file the same way."""
-    assert _normalise(agent_module.SUZAKU_SIGNATURES) == _normalise(
-        dashboard_module.SUZAKU_SIGNATURES
+def test_payload_table_maps_are_identical() -> None:
+    """The agent and the dashboard must expect the same tables per command."""
+    assert _by_command(agent_module.SUZAKU_TABLES) == _by_command(
+        dashboard_module.SUZAKU_TABLES
+    )
+
+
+def test_metadata_contract_is_identical() -> None:
+    """Both sides must read the same table and accept the same layout version."""
+    assert agent_module.META_TABLE == dashboard_module.META_TABLE == "suzaku_meta"
+    assert (
+        agent_module.SUPPORTED_SCHEMA_VERSION
+        == dashboard_module.SUPPORTED_SCHEMA_VERSION
     )
 
 
@@ -81,7 +81,7 @@ def test_env_override_variables_match() -> None:
 def test_both_know_the_same_commands() -> None:
     """A command one side supports and the other ignores is a silent gap."""
     agent_commands = {
-        str(getattr(kind, "value", kind)) for kind in agent_module.SUZAKU_SIGNATURES
+        str(getattr(kind, "value", kind)) for kind in agent_module.SUZAKU_TABLES
     }
     assert agent_commands == set(dashboard_module.DATABASE_NAMES)
     assert agent_commands == {"aws-ct-timeline", "aws-ct-summary", "aws-ct-metrics"}

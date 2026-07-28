@@ -60,7 +60,7 @@ def test_suzaku_timeline_profile_describes_the_timeline_table() -> None:
     profile = SUZAKU_TIMELINE_PROFILE
     assert profile.table == "timeline"
     assert profile.time_column == "Timestamp"
-    assert profile.time_is_varchar is True
+    assert profile.time_is_varchar is False  # typed since Suzaku schema_version 1
     assert profile.filter_alias == "_sz_filtered"
     assert profile.state_prefix == "sz_"
     assert profile.supports_geo_enrich is False
@@ -98,8 +98,8 @@ def test_shared_state_keys_are_never_namespaced(name: str) -> None:
 
 
 def test_quote_wraps_identifiers_only_when_required() -> None:
-    """`AWS-Region` is unusable unquoted; snake_case columns must stay bare."""
-    assert SUZAKU_TIMELINE_PROFILE.quote("AWS-Region") == '"AWS-Region"'
+    """PascalCase columns must be quoted; snake_case columns must stay bare."""
+    assert SUZAKU_TIMELINE_PROFILE.quote("AwsRegion") == '"AwsRegion"'
     assert CLOUDTRAIL_PROFILE.quote("event_time") == "event_time"
 
 
@@ -126,7 +126,7 @@ def test_schema_description_for_suzaku_profile() -> None:
     description = SUZAKU_TIMELINE_PROFILE.schema_description()
     assert "Table: timeline" in description
     assert "cloudtrail_events" not in description
-    for column in ("Timestamp", "RuleTitle", "Level", "Tags", "AWS-Region"):
+    for column in ("Timestamp", "RuleTitle", "Level", "TechniqueIDs", "AwsRegion"):
         assert column in description
 
 
@@ -162,8 +162,8 @@ def test_date_filter_default_profile_is_unchanged() -> None:
     assert "CAST" not in sql
 
 
-def test_date_filter_for_suzaku_casts_the_varchar_timestamp() -> None:
-    """Test 13: `Timestamp` is VARCHAR, so the bound needs an explicit CAST."""
+def test_date_filter_for_suzaku_compares_the_typed_timestamp() -> None:
+    """Test 13: `Timestamp` is a real TIMESTAMP, so no CAST is needed."""
     sql = apply_filters(
         'SELECT * FROM timeline ORDER BY "Timestamp" DESC',
         profile=SUZAKU_TIMELINE_PROFILE,
@@ -171,8 +171,9 @@ def test_date_filter_for_suzaku_casts_the_varchar_timestamp() -> None:
         end_date=date(2024, 1, 31),
     )
     assert "_sz_filtered" in sql
-    assert 'CAST("Timestamp" AS TIMESTAMP) >= TIMESTAMP' in sql
-    assert 'CAST("Timestamp" AS TIMESTAMP) <= TIMESTAMP' in sql
+    assert "\"Timestamp\" >= TIMESTAMP '2024-01-01 00:00:00'" in sql
+    assert "\"Timestamp\" <= TIMESTAMP '2024-01-31 23:59:59'" in sql
+    assert "CAST" not in sql
     assert "FROM timeline\n" in sql  # the CTE still reads the real table
 
 
@@ -266,8 +267,8 @@ def test_suzaku_system_prompt_names_the_timeline_table() -> None:
     prompt = build_system_prompt(profile=SUZAKU_TIMELINE_PROFILE)
     assert "timeline" in prompt
     assert "cloudtrail_events" not in prompt
-    assert '"AWS-Region"' in prompt  # quoting rule is spelled out
-    assert "CAST" in prompt  # Timestamp handling is spelled out
+    assert '"AwsRegion"' in prompt  # quoting rule is spelled out
+    assert "suzaku_level" in prompt  # the ENUM threshold trap is spelled out
     assert "LIMIT" in prompt  # the table is huge; ordering + limit is mandatory
 
 

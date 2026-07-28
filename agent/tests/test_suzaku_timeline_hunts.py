@@ -2,9 +2,9 @@
 
 Covers PLAN_SUZAKU_VIEWS.md §4.4 and §4.5 (tests 19-23). Every hunt runs for real
 against the committed fixture, which is what catches the mistakes this dataset
-invites: an unquoted PascalCase identifier, string comparison on the VARCHAR
-timestamp, alphabetical severity ordering, or a missing LIMIT on a table that has
-millions of rows in production.
+invites: an unquoted PascalCase identifier, an uncast severity threshold, a
+placeholder comparison where the column is NULL-able, or a missing LIMIT on a
+table that has millions of rows in production.
 """
 
 from __future__ import annotations
@@ -124,41 +124,34 @@ def test_hunt_sql_respects_its_own_limit(
 
 
 @pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
-def test_hunt_sql_never_compares_the_timestamp_without_casting(
-    label: str, hunt: dict
-) -> None:
-    """Date arithmetic on the VARCHAR timestamp must go through a CAST.
+def test_hunt_sql_never_casts_the_typed_timestamp(label: str, hunt: dict) -> None:
+    """`Timestamp` is a real TIMESTAMP since schema_version 1 — a CAST is stale."""
+    assert (
+        'CAST("Timestamp"' not in hunt["sql"]
+    ), f"{label}: casts an already-typed TIMESTAMP"
 
-    Plain string comparison happens to work for range filters, but date_trunc /
-    date_diff on a VARCHAR is either an error or a silent surprise.
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_hunt_sql_casts_every_severity_threshold(label: str, hunt: dict) -> None:
+    """DuckDB compares an ENUM against a bare string literal as text.
+
+    `"Level" >= 'high'` therefore means the alphabetical `'high' <= 'informational'`
+    and silently returns the wrong rows; only the `::suzaku_level` cast compares
+    by severity. Equality and IN are unaffected.
     """
-    sql = hunt["sql"]
-    for function in ("date_trunc(", "date_diff("):
-        for match in re.finditer(re.escape(function), sql):
-            window = sql[match.start() : match.start() + 160]
-            if '"Timestamp"' in window:
-                assert "CAST" in window, f"{label}: {function} without CAST"
+    for match in re.finditer(r'"Level"\s*(>=|>|<=|<)\s*(\S+)', hunt["sql"]):
+        assert "::suzaku_level" in match.group(
+            2
+        ), f"{label}: uncast severity threshold {match.group(0)!r}"
 
 
 @pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
-def test_hunt_sql_orders_severity_by_rank_not_alphabetically(
-    label: str, hunt: dict
-) -> None:
-    """`ORDER BY "Level"` would rank critical below informational."""
-    sql = hunt["sql"]
-    assert not re.search(
-        r'ORDER BY\s+"Level"', sql, re.IGNORECASE
-    ), f"{label}: sorts Level alphabetically — use a CASE rank"
-
-
-@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
-def test_hunt_sql_uses_the_dash_sentinel_not_null(label: str, hunt: dict) -> None:
-    """Suzaku writes '-' instead of NULL, so IS NULL silently matches nothing."""
-    sql = hunt["sql"]
-    for column in ('"ErrorCode"', '"UserName"', '"UserAccessKeyID"', '"UserARN"'):
-        assert (
-            f"{column} IS NOT NULL" not in sql
-        ), f"{label}: {column} IS NOT NULL never filters — compare against '-'"
+def test_hunt_sql_uses_null_not_the_dash_placeholder(label: str, hunt: dict) -> None:
+    """Suzaku's DuckDB output writes NULL, so `<> '-'` never filters anything."""
+    assert "'-'" not in hunt["sql"], (
+        f"{label}: compares against the '-' placeholder, which the DuckDB "
+        "output no longer contains"
+    )
 
 
 @pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
@@ -208,10 +201,20 @@ def test_hunt_sql_still_validates_with_ui_filters_applied(
     conn.execute(f"EXPLAIN {filtered}")
 
 
-def test_technique_hunt_returns_rows_from_the_fixture(
+@pytest.mark.parametrize("needle", ["Technique Coverage", "Tactic Breakdown"])
+def test_attack_hunts_return_rows_from_the_fixture(
+    needle: str, conn: duckdb.DuckDBPyConnection
+) -> None:
+    """`Tactics` / `TechniqueIDs` are lists — unnesting the wrong one is empty."""
+    hunt = next(h for h in HUNTS if needle in h["label"])
+    rows = conn.execute(hunt["sql"]).fetchall()
+    assert rows, f"{needle}: no rows — check the list column being unnested"
+
+
+def test_severity_ordering_puts_critical_first(
     conn: duckdb.DuckDBPyConnection,
 ) -> None:
-    """Guards the ' ¦ ' (U+00A6) Tags separator: a wrong one yields zero rows."""
-    hunt = next(h for h in HUNTS if "Technique Coverage" in h["label"])
-    rows = conn.execute(hunt["sql"]).fetchall()
-    assert rows, "no ATT&CK techniques parsed — check the Tags separator"
+    """`ORDER BY "Level" DESC` must be severity order, not alphabetical."""
+    hunt = next(h for h in HUNTS if "Detection Volume by Severity" in h["label"])
+    levels = [str(row[0]) for row in conn.execute(hunt["sql"]).fetchall()]
+    assert levels[0] == "critical", levels

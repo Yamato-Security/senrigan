@@ -248,18 +248,21 @@ page says so explicitly when it detects one.
 
 ### What is different about this page
 
-Suzaku's schema forces four deviations, all handled by the profile
-(see [doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) for the upstream
-proposal that would remove them):
+Suzaku's timeline table differs from `cloudtrail_events` in three ways, all
+carried by the profile (see
+[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) for the schema):
 
 - **Severity filter** — `low` and `informational` are ~87% of a real timeline, so
   the sidebar defaults to `critical` / `high` / `medium`. Without it the page
   shows noise.
-- **Quoted identifiers** — columns are PascalCase and `AWS-Region` is hyphenated,
-  so generated SQL always double-quotes them.
-- **`CAST` on the timestamp** — `Timestamp` is VARCHAR, so the date filter casts it.
+- **Quoted identifiers** — columns are PascalCase, so generated SQL always
+  double-quotes them.
 - **No geo enrichment** — the timeline table has no `geo_*` columns, so the
   sidebar toggle is hidden rather than silently doing nothing.
+
+`Level` is Suzaku's ordered `suzaku_level` ENUM, which is why the system prompt
+insists on `"Level" >= 'high'::suzaku_level` for a threshold: DuckDB compares an
+ENUM against a bare string literal alphabetically.
 
 `aws-ct-summary` and `aws-ct-metrics` are intentionally *not* pages here: Suzaku
 has already aggregated them, so they are served by the
@@ -286,10 +289,10 @@ agent/
 ├── report.py              # Report generation (Markdown + sensitive data redaction)
 ├── schema.py              # Column metadata for both tables (system prompt input)
 ├── profiles.py            # DatasetProfile — per-table config for the shared pipeline
-├── suzaku_db.py           # Discovery + schema-based detection of Suzaku DuckDB files
+├── suzaku_db.py           # Discovery + suzaku_meta-based detection of Suzaku DuckDB files
 ├── config.py              # Configuration management (env vars)
 ├── builtin_hunts.yaml     # Pre-built CloudTrail hunts (categorised)
-├── suzaku_timeline_hunts.yaml  # Pre-built Suzaku timeline hunts (15, categorised)
+├── suzaku_timeline_hunts.yaml  # Pre-built Suzaku timeline hunts (16, categorised)
 ├── views/
 │   └── suzaku_timeline.py # Streamlit page for Suzaku aws-ct-timeline output
 ├── prompts/

@@ -36,10 +36,13 @@ Four Docker containers share **one DuckDB file** via a bind mount
   see [doc/PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md) §4.
 - **Suzaku output** (`*.duckdb` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`) is read
   as-is from the same mounted directory — never imported, never written. The producing command is
-  detected from the schema, in `agent/suzaku_db.py` and again in
+  read from the file's own `suzaku_meta` table, in `agent/suzaku_db.py` and again in
   `dashboard/init/register_suzaku_dbs.py` (the Superset image cannot import the agent package;
-  `tests/test_suzaku_detection_parity.py` keeps the two signature tables identical).
+  `tests/test_suzaku_detection_parity.py` keeps the two copies identical). Both refuse a
+  `schema_version` newer than they were written against.
   `aws-ct-summary` / `aws-ct-metrics` are dashboard-only by design — Suzaku already aggregated them.
+  The **Suzaku Metrics** dashboard requires a run with `--geo-ip`: Suzaku writes
+  `SrcASN`/`SrcCity`/`SrcCountry` only for an enriched run, and the dataset selects them.
 - `config_viz`'s frontend uses **`elkjs`** (ELK layered / Sugiyama algorithm) for graph layout —
   migrated from `@dagrejs/dagre`; see [doc/PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
 - `ingester` must finish before the read-only services start. Concurrent writes are **not** supported.
@@ -162,9 +165,9 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 713 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 738 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 128 (Makefile / compose / docs consistency —
+Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 730 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 749 (asset/YAML/config validation suite —
+run with `make test-dashboard`), root `tests/` ≈ 115 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
@@ -244,7 +247,7 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 | `DUCKDB_PATH` | all | — | Overrides default DB path |
 | `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount dir |
 | `GEOIP_CITY/COUNTRY/ASN_PATH` | ingester | — | GeoLite2 mmdb paths |
-| `SUZAKU_{TIMELINE,SUMMARY,METRICS}_DB` | agent, dashboard | — | Pin one Suzaku `.duckdb` instead of schema detection |
+| `SUZAKU_{TIMELINE,SUMMARY,METRICS}_DB` | agent, dashboard | — | Pin one Suzaku `.duckdb` instead of discovery |
 | `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
 | `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies (see DEVELOPMENT.md §6) |
 

@@ -71,8 +71,10 @@ directory. Senrigan reads them as-is: the ingester never touches them and no rea
 opens them writable, so the 1-writer / N-readers invariant is unchanged and re-running
 Suzaku needs no re-ingest.
 
-The files carry no metadata table, so the producing command is inferred from the
-schema. That inference exists twice because the two consumers resolve paths at
+Every file carries a one-row `suzaku_meta` table naming the command that wrote it and
+the `schema_version` of the layout, so the producing command is read rather than
+guessed, and a file from a layout Senrigan does not know is refused instead of
+mis-visualized. That read exists twice because the two consumers resolve paths at
 different times — the agent globs on every Streamlit rerun, while Superset stores one
 path per database connection, resolved once by `superset-init`:
 
@@ -81,7 +83,7 @@ path per database connection, resolved once by `superset-init`:
 | `agent` | `agent/suzaku_db.py` | at runtime, per rerun |
 | `dashboard` | `dashboard/init/register_suzaku_dbs.py` | once, at bootstrap |
 
-The Superset image cannot import the agent package, so the signature table is
+The Superset image cannot import the agent package, so the detection constants are
 duplicated and `tests/test_suzaku_detection_parity.py` fails if the copies drift.
 
 ### config_viz (Python / FastAPI + React)

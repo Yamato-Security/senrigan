@@ -14,8 +14,10 @@ from unittest.mock import MagicMock, patch
 
 import duckdb
 import pandas as pd
+import pytest
 
-from profiles import CLOUDTRAIL_PROFILE
+from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE
+from tests.conftest import MockSessionState
 
 
 def test_session_state_initialization():
@@ -2149,3 +2151,89 @@ def test_handle_direct_sql_enrichment_failure_keeps_results(tmp_duckdb_geo):
     entry = mock_state["query_history"][0]
     assert len(entry.results) == 2
     assert "geo_country_code" not in entry.results.columns
+
+
+# ---------------------------------------------------------------------------
+# Query filter bar — the "✕ Clear" button
+# ---------------------------------------------------------------------------
+
+
+class _WidgetLockedState(MockSessionState):
+    """Session state that enforces Streamlit's widget-key write rule.
+
+    Streamlit raises ``StreamlitAPIException`` when a script assigns to the
+    session-state key of a widget that has already been instantiated in the same
+    run. The real object enforces it; a plain dict does not, which is how the
+    "✕ Clear" button shipped writing to both filter keys after rendering them.
+    """
+
+    def instantiate(self, key: str) -> None:
+        """Record that a widget with *key* was rendered in this run."""
+        self.setdefault("_instantiated", set()).add(key)
+
+    def __setitem__(self, key, value) -> None:  # type: ignore[override]
+        if key in self.get("_instantiated", set()):
+            raise RuntimeError(
+                f"st.session_state.{key} cannot be modified after the widget "
+                f"with key {key} is instantiated."
+            )
+        super().__setitem__(key, value)
+
+
+@pytest.mark.parametrize(
+    "profile", [CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE], ids=lambda p: p.key
+)
+def test_clear_button_resets_filters_without_writing_live_widget_keys(profile):
+    """The Clear button must reset through a callback, not an inline assignment.
+
+    Assigning to a widget's key after that widget has been rendered is a
+    Streamlit error, so the reset has to happen in ``on_click`` — which runs
+    before the next script run instantiates the widgets.
+    """
+    from app import _render_query_filter
+
+    prefix = profile.key
+    result_key = f"_{prefix}_qf_result_filter"
+    keyword_key = f"_{prefix}_qf_keyword"
+    state = _WidgetLockedState(**{result_key: "✅ Results", keyword_key: "root"})
+    captured: dict = {}
+
+    def _widget(*_args, key=None, **_kwargs):
+        state.instantiate(key)
+        return state.get(key)
+
+    def _button(*_args, key=None, **kwargs):
+        state.instantiate(key)
+        captured.update(kwargs)
+        return True  # the analyst clicked Clear
+
+    column = MagicMock()
+    column.__enter__ = MagicMock(return_value=column)
+    column.__exit__ = MagicMock(return_value=False)
+
+    with (
+        patch("streamlit.session_state", state),
+        patch("streamlit.columns", return_value=(column, column, column)),
+        patch("streamlit.subheader"),
+        patch("streamlit.radio", _widget),
+        patch("streamlit.text_input", _widget),
+        patch("streamlit.button", _button),
+        patch("streamlit.rerun") as mock_rerun,
+    ):
+        _render_query_filter(profile)
+
+        # Rendering must not have touched the keys of its own widgets.
+        assert state[result_key] == "✅ Results"
+        assert state[keyword_key] == "root"
+
+        # Clicking a button already reruns the script; an explicit rerun inside
+        # the click branch would only re-raise the same error one run later.
+        mock_rerun.assert_not_called()
+
+        # The callback is what does the reset, and it runs before the widgets
+        # of the next run exist.
+        state.pop("_instantiated", None)
+        captured["on_click"](*captured.get("args", ()))
+
+    assert state[result_key] == "All"
+    assert state[keyword_key] == ""

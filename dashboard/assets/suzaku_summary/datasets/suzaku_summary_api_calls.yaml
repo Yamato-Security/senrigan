@@ -1,11 +1,10 @@
 # Superset dataset: per-identity API call counts from Suzaku `aws-ct-summary`.
 #
-# VIRTUAL (sql:) to undo three packed encodings in the source file
-# (doc/PLAN_SUZAKU_SCHEMA.md P5):
-#   * Category = 'abused_success' packs two orthogonal axes -> is_abused + outcome.
-#   * API = 'RunInstances (ec2.amazonaws.com)' packs action + service -> api +
-#     event_source (the timeline table already keeps these separate).
-#   * FirstSeen / LastSeen are VARCHAR -> CAST to TIMESTAMP (P3).
+# VIRTUAL (sql:) only to rename Suzaku's PascalCase identifiers to the snake_case
+# every other dataset uses. Since schema_version 1 the file itself already splits
+# what used to be packed: `IsAbused` + `Outcome` instead of the `abused_success`
+# category string, `API` + `EventSource` instead of "Action (service)", and real
+# TIMESTAMPs (doc/PLAN_SUZAKU_SCHEMA.md P3/P5).
 #
 # `description` is Suzaku's own explanation of why an API is abusable and is the
 # highest-value column in this file — it is surfaced in the catalogue table.
@@ -23,18 +22,15 @@ cache_timeout: null
 schema: null
 sql: |
   SELECT
-      "UserARN"                                                            AS user_arn,
-      "Category"                                                           AS category,
-      "Category" LIKE 'abused%'                                            AS is_abused,
-      CASE WHEN "Category" LIKE '%failed' THEN 'failed' ELSE 'success' END  AS outcome,
-      trim(regexp_extract("API", '^([^(]+)', 1))                           AS api,
-      coalesce(nullif(regexp_extract("API", '\(([^)]+)\)', 1), ''),
-               'unknown')                                                  AS event_source,
-      "API"                                                                AS api_full,
-      "Description"                                                        AS description,
-      "Count"                                                              AS call_count,
-      CAST("FirstSeen" AS TIMESTAMP)                                       AS first_seen,
-      CAST("LastSeen" AS TIMESTAMP)                                        AS last_seen
+      "UserARN"          AS user_arn,
+      "IsAbused"         AS is_abused,
+      "Outcome"::VARCHAR AS outcome,
+      "API"              AS api,
+      "EventSource"      AS event_source,
+      "Description"      AS description,
+      "Count"            AS call_count,
+      "FirstSeen"        AS first_seen,
+      "LastSeen"         AS last_seen
   FROM summary_api_calls
 params: null
 template_params: null
@@ -51,15 +47,6 @@ columns:
     groupby: true
     filterable: true
     description: ARN of the identity that made the calls
-
-  - column_name: category
-    verbose_name: Category (raw)
-    is_dttm: false
-    is_active: true
-    type: VARCHAR
-    groupby: true
-    filterable: true
-    description: Suzaku's packed category (abused_success, other_failed, …)
 
   - column_name: is_abused
     verbose_name: Abusable API
@@ -96,15 +83,6 @@ columns:
     groupby: true
     filterable: true
     description: AWS service that served the call (e.g. ec2.amazonaws.com)
-
-  - column_name: api_full
-    verbose_name: API (raw)
-    is_dttm: false
-    is_active: true
-    type: VARCHAR
-    groupby: true
-    filterable: true
-    description: Suzaku's packed "Action (service)" string
 
   - column_name: description
     verbose_name: Why It Matters

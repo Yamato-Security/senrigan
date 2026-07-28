@@ -17,7 +17,7 @@ params:
   adhoc_filters:
     - clause: WHERE
       expressionType: SQL
-      sqlExpression: "attribute = 'access_key_id'"
+      sqlExpression: "attribute = 'UserAccessKeyID'"
       filterOptionName: filter_attr_access_key
   subheader: "long-lived access keys in use"
   time_range: "No filter"

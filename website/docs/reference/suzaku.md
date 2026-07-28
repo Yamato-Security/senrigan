@@ -12,7 +12,7 @@ Run Suzaku with DuckDB output, then copy the result next to Senrigan's own datab
 # 1. Run Suzaku against your CloudTrail logs
 suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb
 suzaku aws-ct-summary  -d <cloudtrail-logs> -o summary.duckdb
-suzaku aws-ct-metrics  -d <cloudtrail-logs> -f eventName -o metrics.duckdb
+suzaku aws-ct-metrics  -d <cloudtrail-logs> -f eventName -o metrics.duckdb --geo-ip  # --geo-ip is required
 
 # 2. Copy them into the database directory
 cp *.duckdb docker/data/db/
@@ -20,6 +20,10 @@ cp *.duckdb docker/data/db/
 # 3. Restart so the dashboard registers the new databases
 make up
 ```
+
+`aws-ct-metrics` must run with `--geo-ip`: Suzaku writes the `SrcASN` /
+`SrcCity` / `SrcCountry` columns only for a GeoIP-enriched run, and the
+Suzaku Field Metrics dashboard selects them.
 
 `make status` reports which Suzaku files it can see.
 
@@ -95,7 +99,7 @@ is executed against a real Suzaku fixture in CI.
 | 🚦 Overview | Fields counted · distinct values · total occurrences · top value share · values seen once · source countries |
 | 📊 Distribution | Top values · share composition · full frequency table |
 | 💎 Rare & Temporal | Rare values (bottom-N) · newest values · value activity span |
-| 🌍 GeoIP | Top countries · top ASNs · value × location matrix (populated only for GeoIP-enriched runs) |
+| 🌍 GeoIP | Top countries · top ASNs · value × location matrix |
 
 This dashboard is **field-agnostic**: Suzaku counts whichever field it was given
 with `-f`, so no chart assumes `eventName` and the `Field` filter drives everything.
@@ -105,17 +109,22 @@ with `-f`, so no chart assumes `eventName` and the `Field` filter drives everyth
 Currently an empty template — its charts arrive in a follow-up change. Until then,
 use the agent's Suzaku Timeline page, or SQL Lab against the
 `Suzaku Timeline DuckDB` connection and the `suzaku_timeline` dataset, which is
-already type-normalized (real `event_time` timestamp, snake_case columns, Suzaku's
-`'-'` placeholders turned into `NULL`).
+already renamed to snake_case, with the `VARCHAR[]` tag columns joined into
+readable strings.
 
 ## Notes on Suzaku's schema
 
-Suzaku stores every column as text, uses PascalCase identifiers (one of them
-hyphenated), writes `'-'` instead of `NULL`, and packs multi-value data into
-delimited strings. Senrigan works around all of it — the agent through its dataset
-profile, Superset through virtual datasets that cast and rename — so nothing is
-required of you. The workarounds and the upstream proposal that would remove them
-are documented in `doc/PLAN_SUZAKU_SCHEMA.md`.
+Suzaku's DuckDB output is typed: real `TIMESTAMP`s, an ordered `suzaku_level`
+ENUM for the severity, `NULL` for absent values, and `VARCHAR[]` for multi-value
+fields. Senrigan reads it directly; the only adaptation left is the PascalCase →
+snake_case rename in the Superset datasets. The schema is documented in
+`doc/PLAN_SUZAKU_SCHEMA.md`.
+
+Two things are worth knowing when you write your own SQL. `"Level"` is an ENUM, so
+`ORDER BY "Level" DESC` is already severity order — but a threshold needs the
+cast, `"Level" >= 'high'::suzaku_level`, because DuckDB compares an ENUM against a
+bare string literal alphabetically. And every file carries a one-row `suzaku_meta`
+table naming the command, ruleset and timezone that produced it.
 
 One consequence is worth knowing while reading any Suzaku output: a timeline row is
 one **rule match**, not one event. An event matching three rules produces three

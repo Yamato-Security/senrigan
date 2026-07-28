@@ -5,15 +5,15 @@ Runs inside the superset-init container as part of ``bootstrap.sh``, before
 
 Suzaku (https://github.com/Yamato-Security/suzaku) writes its ``aws-ct-*``
 results as DuckDB files that an analyst copies into the mounted database
-directory. The file names are arbitrary, so the producing command is inferred
-from the schema, and each detected command is registered as its own Superset
-database under a **fixed name and UUID**. Dataset and chart YAMLs reference that
-UUID, so re-running Suzaku under a different file name only updates a stored URI
-— no asset ever has to change.
+directory. The file names are arbitrary, so the producing command is read from
+the file's own ``suzaku_meta`` table, and each detected command is registered as
+its own Superset database under a **fixed name and UUID**. Dataset and chart
+YAMLs reference that UUID, so re-running Suzaku under a different file name only
+updates a stored URI — no asset ever has to change.
 
 Superset stores one file path per database connection, resolved once here; that
-is why detection cannot live only in the agent. :data:`SUZAKU_SIGNATURES` is a
-copy of the table in ``agent/suzaku_db.py`` (the Superset image cannot import the
+is why detection cannot live only in the agent. The detection constants are a
+copy of those in ``agent/suzaku_db.py`` (the Superset image cannot import the
 agent package) and ``tests/test_suzaku_detection_parity.py`` asserts the two stay
 identical.
 
@@ -47,26 +47,23 @@ DB_DIR = os.path.dirname(os.environ.get("DUCKDB_PATH", "/data/db/threat_hunting.
 # Senrigan's own table: a file containing it is the ingester's output.
 SENRIGAN_TABLE = "cloudtrail_events"
 
-# Signature per Suzaku command: every listed table must exist and hold at least
-# the listed columns. Extra tables and columns are allowed so a later Suzaku
-# release that adds either still matches.
+# Suzaku's provenance table and the layout version this bootstrap understands
+# (suzaku's src/core/duckdb_out.rs: SCHEMA_VERSION).
 #
 # Keep in sync with agent/suzaku_db.py (guarded by
 # tests/test_suzaku_detection_parity.py).
-SUZAKU_SIGNATURES: dict[str, dict[str, frozenset[str]]] = {
-    "aws-ct-timeline": {
-        "timeline": frozenset(
-            {"Timestamp", "RuleTitle", "Level", "RuleID", "EventName"}
-        ),
-    },
-    "aws-ct-summary": {
-        "summary": frozenset({"UserARN", "NumOfEvents"}),
-        "summary_api_calls": frozenset({"UserARN", "Category", "API", "Count"}),
-        "summary_attributes": frozenset({"UserARN", "Attribute", "Value", "Count"}),
-    },
-    "aws-ct-metrics": {
-        "metrics": frozenset({"Field", "Value", "Count", "Percent"}),
-    },
+META_TABLE = "suzaku_meta"
+SUPPORTED_SCHEMA_VERSION = 1
+
+# Payload tables per Suzaku command. Not used for detection — the command is
+# read from META_TABLE — but the dataset YAMLs query exactly these, so a file
+# whose command says one thing and whose tables say another is not usable.
+#
+# Keep in sync with agent/suzaku_db.py.
+SUZAKU_TABLES: dict[str, tuple[str, ...]] = {
+    "aws-ct-timeline": ("timeline",),
+    "aws-ct-summary": ("summary", "summary_api_calls", "summary_attributes"),
+    "aws-ct-metrics": ("metrics",),
 }
 
 # Superset database name per command. Fixed: shown in SQL Lab and referenced by
@@ -101,39 +98,43 @@ ENV_OVERRIDES: dict[str, str] = {
 }
 
 
-def detect_commands(tables: dict[str, list[str]]) -> set[str]:
-    """Return every Suzaku command whose signature *tables* satisfies.
-
-    Matching is case-insensitive (DuckDB identifiers are) and tolerant of extra
-    tables and columns.
+def detect_command(
+    command: str | None,
+    schema_version: int | None,
+    tables: dict[str, list[str]],
+) -> str | None:
+    """Return the Suzaku command a file serves, or ``None`` when unusable.
 
     Args:
-        tables: ``{table_name: [column, ...]}`` describing one database.
+        command:        ``suzaku_meta.command``, or None when the table is absent.
+        schema_version: ``suzaku_meta.schema_version``, or None likewise.
+        tables:         ``{table_name: [column, ...]}`` describing the database.
 
     Returns:
-        The matching command names; empty when unrecognised, including when the
-        file is Senrigan's own database.
+        The command name, or ``None`` when the file is Senrigan's own database,
+        carries no Suzaku metadata, declares a layout newer than
+        :data:`SUPPORTED_SCHEMA_VERSION`, or names a command whose payload
+        tables are not there.
     """
-    normalised = {
-        name.lower(): {column.lower() for column in columns}
-        for name, columns in tables.items()
-    }
-    if SENRIGAN_TABLE in normalised:
-        return set()
+    present = {name.lower() for name in tables}
+    if SENRIGAN_TABLE in present:
+        return None
+    if not command or schema_version is None:
+        return None
+    if schema_version > SUPPORTED_SCHEMA_VERSION:
+        return None
 
-    matched: set[str] = set()
-    for command, signature in SUZAKU_SIGNATURES.items():
-        if all(
-            table.lower() in normalised
-            and {column.lower() for column in required} <= normalised[table.lower()]
-            for table, required in signature.items()
-        ):
-            matched.add(command)
-    return matched
+    normalised = command.strip().lower()
+    expected = SUZAKU_TABLES.get(normalised)
+    if expected is None:
+        return None
+    if not all(table.lower() in present for table in expected):
+        return None
+    return normalised
 
 
-def detect_commands_in(path: str) -> set[str]:
-    """Return the Suzaku commands whose output *path* looks like.
+def detect_command_in(path: str) -> str | None:
+    """Return the Suzaku command whose output *path* is.
 
     Never raises: a file that cannot be opened read-only is reported as
     unrecognised, because one stray file must not abort the bootstrap.
@@ -142,7 +143,7 @@ def detect_commands_in(path: str) -> set[str]:
         path: Candidate ``.duckdb`` file.
 
     Returns:
-        The matching command names, or an empty set.
+        The command name, or ``None``.
     """
     import duckdb  # noqa: PLC0415 — keeps the module importable without duckdb
 
@@ -150,23 +151,42 @@ def detect_commands_in(path: str) -> set[str]:
         conn = duckdb.connect(str(path), read_only=True)
     except Exception as exc:  # noqa: BLE001
         print(f"    Skipping {path}: {exc}")
-        return set()
+        return None
 
     try:
         rows = conn.execute(
             "SELECT table_name, column_name FROM information_schema.columns "
             "WHERE table_schema = 'main'"
         ).fetchall()
+        try:
+            meta = conn.execute(
+                f"SELECT schema_version, command FROM {META_TABLE} LIMIT 1"
+            ).fetchone()
+        except Exception:  # noqa: BLE001 — no suzaku_meta: not Suzaku output
+            meta = None
     except Exception as exc:  # noqa: BLE001
         print(f"    Skipping {path}: {exc}")
-        return set()
+        return None
     finally:
         conn.close()
 
     tables: dict[str, list[str]] = {}
     for table_name, column_name in rows:
         tables.setdefault(table_name, []).append(column_name)
-    return detect_commands(tables)
+
+    schema_version, command = (None, None) if not meta else meta
+    detected = detect_command(
+        command,
+        int(schema_version) if schema_version is not None else None,
+        tables,
+    )
+    if detected is None and command and schema_version is not None:
+        if int(schema_version) > SUPPORTED_SCHEMA_VERSION:
+            print(
+                f"    Skipping {path}: schema_version {schema_version} is newer "
+                f"than the supported {SUPPORTED_SCHEMA_VERSION}."
+            )
+    return detected
 
 
 def discover_databases(directory: str = DB_DIR) -> dict[str, str]:
@@ -192,12 +212,13 @@ def discover_databases(directory: str = DB_DIR) -> dict[str, str]:
             reverse=True,
         )
         for path in candidates:
-            for command in detect_commands_in(path):
+            command = detect_command_in(path)
+            if command:
                 found.setdefault(command, os.path.abspath(path))
 
     for command, variable in ENV_OVERRIDES.items():
         override = os.environ.get(variable)
-        if override and command in detect_commands_in(override):
+        if override and detect_command_in(override) == command:
             found[command] = os.path.abspath(override)
 
     return found

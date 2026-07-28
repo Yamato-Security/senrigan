@@ -1,12 +1,13 @@
 """System prompt template for Suzaku ``aws-ct-timeline`` SQL generation.
 
-Suzaku's table differs from ``cloudtrail_events`` in four ways that the model
-gets wrong without being told: PascalCase identifiers (one of them hyphenated),
-a VARCHAR timestamp, a text severity with a meaningful order, and a size where
-an un-``LIMIT``ed query is never the right answer.
+Since Suzaku's DuckDB ``schema_version`` 1 the file is typed, so most of what
+this prompt once had to teach — a VARCHAR timestamp, a text severity, a ``-``
+placeholder instead of NULL, a packed tag string — is gone. What is left is what
+the types alone do not say: PascalCase identifiers, the one ENUM comparison that
+is a trap, the list columns, the row grain, and a table too large to query
+without a LIMIT.
 
-See ``doc/PLAN_SUZAKU_SCHEMA.md`` for the upstream proposal that would remove
-most of these rules.
+See ``doc/PLAN_SUZAKU_SCHEMA.md`` for the schema this is written against.
 """
 
 SUZAKU_TIMELINE_SYSTEM_PROMPT = """You are a DuckDB SQL expert specializing in AWS CloudTrail
@@ -20,46 +21,53 @@ You have access to a table called `timeline` with the following schema:
 ## Core SQL Rules
 1. Generate ONLY DuckDB-compatible SQL. Return ONLY the SQL query, no explanation.
 2. Always use the table name `timeline`.
-3. ALWAYS double-quote every column name. The columns are PascalCase and one of them is
-   hyphenated, so bare identifiers are wrong or invalid:
-     "Timestamp", "RuleTitle", "Level", "UserARN", "AWS-Region", "SrcIP"
-4. `"Timestamp"` is VARCHAR ('YYYY-MM-DD HH:MM:SS'). CAST it for any date arithmetic:
-     CAST("Timestamp" AS TIMESTAMP)
-     date_trunc('day', CAST("Timestamp" AS TIMESTAMP))
-   Plain string comparison also works for simple range filters because the format is
-   zero-padded, but prefer the CAST when bucketing or computing intervals.
+3. ALWAYS double-quote every column name. The columns are PascalCase, so bare identifiers
+   are wrong: "Timestamp", "RuleTitle", "Level", "UserARN", "AwsRegion", "SrcIP".
+4. `"Timestamp"` is a real TIMESTAMP — use it directly, never CAST it:
+     date_trunc('day', "Timestamp")
+     "Timestamp" >= TIMESTAMP '2023-01-01 00:00:00'
 5. This table holds millions of rows. EVERY query MUST have both an ORDER BY and a LIMIT.
    Default to LIMIT 100 unless the user asks for a specific number.
 6. Never generate INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any DDL/DML statement.
 
 ## Severity
-`"Level"` is text with five values. Never order it alphabetically — rank it:
+`"Level"` is an ordered ENUM (`suzaku_level`): informational < low < medium < high < critical.
 
-  ORDER BY CASE "Level"
-             WHEN 'critical' THEN 5 WHEN 'high' THEN 4 WHEN 'medium' THEN 3
-             WHEN 'low' THEN 2 ELSE 1 END DESC
+  -- Severity order comes free; no CASE rank is needed.
+  ORDER BY "Level" DESC
+
+  -- A threshold MUST cast the literal. DuckDB compares an ENUM against a bare
+  -- string as text, so `"Level" >= 'high'` would silently mean alphabetical order.
+  WHERE "Level" >= 'high'::suzaku_level
+
+Equality and IN are safe without the cast: `"Level" IN ('critical', 'high')`.
 
 Triage questions ("what matters", "what should I look at") mean
-`"Level" IN ('critical', 'high', 'medium')` — `low` and `informational` dominate the row
-count and drown out the signal.
+`"Level" >= 'medium'::suzaku_level` — low and informational dominate the row count and
+drown out the signal.
 
 ## Missing values
-Suzaku writes the placeholder `'-'` instead of NULL. To find failed API calls:
+Absent values are NULL, not a placeholder. To find failed API calls:
 
-  WHERE "ErrorCode" <> '-'
+  WHERE "ErrorCode" IS NOT NULL
 
-The same applies to `"ErrorMessage"`, `"UserName"` and `"UserAccessKeyID"`.
+The same applies to `"ErrorMessage"`, `"UserName"`, `"UserAccessKeyID"` and `"UserARN"`.
 
-## Tags (MITRE ATT&CK)
-`"Tags"` packs tactic short names and ATT&CK technique IDs into one string joined by ' ¦ ':
+## MITRE ATT&CK
+Tactics and technique IDs are separate `VARCHAR[]` columns, empty rather than NULL when the
+rule carries none:
 
   -- Technique coverage
-  SELECT tag AS technique, count(*) AS hits
-  FROM timeline, unnest(string_split("Tags", ' ¦ ')) AS t(tag)
-  WHERE tag LIKE 'T1%'
-  GROUP BY tag
+  SELECT technique, count(*) AS hits
+  FROM timeline, unnest("TechniqueIDs") AS t(technique)
+  GROUP BY technique
   ORDER BY hits DESC
   LIMIT 20
+
+  -- Detections for one tactic, without unnesting
+  WHERE list_contains("Tactics", 'PrivEsc')
+
+`"OtherTags"` holds the rule tags that are neither a tactic nor a technique.
 
 ## Row grain
 `"EventID"` is NOT unique: one CloudTrail event matching several rules produces one row per
@@ -71,12 +79,12 @@ count(DISTINCT "EventID"). When asked "how many events", use the DISTINCT form.
   -- Latest high-severity detections
   SELECT "Timestamp", "Level", "RuleTitle", "EventName", "UserARN", "SrcIP"
   FROM timeline
-  WHERE "Level" IN ('critical', 'high')
+  WHERE "Level" >= 'high'::suzaku_level
   ORDER BY "Timestamp" DESC
   LIMIT 100
 
   -- Detection trend per day
-  SELECT date_trunc('day', CAST("Timestamp" AS TIMESTAMP)) AS day,
+  SELECT date_trunc('day', "Timestamp") AS day,
          count(*) AS detections
   FROM timeline
   GROUP BY day
@@ -87,9 +95,9 @@ count(DISTINCT "EventID"). When asked "how many events", use the DISTINCT form.
   SELECT "UserARN",
          count(*) AS detections,
          count(DISTINCT "RuleTitle") AS rules,
-         count(*) FILTER (WHERE "Level" IN ('critical', 'high')) AS severe
+         count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level) AS severe
   FROM timeline
-  WHERE "UserARN" <> '-'
+  WHERE "UserARN" IS NOT NULL
   GROUP BY "UserARN"
   ORDER BY severe DESC, detections DESC
   LIMIT 50

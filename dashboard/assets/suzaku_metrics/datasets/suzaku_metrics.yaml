@@ -3,10 +3,16 @@
 # `Field` holds whatever field the analyst passed to Suzaku (`eventName` in the
 # reference run), so this dataset — and every chart built on it — is deliberately
 # field-agnostic: the dashboard filters on `field` rather than assuming one.
+# `TimelineColumn` is the same field under the name the `timeline` table gives it,
+# which is what lets a chart here be cross-referenced with a timeline chart.
 #
-# VIRTUAL (sql:) to CAST the VARCHAR timestamps (doc/PLAN_SUZAKU_SCHEMA.md P3),
-# rename the PascalCase columns (P6), and turn Suzaku's empty-string geo columns
-# into NULL so "unknown" is distinguishable from "empty" (P2/P8).
+# VIRTUAL (sql:) to rename the PascalCase columns (doc/PLAN_SUZAKU_SCHEMA.md P6)
+# and to derive `active_days`; the file's timestamps, NULLs and full-precision
+# `Percent` are already typed (P2/P3/P8).
+#
+# REQUIRES `--geo-ip`: Suzaku emits SrcASN / SrcCity / SrcCountry only for an
+# enriched run, so a metrics file produced without it cannot serve this dataset.
+# See dashboard/README.md.
 uuid: 5a021002-0000-4000-8000-000000000005
 version: 1.0.0
 database_uuid: 5a021001-0000-4000-8000-000000000003
@@ -14,24 +20,25 @@ table_name: suzaku_metrics
 main_dttm_col: first_seen
 description: >
   Value frequencies for the CloudTrail field(s) Suzaku was asked to count, with
-  first/last seen timestamps and optional GeoIP attributes.
+  first/last seen timestamps and GeoIP attributes.
 default_endpoint: null
 offset: 0
 cache_timeout: null
 schema: null
 sql: |
   SELECT
-      "Field"                                        AS field,
-      "Value"                                        AS value,
-      "Count"                                        AS occurrence_count,
-      "Percent"                                      AS percent,
-      CAST("FirstSeen" AS TIMESTAMP)                 AS first_seen,
-      CAST("LastSeen" AS TIMESTAMP)                  AS last_seen,
-      date_diff('day', CAST("FirstSeen" AS TIMESTAMP),
-                       CAST("LastSeen" AS TIMESTAMP)) AS active_days,
-      nullif("SrcASN", '')                           AS src_asn,
-      nullif("SrcCity", '')                          AS src_city,
-      nullif("SrcCountry", '')                       AS src_country
+      "Field"                                   AS field,
+      "TimelineColumn"                          AS timeline_column,
+      "Value"                                   AS value,
+      "Count"                                   AS occurrence_count,
+      "FieldTotal"                              AS field_total,
+      "Percent"                                 AS percent,
+      "FirstSeen"                               AS first_seen,
+      "LastSeen"                                AS last_seen,
+      date_diff('day', "FirstSeen", "LastSeen") AS active_days,
+      "SrcASN"                                  AS src_asn,
+      "SrcCity"                                 AS src_city,
+      "SrcCountry"                              AS src_country
   FROM metrics
 params: null
 template_params: null
@@ -48,6 +55,17 @@ columns:
     groupby: true
     filterable: true
     description: CloudTrail field these value counts are for (whatever Suzaku was given)
+
+  - column_name: timeline_column
+    verbose_name: Timeline Column
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >
+      The same field under the name the timeline table uses (eventName ->
+      EventName), so a metrics chart can be matched to a timeline one
 
   - column_name: value
     verbose_name: Value
@@ -67,6 +85,17 @@ columns:
     filterable: true
     description: How many events carried this value
 
+  - column_name: field_total
+    verbose_name: Field Total
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: >
+      Events carrying any value of this field — the denominator `percent` was
+      computed from, so a filtered share can be recomputed exactly
+
   - column_name: percent
     verbose_name: Share (%)
     is_dttm: false
@@ -75,8 +104,8 @@ columns:
     groupby: false
     filterable: true
     description: >
-      Suzaku's rounded share of the total, in percent. Rounded to two decimals at
-      write time, so a sum across values lands near — not exactly on — 100.
+      Share of the field total, in percent, at full precision — so a sum across
+      every value of one field is exactly 100.
 
   - column_name: first_seen
     verbose_name: First Seen
@@ -112,7 +141,7 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: GeoIP ASN, NULL unless Suzaku enriched the run
+    description: GeoIP ASN of the source IP (requires --geo-ip)
 
   - column_name: src_city
     verbose_name: Source City
@@ -121,7 +150,7 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: GeoIP city, NULL unless Suzaku enriched the run
+    description: GeoIP city of the source IP (requires --geo-ip)
 
   - column_name: src_country
     verbose_name: Source Country
@@ -130,7 +159,7 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: GeoIP country, NULL unless Suzaku enriched the run
+    description: GeoIP country of the source IP (requires --geo-ip)
 
 metrics:
   - metric_name: count
