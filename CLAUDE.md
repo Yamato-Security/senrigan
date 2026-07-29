@@ -15,6 +15,7 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md),
 > [PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md),
 > [PLAN_SUZAKU_SCHEMA.md](doc/PLAN_SUZAKU_SCHEMA.md),
+> [PLAN_SUZAKU_MULTI_DB.md](doc/PLAN_SUZAKU_MULTI_DB.md),
 > and [PLAN_SUZAKU_TIMELINE_DASHBOARD.md](doc/PLAN_SUZAKU_TIMELINE_DASHBOARD.md).
 
 ---
@@ -35,15 +36,22 @@ Four Docker containers share **one DuckDB file** via a bind mount
   `cloudtrail_events`) and **🕒 Suzaku Timeline** (chat hunting over Suzaku's `timeline` table).
   Both pages share one pipeline, parameterized by a `DatasetProfile` (`agent/profiles.py`);
   see [doc/PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md) §4.
-- **Suzaku output** (`*.duckdb` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`) is read
-  as-is from the same mounted directory — never imported, never written. The producing command is
-  read from the file's own `suzaku_meta` table, in `agent/suzaku_db.py` and again in
-  `dashboard/init/register_suzaku_dbs.py` (the Superset image cannot import the agent package;
-  `tests/test_suzaku_detection_parity.py` keeps the two copies identical). Both refuse a
-  `schema_version` newer than they were written against.
+- **Suzaku output** (`*.duckdb` / `*.db` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`)
+  is read as-is from the same mounted directory — never imported, never written. Detection, fitness
+  and selection live **only** in `agent/suzaku_db.py`; the Superset image cannot install the agent
+  package, so `docker/docker-compose.yml` bind-mounts that one module into `superset-init` and
+  `superset-resync`, and `dashboard/init/register_suzaku_dbs.py` imports it (guarded by
+  `tests/test_suzaku_detection_shared.py`). A `schema_version` newer than this release is refused.
   `aws-ct-summary` / `aws-ct-metrics` are dashboard-only by design — Suzaku already aggregated them.
-  The **Suzaku Metrics** dashboard requires a run with `--geo-ip`: Suzaku writes
-  `SrcASN`/`SrcCity`/`SrcCountry` only for an enriched run, and the dataset selects them.
+- **Several Suzaku files in one directory** — see
+  [doc/PLAN_SUZAKU_MULTI_DB.md](doc/PLAN_SUZAKU_MULTI_DB.md). One file serves each command, chosen by
+  `generated_at` (when Suzaku ran) → mtime → path, so the choice is deterministic and identical in
+  both UIs. A file is eligible only when it has every column the shipped datasets select
+  (`REQUIRED_COLUMNS`) — which is why the **Suzaku Metrics** dashboard needs a run with `--geo-ip`:
+  Suzaku writes `SrcASN`/`SrcCity`/`SrcCountry` only for an enriched run, and a metrics file without
+  them is rejected with that reason rather than registered and left failing at render time. Every
+  Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
+  `make status` / `make up` print which file won and which candidates lost.
 - `config_viz`'s frontend uses **`elkjs`** (ELK layered / Sugiyama algorithm) for graph layout —
   migrated from `@dagrejs/dagre`; see [doc/PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
 - `ingester` must finish before the read-only services start. Concurrent writes are **not** supported.
@@ -114,7 +122,7 @@ make down      # Stop everything
 make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
 make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
 make status    # Container state, database size, and what ingest would detect
-make resync    # Fix a blank dashboard after re-ingest (re-syncs column metadata)
+make resync    # Fix a stale dashboard: re-syncs column metadata and re-resolves Suzaku file paths
 ```
 
 `make ingest` takes **no flags**. It reads the compose bind-mount directories and enables
@@ -166,9 +174,9 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 730 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 757 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 115 (Makefile / compose / docs consistency —
+Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 761 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
+run with `make test-dashboard`), root `tests/` ≈ 134 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
@@ -280,7 +288,7 @@ senrigan/
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
                  #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
                  #   PLAN_THREAT_CATALOG, PLAN_MAKEFILE_UX, PLAN_SUZAKU_VIEWS,
-                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_TIMELINE_DASHBOARD
+                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_MULTI_DB, PLAN_SUZAKU_TIMELINE_DASHBOARD
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

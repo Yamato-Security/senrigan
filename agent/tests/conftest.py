@@ -149,3 +149,16 @@ def tmp_duckdb_geo(tmp_path):
     """)
     conn.close()
     yield str(db_path)
+
+
+@pytest.fixture(autouse=True)
+def clear_suzaku_env(monkeypatch):
+    """Unset the ``SUZAKU_*_DB`` overrides for every test.
+
+    ``suzaku_db.select`` honours them, so a developer who has pinned a file in
+    their own shell would otherwise see different results from CI — the same
+    ambient-state dependency that made the Makefile tests pass locally and fail
+    on a clean checkout. Tests that need an override set it explicitly.
+    """
+    for variable in ("SUZAKU_TIMELINE_DB", "SUZAKU_SUMMARY_DB", "SUZAKU_METRICS_DB"):
+        monkeypatch.delenv(variable, raising=False)

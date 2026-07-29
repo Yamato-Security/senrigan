@@ -29,7 +29,7 @@ from llm import MAX_CONTEXT_TURNS  # noqa: F401
 from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE, DatasetProfile
 from query import DEFAULT_ROW_LIMIT
 from report import ReportEntry, generate_report, generate_html_report
-from suzaku_db import SuzakuKind, discover
+from suzaku_db import SuzakuKind, discover, select
 
 logger = logging.getLogger(__name__)
 
@@ -430,30 +430,48 @@ def _get_duckdb_path(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> str:
 
 
 @st.cache_data(show_spinner=False, ttl=30)
-def _discover_suzaku_dbs(directory: str) -> list[dict]:
-    """Return discovered Suzaku databases as plain dicts, cached briefly.
+def _discover_suzaku_dbs(directory: str) -> dict:
+    """Return the Suzaku databases in *directory* and the choice made for each kind.
 
-    Discovery opens every ``*.duckdb`` file in *directory*, so it is cached for
-    30 s rather than repeated on each Streamlit rerun. Plain dicts are returned
-    because ``st.cache_data`` pickles its result.
+    Discovery opens every candidate file, so it is cached for 30 s rather than
+    repeated on each Streamlit rerun; the selection is computed from that same
+    scan. Plain dicts are returned because ``st.cache_data`` pickles its result.
+
+    ``served`` is what the Superset dashboards resolve to — the same
+    :func:`suzaku_db.select` both services use — so this page can point out
+    when the analyst is looking at a different file (PLAN_SUZAKU_MULTI_DB.md
+    F-6).
 
     Args:
         directory: Directory to scan.
 
     Returns:
-        One dict per file with path, label, kinds, rows, error and hint.
+        ``{"databases": [...], "served": {command: path}}``.
     """
-    return [
-        {
-            "path": str(info.path),
-            "label": info.label,
-            "kinds": [info.kind.value] if info.kind else [],
-            "rows": sum(info.row_counts.values()),
-            "error": info.error,
-            "hint": info.hint,
-        }
-        for info in discover(directory)
-    ]
+    infos = discover(directory)
+    selections = select(directory, inventory=infos)
+    return {
+        "databases": [
+            {
+                "path": str(info.path),
+                "label": info.label,
+                "kind": info.kind.value if info.kind else "",
+                "declared_kind": (
+                    info.declared_kind.value if info.declared_kind else ""
+                ),
+                "rows": sum(info.row_counts.values()),
+                "reject_reason": info.reject_reason,
+                "error": info.error,
+                "hint": info.hint,
+            }
+            for info in infos
+        ],
+        "served": {
+            kind.value: str(selection.chosen.path)
+            for kind, selection in selections.items()
+            if selection.chosen is not None
+        },
+    }
 
 
 def _render_suzaku_db_selector(profile: DatasetProfile, kind: SuzakuKind) -> bool:
@@ -468,12 +486,22 @@ def _render_suzaku_db_selector(profile: DatasetProfile, kind: SuzakuKind) -> boo
         render its empty state instead.
     """
     directory = str(Path(get_duckdb_path_for_variant(DB_VARIANT_FULL)).parent)
-    found = _discover_suzaku_dbs(directory)
-    matching = [db for db in found if kind.value in db["kinds"]]
+    inventory = _discover_suzaku_dbs(directory)
+    found = inventory["databases"]
+    matching = [db for db in found if db["kind"] == kind.value]
+    # Right command, but missing a table or a column every query needs.
+    unfit = [
+        db
+        for db in found
+        if db["declared_kind"] == kind.value and db["kind"] != kind.value
+    ]
+    served = inventory["served"].get(kind.value, "")
 
     st.subheader("🗄️ Suzaku Database")
     if not matching:
-        st.warning(f"No `{kind.value}` database found in `{directory}`.")
+        st.warning(f"No usable `{kind.value}` database found in `{directory}`.")
+        for db in unfit:
+            st.caption(f"⚠️ `{Path(db['path']).name}` — {db['reject_reason']}")
         for db in found:
             if db["error"]:
                 st.caption(f"⚠️ `{Path(db['path']).name}` — {db['hint']}")
@@ -481,15 +509,17 @@ def _render_suzaku_db_selector(profile: DatasetProfile, kind: SuzakuKind) -> boo
 
     paths = [db["path"] for db in matching]
     stored = st.session_state.get(profile.state_key("suzaku_db"), "")
-    index = paths.index(stored) if stored in paths else 0
+    # Default to the file the dashboards serve, so both UIs open on the same run.
+    default = stored if stored in paths else served
+    index = paths.index(default) if default in paths else 0
     selected = st.selectbox(
         "File",
         options=paths,
         index=index,
         format_func=lambda path: Path(path).name,
         key=f"_{profile.key}_db_select",
-        help="Every *.duckdb file in the mounted database directory whose schema "
-        "matches this Suzaku command. Newest first.",
+        help="Every DuckDB file in the mounted database directory that can serve "
+        "this Suzaku command. Newest run first; the dashboards use the first one.",
     )
     st.session_state[profile.state_key("suzaku_db")] = selected
 
@@ -498,6 +528,13 @@ def _render_suzaku_db_selector(profile: DatasetProfile, kind: SuzakuKind) -> boo
     st.caption(f"{chosen['rows']:,} rows")
     if chosen["hint"]:
         st.caption(f"⚠️ {chosen['hint']}")
+    if served and served != selected:
+        st.caption(
+            f"⚠️ The dashboard is showing `{Path(served).name}` — this page and "
+            "Superset are on different runs."
+        )
+    for db in unfit:
+        st.caption(f"⚠️ `{Path(db['path']).name}` — {db['reject_reason']}")
     return True
 
 

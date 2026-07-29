@@ -6,6 +6,10 @@
 # Senrigan never imports Suzaku output — the dashboard queries the .duckdb file
 # in place — so provenance is per-file, not per-import. `generated_at` is when
 # Suzaku ran, which is why the dashboard's Date Range filter excludes this tab.
+#
+# `source_file` names the .duckdb file behind this dashboard. When several runs
+# sit in the mounted directory only one serves each command, and this is where
+# the analyst can see which one won (doc/PLAN_SUZAKU_MULTI_DB.md F-2).
 uuid: 5a021006-0000-4000-8000-000000000055
 version: 1.0.0
 dataset_uuid: 5a021002-0000-4000-8000-000000000007
@@ -45,6 +49,7 @@ params:
       hasCustomLabel: true
       optionName: metric_szk55_dupes
   groupby:
+    - source_file
     - command
     - command_line
     - suzaku_version
@@ -59,8 +64,8 @@ params:
 cache_timeout: null
 
 # SQL used to power this chart:
-# SELECT command, command_line, suzaku_version, rules_version, timestamp_tz,
+# SELECT source_file, command, command_line, suzaku_version, rules_version, timestamp_tz,
 #        MAX(scanned_files) AS files_scanned, MAX(scanned_events) AS events_scanned,
 #        MAX(rules_count) AS rules_loaded, MAX(output_rows) AS detections_written,
 #        MAX(duplicate_rows_removed) AS duplicates_removed
-# FROM suzaku_timeline_meta GROUP BY 1, 2, 3, 4, 5
+# FROM suzaku_timeline_meta GROUP BY 1, 2, 3, 4, 5, 6

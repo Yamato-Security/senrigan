@@ -325,3 +325,115 @@ def test_direct_sql_hunt_runs_against_the_fixture_with_filters() -> None:
     assert set(results["Level"]) <= {"critical", "high"}
     # The severity filter reached the SQL, not just the UI.
     assert "_sz_filtered" in history[0].sql
+
+
+# ---------------------------------------------------------------------------
+# Agreement with the dashboard — PLAN_SUZAKU_MULTI_DB.md Phase 6 (F-6)
+# ---------------------------------------------------------------------------
+
+
+def _copy_fixture(directory: Path, name: str) -> Path:
+    """Place a copy of the timeline fixture in *directory*."""
+    target = directory / name
+    target.write_bytes(FIXTURE.read_bytes())
+    return target
+
+
+def _render(directory: Path, selectbox_returns: str | None = None):
+    """Render the selector against *directory* and return the patched mocks."""
+    from app import _discover_suzaku_dbs, _render_suzaku_db_selector
+    from suzaku_db import SuzakuKind
+
+    _discover_suzaku_dbs.clear()
+    state = MockSessionState()
+    with (
+        patch("streamlit.session_state", state),
+        patch(
+            "app.get_duckdb_path_for_variant",
+            return_value=str(directory / "threat_hunting.db"),
+        ),
+        patch("streamlit.subheader"),
+        patch("streamlit.selectbox") as selectbox,
+        patch("streamlit.caption") as caption,
+        patch("streamlit.warning") as warning,
+    ):
+        options: list[str] = []
+        selectbox.side_effect = lambda *a, **kw: (
+            options.extend(kw["options"]) or (selectbox_returns or kw["options"][0])
+        )
+        result = _render_suzaku_db_selector(
+            SUZAKU_TIMELINE_PROFILE, SuzakuKind.TIMELINE
+        )
+    _discover_suzaku_dbs.clear()
+    captions = " ".join(
+        str(call.args[0]) for call in caption.call_args_list if call.args
+    )
+    warnings = " ".join(
+        str(call.args[0]) for call in warning.call_args_list if call.args
+    )
+    return result, state, options, captions, warnings
+
+
+def test_the_selector_defaults_to_the_file_the_dashboard_serves(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Two UIs showing different files without saying so is the bug (F-6)."""
+    monkeypatch.delenv("SUZAKU_TIMELINE_DB", raising=False)
+    from suzaku_db import SuzakuKind, select
+
+    _copy_fixture(tmp_path, "a-run.duckdb")
+    _copy_fixture(tmp_path, "b-run.duckdb")
+    expected = select(tmp_path)[SuzakuKind.TIMELINE].chosen
+
+    _, state, _, _, _ = _render(tmp_path)
+
+    assert state["sz_suzaku_db"] == str(expected.path)
+
+
+def test_choosing_another_file_says_the_dashboard_disagrees(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Inspecting an older run is fine; not being told it differs is not."""
+    monkeypatch.delenv("SUZAKU_TIMELINE_DB", raising=False)
+    from suzaku_db import SuzakuKind, select
+
+    _copy_fixture(tmp_path, "a-run.duckdb")
+    _copy_fixture(tmp_path, "b-run.duckdb")
+    served = select(tmp_path)[SuzakuKind.TIMELINE].chosen
+    other = next(str(path) for path in tmp_path.glob("*.duckdb") if path != served.path)
+
+    _, _, _, captions, _ = _render(tmp_path, selectbox_returns=other)
+
+    assert "dashboard" in captions.lower()
+    assert served.path.name in captions
+
+
+def test_no_divergence_note_when_the_choices_agree(tmp_path: Path, monkeypatch) -> None:
+    """A note on every render would train the analyst to ignore it."""
+    monkeypatch.delenv("SUZAKU_TIMELINE_DB", raising=False)
+    _copy_fixture(tmp_path, "only.duckdb")
+
+    _, _, _, captions, _ = _render(tmp_path)
+
+    assert "dashboard is showing" not in captions.lower()
+
+
+def test_an_unfit_file_is_not_offered_and_is_explained(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Offering a file no query can read wastes the analyst's time (F-1)."""
+    monkeypatch.delenv("SUZAKU_TIMELINE_DB", raising=False)
+    import duckdb
+
+    good = _copy_fixture(tmp_path, "good.duckdb")
+    unfit = _copy_fixture(tmp_path, "unfit.duckdb")
+    conn = duckdb.connect(str(unfit))
+    conn.execute('ALTER TABLE timeline DROP COLUMN "RuleID"')
+    conn.close()
+
+    _, state, options, captions, _ = _render(tmp_path)
+
+    assert options == [str(good)]
+    assert "unfit.duckdb" in captions
+    assert "RuleID" in captions
+    assert state["sz_suzaku_db"] == str(good)

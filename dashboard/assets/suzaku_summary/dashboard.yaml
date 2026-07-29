@@ -436,10 +436,28 @@ position:
     - ROW-attributes-1
     - ROW-attributes-2
     - ROW-attributes-3
+    - ROW-attributes-provenance
     meta:
       text: 🔎 Attributes
       defaultText: Attributes
       tooltip: Source IPs, user agents, regions and access keys — common and rare
+  ROW-attributes-provenance:
+    type: ROW
+    id: ROW-attributes-provenance
+    children:
+    - CHART-run-info
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-run-info:
+    type: CHART
+    id: CHART-run-info
+    children: []
+    meta:
+      chartId: 19
+      uuid: 5a021004-0000-4000-8000-000000000033
+      sliceName: Suzaku Run Info
+      width: 12
+      height: 40
 metadata:
   cross_filters_enabled: true
   color_scheme: supersetColors
@@ -458,7 +476,8 @@ metadata:
     scope:
       rootPath:
       - ROOT_ID
-      excluded: []
+      excluded:
+      - 19
     type: NATIVE_FILTER
     description: Filter every chart by its first-seen timestamp
     chartsInScope: []

@@ -23,11 +23,19 @@ echo "==> Registering DuckDB database connection..."
 # Use the Python API (DatabaseDAO) to register the DuckDB connection idempotently.
 python3 /app/register_duckdb.py
 
-echo "==> Registering Suzaku DuckDB databases (if any were copied in)..."
 # Suzaku output files are third-party artifacts an analyst copies into the
 # mounted database directory. Their names are arbitrary, so the producing command
 # is detected from the schema and each is registered under a fixed name + UUID.
-python3 /app/register_suzaku_dbs.py
+#
+# Scan the directory exactly once. Every later step selects from this inventory
+# instead of re-opening every file, which for a directory of 200 MB timelines is
+# the difference between one pass and three (PLAN_SUZAKU_MULTI_DB.md F-9).
+SUZAKU_INVENTORY=/tmp/suzaku_inventory.json
+echo "==> Scanning for Suzaku DuckDB databases..."
+python3 /app/register_suzaku_dbs.py --scan "$SUZAKU_INVENTORY"
+
+echo "==> Registering Suzaku DuckDB databases (if any were copied in)..."
+python3 /app/register_suzaku_dbs.py --from "$SUZAKU_INVENTORY"
 
 echo "==> Registering cloudtrail_events dataset..."
 python3 /app/register_dataset.py
@@ -50,7 +58,7 @@ fi
 # guard is which Suzaku databases were actually detected. Importing a bundle
 # whose database was never copied in would register a connection pointing at a
 # non-existent file, and every chart on that dashboard would raise an IOError.
-SUZAKU_DETECTED="$(python3 /app/register_suzaku_dbs.py --list)"
+SUZAKU_DETECTED="$(python3 /app/register_suzaku_dbs.py --list --from "$SUZAKU_INVENTORY")"
 
 for suzaku_bundle in suzaku_timeline suzaku_summary suzaku_metrics; do
   case "$suzaku_bundle" in
@@ -75,8 +83,13 @@ done
 # in the YAML. Re-run registration so the real, schema-detected file wins.
 if [ -n "$SUZAKU_DETECTED" ]; then
   echo "==> Re-applying detected Suzaku database paths..."
-  python3 /app/register_suzaku_dbs.py
+  python3 /app/register_suzaku_dbs.py --from "$SUZAKU_INVENTORY"
 fi
+
+# Say which file each dashboard ended up on, and which candidates lost. Without
+# this the only symptom of a passed-over file is a number that looks stale.
+echo "==> Suzaku selection:"
+python3 /app/register_suzaku_dbs.py --report --from "$SUZAKU_INVENTORY"
 
 echo "==> Bootstrap complete."
 

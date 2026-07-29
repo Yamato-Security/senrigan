@@ -371,10 +371,28 @@ position:
     - ROW-hdr-geo
     - ROW-geo-1
     - ROW-geo-2
+    - ROW-geo-provenance
     meta:
       text: 🌍 GeoIP
       defaultText: GeoIP
       tooltip: Source country, city and ASN — populated only for GeoIP-enriched runs
+  ROW-geo-provenance:
+    type: ROW
+    id: ROW-geo-provenance
+    children:
+    - CHART-run-info
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-run-info:
+    type: CHART
+    id: CHART-run-info
+    children: []
+    meta:
+      chartId: 16
+      uuid: 5a021005-0000-4000-8000-000000000033
+      sliceName: Suzaku Run Info
+      width: 12
+      height: 40
 metadata:
   cross_filters_enabled: true
   color_scheme: supersetColors
@@ -393,7 +411,8 @@ metadata:
     scope:
       rootPath:
       - ROOT_ID
-      excluded: []
+      excluded:
+      - 16
     type: NATIVE_FILTER
     description: Filter every chart by first-seen timestamp
     chartsInScope: []
