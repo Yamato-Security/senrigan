@@ -1,0 +1,64 @@
+# SZK-47: First / Last Seen per Principal
+# Sorted by first_seen DESC: identities that only just started producing
+# detections sit at the top. A short span with a high count is the
+# signature of a smash-and-grab with stolen credentials.
+uuid: 5a021006-0000-4000-8000-000000000047
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: First / Last Seen per Principal
+viz_type: table
+description: >
+  Each principal's first and last detection, its active span in minutes, and
+  its volume (SZK-47). Newly appearing identities sort to the top; a short
+  span combined with a high detection count is the signature of automated
+  abuse of stolen credentials.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk47_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk47_last
+    - expressionType: SQL
+      sqlExpression: DATEDIFF('minute', MIN(event_time), MAX(event_time))
+      label: active_span_minutes
+      hasCustomLabel: true
+      optionName: metric_szk47_span
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk47_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk47_rules
+  groupby:
+    - user_name
+    - user_type
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_name IS NOT NULL
+      filterOptionName: filter_szk47_user_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_name, user_type, MIN(event_time) AS first_seen,
+#        MAX(event_time) AS last_seen,
+#        DATEDIFF('minute', MIN(event_time), MAX(event_time)) AS active_span_minutes,
+#        COUNT(*) AS detections, COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_timeline WHERE user_name IS NOT NULL
+# GROUP BY 1, 2 ORDER BY first_seen DESC

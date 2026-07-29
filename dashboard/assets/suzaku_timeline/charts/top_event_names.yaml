@@ -1,0 +1,48 @@
+# SZK-49: Top API Actions / Operations
+# CloudTrail eventName for AWS, Operation for Azure/M365 — the importer
+# maps both into event_name so one chart covers either source.
+uuid: 5a021006-0000-4000-8000-000000000049
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Top API Actions / Operations
+viz_type: dist_bar
+description: >
+  The API actions behind the detections, ranked by count (SZK-49). Populated
+  from CloudTrail's eventName for AWS timelines and from the Operation field
+  for Azure/M365 ones, so a single chart works for both.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk49_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk49_rules
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: event_name IS NOT NULL
+      filterOptionName: filter_szk49_event_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: API Action
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT event_name, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_timeline WHERE event_name IS NOT NULL
+# GROUP BY event_name ORDER BY detections DESC LIMIT 25

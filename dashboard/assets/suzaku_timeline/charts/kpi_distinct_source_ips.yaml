@@ -1,0 +1,30 @@
+# SZK-05: Distinct Source IPs (KPI)
+# Distinct source addresses that triggered a detection.
+uuid: 5a021006-0000-4000-8000-000000000005
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Source IPs
+viz_type: big_number_total
+description: >
+  Distinct source IP addresses across all detections (SZK-05). A single
+  principal appearing from many addresses is a credential-theft signal — pivot
+  to SZK-40.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT src_ip)
+    label: distinct_ips
+    hasCustomLabel: true
+    optionName: metric_szk05_distinct_ips
+  adhoc_filters: []
+  subheader: Distinct origins
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT src_ip) FROM suzaku_timeline

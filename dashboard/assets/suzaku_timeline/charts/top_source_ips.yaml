@@ -1,0 +1,70 @@
+# SZK-39: Top Source IPs
+# Suzaku's `timeline` table carries no geo columns (PLAN_SUZAKU_SCHEMA P8),
+# so the context here is behavioural rather than geographic: how many
+# principals and rules an address touched, and how long it was active.
+uuid: 5a021006-0000-4000-8000-000000000039
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Top Source IPs
+viz_type: table
+description: >
+  Source IP addresses ranked by detection count, with the principals seen
+  using them, the rules they triggered and their active window (SZK-39). An
+  address used by several principals, or one whose window is minutes long, is
+  a strong pivot point. For country/ASN attribution use the Suzaku Field
+  Metrics dashboard, which is built on the only table Suzaku geo-enriches.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk39_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk39_users
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk39_rules
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk39_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk39_last
+    - expressionType: SQL
+      sqlExpression: DATEDIFF('minute', MIN(event_time), MAX(event_time))
+      label: active_span_minutes
+      hasCustomLabel: true
+      optionName: metric_szk39_span
+  groupby:
+    - src_ip
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: src_ip IS NOT NULL
+      filterOptionName: filter_szk39_ip_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT src_ip, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        MIN(event_time) AS first_seen, MAX(event_time) AS last_seen,
+#        DATEDIFF('minute', MIN(event_time), MAX(event_time)) AS active_span_minutes
+# FROM suzaku_timeline WHERE src_ip IS NOT NULL
+# GROUP BY 1 ORDER BY detections DESC

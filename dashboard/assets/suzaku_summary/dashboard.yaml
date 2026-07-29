@@ -13,7 +13,7 @@
 #   cd docker && docker compose run --rm superset-init
 uuid: 5a021003-0000-4000-8000-000000000002
 version: 1.0.0
-dashboard_title: Suzaku Identity Summary
+dashboard_title: Suzaku Identity Summary(aws-ct-summary)
 description: 'Per-identity CloudTrail threat profiles from Suzaku''s aws-ct-summary command. Suzaku has
   already aggregated this data, so the dashboard is the right place for it: an Overview KPI row, then
   Identities, API Abuse and Attributes tabs.'

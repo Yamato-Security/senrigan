@@ -1,0 +1,31 @@
+# SZK-01: Total Detections (KPI)
+# Every Suzaku rule hit imported into this database.
+# The denominator for every other number on the dashboard.
+uuid: 5a021006-0000-4000-8000-000000000001
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Total Detections
+viz_type: big_number_total
+description: >
+  Total number of Suzaku detections in the selected range (SZK-01). One row
+  per rule hit — a single log event that matches three rules counts three
+  times.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: detections
+    hasCustomLabel: true
+    optionName: metric_szk01_detections
+  adhoc_filters: []
+  subheader: Suzaku rule hits
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(*) FROM suzaku_timeline

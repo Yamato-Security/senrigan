@@ -43,6 +43,8 @@ sql: |
       "AwsRegion"                          AS aws_region,
       "ErrorCode"                          AS error_code,
       "ErrorMessage"                       AS error_message,
+      CASE WHEN "ErrorCode" IS NULL
+           THEN 'Success' ELSE 'Failed' END AS outcome,
       "SrcIP"                              AS src_ip,
       "UserAgent"                          AS user_agent,
       "UserName"                           AS user_name,
@@ -164,6 +166,17 @@ columns:
     groupby: false
     filterable: true
     description: AWS error message, NULL when the call succeeded
+
+  - column_name: outcome
+    verbose_name: Outcome
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >
+      Success / Failed, derived from whether CloudTrail recorded an error code.
+      A denied attempt is an attempt; a successful one is an incident.
 
   - column_name: src_ip
     verbose_name: Source IP

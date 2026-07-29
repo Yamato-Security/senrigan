@@ -1,0 +1,30 @@
+# SZK-07: Distinct Accounts (KPI)
+# Distinct AWS account IDs seen in the detections.
+uuid: 5a021006-0000-4000-8000-000000000007
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Accounts / Tenants
+viz_type: big_number_total
+description: >
+  Distinct AWS account IDs across the detections (SZK-07). More than one
+  account means the imported Suzaku run spans an organisation — use the
+  Account filter to scope the dashboard to one of them.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT user_account_id)
+    label: distinct_accounts
+    hasCustomLabel: true
+    optionName: metric_szk07_distinct_accounts
+  adhoc_filters: []
+  subheader: AWS accounts
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT user_account_id) FROM suzaku_timeline

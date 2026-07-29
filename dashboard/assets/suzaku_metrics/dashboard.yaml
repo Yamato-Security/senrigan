@@ -11,14 +11,16 @@
 # enforces this.
 #
 # Charts SZM-01..SZM-06 (KPI cards), SZM-10..SZM-12 (Distribution),
-# SZM-20..SZM-22 (Rare & Temporal), SZM-30..SZM-32 (GeoIP).
+# SZM-20..SZM-21 (Rare & Temporal), SZM-30..SZM-32 (GeoIP).
+# SZM-22 (Value Activity Span) was dropped in the DFIR review: every column it
+# showed is already in SZM-12, which adds Suzaku's own share percentage.
 #
 # Rebuild after editing:
 #   python3 assets/rebuild_suzaku_metrics_zip.py
 #   cd docker && docker compose run --rm superset-init
 uuid: 5a021003-0000-4000-8000-000000000003
 version: 1.0.0
-dashboard_title: Suzaku Field Metrics
+dashboard_title: Suzaku Field Metrics(aws-ct-metrics)
 description: 'Value frequencies for the CloudTrail field Suzaku''s aws-ct-metrics command was asked to
   count. Field-agnostic by design: the Field filter drives every chart, so a run counting userAgent works
   exactly as well as one counting eventName.'
@@ -286,23 +288,6 @@ position:
     - CHART-newest-values
     meta:
       background: BACKGROUND_TRANSPARENT
-  CHART-value-activity-span:
-    type: CHART
-    id: CHART-value-activity-span
-    children: []
-    meta:
-      chartId: 12
-      uuid: 5a021005-0000-4000-8000-000000000022
-      sliceName: Value Activity Span
-      width: 12
-      height: 75
-  ROW-rare-3:
-    type: ROW
-    id: ROW-rare-3
-    children:
-    - CHART-value-activity-span
-    meta:
-      background: BACKGROUND_TRANSPARENT
   TAB-rare:
     type: TAB
     id: TAB-rare
@@ -310,7 +295,6 @@ position:
     - ROW-hdr-rare
     - ROW-rare-1
     - ROW-rare-2
-    - ROW-rare-3
     meta:
       text: 💎 Rare & Temporal
       defaultText: Rare & Temporal
@@ -555,13 +539,10 @@ metadata:
     description: 'The least frequent values (SZM-20). Same reasoning as the CloudTrail Rare Events dashboard:
       what happened once is more often interesting than what happened a mi'
   - slice_name: Newest Values (Latest First Seen)
-    viz_type: dist_bar
-    description: Values that appeared for the first time most recently (SZM-21). A value showing up only
-      at the end of the timeline is new behaviour.
-  - slice_name: Value Activity Span
     viz_type: table
-    description: First seen, last seen and span per value (SZM-22). A short span with a high count is
-      a burst; a long span with a low count is background noise.
+    description: Values that appeared for the first time most recently (SZM-21). A value showing up only
+      at the end of the timeline is new behaviour; last_seen and occurrences say whether it stayed or
+      fired once and vanished.
   - slice_name: Top Source Countries
     viz_type: dist_bar
     description: Occurrences grouped by source country (SZM-30). Empty unless Suzaku ran with GeoIP enrichment

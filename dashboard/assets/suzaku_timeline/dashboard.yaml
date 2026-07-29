@@ -1,85 +1,1397 @@
-# Suzaku Detection Timeline — Dashboard Definition (EMPTY TEMPLATE)
+# Suzaku Detection Timeline — Dashboard Definition
 #
-# Intentionally chart-free. The charts for this dashboard are drafted in a
-# separate PR (see doc/PLAN_SUZAKU_VIEWS.md §5.3); this bundle ships the
-# database, the virtual dataset and an importable shell so that:
-#   * `register_suzaku_dbs.py` has something to attach the timeline database to,
-#   * the follow-up PR only has to add charts/*.yaml plus their position entries,
-#   * an operator with only a timeline file still sees the dashboard appear.
+# 46 charts (SZK-01..SZK-57, minus the drafts that need data Suzaku's `timeline`
+# table does not carry, and minus the four dropped in the DFIR review — SZK-16,
+# SZK-44, SZK-47, SZK-48) across six tabs:
+#   🚦 Overview | 🧩 Rules | 🎯 ATT&CK | 👤 Identities | 🌐 Sources & Timing | 🔍 Detail
 #
-# dashboard/tests/test_suzaku_bundles.py asserts this bundle stays chart-free —
-# that test is what the follow-up PR flips when the charts land.
+# Three datasets back them:
+#   suzaku_timeline       — one row per rule match (the detections)
+#   suzaku_timeline_tags  — the same rows with Tactics/TechniqueIDs/OtherTags unnested
+#   suzaku_timeline_meta  — the file's own suzaku_meta provenance row
+#
+# Native filters target a single dataset, so Severity exists twice: once for the
+# detection charts and once, scoped to the ATT&CK tab, for the tag dataset.
+#
+# NO GEO CHARTS: Suzaku writes SrcASN/SrcCity/SrcCountry into `metrics` only,
+# never into `timeline` (doc/PLAN_SUZAKU_SCHEMA.md P8), so geographic analysis
+# lives on the Suzaku Field Metrics dashboard.
+#
+# Rebuild after editing:
+#   python3 assets/rebuild_suzaku_timeline_zip.py
+#   cd docker && docker compose run --rm superset-init
 uuid: 5a021003-0000-4000-8000-000000000001
 version: 1.0.0
-dashboard_title: Suzaku Detection Timeline
+dashboard_title: Suzaku Detection Timeline(aws-ct-timeline)
 description: >
   Detections produced by Suzaku's aws-ct-timeline command. One row is one rule
-  match against one CloudTrail event. Charts are added in a follow-up change;
-  until then use SQL Lab against the "Suzaku Timeline DuckDB" connection, or the
-  Suzaku Timeline page in the Senrigan agent (http://localhost:8501).
+  match against one CloudTrail event, so an event matching several rules appears
+  several times — compare Total Detections with Distinct Events before reading
+  any ranking as volume.
 published: true
 css: ""
 slug: suzaku-detection-timeline
 
 position:
-  DASHBOARD_VERSION_KEY: "v2"
+  DASHBOARD_VERSION_KEY: v2
   ROOT_ID:
     type: ROOT
     id: ROOT_ID
     children:
-      - GRID_ID
+    - GRID_ID
   GRID_ID:
     type: GRID
     id: GRID_ID
     children:
-      - TABS_ID
+    - TABS_ID
   TABS_ID:
     type: TABS
     id: TABS_ID
     children:
-      - TAB-overview
-  TAB-overview:
-    type: TAB
-    id: TAB-overview
-    children:
-      - ROW-hdr-overview
-    meta:
-      text: "🕒 Overview"
-      defaultText: Overview
-      tooltip: Suzaku detection overview — charts are added in a follow-up change
+    - TAB-overview
+    - TAB-rules
+    - TAB-attack
+    - TAB-identities
+    - TAB-sources
+    - TAB-detail
   ROW-hdr-overview:
     type: ROW
     id: ROW-hdr-overview
     children:
-      - MARKDOWN-placeholder
+    - MARKDOWN-overview
     meta:
       background: BACKGROUND_TRANSPARENT
-  MARKDOWN-placeholder:
+  MARKDOWN-overview:
     type: MARKDOWN
-    id: MARKDOWN-placeholder
+    id: MARKDOWN-overview
     children: []
     meta:
       width: 12
-      height: 30
-      code: |
-        ### 🕒 Suzaku Detection Timeline
+      height: 20
+      code: '### 🚦 Overview
 
-        This dashboard is an empty template — its charts arrive in a follow-up
-        change.
 
-        In the meantime:
+        Suzaku writes **one row per rule match**, so an event matching three rules
 
-        - **SQL Lab** → database **Suzaku Timeline DuckDB**, dataset
-          `suzaku_timeline` (already type-normalized: `event_time` is a real
-          timestamp, columns are snake_case, Suzaku's `'-'` placeholders are NULL).
-        - **Senrigan agent** → the **🕒 Suzaku Timeline** page at
-          [localhost:8501](http://localhost:8501) ships 15 built-in hunts,
-          severity filtering and HTML/Markdown reports over the same data.
-        - **Suzaku Summary / Metrics** dashboards cover the pre-aggregated
-          `aws-ct-summary` and `aws-ct-metrics` output.
+        counts three times — compare **Total Detections** with **Distinct Events**
+
+        before reading any ranking as "how much happened".'
+  CHART-kpi-total-detections:
+    type: CHART
+    id: CHART-kpi-total-detections
+    children: []
+    meta:
+      chartId: 1
+      uuid: 5a021006-0000-4000-8000-000000000001
+      sliceName: Total Detections
+      width: 3
+      height: 25
+  CHART-kpi-critical-high:
+    type: CHART
+    id: CHART-kpi-critical-high
+    children: []
+    meta:
+      chartId: 2
+      uuid: 5a021006-0000-4000-8000-000000000002
+      sliceName: Critical + High Detections
+      width: 3
+      height: 25
+  CHART-kpi-distinct-events:
+    type: CHART
+    id: CHART-kpi-distinct-events
+    children: []
+    meta:
+      chartId: 3
+      uuid: 5a021006-0000-4000-8000-000000000057
+      sliceName: Distinct Events
+      width: 3
+      height: 25
+  CHART-kpi-distinct-rules:
+    type: CHART
+    id: CHART-kpi-distinct-rules
+    children: []
+    meta:
+      chartId: 4
+      uuid: 5a021006-0000-4000-8000-000000000003
+      sliceName: Distinct Rules Fired
+      width: 3
+      height: 25
+  ROW-overview-1:
+    type: ROW
+    id: ROW-overview-1
+    children:
+    - CHART-kpi-total-detections
+    - CHART-kpi-critical-high
+    - CHART-kpi-distinct-events
+    - CHART-kpi-distinct-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-kpi-distinct-principals:
+    type: CHART
+    id: CHART-kpi-distinct-principals
+    children: []
+    meta:
+      chartId: 5
+      uuid: 5a021006-0000-4000-8000-000000000004
+      sliceName: Principals Involved
+      width: 3
+      height: 25
+  CHART-kpi-distinct-source-ips:
+    type: CHART
+    id: CHART-kpi-distinct-source-ips
+    children: []
+    meta:
+      chartId: 6
+      uuid: 5a021006-0000-4000-8000-000000000005
+      sliceName: Source IPs
+      width: 3
+      height: 25
+  CHART-kpi-distinct-accounts:
+    type: CHART
+    id: CHART-kpi-distinct-accounts
+    children: []
+    meta:
+      chartId: 7
+      uuid: 5a021006-0000-4000-8000-000000000007
+      sliceName: Accounts / Tenants
+      width: 3
+      height: 25
+  CHART-kpi-active-days:
+    type: CHART
+    id: CHART-kpi-active-days
+    children: []
+    meta:
+      chartId: 8
+      uuid: 5a021006-0000-4000-8000-000000000008
+      sliceName: Days With Detections
+      width: 3
+      height: 25
+  ROW-overview-2:
+    type: ROW
+    id: ROW-overview-2
+    children:
+    - CHART-kpi-distinct-principals
+    - CHART-kpi-distinct-source-ips
+    - CHART-kpi-distinct-accounts
+    - CHART-kpi-active-days
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-detections-over-time:
+    type: CHART
+    id: CHART-detections-over-time
+    children: []
+    meta:
+      chartId: 9
+      uuid: 5a021006-0000-4000-8000-000000000009
+      sliceName: Detections Over Time by Severity
+      width: 12
+      height: 50
+  ROW-overview-3:
+    type: ROW
+    id: ROW-overview-3
+    children:
+    - CHART-detections-over-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-severity-breakdown:
+    type: CHART
+    id: CHART-severity-breakdown
+    children: []
+    meta:
+      chartId: 10
+      uuid: 5a021006-0000-4000-8000-000000000010
+      sliceName: Severity Breakdown
+      width: 4
+      height: 55
+  CHART-top-rules:
+    type: CHART
+    id: CHART-top-rules
+    children: []
+    meta:
+      chartId: 11
+      uuid: 5a021006-0000-4000-8000-000000000011
+      sliceName: Top Rules by Detection Count
+      width: 8
+      height: 55
+  ROW-overview-4:
+    type: ROW
+    id: ROW-overview-4
+    children:
+    - CHART-severity-breakdown
+    - CHART-top-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-detection-timeline:
+    type: CHART
+    id: CHART-detection-timeline
+    children: []
+    meta:
+      chartId: 12
+      uuid: 5a021006-0000-4000-8000-000000000012
+      sliceName: Detection Timeline
+      width: 12
+      height: 65
+  ROW-overview-5:
+    type: ROW
+    id: ROW-overview-5
+    children:
+    - CHART-detection-timeline
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+    - ROW-hdr-overview
+    - ROW-overview-1
+    - ROW-overview-2
+    - ROW-overview-3
+    - ROW-overview-4
+    - ROW-overview-5
+    meta:
+      text: 🚦 Overview
+      defaultText: Overview
+      tooltip: How much fired, how bad it was, and which rules produced it
+  ROW-hdr-rules:
+    type: ROW
+    id: ROW-hdr-rules
+    children:
+    - MARKDOWN-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-rules:
+    type: MARKDOWN
+    id: MARKDOWN-rules
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🧩 Rules
+
+
+        A rule that fires constantly is usually environmental noise; one that fires
+
+        **for the first time part way through the timeline** is the interesting kind.
+
+        `rule_id` is the Sigma UUID — look it up in the suzaku-rules repository to
+
+        read the detection logic and its documented false positives.'
+  CHART-rule-summary:
+    type: CHART
+    id: CHART-rule-summary
+    children: []
+    meta:
+      chartId: 13
+      uuid: 5a021006-0000-4000-8000-000000000013
+      sliceName: Rule Summary
+      width: 12
+      height: 60
+  ROW-rules-1:
+    type: ROW
+    id: ROW-rules-1
+    children:
+    - CHART-rule-summary
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rules-over-time:
+    type: CHART
+    id: CHART-rules-over-time
+    children: []
+    meta:
+      chartId: 14
+      uuid: 5a021006-0000-4000-8000-000000000014
+      sliceName: Rule Activity Over Time
+      width: 12
+      height: 50
+  ROW-rules-2:
+    type: ROW
+    id: ROW-rules-2
+    children:
+    - CHART-rules-over-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rare-rules:
+    type: CHART
+    id: CHART-rare-rules
+    children: []
+    meta:
+      chartId: 15
+      uuid: 5a021006-0000-4000-8000-000000000015
+      sliceName: Rare Rules (Least Frequent)
+      width: 12
+      height: 55
+  ROW-rules-3:
+    type: ROW
+    id: ROW-rules-3
+    children:
+    - CHART-rare-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rule-catalog:
+    type: CHART
+    id: CHART-rule-catalog
+    children: []
+    meta:
+      chartId: 17
+      uuid: 5a021006-0000-4000-8000-000000000017
+      sliceName: Rule Catalog (with Rule IDs)
+      width: 6
+      height: 60
+  CHART-newly-firing-rules:
+    type: CHART
+    id: CHART-newly-firing-rules
+    children: []
+    meta:
+      chartId: 18
+      uuid: 5a021006-0000-4000-8000-000000000018
+      sliceName: Newly Firing Rules
+      width: 6
+      height: 60
+  ROW-rules-4:
+    type: ROW
+    id: ROW-rules-4
+    children:
+    - CHART-rule-catalog
+    - CHART-newly-firing-rules
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-rules:
+    type: TAB
+    id: TAB-rules
+    children:
+    - ROW-hdr-rules
+    - ROW-rules-1
+    - ROW-rules-2
+    - ROW-rules-3
+    - ROW-rules-4
+    meta:
+      text: 🧩 Rules
+      defaultText: Rules
+      tooltip: Which detection rules fired, how often, and when they first did
+  ROW-hdr-attack:
+    type: ROW
+    id: ROW-hdr-attack
+    children:
+    - MARKDOWN-attack
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-attack:
+    type: MARKDOWN
+    id: MARKDOWN-attack
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🎯 MITRE ATT&CK
+
+
+        These charts read Suzaku''s `Tactics` / `TechniqueIDs` lists **unnested**, so a
+
+        detection tagged with three tactics contributes to all three. Counts here are
+
+        therefore distinct detections, never tag rows.
+
+
+        Coverage describes **what the rules look for**, not what an attacker did:
+
+        a tactic is present because a rule that mentions it matched.'
+  CHART-kpi-distinct-tactics:
+    type: CHART
+    id: CHART-kpi-distinct-tactics
+    children: []
+    meta:
+      chartId: 19
+      uuid: 5a021006-0000-4000-8000-000000000019
+      sliceName: ATT&CK Tactics Covered
+      width: 6
+      height: 25
+  CHART-kpi-distinct-techniques:
+    type: CHART
+    id: CHART-kpi-distinct-techniques
+    children: []
+    meta:
+      chartId: 20
+      uuid: 5a021006-0000-4000-8000-000000000020
+      sliceName: ATT&CK Techniques Covered
+      width: 6
+      height: 25
+  ROW-attack-1:
+    type: ROW
+    id: ROW-attack-1
+    children:
+    - CHART-kpi-distinct-tactics
+    - CHART-kpi-distinct-techniques
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-mitre-tactic-distribution:
+    type: CHART
+    id: CHART-mitre-tactic-distribution
+    children: []
+    meta:
+      chartId: 21
+      uuid: 5a021006-0000-4000-8000-000000000021
+      sliceName: ATT&CK Tactic Distribution
+      width: 6
+      height: 55
+  CHART-mitre-technique-distribution:
+    type: CHART
+    id: CHART-mitre-technique-distribution
+    children: []
+    meta:
+      chartId: 22
+      uuid: 5a021006-0000-4000-8000-000000000022
+      sliceName: ATT&CK Technique Distribution
+      width: 6
+      height: 55
+  ROW-attack-2:
+    type: ROW
+    id: ROW-attack-2
+    children:
+    - CHART-mitre-tactic-distribution
+    - CHART-mitre-technique-distribution
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-mitre-tactic-over-time:
+    type: CHART
+    id: CHART-mitre-tactic-over-time
+    children: []
+    meta:
+      chartId: 23
+      uuid: 5a021006-0000-4000-8000-000000000023
+      sliceName: ATT&CK Tactics Over Time
+      width: 12
+      height: 50
+  ROW-attack-3:
+    type: ROW
+    id: ROW-attack-3
+    children:
+    - CHART-mitre-tactic-over-time
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-mitre-tactic-severity:
+    type: CHART
+    id: CHART-mitre-tactic-severity
+    children: []
+    meta:
+      chartId: 24
+      uuid: 5a021006-0000-4000-8000-000000000024
+      sliceName: Tactic × Severity Matrix
+      width: 6
+      height: 55
+  CHART-mitre-tactic-by-principal:
+    type: CHART
+    id: CHART-mitre-tactic-by-principal
+    children: []
+    meta:
+      chartId: 25
+      uuid: 5a021006-0000-4000-8000-000000000026
+      sliceName: Tactic × Principal
+      width: 6
+      height: 55
+  ROW-attack-4:
+    type: ROW
+    id: ROW-attack-4
+    children:
+    - CHART-mitre-tactic-severity
+    - CHART-mitre-tactic-by-principal
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-mitre-technique-rules:
+    type: CHART
+    id: CHART-mitre-technique-rules
+    children: []
+    meta:
+      chartId: 26
+      uuid: 5a021006-0000-4000-8000-000000000025
+      sliceName: Techniques and the Rules That Found Them
+      width: 6
+      height: 60
+  CHART-mitre-threat-groups:
+    type: CHART
+    id: CHART-mitre-threat-groups
+    children: []
+    meta:
+      chartId: 27
+      uuid: 5a021006-0000-4000-8000-000000000027
+      sliceName: Attributed Threat Groups
+      width: 6
+      height: 60
+  ROW-attack-5:
+    type: ROW
+    id: ROW-attack-5
+    children:
+    - CHART-mitre-technique-rules
+    - CHART-mitre-threat-groups
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-attack:
+    type: TAB
+    id: TAB-attack
+    children:
+    - ROW-hdr-attack
+    - ROW-attack-1
+    - ROW-attack-2
+    - ROW-attack-3
+    - ROW-attack-4
+    - ROW-attack-5
+    meta:
+      text: 🎯 ATT&CK
+      defaultText: ATT&CK
+      tooltip: MITRE ATT&CK tactics and techniques of the rules that matched
+  ROW-hdr-identities:
+    type: ROW
+    id: ROW-hdr-identities
+    children:
+    - MARKDOWN-identities
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-identities:
+    type: MARKDOWN
+    id: MARKDOWN-identities
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 👤 Identities
+
+
+        `user_name` is absent for some identity types, so principal metrics use
+
+        `COALESCE(user_arn, user_name)`. **Root** activity and **long-lived access
+
+        keys** are the two rows to read first.'
+  CHART-top-principals:
+    type: CHART
+    id: CHART-top-principals
+    children: []
+    meta:
+      chartId: 28
+      uuid: 5a021006-0000-4000-8000-000000000028
+      sliceName: Top Principals by Detections
+      width: 6
+      height: 55
+  CHART-identity-type-breakdown:
+    type: CHART
+    id: CHART-identity-type-breakdown
+    children: []
+    meta:
+      chartId: 29
+      uuid: 5a021006-0000-4000-8000-000000000029
+      sliceName: Detections by Identity Type
+      width: 6
+      height: 55
+  ROW-identities-1:
+    type: ROW
+    id: ROW-identities-1
+    children:
+    - CHART-top-principals
+    - CHART-identity-type-breakdown
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-principal-summary:
+    type: CHART
+    id: CHART-principal-summary
+    children: []
+    meta:
+      chartId: 30
+      uuid: 5a021006-0000-4000-8000-000000000030
+      sliceName: Principal Summary
+      width: 12
+      height: 60
+  ROW-identities-2:
+    type: ROW
+    id: ROW-identities-2
+    children:
+    - CHART-principal-summary
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-principal-rule-matrix:
+    type: CHART
+    id: CHART-principal-rule-matrix
+    children: []
+    meta:
+      chartId: 31
+      uuid: 5a021006-0000-4000-8000-000000000031
+      sliceName: Principal × Rule Matrix
+      width: 12
+      height: 60
+  ROW-identities-3:
+    type: ROW
+    id: ROW-identities-3
+    children:
+    - CHART-principal-rule-matrix
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-access-key-activity:
+    type: CHART
+    id: CHART-access-key-activity
+    children: []
+    meta:
+      chartId: 33
+      uuid: 5a021006-0000-4000-8000-000000000032
+      sliceName: Access Keys Involved in Detections
+      width: 6
+      height: 60
+  CHART-account-activity:
+    type: CHART
+    id: CHART-account-activity
+    children: []
+    meta:
+      chartId: 34
+      uuid: 5a021006-0000-4000-8000-000000000035
+      sliceName: Detections by Account
+      width: 6
+      height: 60
+  ROW-identities-4:
+    type: ROW
+    id: ROW-identities-4
+    children:
+    - CHART-access-key-activity
+    - CHART-account-activity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-identities:
+    type: TAB
+    id: TAB-identities
+    children:
+    - ROW-hdr-identities
+    - ROW-identities-1
+    - ROW-identities-2
+    - ROW-identities-3
+    - ROW-identities-4
+    meta:
+      text: 👤 Identities
+      defaultText: Identities
+      tooltip: Who the detections are about — principals, identity types and keys
+  ROW-hdr-sources:
+    type: ROW
+    id: ROW-hdr-sources
+    children:
+    - MARKDOWN-sources
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-sources:
+    type: MARKDOWN
+    id: MARKDOWN-sources
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🌐 Sources & Timing
+
+
+        Suzaku''s `timeline` table carries **no geo columns** — not even for a
+
+        `--geo-ip` run — so country and ASN analysis lives on the **Suzaku Field
+
+        Metrics** dashboard. Here an address is characterised by behaviour instead:
+
+        how many principals used it, which rules it triggered, and how long it was
+
+        active. All timestamps follow `suzaku_meta.timestamp_tz` (UTC by default).'
+  CHART-top-event-names:
+    type: CHART
+    id: CHART-top-event-names
+    children: []
+    meta:
+      chartId: 35
+      uuid: 5a021006-0000-4000-8000-000000000049
+      sliceName: Top API Actions / Operations
+      width: 6
+      height: 55
+  CHART-event-source-breakdown:
+    type: CHART
+    id: CHART-event-source-breakdown
+    children: []
+    meta:
+      chartId: 36
+      uuid: 5a021006-0000-4000-8000-000000000050
+      sliceName: Detections by Service / Workload
+      width: 6
+      height: 55
+  ROW-sources-1:
+    type: ROW
+    id: ROW-sources-1
+    children:
+    - CHART-top-event-names
+    - CHART-event-source-breakdown
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-outcome-breakdown:
+    type: CHART
+    id: CHART-outcome-breakdown
+    children: []
+    meta:
+      chartId: 37
+      uuid: 5a021006-0000-4000-8000-000000000051
+      sliceName: Success vs Failure
+      width: 6
+      height: 50
+  CHART-error-code-breakdown:
+    type: CHART
+    id: CHART-error-code-breakdown
+    children: []
+    meta:
+      chartId: 38
+      uuid: 5a021006-0000-4000-8000-000000000052
+      sliceName: Error Codes on Detections
+      width: 6
+      height: 50
+  ROW-sources-2:
+    type: ROW
+    id: ROW-sources-2
+    children:
+    - CHART-outcome-breakdown
+    - CHART-error-code-breakdown
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-event-rule-matrix:
+    type: CHART
+    id: CHART-event-rule-matrix
+    children: []
+    meta:
+      chartId: 39
+      uuid: 5a021006-0000-4000-8000-000000000053
+      sliceName: Action × Rule Matrix
+      width: 12
+      height: 60
+  ROW-sources-3:
+    type: ROW
+    id: ROW-sources-3
+    children:
+    - CHART-event-rule-matrix
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-top-source-ips:
+    type: CHART
+    id: CHART-top-source-ips
+    children: []
+    meta:
+      chartId: 40
+      uuid: 5a021006-0000-4000-8000-000000000039
+      sliceName: Top Source IPs
+      width: 12
+      height: 60
+  ROW-sources-4:
+    type: ROW
+    id: ROW-sources-4
+    children:
+    - CHART-top-source-ips
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-top-user-agents:
+    type: CHART
+    id: CHART-top-user-agents
+    children: []
+    meta:
+      chartId: 42
+      uuid: 5a021006-0000-4000-8000-000000000033
+      sliceName: Top User Agents
+      width: 6
+      height: 55
+  CHART-rare-user-agents:
+    type: CHART
+    id: CHART-rare-user-agents
+    children: []
+    meta:
+      chartId: 43
+      uuid: 5a021006-0000-4000-8000-000000000034
+      sliceName: Rare User Agents
+      width: 6
+      height: 55
+  ROW-sources-6:
+    type: ROW
+    id: ROW-sources-6
+    children:
+    - CHART-top-user-agents
+    - CHART-rare-user-agents
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-region-activity:
+    type: CHART
+    id: CHART-region-activity
+    children: []
+    meta:
+      chartId: 44
+      uuid: 5a021006-0000-4000-8000-000000000040
+      sliceName: Detections by AWS Region
+      width: 12
+      height: 50
+  ROW-sources-7:
+    type: ROW
+    id: ROW-sources-7
+    children:
+    - CHART-region-activity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-detection-heatmap:
+    type: CHART
+    id: CHART-detection-heatmap
+    children: []
+    meta:
+      chartId: 45
+      uuid: 5a021006-0000-4000-8000-000000000043
+      sliceName: Detection Heatmap (Hour x Day)
+      width: 12
+      height: 55
+  ROW-sources-8:
+    type: ROW
+    id: ROW-sources-8
+    children:
+    - CHART-detection-heatmap
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-detection-bursts:
+    type: CHART
+    id: CHART-detection-bursts
+    children: []
+    meta:
+      chartId: 47
+      uuid: 5a021006-0000-4000-8000-000000000045
+      sliceName: Detection Bursts (5-minute buckets)
+      width: 12
+      height: 50
+  ROW-sources-9:
+    type: ROW
+    id: ROW-sources-9
+    children:
+    - CHART-detection-bursts
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-daily-severity-trend:
+    type: CHART
+    id: CHART-daily-severity-trend
+    children: []
+    meta:
+      chartId: 48
+      uuid: 5a021006-0000-4000-8000-000000000046
+      sliceName: Daily Severity Trend
+      width: 12
+      height: 50
+  ROW-sources-10:
+    type: ROW
+    id: ROW-sources-10
+    children:
+    - CHART-daily-severity-trend
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-sources:
+    type: TAB
+    id: TAB-sources
+    children:
+    - ROW-hdr-sources
+    - ROW-sources-1
+    - ROW-sources-2
+    - ROW-sources-3
+    - ROW-sources-4
+    - ROW-sources-6
+    - ROW-sources-7
+    - ROW-sources-8
+    - ROW-sources-9
+    - ROW-sources-10
+    meta:
+      text: 🌐 Sources & Timing
+      defaultText: Sources & Timing
+      tooltip: Where the calls came from, what they did, and when
+  ROW-hdr-detail:
+    type: ROW
+    id: ROW-hdr-detail
+    children:
+    - MARKDOWN-detail
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-detail:
+    type: MARKDOWN
+    id: MARKDOWN-detail
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🔍 Detail
+
+
+        Every column Suzaku writes, plus the provenance of the file itself. Export
+
+        the detail table for a report''s evidence appendix; `event_id` is what ties a
+
+        finding back to the raw CloudTrail entry.
+
+
+        **Suzaku Run Info** is deliberately outside the Date Range filter — its
+
+        timestamp is when Suzaku *ran*, not when anything was detected.'
+  CHART-detection-detail:
+    type: CHART
+    id: CHART-detection-detail
+    children: []
+    meta:
+      chartId: 49
+      uuid: 5a021006-0000-4000-8000-000000000056
+      sliceName: Detection Detail (all fields)
+      width: 12
+      height: 80
+  ROW-detail-1:
+    type: ROW
+    id: ROW-detail-1
+    children:
+    - CHART-detection-detail
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-run-info:
+    type: CHART
+    id: CHART-run-info
+    children: []
+    meta:
+      chartId: 50
+      uuid: 5a021006-0000-4000-8000-000000000055
+      sliceName: Suzaku Run Info
+      width: 12
+      height: 40
+  ROW-detail-2:
+    type: ROW
+    id: ROW-detail-2
+    children:
+    - CHART-run-info
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-detail:
+    type: TAB
+    id: TAB-detail
+    children:
+    - ROW-hdr-detail
+    - ROW-detail-1
+    - ROW-detail-2
+    meta:
+      text: 🔍 Detail
+      defaultText: Detail
+      tooltip: The full record, and which Suzaku run produced it
 
 metadata:
   cross_filters_enabled: true
   color_scheme: supersetColors
-  native_filter_configuration: []
-  charts: {}
+  native_filter_configuration:
+  - id: NATIVE_FILTER-timerange
+    name: Date Range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      filterState:
+        value: No filter
+    controlValues:
+      enableEmptyFilter: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded:
+      - 50
+    type: NATIVE_FILTER
+    description: 'Filter every chart by detection time. Suzaku Run Info is excluded: its timestamp is
+      when Suzaku ran, not when anything was detected.'
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-level
+    name: Severity
+    filterType: filter_select
+    targets:
+    - column:
+        name: level
+      datasetUuid: 5a021002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Restrict the detection charts to one or more Suzaku severity levels
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-level-attack
+    name: Severity (ATT&CK)
+    filterType: filter_select
+    targets:
+    - column:
+        name: level
+      datasetUuid: 5a021002-0000-4000-8000-000000000006
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - TAB-attack
+      excluded: []
+    type: NATIVE_FILTER
+    description: Severity filter for the ATT&CK tab, which reads the unnested tag dataset rather than
+      the detection dataset
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-rule
+    name: Rule
+    filterType: filter_select
+    targets:
+    - column:
+        name: rule_title
+      datasetUuid: 5a021002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Scope the dashboard to specific Suzaku rules
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-principal
+    name: Principal (ARN)
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_arn
+      datasetUuid: 5a021002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Scope the dashboard to specific identities
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-account
+    name: Account
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_account_id
+      datasetUuid: 5a021002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Scope the dashboard to specific AWS accounts
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-region
+    name: AWS Region
+    filterType: filter_select
+    targets:
+    - column:
+        name: aws_region
+      datasetUuid: 5a021002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Scope the dashboard to specific AWS regions
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-tag-type
+    name: Tag Type
+    filterType: filter_select
+    targets:
+    - column:
+        name: tag_type
+      datasetUuid: 5a021002-0000-4000-8000-000000000006
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - TAB-attack
+      excluded: []
+    type: NATIVE_FILTER
+    description: tactic / technique / group / other — only affects the ATT&CK tab
+    chartsInScope: []
+    tabsInScope: []
+  charts:
+  - slice_name: Total Detections
+    viz_type: big_number_total
+    description: Total number of Suzaku detections in the selected range (SZK-01). One row per rule hit
+      — a single log event that matches three rules counts three times.
+  - slice_name: Critical + High Detections
+    viz_type: big_number_total
+    description: Detections at Sigma level critical or high (SZK-02). level_rank orders severities numerically
+      (critical=5 … informational=1) so 'at least high' is a single comparison.
+  - slice_name: Distinct Events
+    viz_type: big_number_total
+    description: 'Distinct CloudTrail events behind the detections in the selected range (SZK-57). Compare
+      with Total Detections: a much larger detection count means the same events are matching many rules,
+      which inflates every per-rule ranking on this dashboard if read as "how much happened".'
+  - slice_name: Distinct Rules Fired
+    viz_type: big_number_total
+    description: 'Number of distinct Sigma rules that produced at least one detection (SZK-03). Compare
+      against SZK-01: many hits from few rules points to rule noise, not breadth of activity.'
+  - slice_name: Principals Involved
+    viz_type: big_number_total
+    description: Distinct identities responsible for the detections (SZK-04). Uses the IAM ARN when the
+      timeline carries one and falls back to the user name, so AWS and Azure/M365 detections are counted
+      the same way.
+  - slice_name: Source IPs
+    viz_type: big_number_total
+    description: Distinct source IP addresses across all detections (SZK-05). A single principal appearing
+      from many addresses is a credential-theft signal — pivot to SZK-40.
+  - slice_name: Accounts / Tenants
+    viz_type: big_number_total
+    description: Distinct AWS account IDs across the detections (SZK-07). More than one account means
+      the imported Suzaku run spans an organisation — use the Account filter to scope the dashboard to
+      one of them.
+  - slice_name: Days With Detections
+    viz_type: big_number_total
+    description: 'Number of distinct calendar days (UTC) carrying at least one detection (SZK-08). Read
+      together with SZK-01: many hits on a single day is a burst; a few hits spread over weeks is slow-and-low
+      activity.'
+  - slice_name: Detections Over Time by Severity
+    viz_type: echarts_timeseries_bar
+    description: Hourly Suzaku detection volume stacked by Sigma level (SZK-09). The first appearance
+      of a critical or high band is the natural start of the incident timeline; use the zoom control to
+      narrow the range, then pivot with a cross- filter click.
+  - slice_name: Severity Breakdown
+    viz_type: dist_bar
+    description: Detection count and distinct rule count per Sigma level (SZK-10). A level whose detections
+      vastly outnumber its distinct rules is dominated by one noisy rule — confirm in SZK-11 / SZK-13.
+  - slice_name: Top Rules by Detection Count
+    viz_type: dist_bar
+    description: The 25 Sigma rules with the most detections, with the distinct principals and source
+      IPs each one saw (SZK-11). A rule with many detections but a single principal and IP is usually
+      environment noise; one spread across several principals deserves attention.
+  - slice_name: Detection Timeline
+    viz_type: table
+    description: 'Event-level listing of every Suzaku detection: timestamp, severity, rule, principal,
+      source, and outcome (SZK-12). This is the master timeline — every other chart on this dashboard
+      is a different way of slicing it. Cross-filter from any chart to scope it.'
+  - slice_name: Rule Summary
+    viz_type: table
+    description: Every Sigma rule that fired, with severity, detection count, distinct principals, source
+      IPs and API actions, and its first/last hit (SZK-13). Sort by distinct_principals to find rules
+      that touched more than one identity — those are rarely noise.
+  - slice_name: Rule Activity Over Time
+    viz_type: echarts_timeseries_bar
+    description: Daily detection volume stacked by Sigma rule (SZK-14). Rules that fire continuously form
+      a flat baseline; a rule that appears on a single day is a focused lead. Use the Rule filter to isolate
+      one series.
+  - slice_name: Rare Rules (Least Frequent)
+    viz_type: table
+    description: 'Sigma rules with the fewest detections, rarest first (SZK-15). One-off hits are the
+      highest-value leads in an investigation: genuine attacker actions happen once, whereas misconfiguration
+      noise repeats. The mirror image of SZK-11.'
+  - slice_name: Rule Catalog (with Rule IDs)
+    viz_type: table
+    description: Rule title, Sigma rule UUID, severity, author and ATT&CK tags for every rule that fired
+      (SZK-17). The rule_id is the key for looking the rule up in the suzaku-rules repository to read
+      its detection logic and documented false positives.
+  - slice_name: Newly Firing Rules
+    viz_type: table
+    description: Every rule ordered by the moment it first fired, newest first (SZK-18). Reading this
+      list bottom-up replays the incident in the order the detections appeared, which is usually the order
+      the attacker moved through the environment.
+  - slice_name: ATT&CK Tactics Covered
+    viz_type: big_number_total
+    description: Number of distinct MITRE ATT&CK tactics represented in the detections (SZK-19). A handful
+      of hits confined to one tactic is usually noise; coverage across Discovery → Privilege Escalation
+      → Impact is the shape of a real intrusion.
+  - slice_name: ATT&CK Techniques Covered
+    viz_type: big_number_total
+    description: 'Number of distinct MITRE ATT&CK technique IDs across the detections (SZK-20). Pairs
+      with SZK-19: many techniques inside one tactic is depth, techniques spread across tactics is progression.'
+  - slice_name: ATT&CK Tactic Distribution
+    viz_type: dist_bar
+    description: Detections per MITRE ATT&CK tactic (SZK-21). Tactic names use Suzaku's abbreviations
+      — CredAccess, PrivEsc, Stealth, Exfil and so on. Because one rule can carry several tactics, the
+      bars sum to more than the total detection count.
+  - slice_name: ATT&CK Technique Distribution
+    viz_type: dist_bar
+    description: The 30 most frequent MITRE ATT&CK technique IDs across the detections (SZK-22). Sub-techniques
+      are kept separate from their parent technique, matching how the Sigma rules tag them.
+  - slice_name: ATT&CK Tactics Over Time
+    viz_type: echarts_timeseries_bar
+    description: Daily detection volume stacked by MITRE ATT&CK tactic (SZK-23). The progression of the
+      stack over time is the kill chain as the rules saw it — Discovery giving way to Credential Access
+      and Privilege Escalation, then Exfiltration or Impact.
+  - slice_name: Tactic × Severity Matrix
+    viz_type: heatmap
+    description: Detections cross-tabulated by ATT&CK tactic and Sigma severity (SZK-24). Shows where
+      the high-severity findings sit in the kill chain — a bright cell in the critical or high column
+      under Impact or Exfiltration is late-stage and warrants immediate escalation. Cell values count
+      distinct events, so a detection carrying several tactic tags is still counted once per tactic.
+  - slice_name: Tactic × Principal
+    viz_type: heatmap
+    description: ATT&CK tactics cross-tabulated with the principal that triggered them (SZK-26). One identity
+      lit across several tactic columns — especially Credential Access followed by Privilege Escalation
+      — is the classic compromised-credential pattern. Each row is scaled against its own busiest cell,
+      so a quiet identity that reached a late-stage tactic still stands out.
+  - slice_name: Techniques and the Rules That Found Them
+    viz_type: table
+    description: Every ATT&CK technique with the rules that reported it, its severity, and when it was
+      first and last seen (SZK-25). Use it to go from a technique on the ATT&CK matrix back to the concrete
+      detections that support it.
+  - slice_name: Attributed Threat Groups
+    viz_type: table
+    description: Detections whose Sigma rule carries an ATT&CK group tag (Gnnnn), with the rule and the
+      principal involved (SZK-27). Group tags record the rule author's attribution hint — a starting point
+      for research, not evidence of attribution on its own. Most rule sets ship no group tags at all,
+      in which case this chart is empty — that is the expected state, not a broken chart.
+  - slice_name: Top Principals by Detections
+    viz_type: dist_bar
+    description: The 25 identities with the most detections, alongside how many distinct rules and source
+      IPs each one involved (SZK-28). Rank by distinct_rules rather than volume — breadth of rules is
+      the stronger compromise signal.
+  - slice_name: Detections by Identity Type
+    viz_type: dist_bar
+    description: Detections grouped by CloudTrail identity type — Root, IAMUser, AssumedRole, AWSService
+      and so on (SZK-29). max_severity_rank shows the worst level reached by each type; any Root activity
+      deserves review regardless of count.
+  - slice_name: Principal Summary
+    viz_type: table
+    description: Every principal seen in the detections, with account, identity type, worst severity reached,
+      distinct rules and source IPs, and the window it was active in (SZK-30). Sort by max_severity_rank,
+      then by distinct_rules, to build the list of identities to investigate.
+  - slice_name: Principal × Rule Matrix
+    viz_type: table
+    description: 'Every principal/rule pair with its severity, count and time window (SZK-31). The most
+      report-ready view on the dashboard: it states which identity triggered which detection and when.'
+  - slice_name: Access Keys Involved in Detections
+    viz_type: table
+    description: AWS access key IDs that appear in detections, with their principal, the rules they triggered
+      and the source IPs they were used from (SZK-32). This is the credential-rotation worklist for containment.
+  - slice_name: Detections by Account
+    viz_type: table
+    description: 'Detections rolled up per AWS account, with the worst severity reached and the distinct
+      principals and rules involved (SZK-35). For a Suzaku run over an organisation trail this is the
+      first cut: it tells you which account the incident lives in.'
+  - slice_name: Top API Actions / Operations
+    viz_type: dist_bar
+    description: The API actions behind the detections, ranked by count (SZK-49). Populated from CloudTrail's
+      eventName for AWS timelines and from the Operation field for Azure/M365 ones, so a single chart
+      works for both.
+  - slice_name: Detections by Service / Workload
+    viz_type: dist_bar
+    description: Detections grouped by the service that processed the request — CloudTrail's eventSource
+      for AWS, Workload for Azure/M365 (SZK-50). Answers 'which part of the estate was touched' before
+      drilling into individual actions.
+  - slice_name: Success vs Failure
+    viz_type: dist_bar
+    description: Detections split by outcome (SZK-51). For AWS the outcome is derived from whether CloudTrail
+      recorded an errorCode; for Azure/M365 it comes from ResultStatus / resultType. A failed attempt
+      is an attempt; a successful one is an incident — filter to Success and re-read SZK-12.
+  - slice_name: Error Codes on Detections
+    viz_type: dist_bar
+    description: Error codes recorded on the detections (SZK-52). A wall of AccessDenied means permission
+      probing — the loud, early phase of an intrusion. Throttling codes point at enumeration at scale.
+  - slice_name: Action × Rule Matrix
+    viz_type: table
+    description: Every API action paired with the rules it triggered, with severity, outcome and volume
+      (SZK-53). When several independent rules flag the same action, that agreement is the strongest corroboration
+      a signature-based tool can offer.
+  - slice_name: Top Source IPs
+    viz_type: table
+    description: Source IP addresses ranked by detection count, with the principals seen using them, the
+      rules they triggered and their active window (SZK-39). An address used by several principals, or
+      one whose window is minutes long, is a strong pivot point. For country/ASN attribution use the Suzaku
+      Field Metrics dashboard, which is built on the only table Suzaku geo-enriches.
+  - slice_name: Top User Agents
+    viz_type: table
+    description: The 25 most common user agents across the detections (SZK-33), with the principals using
+      each one and its active window. Console and official SDK strings are expected; raw HTTP clients
+      or offensive tooling names in this list are a strong lead, and a user agent shared by many principals
+      is worth pivoting on.
+      See SZK-34 for the rare end of the same distribution.
+  - slice_name: Rare User Agents
+    viz_type: table
+    description: User agents with the fewest detections, rarest first (SZK-34). Offensive tooling appears
+      once or twice in an environment where everything else runs the same SDK version, so the tail of
+      this distribution is where it surfaces.
+  - slice_name: Detections by AWS Region
+    viz_type: dist_bar
+    description: 'Detections per AWS region, with the worst severity reached in each (SZK-40). Findings
+      in a region the organisation does not normally operate in are a well-known hijacking indicator:
+      attackers deliberately choose regions nobody watches.'
+  - slice_name: Detection Heatmap (Hour x Day)
+    viz_type: heatmap
+    description: Detections as a heatmap of hour-of-day against day-of-week, in UTC (SZK-43). Bright cells
+      in off-hours columns or weekend rows are the fastest way to spot activity that does not match how
+      the environment is normally used. All timestamps are normalised to UTC on import.
+  - slice_name: Detection Bursts (5-minute buckets)
+    viz_type: echarts_timeseries_bar
+    description: Detection volume in five-minute buckets (SZK-45). Human activity spreads out; tooling
+      clusters. A spike of many detections inside a single bucket indicates an automated enumeration or
+      exfiltration run — zoom into it and pivot to SZK-12.
+  - slice_name: Daily Severity Trend
+    viz_type: echarts_timeseries_bar
+    description: 'Daily detection volume stacked by severity (SZK-46). The report-ready companion to the
+      hourly SZK-09: it fits a long engagement window on one screen and makes the day severity escalated
+      obvious.'
+  - slice_name: Detection Detail (all fields)
+    viz_type: table
+    description: The complete normalised record for each detection — rule, severity, actor, origin, action,
+      outcome and the original event ID (SZK-56). The event_id column is what lets an analyst find the
+      raw log entry behind a finding; export this table for a report's evidence appendix.
+  - slice_name: Suzaku Run Info
+    viz_type: table
+    description: 'Provenance of the Suzaku aws-ct-timeline file behind this dashboard (SZK-55): the command
+      line, Suzaku and rule-set versions, how many files and events were scanned, how many detections
+      were written and how many duplicates were dropped. Confirm this is the run you think it is before
+      drawing conclusions.'

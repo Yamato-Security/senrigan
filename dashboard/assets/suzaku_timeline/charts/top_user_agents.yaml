@@ -1,0 +1,74 @@
+# SZK-33: Top User Agents
+# The tooling behind the detections. Console and SDK strings dominate a
+# healthy environment; Boto3 or curl on an interactive user's calls is
+# worth a second look.
+# A table, not a bar chart: CloudTrail user agents run 80-200 characters
+# ("aws-cli/2.15.0 Python/3.11.6 Linux/5.15 exe/x86_64 prompt/off command/s3.ls")
+# and the forensically interesting part — the SDK, OS and command suffix — sits
+# at the END of the string, exactly what a bar-chart category label truncates.
+# Its sibling SZK-34 (Rare User Agents) is a table for the same reason; keeping
+# both as tables also makes the head and tail of the distribution comparable.
+# Cell bars keep the volume ranking readable without costing label width.
+uuid: 5a021006-0000-4000-8000-000000000033
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Top User Agents
+viz_type: table
+description: >
+  The 25 most common user agents across the detections (SZK-33), with the
+  principals using each one and its active window. Console and official SDK
+  strings are expected; raw HTTP clients or offensive tooling names in this
+  list are a strong lead, and a user agent shared by many principals is worth
+  pivoting on. See SZK-34 for the rare end of the same distribution.
+query_context: ""
+params:
+  query_mode: aggregate
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk33_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk33_users
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk33_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk33_last
+  groupby:
+    - user_agent
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_agent IS NOT NULL
+      filterOptionName: filter_szk33_ua_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_szk33_sort_key
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_agent, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        MIN(event_time) AS first_seen, MAX(event_time) AS last_seen
+# FROM suzaku_timeline WHERE user_agent IS NOT NULL
+# GROUP BY user_agent ORDER BY detections DESC LIMIT 25

@@ -1,0 +1,42 @@
+# SZK-10: Severity Breakdown
+# Detections and distinct rules per Sigma level. distinct_rules next to
+# the raw count separates 'many rules agree' from 'one rule is noisy'.
+uuid: 5a021006-0000-4000-8000-000000000010
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Severity Breakdown
+viz_type: dist_bar
+description: >
+  Detection count and distinct rule count per Sigma level (SZK-10). A level
+  whose detections vastly outnumber its distinct rules is dominated by one
+  noisy rule — confirm in SZK-11 / SZK-13.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk10_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk10_rules
+  groupby:
+    - level
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 10
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Sigma Level
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT level, COUNT(*) AS detections, COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_timeline GROUP BY level ORDER BY detections DESC

@@ -1,0 +1,58 @@
+# SZK-24: Tactic × Severity Matrix
+# Where the severe detections actually sit in the kill chain.
+# A critical cell under Impact or Exfil is a different conversation from
+# a critical cell under Discovery.
+# A heatmap, not a table: this is a two-dimension cross-tab of one count over
+# ~14 tactics × 5 severities. As a table the analyst scans up to 200 rows to
+# find the hot intersection; as a heatmap the late-stage / high-severity corner
+# lights up on sight, which is the one question this chart exists to answer.
+# `normalize_across: heatmap` keeps the colour scale global, so a bright cell
+# means 'many detections overall', not 'many for this tactic'.
+uuid: 5a021006-0000-4000-8000-000000000024
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: Tactic × Severity Matrix
+viz_type: heatmap
+description: >
+  Detections cross-tabulated by ATT&CK tactic and Sigma severity (SZK-24).
+  Shows where the high-severity findings sit in the kill chain — a bright cell
+  in the critical or high column under Impact or Exfiltration is late-stage and
+  warrants immediate escalation. Cell values count distinct events, so a
+  detection carrying several tactic tags is still counted once per tactic.
+query_context: ""
+params:
+  x_axis: level
+  groupby:
+    - tag_value
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT event_id)
+    label: detections
+    hasCustomLabel: true
+    optionName: metric_szk24_detections
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'tactic'
+      filterOptionName: filter_szk24_tactic
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 10000
+  normalize_across: heatmap
+  legend_type: continuous
+  linear_color_scheme: fire
+  xscale_interval: 1
+  yscale_interval: 1
+  left_margin: auto
+  bottom_margin: auto
+  sort_x_axis: alpha_asc
+  sort_y_axis: alpha_asc
+  show_legend: true
+  show_values: true
+  show_percentage: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, level, COUNT(DISTINCT event_id) AS detections
+# FROM suzaku_timeline_tags WHERE tag_type = 'tactic'
+# GROUP BY 1, 2

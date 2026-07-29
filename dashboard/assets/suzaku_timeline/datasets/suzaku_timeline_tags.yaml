@@ -1,0 +1,220 @@
+# Superset dataset for the MITRE ATT&CK tags carried by Suzaku's `timeline` rows.
+#
+# Suzaku stores `Tactics`, `TechniqueIDs` and `OtherTags` as VARCHAR[]. The
+# suzaku_timeline dataset flattens them with array_to_string() so a table cell is
+# readable, but that makes `GROUP BY tactics` group by the *combination*
+# ("Persis, PrivEsc, Stealth"), which is useless for an ATT&CK breakdown.
+#
+# This dataset UNNESTs them instead: one row per (detection x tag), tagged with
+# the kind of tag it is. `OtherTags` entries that look like an ATT&CK group id
+# (gNNNN) are classified as 'group'; anything else is 'other'.
+#
+# FAN-OUT WARNING: a detection with three tactics contributes three rows, so
+# COUNT(*) here counts tag occurrences, not detections. Charts that report
+# detections use COUNT(DISTINCT event_id) — enforced by
+# dashboard/tests/test_suzaku_bundles.py::test_tag_charts_count_detections_distinctly.
+uuid: 5a021002-0000-4000-8000-000000000006
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000001
+table_name: suzaku_timeline_tags
+main_dttm_col: event_time
+description: >
+  One row per Suzaku detection and tag: the MITRE ATT&CK tactics, technique IDs
+  and remaining rule tags of the matched rule, unnested for charting.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  WITH base AS (
+      SELECT
+          "Timestamp"                          AS event_time,
+          "Level"::VARCHAR                     AS level,
+          CASE "Level"
+              WHEN 'critical' THEN 5
+              WHEN 'high' THEN 4
+              WHEN 'medium' THEN 3
+              WHEN 'low' THEN 2
+              ELSE 1
+          END                                  AS level_rank,
+          "RuleTitle"                          AS rule_title,
+          "RuleID"                             AS rule_id,
+          "RuleAuthor"                         AS rule_author,
+          "EventName"                          AS event_name,
+          "UserName"                           AS user_name,
+          "UserARN"                            AS user_arn,
+          "UserAccountID"                      AS user_account_id,
+          "EventID"                            AS event_id,
+          "Tactics"                            AS tactics,
+          "TechniqueIDs"                       AS technique_ids,
+          "OtherTags"                          AS other_tags
+      FROM timeline
+  )
+  SELECT event_time, level, level_rank, rule_title, rule_id, rule_author,
+         event_name, user_name, user_arn, user_account_id, event_id,
+         'tactic' AS tag_type, unnest(tactics) AS tag_value
+  FROM base
+  UNION ALL
+  SELECT event_time, level, level_rank, rule_title, rule_id, rule_author,
+         event_name, user_name, user_arn, user_account_id, event_id,
+         'technique' AS tag_type, unnest(technique_ids) AS tag_value
+  FROM base
+  UNION ALL
+  SELECT event_time, level, level_rank, rule_title, rule_id, rule_author,
+         event_name, user_name, user_arn, user_account_id, event_id,
+         CASE WHEN regexp_matches(tag_value, '^[Gg][0-9]{4}$')
+              THEN 'group' ELSE 'other' END AS tag_type,
+         tag_value
+  FROM (SELECT base.*, unnest(other_tags) AS tag_value FROM base)
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: event_time
+    verbose_name: Detection Time
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP
+    groupby: true
+    filterable: true
+    description: >
+      Detection timestamp, in the timezone named by suzaku_meta.timestamp_tz
+
+  - column_name: tag_type
+    verbose_name: Tag Type
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: tactic / technique / group / other
+
+  - column_name: tag_value
+    verbose_name: Tag
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >
+      The tag itself — an ATT&CK tactic short name, a technique ID (Tnnnn),
+      a group ID (Gnnnn) or any other rule tag
+
+  - column_name: level
+    verbose_name: Severity
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: critical / high / medium / low / informational
+
+  - column_name: level_rank
+    verbose_name: Severity Rank
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Numeric severity (5 = critical) so charts can order by severity
+
+  - column_name: rule_title
+    verbose_name: Rule
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Title of the Suzaku rule that carries this tag
+
+  - column_name: rule_id
+    verbose_name: Rule ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: UUID of the matched rule
+
+  - column_name: rule_author
+    verbose_name: Rule Author
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Author of the matched rule
+
+  - column_name: event_name
+    verbose_name: Event Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: CloudTrail API action that triggered the detection
+
+  - column_name: user_name
+    verbose_name: User Name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: IAM user or role name, NULL when absent
+
+  - column_name: user_arn
+    verbose_name: User ARN
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: ARN of the identity that triggered the detection
+
+  - column_name: user_account_id
+    verbose_name: Account ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: AWS account ID of the identity
+
+  - column_name: event_id
+    verbose_name: Event ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >
+      CloudTrail event ID — the key for counting detections rather than tag rows
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of tag occurrences (NOT detections — see the file header)
+
+  - metric_name: distinct_detections
+    verbose_name: Detections
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT event_id)"
+    description: Distinct CloudTrail events behind these tag rows
+
+  - metric_name: distinct_tag_values
+    verbose_name: Distinct Tags
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT tag_value)"
+    description: Number of distinct tags of the selected kind
+
+  - metric_name: distinct_rules
+    verbose_name: Distinct Rules
+    metric_type: count_distinct
+    expression: "COUNT(DISTINCT rule_title)"
+    description: Number of distinct rules carrying these tags

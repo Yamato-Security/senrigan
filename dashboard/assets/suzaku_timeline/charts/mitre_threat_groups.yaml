@@ -1,0 +1,54 @@
+# SZK-27: Attributed Threat Groups (ATT&CK Gnnnn)
+# Sigma rules occasionally carry an attack.gNNNN group tag. These are
+# the rule author's attribution hint, not proof — treat them as a lead
+# for further reading, never as a conclusion in a report.
+uuid: 5a021006-0000-4000-8000-000000000027
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: Attributed Threat Groups
+viz_type: table
+description: >
+  Detections whose Sigma rule carries an ATT&CK group tag (Gnnnn), with the
+  rule and the principal involved (SZK-27). Group tags record the rule
+  author's attribution hint — a starting point for research, not evidence of
+  attribution on its own. Most rule sets ship no group tags at all, in which
+  case this chart is empty — that is the expected state, not a broken chart.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT event_id)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk27_detections
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk27_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk27_last
+  groupby:
+    - tag_value
+    - rule_title
+    - user_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'group'
+      filterOptionName: filter_szk27_group
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, rule_title, user_name, COUNT(DISTINCT event_id) AS detections,
+#        MIN(event_time) AS first_seen, MAX(event_time) AS last_seen
+# FROM suzaku_timeline_tags WHERE tag_type = 'group'
+# GROUP BY 1, 2, 3 ORDER BY detections DESC

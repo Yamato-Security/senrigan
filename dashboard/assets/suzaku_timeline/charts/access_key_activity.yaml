@@ -1,0 +1,59 @@
+# SZK-32: Access Keys Involved in Detections
+# The concrete containment list: every AKIA/ASIA key that appears in a
+# detection, with the identity it belongs to and the rules it tripped.
+# These are the credentials to rotate first.
+uuid: 5a021006-0000-4000-8000-000000000032
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Access Keys Involved in Detections
+viz_type: table
+description: >
+  AWS access key IDs that appear in detections, with their principal, the
+  rules they triggered and the source IPs they were used from (SZK-32). This
+  is the credential-rotation worklist for containment.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk32_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk32_rules
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT src_ip)
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_szk32_ips
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk32_last
+  groupby:
+    - user_access_key_id
+    - user_name
+    - user_account_id
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_access_key_id IS NOT NULL
+      filterOptionName: filter_szk32_key_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_access_key_id, user_name, user_account_id, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        COUNT(DISTINCT src_ip) AS distinct_ips,
+#        MAX(event_time) AS last_seen
+# FROM suzaku_timeline WHERE user_access_key_id IS NOT NULL
+# GROUP BY 1, 2, 3 ORDER BY detections DESC

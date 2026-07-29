@@ -1,0 +1,48 @@
+# SZK-15: Rare Rules — the least frequent detections
+# Ascending order: rules that fired once or twice. In DFIR the rarest
+# detection is very often the real one, because attacker actions are
+# singular while environment noise repeats.
+# order_desc: false is what makes this the mirror image of SZK-11.
+uuid: 5a021006-0000-4000-8000-000000000015
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Rare Rules (Least Frequent)
+viz_type: table
+description: >
+  Sigma rules with the fewest detections, rarest first (SZK-15). One-off hits
+  are the highest-value leads in an investigation: genuine attacker actions
+  happen once, whereas misconfiguration noise repeats. The mirror image of
+  SZK-11.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk15_detections
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk15_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk15_last
+  groupby:
+    - rule_title
+    - level
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: false
+  page_size: 25
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_title, level, COUNT(*) AS detections,
+#        MIN(event_time) AS first_seen, MAX(event_time) AS last_seen
+# FROM suzaku_timeline GROUP BY 1, 2 ORDER BY detections ASC LIMIT 25

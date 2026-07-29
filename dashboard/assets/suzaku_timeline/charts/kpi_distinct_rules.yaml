@@ -1,0 +1,32 @@
+# SZK-03: Distinct Rules Fired (KPI)
+# How many different Sigma rules matched at all.
+# A high hit count spread over very few rules usually means one noisy
+# rule rather than broad attacker activity — check SZK-11 next.
+uuid: 5a021006-0000-4000-8000-000000000003
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Distinct Rules Fired
+viz_type: big_number_total
+description: >
+  Number of distinct Sigma rules that produced at least one detection
+  (SZK-03). Compare against SZK-01: many hits from few rules points to rule
+  noise, not breadth of activity.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT rule_title)
+    label: distinct_rules
+    hasCustomLabel: true
+    optionName: metric_szk03_distinct_rules
+  adhoc_filters: []
+  subheader: Different Sigma rules
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT rule_title) FROM suzaku_timeline
