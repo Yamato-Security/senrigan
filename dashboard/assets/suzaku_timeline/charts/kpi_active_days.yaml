@@ -1,0 +1,31 @@
+# SZK-08: Days With Detections (KPI)
+# Calendar days on which at least one rule fired — the span of the
+# incident as seen through the rules, not the span of the logs.
+uuid: 5a021006-0000-4000-8000-000000000008
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Days With Detections
+viz_type: big_number_total
+description: >
+  Number of distinct calendar days (UTC) carrying at least one detection
+  (SZK-08). Read together with SZK-01: many hits on a single day is a burst; a
+  few hits spread over weeks is slow-and-low activity.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT CAST(event_time AS DATE))
+    label: active_days
+    hasCustomLabel: true
+    optionName: metric_szk08_active_days
+  adhoc_filters: []
+  subheader: Days with rule hits
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT CAST(event_time AS DATE)) FROM suzaku_timeline

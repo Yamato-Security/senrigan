@@ -10,6 +10,7 @@ output, and that its declared temporal column really comes back as a timestamp.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import duckdb
@@ -25,10 +26,6 @@ BUNDLES: dict[str, str] = {
     "suzaku_summary": "suzaku-aws-ct-summary.duckdb",
     "suzaku_metrics": "suzaku-aws-ct-metrics.duckdb",
 }
-
-# Bundles that intentionally ship no charts (see §5.3). The follow-up PR that
-# adds the timeline charts removes it from this set.
-CHARTLESS_BUNDLES = {"suzaku_timeline"}
 
 ALL_BUNDLE_DIRS = [ASSETS / name for name in BUNDLES]
 
@@ -186,13 +183,15 @@ def test_every_chart_is_placed_and_every_placement_exists(bundle: Path) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "bundle", [ASSETS / name for name in CHARTLESS_BUNDLES], ids=lambda p: p.name
-)
-def test_chartless_bundle_stays_empty(bundle: Path) -> None:
-    """Test 10: the timeline bundle is an empty template until its own PR lands."""
-    assert _charts(bundle) == []
-    assert _position_chart_uuids(_load(bundle / "dashboard.yaml")) == set()
+@pytest.mark.parametrize("bundle", ALL_BUNDLE_DIRS, ids=lambda p: p.name)
+def test_every_bundle_ships_charts(bundle: Path) -> None:
+    """Test 10 (inverted): every bundle now has charts.
+
+    This replaces the empty-template contract the timeline bundle used to be
+    held to — a bundle that imports as a chartless shell is a regression now,
+    not a milestone.
+    """
+    assert _charts(bundle), f"{bundle.name}: no charts"
 
 
 @pytest.mark.parametrize("bundle", ALL_BUNDLE_DIRS, ids=lambda p: p.name)
@@ -312,9 +311,9 @@ def test_metrics_bundle_never_hardcodes_a_field_name() -> None:
 def _chart_sql_expressions(chart: dict) -> list[str]:
     """Return every raw SQL expression a chart embeds.
 
-    Covers ``metric``, ``metrics``, ``timeseries_limit_metric`` and
-    ``adhoc_filters`` — the four places a typo can hide and produce an empty
-    chart rather than an error.
+    Covers ``metric``, ``metrics``, ``timeseries_limit_metric``,
+    ``adhoc_filters`` and ad-hoc ``groupby`` / ``x_axis`` columns — every place a
+    typo can hide and produce an empty chart rather than an error.
     """
     params = chart.get("params") or {}
     expressions: list[str] = []
@@ -322,6 +321,11 @@ def _chart_sql_expressions(chart: dict) -> list[str]:
     candidates = []
     if isinstance(params.get("metric"), dict):
         candidates.append(params["metric"])
+    if isinstance(params.get("x_axis"), dict):
+        candidates.append(params["x_axis"])
+    for column in params.get("groupby") or []:
+        if isinstance(column, dict):
+            candidates.append(column)
     if isinstance(params.get("timeseries_limit_metric"), dict):
         candidates.append(params["timeseries_limit_metric"])
     for metric in params.get("metrics") or []:
@@ -370,6 +374,10 @@ def test_chart_groupby_columns_exist(bundle: Path) -> None:
         params = chart.get("params") or {}
         for key in ("groupby", "columns"):
             for column in params.get(key) or []:
+                if isinstance(column, dict):
+                    # Ad-hoc SQL column (e.g. EXTRACT(HOUR FROM ...)); its
+                    # expression is executed against the fixture instead.
+                    continue
                 assert column in declared, f"{path.name}: unknown column {column}"
         granularity = params.get("granularity_sqla")
         if granularity:
@@ -400,3 +408,147 @@ def test_database_uri_is_an_obvious_placeholder(bundle: Path) -> None:
     assert (
         "_placeholder_rewritten_at_bootstrap" in uri
     ), f"{bundle.name}: placeholder URI must be obviously fake, got {uri}"
+
+
+# ---------------------------------------------------------------------------
+# Timeline bundle: the constraints that come from Suzaku's `timeline` table
+# ---------------------------------------------------------------------------
+
+TIMELINE = ASSETS / "suzaku_timeline"
+
+# Suzaku writes SrcASN / SrcCity / SrcCountry into `metrics` only, and never into
+# `timeline` — not even for a --geo-ip run (doc/PLAN_SUZAKU_SCHEMA.md P8).
+GEO_COLUMNS = ("src_country", "src_city", "src_asn")
+
+# The tag kinds the suzaku_timeline_tags dataset derives from Suzaku's three
+# VARCHAR[] columns.
+TAG_TYPES = {"tactic", "technique", "group", "other"}
+
+
+def _timeline_dataset(table_name: str) -> dict:
+    """Return the timeline bundle dataset with the given table_name."""
+    for path in _datasets(TIMELINE):
+        dataset = _load(path)
+        if dataset["table_name"] == table_name:
+            return dataset
+    raise AssertionError(f"suzaku_timeline: no dataset named {table_name}")
+
+
+def _timeline_fixture() -> duckdb.DuckDBPyConnection:
+    """Open the aws-ct-timeline fixture read-only."""
+    return duckdb.connect(str(FIXTURE_DIR / BUNDLES["suzaku_timeline"]), read_only=True)
+
+
+def test_timeline_bundle_never_references_a_geo_column() -> None:
+    """`timeline` has no geo columns, so one reference breaks the whole bundle.
+
+    A dataset is a single SQL string: naming a column Suzaku never writes does
+    not blank one chart, it makes every chart in the bundle fail. The draft
+    charts in the design notes were written against a geo-carrying schema, so
+    this guards against a later copy-paste from them.
+    """
+    for path in _datasets(TIMELINE) + _charts(TIMELINE):
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue  # comments may explain why geo is absent
+            for column in GEO_COLUMNS:
+                assert column not in stripped, f"{path.name}:{number} names {column}"
+
+
+def test_timeline_outcome_is_success_or_failed() -> None:
+    """`outcome` is derived from ErrorCode, and charts filter on both literals."""
+    dataset = _timeline_dataset("suzaku_timeline")
+    conn = _timeline_fixture()
+    try:
+        values = {
+            row[0]
+            for row in conn.execute(
+                f"SELECT DISTINCT outcome FROM ({dataset['sql']}) AS _t"
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+    assert values == {"Success", "Failed"}
+
+
+def test_timeline_tags_dataset_emits_only_known_tag_types() -> None:
+    """The UNNEST dataset must not invent a tag_type no chart filters on."""
+    dataset = _timeline_dataset("suzaku_timeline_tags")
+    conn = _timeline_fixture()
+    try:
+        produced = {
+            row[0]
+            for row in conn.execute(
+                f"SELECT DISTINCT tag_type FROM ({dataset['sql']}) AS _t"
+            ).fetchall()
+        }
+        # The fixture carries tactics and techniques; group/other need a rule
+        # set that ships attack.gNNNN tags, so only assert the domain.
+        assert produced <= TAG_TYPES, f"unexpected tag_type(s): {produced - TAG_TYPES}"
+        assert {"tactic", "technique"} <= produced
+    finally:
+        conn.close()
+
+
+def test_tag_charts_filter_on_a_known_tag_type() -> None:
+    """A typo'd tag_type renders an empty chart rather than an error."""
+    tags_uuid = _timeline_dataset("suzaku_timeline_tags")["uuid"]
+    pattern = re.compile(r"tag_type\s*=\s*'([^']+)'")
+    for path in _charts(TIMELINE):
+        chart = _load(path)
+        if chart["dataset_uuid"] != tags_uuid:
+            continue
+        for filter_spec in (chart.get("params") or {}).get("adhoc_filters") or []:
+            for value in pattern.findall(filter_spec.get("sqlExpression") or ""):
+                assert value in TAG_TYPES, f"{path.name}: unknown tag_type {value}"
+
+
+def test_tag_charts_count_detections_distinctly() -> None:
+    """One detection with three tactics is three rows in the tags dataset.
+
+    So a metric labelled "detections" there must count distinct events; COUNT(*)
+    would silently inflate every ATT&CK chart.
+    """
+    tags_uuid = _timeline_dataset("suzaku_timeline_tags")["uuid"]
+    for path in _charts(TIMELINE):
+        chart = _load(path)
+        if chart["dataset_uuid"] != tags_uuid:
+            continue
+        params = chart.get("params") or {}
+        candidates = (
+            [params["metric"]] if isinstance(params.get("metric"), dict) else []
+        )
+        candidates += [m for m in (params.get("metrics") or []) if isinstance(m, dict)]
+        for metric in candidates:
+            if "detection" in str(metric.get("label", "")).lower():
+                assert "COUNT(DISTINCT event_id)" in metric.get("sqlExpression", ""), (
+                    f"{path.name}: metric {metric.get('label')} counts tag rows, "
+                    "not detections"
+                )
+
+
+def test_run_info_chart_is_outside_the_date_range_filter() -> None:
+    """`generated_at` is when Suzaku ran, not when anything was detected.
+
+    A dashboard-wide time filter targeting each chart's main temporal column
+    would therefore blank the provenance chart for any range that excludes the
+    moment Suzaku was run — which is exactly when an analyst goes looking for it.
+    """
+    dashboard = _load(TIMELINE / "dashboard.yaml")
+    run_info_uuid = _load(TIMELINE / "charts" / "run_info.yaml")["uuid"]
+    chart_ids = {
+        component["meta"]["uuid"]: component["meta"]["chartId"]
+        for component in dashboard["position"].values()
+        if isinstance(component, dict) and component.get("type") == "CHART"
+    }
+    time_filters = [
+        entry
+        for entry in dashboard["metadata"]["native_filter_configuration"]
+        if entry["filterType"] == "filter_time"
+    ]
+    assert time_filters, "the dashboard has no Date Range filter"
+    for entry in time_filters:
+        assert (
+            chart_ids[run_info_uuid] in entry["scope"]["excluded"]
+        ), f"{entry['name']}: Suzaku Run Info must be excluded"

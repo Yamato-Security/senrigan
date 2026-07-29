@@ -1,0 +1,48 @@
+# SZK-52: Error Codes on Detections
+# AccessDenied-heavy detections usually mean an attacker probing for
+# permissions they do not have — the noisy, early phase of an intrusion.
+uuid: 5a021006-0000-4000-8000-000000000052
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Error Codes on Detections
+viz_type: dist_bar
+description: >
+  Error codes recorded on the detections (SZK-52). A wall of AccessDenied
+  means permission probing — the loud, early phase of an intrusion. Throttling
+  codes point at enumeration at scale.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk52_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk52_users
+  groupby:
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: error_code IS NOT NULL
+      filterOptionName: filter_szk52_error_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Error Code
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT error_code, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals
+# FROM suzaku_timeline WHERE error_code IS NOT NULL
+# GROUP BY error_code ORDER BY detections DESC LIMIT 25

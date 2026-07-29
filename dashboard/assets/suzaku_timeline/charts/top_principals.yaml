@@ -1,0 +1,56 @@
+# SZK-28: Top Principals by Detections
+# Which identities triggered the most rules, and how varied those rules
+# were. distinct_rules matters more than raw volume: one identity that
+# trips ten different rules is a stronger lead than one that trips the
+# same rule a hundred times.
+uuid: 5a021006-0000-4000-8000-000000000028
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Top Principals by Detections
+viz_type: dist_bar
+description: >
+  The 25 identities with the most detections, alongside how many distinct
+  rules and source IPs each one involved (SZK-28). Rank by distinct_rules
+  rather than volume — breadth of rules is the stronger compromise signal.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk28_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk28_rules
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT src_ip)
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_szk28_ips
+  groupby:
+    - user_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_name IS NOT NULL
+      filterOptionName: filter_szk28_user_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Principal
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_name, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules,
+#        COUNT(DISTINCT src_ip) AS distinct_ips
+# FROM suzaku_timeline WHERE user_name IS NOT NULL
+# GROUP BY user_name ORDER BY detections DESC LIMIT 25

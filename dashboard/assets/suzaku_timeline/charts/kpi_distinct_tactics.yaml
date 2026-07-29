@@ -1,0 +1,32 @@
+# SZK-19: ATT&CK Tactics Covered (KPI)
+# How many distinct ATT&CK tactics the detections span. Breadth across
+# tactics is the signal that separates an intrusion from isolated noise.
+uuid: 5a021006-0000-4000-8000-000000000019
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: ATT&CK Tactics Covered
+viz_type: big_number_total
+description: >
+  Number of distinct MITRE ATT&CK tactics represented in the detections
+  (SZK-19). A handful of hits confined to one tactic is usually noise;
+  coverage across Discovery → Privilege Escalation → Impact is the shape of a
+  real intrusion.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT CASE WHEN tag_type = 'tactic' THEN tag_value END)
+    label: distinct_tactics
+    hasCustomLabel: true
+    optionName: metric_szk19_distinct_tactics
+  adhoc_filters: []
+  subheader: Distinct ATT&CK tactics
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT tag_value) FROM suzaku_timeline_tags WHERE tag_type = 'tactic'

@@ -1,0 +1,42 @@
+# SZK-09: Detections Over Time, stacked by severity
+# Hourly detection volume split by Sigma level. The shape of the stack
+# answers 'when did this happen' at a glance: a critical/high band
+# appearing part-way through a long low/medium baseline marks the point
+# where reconnaissance turned into action.
+uuid: 5a021006-0000-4000-8000-000000000009
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Detections Over Time by Severity
+viz_type: echarts_timeseries_bar
+description: >
+  Hourly Suzaku detection volume stacked by Sigma level (SZK-09). The first
+  appearance of a critical or high band is the natural start of the incident
+  timeline; use the zoom control to narrow the range, then pivot with a cross-
+  filter click.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: PT1H
+  granularity_sqla: event_time
+  time_range: No filter
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk09_detections
+  groupby:
+    - level
+  adhoc_filters: []
+  row_limit: 10000
+  stack: true
+  x_axis_title: Time (UTC)
+  y_axis_title: Detections
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('hour', event_time) AS hour_bucket, level, COUNT(*)
+# FROM suzaku_timeline GROUP BY 1, 2 ORDER BY 1

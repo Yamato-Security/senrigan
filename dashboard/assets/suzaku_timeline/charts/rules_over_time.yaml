@@ -1,0 +1,40 @@
+# SZK-14: Rule Activity Over Time
+# Daily detections split by rule. Shows which rules were firing during
+# which phase of the incident — a rule that only appears on one day is
+# a much stronger lead than one that fires every day.
+uuid: 5a021006-0000-4000-8000-000000000014
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Rule Activity Over Time
+viz_type: echarts_timeseries_bar
+description: >
+  Daily detection volume stacked by Sigma rule (SZK-14). Rules that fire
+  continuously form a flat baseline; a rule that appears on a single day is a
+  focused lead. Use the Rule filter to isolate one series.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  granularity_sqla: event_time
+  time_range: No filter
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk14_detections
+  groupby:
+    - rule_title
+  adhoc_filters: []
+  row_limit: 10000
+  stack: true
+  x_axis_title: Date (UTC)
+  y_axis_title: Detections
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('day', event_time) AS day_bucket, rule_title, COUNT(*)
+# FROM suzaku_timeline GROUP BY 1, 2 ORDER BY 1

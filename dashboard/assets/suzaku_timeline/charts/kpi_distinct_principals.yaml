@@ -1,0 +1,31 @@
+# SZK-04: Principals Involved (KPI)
+# Distinct identities behind the detections (ARN where available,
+# otherwise the user name — Azure/M365 timelines have no ARN).
+uuid: 5a021006-0000-4000-8000-000000000004
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Principals Involved
+viz_type: big_number_total
+description: >
+  Distinct identities responsible for the detections (SZK-04). Uses the IAM
+  ARN when the timeline carries one and falls back to the user name, so AWS
+  and Azure/M365 detections are counted the same way.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+    label: distinct_principals
+    hasCustomLabel: true
+    optionName: metric_szk04_distinct_principals
+  adhoc_filters: []
+  subheader: Identities seen
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT COALESCE(user_arn, user_name)) FROM suzaku_timeline

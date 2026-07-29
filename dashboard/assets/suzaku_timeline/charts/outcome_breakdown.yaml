@@ -1,0 +1,52 @@
+# SZK-51: Success vs Failure
+# Did the attempted action actually work? For AWS this is derived from
+# the presence of an errorCode; for Azure/M365 from the ResultStatus /
+# resultType field. Successful high-severity detections come first in
+# any triage queue.
+uuid: 5a021006-0000-4000-8000-000000000051
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Success vs Failure
+viz_type: dist_bar
+description: >
+  Detections split by outcome (SZK-51). For AWS the outcome is derived from
+  whether CloudTrail recorded an errorCode; for Azure/M365 it comes from
+  ResultStatus / resultType. A failed attempt is an attempt; a successful one
+  is an incident — filter to Success and re-read SZK-12.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk51_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk51_rules
+  groupby:
+    - outcome
+    - level
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: outcome IS NOT NULL
+      filterOptionName: filter_szk51_outcome_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Outcome
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT outcome, level, COUNT(*) AS detections,
+#        COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_timeline WHERE outcome IS NOT NULL
+# GROUP BY 1, 2 ORDER BY detections DESC

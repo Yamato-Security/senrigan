@@ -1,0 +1,51 @@
+# SZK-11: Top Rules by Detection Count
+# The 25 loudest rules. In a real incident the top of this list is
+# usually a mix of one or two genuinely-firing detections and a long
+# tail of environment noise — SZK-15 shows the opposite end.
+uuid: 5a021006-0000-4000-8000-000000000011
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Top Rules by Detection Count
+viz_type: dist_bar
+description: >
+  The 25 Sigma rules with the most detections, with the distinct principals
+  and source IPs each one saw (SZK-11). A rule with many detections but a
+  single principal and IP is usually environment noise; one spread across
+  several principals deserves attention.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk11_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT COALESCE(user_arn, user_name))
+      label: distinct_principals
+      hasCustomLabel: true
+      optionName: metric_szk11_users
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT src_ip)
+      label: distinct_ips
+      hasCustomLabel: true
+      optionName: metric_szk11_ips
+  groupby:
+    - rule_title
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 25
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: Sigma Rule
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_title, COUNT(*) AS detections,
+#        COUNT(DISTINCT COALESCE(user_arn, user_name)) AS distinct_principals,
+#        COUNT(DISTINCT src_ip) AS distinct_ips
+# FROM suzaku_timeline GROUP BY rule_title ORDER BY detections DESC LIMIT 25

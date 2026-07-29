@@ -1,0 +1,49 @@
+# SZK-21: ATT&CK Tactic Distribution
+# Detections per ATT&CK tactic, using Suzaku's abbreviations
+# (CredAccess, PrivEsc, Stealth, Exfil, …).
+# Reads as the attacker's coverage of the kill chain.
+uuid: 5a021006-0000-4000-8000-000000000021
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: ATT&CK Tactic Distribution
+viz_type: dist_bar
+description: >
+  Detections per MITRE ATT&CK tactic (SZK-21). Tactic names use Suzaku's
+  abbreviations — CredAccess, PrivEsc, Stealth, Exfil and so on. Because one
+  rule can carry several tactics, the bars sum to more than the total
+  detection count.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT event_id)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk21_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk21_rules
+  groupby:
+    - tag_value
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'tactic'
+      filterOptionName: filter_szk21_tactic
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Detections
+  y_axis_label: ATT&CK Tactic
+  color_scheme: supersetColors
+  rich_tooltip: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT tag_value, COUNT(DISTINCT event_id) AS detections, COUNT(DISTINCT rule_title) AS distinct_rules
+# FROM suzaku_timeline_tags WHERE tag_type = 'tactic'
+# GROUP BY tag_value ORDER BY detections DESC

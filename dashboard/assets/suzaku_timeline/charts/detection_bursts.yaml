@@ -1,0 +1,44 @@
+# SZK-45: Detection Bursts — 5-minute buckets
+# A fine-grained view for spotting automation: dozens of detections
+# inside one five-minute bucket means a script, not a person.
+uuid: 5a021006-0000-4000-8000-000000000045
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Detection Bursts (5-minute buckets)
+viz_type: echarts_timeseries_bar
+description: >
+  Detection volume in five-minute buckets (SZK-45). Human activity spreads
+  out; tooling clusters. A spike of many detections inside a single bucket
+  indicates an automated enumeration or exfiltration run — zoom into it and
+  pivot to SZK-12.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: PT5M
+  granularity_sqla: event_time
+  time_range: No filter
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk45_detections
+    - expressionType: SQL
+      sqlExpression: COUNT(DISTINCT rule_title)
+      label: distinct_rules
+      hasCustomLabel: true
+      optionName: metric_szk45_rules
+  groupby: []
+  adhoc_filters: []
+  row_limit: 10000
+  stack: false
+  x_axis_title: Time (UTC)
+  y_axis_title: Detections
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT DATE_TRUNC('minute', event_time) AS bucket, COUNT(*) AS detections
+# FROM suzaku_timeline GROUP BY 1 ORDER BY 1

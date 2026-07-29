@@ -569,7 +569,7 @@ instance required):
 
 ```bash
 cd dashboard
-pytest                          # ~749 tests
+pytest                          # ~757 tests
 ```
 
 The Suzaku bundle tests read the trimmed fixtures under `sample/suzaku/fixtures/`

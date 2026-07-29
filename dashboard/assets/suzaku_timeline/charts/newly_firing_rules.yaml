@@ -1,0 +1,53 @@
+# SZK-18: Newly Firing Rules — sorted by first hit
+# Same rules as SZK-13, ordered by when each one first fired rather than
+# by volume. Reading top-down gives the order in which detections
+# entered the environment — the closest thing to an attack narrative.
+uuid: 5a021006-0000-4000-8000-000000000018
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Newly Firing Rules
+viz_type: table
+description: >
+  Every rule ordered by the moment it first fired, newest first (SZK-18).
+  Reading this list bottom-up replays the incident in the order the detections
+  appeared, which is usually the order the attacker moved through the
+  environment.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk18_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk18_last
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk18_detections
+    - expressionType: SQL
+      sqlExpression: DATEDIFF('minute', MIN(event_time), MAX(event_time))
+      label: active_span_minutes
+      hasCustomLabel: true
+      optionName: metric_szk18_span
+  groupby:
+    - rule_title
+    - level
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 250
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT rule_title, level, MIN(event_time) AS first_seen,
+#        MAX(event_time) AS last_seen, COUNT(*) AS detections,
+#        DATEDIFF('minute', MIN(event_time), MAX(event_time)) AS active_span_minutes
+# FROM suzaku_timeline GROUP BY 1, 2 ORDER BY first_seen DESC

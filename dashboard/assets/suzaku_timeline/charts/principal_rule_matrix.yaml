@@ -1,0 +1,46 @@
+# SZK-31: Principal × Rule Matrix
+# Exactly which rules each identity tripped, with the time window.
+# This is the table to screenshot for an incident report entry.
+uuid: 5a021006-0000-4000-8000-000000000031
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Principal × Rule Matrix
+viz_type: table
+description: >
+  Every principal/rule pair with its severity, count and time window (SZK-31).
+  The most report-ready view on the dashboard: it states which identity
+  triggered which detection and when.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: COUNT(*)
+      label: detections
+      hasCustomLabel: true
+      optionName: metric_szk31_detections
+    - expressionType: SQL
+      sqlExpression: MIN(event_time)
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_szk31_first
+    - expressionType: SQL
+      sqlExpression: MAX(event_time)
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_szk31_last
+  groupby:
+    - user_name
+    - rule_title
+    - level
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 500
+  order_desc: true
+  page_size: 50
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_name, rule_title, level, COUNT(*) AS detections,
+#        MIN(event_time) AS first_seen, MAX(event_time) AS last_seen
+# FROM suzaku_timeline GROUP BY 1, 2, 3 ORDER BY detections DESC

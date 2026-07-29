@@ -1,0 +1,33 @@
+# SZK-57: Distinct Events (KPI)
+# Suzaku writes one row per rule match, so an event matching three rules is
+# three detections. This is the same volume counted once per CloudTrail event —
+# read next to SZK-01, the gap between the two is the multi-rule fan-out.
+uuid: 5a021006-0000-4000-8000-000000000057
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000001
+slice_name: Distinct Events
+viz_type: big_number_total
+description: >
+  Distinct CloudTrail events behind the detections in the selected range
+  (SZK-57). Compare with Total Detections: a much larger detection count means
+  the same events are matching many rules, which inflates every per-rule
+  ranking on this dashboard if read as "how much happened".
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT event_id)
+    label: distinct_events
+    hasCustomLabel: true
+    optionName: metric_szk57_distinct_events
+  adhoc_filters: []
+  subheader: CloudTrail events behind the detections
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT event_id) FROM suzaku_timeline

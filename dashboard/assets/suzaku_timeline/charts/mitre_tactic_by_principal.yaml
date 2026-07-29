@@ -1,0 +1,64 @@
+# SZK-26: Tactic × Principal
+# Which identity was seen performing which tactic. A single principal
+# spanning several tactics is the classic compromised-credential shape.
+# A heatmap, not a table: that shape — one row lit across many tactic columns —
+# is a visual pattern, and a table sorted by detection count actively hides it
+# by scattering a principal's tactics across non-adjacent rows. The heatmap is
+# effectively a per-identity ATT&CK Navigator layer.
+# `normalize_across: y` colours each principal's row against its own maximum,
+# so a low-volume identity that nevertheless reached Exfiltration is as visible
+# as the noisy service account that dominates the raw counts.
+uuid: 5a021006-0000-4000-8000-000000000026
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: Tactic × Principal
+viz_type: heatmap
+description: >
+  ATT&CK tactics cross-tabulated with the principal that triggered them
+  (SZK-26). One identity lit across several tactic columns — especially
+  Credential Access followed by Privilege Escalation — is the classic
+  compromised-credential pattern. Each row is scaled against its own busiest
+  cell, so a quiet identity that reached a late-stage tactic still stands out.
+  Use the Principal filter to narrow the rows before reading it.
+query_context: ""
+params:
+  x_axis: tag_value
+  groupby:
+    - user_name
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT event_id)
+    label: detections
+    hasCustomLabel: true
+    optionName: metric_szk26_detections
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: tag_type = 'tactic'
+      filterOptionName: filter_szk26_tactic
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: user_name IS NOT NULL
+      filterOptionName: filter_szk26_principal_notnull
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 10000
+  normalize_across: y
+  legend_type: continuous
+  linear_color_scheme: fire
+  xscale_interval: 1
+  yscale_interval: 1
+  left_margin: auto
+  bottom_margin: auto
+  sort_x_axis: alpha_asc
+  sort_y_axis: alpha_asc
+  show_legend: true
+  show_values: true
+  show_percentage: false
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT user_name, tag_value, COUNT(DISTINCT event_id) AS detections
+# FROM suzaku_timeline_tags
+# WHERE tag_type = 'tactic' AND user_name IS NOT NULL
+# GROUP BY 1, 2

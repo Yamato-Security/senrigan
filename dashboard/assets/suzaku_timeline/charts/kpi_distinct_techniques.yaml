@@ -1,0 +1,30 @@
+# SZK-20: ATT&CK Techniques Covered (KPI)
+# Distinct ATT&CK technique IDs (Tnnnn / Tnnnn.nnn) across all detections.
+uuid: 5a021006-0000-4000-8000-000000000020
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000006
+slice_name: ATT&CK Techniques Covered
+viz_type: big_number_total
+description: >
+  Number of distinct MITRE ATT&CK technique IDs across the detections
+  (SZK-20). Pairs with SZK-19: many techniques inside one tactic is depth,
+  techniques spread across tactics is progression.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT CASE WHEN tag_type = 'technique' THEN tag_value END)
+    label: distinct_techniques
+    hasCustomLabel: true
+    optionName: metric_szk20_distinct_techniques
+  adhoc_filters: []
+  subheader: Distinct ATT&CK techniques
+  granularity_sqla: event_time
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT COUNT(DISTINCT tag_value) FROM suzaku_timeline_tags WHERE tag_type = 'technique'

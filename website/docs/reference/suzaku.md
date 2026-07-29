@@ -23,7 +23,7 @@ make up
 
 `aws-ct-metrics` must run with `--geo-ip`: Suzaku writes the `SrcASN` /
 `SrcCity` / `SrcCountry` columns only for a GeoIP-enriched run, and the
-Suzaku Field Metrics dashboard selects them.
+Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 `make status` reports which Suzaku files it can see.
 
@@ -42,9 +42,9 @@ Suzaku Field Metrics dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 15 built-in hunts, AI chat, reports | Suzaku Detection Timeline |
-| `aws-ct-summary` | — | Suzaku Identity Summary (18 charts) |
-| `aws-ct-metrics` | — | Suzaku Field Metrics (15 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 15 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) |
+| `aws-ct-summary` | — | Suzaku Identity Summary(aws-ct-summary) (18 charts) |
+| `aws-ct-metrics` | — | Suzaku Field Metrics(aws-ct-metrics) (14 charts) |
 
 The split is deliberate. `aws-ct-timeline` is raw, high-cardinality detection data —
 exactly what ad-hoc SQL and AI narration are for. `aws-ct-summary` and
@@ -83,7 +83,7 @@ is executed against a real Suzaku fixture in CI.
 
 ## Dashboards
 
-### Suzaku Identity Summary
+### Suzaku Identity Summary(aws-ct-summary)
 
 | Tab | Content |
 |-----|---------|
@@ -92,7 +92,7 @@ is executed against a real Suzaku fixture in CI.
 | ⚠️ API Abuse | Top abused APIs · top failed calls · abused APIs by AWS service · abused API catalogue with Suzaku's own explanation of each |
 | 🔎 Attributes | Top values for the selected attribute · rare values · first/last seen |
 
-### Suzaku Field Metrics
+### Suzaku Field Metrics(aws-ct-metrics)
 
 | Tab | Content |
 |-----|---------|
@@ -104,7 +104,7 @@ is executed against a real Suzaku fixture in CI.
 This dashboard is **field-agnostic**: Suzaku counts whichever field it was given
 with `-f`, so no chart assumes `eventName` and the `Field` filter drives everything.
 
-### Suzaku Detection Timeline
+### Suzaku Detection Timeline(aws-ct-timeline)
 
 Currently an empty template — its charts arrive in a follow-up change. Until then,
 use the agent's Suzaku Timeline page, or SQL Lab against the

@@ -1,31 +1,54 @@
 # SZM-21: Values whose first appearance is most recent.
+# A table, not a bar chart: the quantity that ranks these rows is a timestamp,
+# and a bar whose length is epoch(first_seen) is ~1.78e9 for every value, so
+# all 25 bars render the same length and the encoding carries no information.
+# The ordering is the whole signal, and a readable timestamp beats epoch
+# seconds an analyst has to convert by hand.
 uuid: 5a021005-0000-4000-8000-000000000021
 version: 1.0.0
 dataset_uuid: 5a021002-0000-4000-8000-000000000005
 slice_name: Newest Values (Latest First Seen)
-viz_type: dist_bar
+viz_type: table
 description: >
-  Values that appeared for the first time most recently (SZM-21). A value showing up only at the end of the timeline is new behaviour.
+  Values that appeared for the first time most recently (SZM-21). A value showing up only at the end of the timeline is new behaviour; last_seen and occurrences say whether it stayed or fired once and vanished.
 query_context: ""
 params:
+  query_mode: aggregate
   metrics:
     - expressionType: SQL
-      sqlExpression: "MAX(epoch(first_seen))"
-      label: first_seen_epoch
+      sqlExpression: "MIN(first_seen)"
+      label: first_seen
       hasCustomLabel: true
-      optionName: metric_newest_values_first_seen_epoch
+      optionName: metric_newest_values_first_seen
+    - expressionType: SQL
+      sqlExpression: "MAX(last_seen)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_newest_values_last_seen
+    - expressionType: SQL
+      sqlExpression: "SUM(occurrence_count)"
+      label: occurrences
+      hasCustomLabel: true
+      optionName: metric_newest_values_occurrences
   groupby:
     - value
-  columns: []
   adhoc_filters: []
   granularity_sqla: first_seen
   time_range: "No filter"
   row_limit: 25
   order_desc: true
-  orientation: horizontal
-  x_axis_label: First Seen (epoch seconds)
-  y_axis_label: Value
-  color_scheme: supersetColors
-  rich_tooltip: true
-  show_legend: false
+  timeseries_limit_metric:
+    expressionType: SQL
+    sqlExpression: "MAX(epoch(first_seen))"
+    label: sort_key
+    hasCustomLabel: true
+    optionName: metric_newest_values_sort_key
+  page_size: 25
+  include_time: false
+  show_cell_bars: true
 cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT value, MIN(first_seen) AS first_seen, MAX(last_seen) AS last_seen,
+#        SUM(occurrence_count) AS occurrences
+# FROM suzaku_metrics GROUP BY 1 ORDER BY MAX(epoch(first_seen)) DESC LIMIT 25

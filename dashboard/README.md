@@ -185,9 +185,9 @@ imported into `threat_hunting.db`, and the files are only ever opened read-only.
 
 | Dashboard | Bundle | Suzaku command | Charts |
 |-----------|--------|----------------|:------:|
-| Suzaku Detection Timeline | `suzaku_timeline.zip` | `aws-ct-timeline` | 0 — empty template, charts land in a follow-up change |
-| Suzaku Identity Summary | `suzaku_summary.zip` | `aws-ct-summary` | 18 across Overview / Identities / API Abuse / Attributes |
-| Suzaku Field Metrics | `suzaku_metrics.zip` | `aws-ct-metrics` | 15 across Overview / Distribution / Rare & Temporal / GeoIP |
+| Suzaku Detection Timeline(aws-ct-timeline) | `suzaku_timeline.zip` | `aws-ct-timeline` | 46 across Overview / Rules / ATT&CK / Identities / Sources & Timing / Detail |
+| Suzaku Identity Summary(aws-ct-summary) | `suzaku_summary.zip` | `aws-ct-summary` | 18 across Overview / Identities / API Abuse / Attributes |
+| Suzaku Field Metrics(aws-ct-metrics) | `suzaku_metrics.zip` | `aws-ct-metrics` | 14 across Overview / Distribution / Rare & Temporal / GeoIP |
 
 ### Setting them up
 
@@ -268,6 +268,20 @@ field it was given (`-f`), so no chart filters on a literal field name and the
 > every chart on that dashboard fail. Run
 > `suzaku aws-ct-metrics -d <logs> -o metrics -t duckdb --geo-ip`.
 
+> **The timeline dashboard has no geographic charts.** Suzaku writes those same
+> geo columns to `metrics` only — `timeline` has none even for a `--geo-ip` run
+> — so country/ASN analysis lives on the metrics dashboard. On the timeline a
+> source address is characterised behaviourally instead: how many principals
+> used it, which rules it triggered, and how long it was active.
+
+The timeline bundle ships **three** virtual datasets over the same file:
+`suzaku_timeline` (one row per rule match), `suzaku_timeline_tags` (the same
+rows with `Tactics` / `TechniqueIDs` / `OtherTags` UNNESTed, so the ATT&CK tab
+can group by a single tactic instead of by the combination string) and
+`suzaku_timeline_meta` (the file's own `suzaku_meta` provenance row, shown on
+the Detail tab and deliberately left out of the Date Range filter — its
+timestamp is when Suzaku ran, not when anything was detected).
+
 ---
 
 ## Directory Structure
@@ -279,16 +293,16 @@ dashboard/
 ├── assets/
 │   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
 │   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
-│   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (empty template)
+│   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (46 charts)
 │   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (18 charts)
-│   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (15 charts)
+│   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (14 charts)
 │   ├── zip_builder.py                  # Shared deterministic ZIP packaging
 │   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
 │   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
 │   ├── rebuild_suzaku_timeline_zip.py  # Regenerate suzaku_timeline.zip
 │   ├── rebuild_suzaku_summary_zip.py   # Regenerate suzaku_summary.zip
 │   ├── rebuild_suzaku_metrics_zip.py   # Regenerate suzaku_metrics.zip
-│   ├── suzaku_timeline/                # Suzaku timeline definitions (charts/ empty by design)
+│   ├── suzaku_timeline/                # Suzaku timeline definitions (3 virtual datasets)
 │   ├── suzaku_summary/                 # Suzaku summary definitions (3 virtual datasets)
 │   ├── suzaku_metrics/                 # Suzaku metrics definitions (field-agnostic)
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions

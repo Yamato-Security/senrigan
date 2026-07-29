@@ -164,7 +164,7 @@ pytest                        # all tests (605 tests)
 ```
 
 Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 730 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 749, root `tests/` ≈ 115 (Makefile / compose / docs / Suzaku-detection
+114 frontend, dashboard ≈ 757, root `tests/` ≈ 115 (Makefile / compose / docs / Suzaku-detection
 parity).
 Test count must not decrease in a PR.
 
@@ -434,6 +434,7 @@ senrigan/
 │   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
 │   ├── PLAN_SUZAKU_VIEWS.md   # Suzaku DuckDB visualization (agent page + 3 dashboards)
 │   ├── PLAN_SUZAKU_SCHEMA.md  # Suzaku's DuckDB schema (proposal; shipped as suzaku PR #180)
+│   ├── PLAN_SUZAKU_TIMELINE_DASHBOARD.md  # Timeline dashboard: 3 datasets, 46 charts (implemented)
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 └── docker/

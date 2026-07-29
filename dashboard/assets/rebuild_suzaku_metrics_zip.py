@@ -39,7 +39,6 @@ FILE_MAP = {
     "charts/top_asns.yaml": "charts/Top_Source_ASNs.yaml",
     "charts/top_countries.yaml": "charts/Top_Source_Countries.yaml",
     "charts/top_values.yaml": "charts/Top_Values_by_Occurrence.yaml",
-    "charts/value_activity_span.yaml": "charts/Value_Activity_Span.yaml",
     "charts/value_frequency_table.yaml": "charts/Value_Frequency_Table.yaml",
     "charts/value_share_composition.yaml": "charts/Value_Share_Composition.yaml",
 }

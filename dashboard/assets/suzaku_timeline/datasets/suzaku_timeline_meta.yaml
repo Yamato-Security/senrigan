@@ -1,0 +1,162 @@
+# Superset dataset for the `suzaku_meta` provenance row of an aws-ct-timeline file.
+#
+# One row, written by Suzaku itself: which command produced this file, with which
+# arguments, when, against how many files and events, and how many duplicate rows
+# it removed. It is the first thing to check when a number looks wrong — it shows
+# immediately whether the dashboard is reading the run the analyst thinks it is.
+#
+# `generated_at` is when Suzaku RAN, not when anything was detected, so the
+# dashboard's Date Range filter deliberately excludes the tab holding this chart
+# (see dashboard.yaml).
+uuid: 5a021002-0000-4000-8000-000000000007
+version: 1.0.0
+database_uuid: 5a021001-0000-4000-8000-000000000001
+table_name: suzaku_timeline_meta
+main_dttm_col: generated_at
+description: >
+  Provenance of the Suzaku aws-ct-timeline file this dashboard is reading:
+  command line, versions, scan counts and generation time.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: |
+  SELECT
+      "command"                AS command,
+      "command_line"           AS command_line,
+      "generated_at"           AS generated_at,
+      "timestamp_tz"           AS timestamp_tz,
+      "suzaku_version"         AS suzaku_version,
+      "rules_version"          AS rules_version,
+      "rules_count"            AS rules_count,
+      "scanned_files"          AS scanned_files,
+      "scanned_events"         AS scanned_events,
+      "output_rows"            AS output_rows,
+      "duplicate_rows_removed" AS duplicate_rows_removed,
+      "schema_version"         AS schema_version
+  FROM suzaku_meta
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+
+columns:
+  - column_name: generated_at
+    verbose_name: Generated At
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP WITH TIME ZONE
+    groupby: true
+    filterable: true
+    description: When Suzaku produced this file
+
+  - column_name: command
+    verbose_name: Suzaku Command
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: The producing subcommand — always aws-ct-timeline for this bundle
+
+  - column_name: command_line
+    verbose_name: Command Line
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: The full command line Suzaku was invoked with
+
+  - column_name: timestamp_tz
+    verbose_name: Timestamp Timezone
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >
+      Timezone every Timestamp in the file is expressed in (UTC unless Suzaku
+      was run with --localtime)
+
+  - column_name: suzaku_version
+    verbose_name: Suzaku Version
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Version of Suzaku that produced the file
+
+  - column_name: rules_version
+    verbose_name: Rules Version
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Version identifier of the rule set used
+
+  - column_name: rules_count
+    verbose_name: Rules Loaded
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: How many rules were loaded for the run
+
+  - column_name: scanned_files
+    verbose_name: Files Scanned
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Number of CloudTrail log files read
+
+  - column_name: scanned_events
+    verbose_name: Events Scanned
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Number of CloudTrail events evaluated against the rules
+
+  - column_name: output_rows
+    verbose_name: Detections Written
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Rows Suzaku wrote to the timeline table
+
+  - column_name: duplicate_rows_removed
+    verbose_name: Duplicates Removed
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: >
+      Duplicate detections Suzaku dropped — large values usually mean the same
+      logs were scanned more than once
+
+  - column_name: schema_version
+    verbose_name: Schema Version
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    groupby: false
+    filterable: true
+    description: Suzaku DuckDB schema version this file was written against
+
+metrics:
+  - metric_name: count
+    verbose_name: "COUNT(*)"
+    metric_type: count
+    expression: "COUNT(*)"
+    description: Number of provenance rows (one per file)

@@ -14,7 +14,8 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [PLAN_THREAT_CATALOG.md](doc/PLAN_THREAT_CATALOG.md),
 > [PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md),
 > [PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md),
-> and [PLAN_SUZAKU_SCHEMA.md](doc/PLAN_SUZAKU_SCHEMA.md).
+> [PLAN_SUZAKU_SCHEMA.md](doc/PLAN_SUZAKU_SCHEMA.md),
+> and [PLAN_SUZAKU_TIMELINE_DASHBOARD.md](doc/PLAN_SUZAKU_TIMELINE_DASHBOARD.md).
 
 ---
 
@@ -166,7 +167,7 @@ npm run build                 # Vite production build → ../static/
 ```
 
 Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 730 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 749 (asset/YAML/config validation suite —
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 757 (asset/YAML/config validation suite —
 run with `make test-dashboard`), root `tests/` ≈ 115 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
@@ -279,7 +280,7 @@ senrigan/
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
                  #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
                  #   PLAN_THREAT_CATALOG, PLAN_MAKEFILE_UX, PLAN_SUZAKU_VIEWS,
-                 #   PLAN_SUZAKU_SCHEMA
+                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_TIMELINE_DASHBOARD
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.
