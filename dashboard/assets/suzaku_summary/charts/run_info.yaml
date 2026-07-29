@@ -1,0 +1,59 @@
+# Suzaku Run Info (provenance)
+# Which Suzaku run this dashboard is reading, straight from the file's own
+# suzaku_meta row: the command line, the version and how much log data was
+# actually scanned.
+#
+# Senrigan never imports Suzaku output — the dashboard queries the .duckdb file
+# in place — so provenance is per-file, not per-import. `generated_at` is when
+# Suzaku ran, which is why the dashboard's Date Range filter excludes this chart.
+#
+# `source_file` names the .duckdb file behind this dashboard. When several runs
+# sit in the mounted directory only one serves each command, and this is where
+# the analyst can see which one won (doc/PLAN_SUZAKU_MULTI_DB.md F-2).
+uuid: 5a021004-0000-4000-8000-000000000033
+version: 1.0.0
+dataset_uuid: 5a021002-0000-4000-8000-000000000008
+slice_name: Suzaku Run Info
+viz_type: table
+description: >
+  Provenance of the Suzaku aws-ct-summary file behind this dashboard: which file it
+  is, the command line, the Suzaku version, how many files and events were
+  scanned and how many rows were written. Confirm this is the run you think it
+  is before drawing conclusions.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: MAX(scanned_files)
+      label: files_scanned
+      hasCustomLabel: true
+      optionName: metric_szs33_files
+    - expressionType: SQL
+      sqlExpression: MAX(scanned_events)
+      label: events_scanned
+      hasCustomLabel: true
+      optionName: metric_szs33_events
+    - expressionType: SQL
+      sqlExpression: MAX(output_rows)
+      label: rows_written
+      hasCustomLabel: true
+      optionName: metric_szs33_rows
+  groupby:
+    - source_file
+    - command
+    - command_line
+    - suzaku_version
+    - timestamp_tz
+  adhoc_filters: []
+  granularity_sqla: generated_at
+  time_range: No filter
+  row_limit: 10
+  order_desc: true
+  page_size: 10
+cache_timeout: null
+
+# SQL used to power this chart:
+# SELECT source_file, command, command_line, suzaku_version, timestamp_tz,
+#        MAX(scanned_files) AS files_scanned, MAX(scanned_events) AS events_scanned,
+#        MAX(output_rows) AS rows_written
+# FROM suzaku_summary_meta GROUP BY 1, 2, 3, 4, 5

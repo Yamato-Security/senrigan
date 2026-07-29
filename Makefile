@@ -52,7 +52,19 @@ CONFIG_SNAPSHOTS := $(wildcard $(CONFIG_HOST_DIR)/*)
 # the analyst copies in by hand. Senrigan reads them as-is, so there is nothing
 # to run — `status` just reports what it can see. The names are arbitrary: the
 # agent and superset-init both detect the producing command from the schema.
-SUZAKU_DBS       := $(wildcard $(DB_HOST_DIR)/*.duckdb)
+#
+# The extension is the analyst's choice too, so `.db` counts; Senrigan's own
+# database is filtered out by name (agent/suzaku_db.py does the same).
+SUZAKU_DBS       := $(filter-out $(DB_FILE),$(wildcard $(DB_HOST_DIR)/*.duckdb) $(wildcard $(DB_HOST_DIR)/*.db))
+
+# The image carrying the detection module. `status` and `up` ask it which file
+# each dashboard actually selected; without it they can only list file names.
+SUPERSET_IMAGE   := senrigan-dashboard:latest
+
+# One-shot container that prints the selection: which file serves each Suzaku
+# command, which candidates it beat, and which were rejected and why.
+SUZAKU_REPORT    = $(DC) run --rm --entrypoint python3 superset-init \
+                       /app/register_suzaku_dbs.py --report 2>/dev/null
 
 # City supersedes Country: the ingester ignores the country database whenever
 # the city one is set, so never pass both. $(strip) matters — a line
@@ -102,7 +114,9 @@ up: ensure-secret              ## Start the UI, dashboard, and resource graph
 	@echo "  📊  \033[36mhttp://localhost:8088/dashboard/list\033[0m  — Dashboard  \033[2m(admin / admin)\033[0m"
 ifneq ($(SUZAKU_DBS),)
 	@echo ""
-	@echo "  🕒  Suzaku output detected — see the Suzaku pages in both UIs."
+	@echo "  🕒  \033[1mSuzaku output detected\033[0m — see the Suzaku pages in both UIs."
+	@echo ""
+	@$(SUZAKU_REPORT) | tail -n +2 | sed 's/^  /      /' || true
 endif
 	@echo ""
 
@@ -169,8 +183,13 @@ status: ensure-secret          ## Show container, database, and detection status
 	@printf '  GeoIP     %s\n' '$(if $(GEOIP_FLAGS),enabled from $(GEOIP_HOST_DIR)/,no database in $(GEOIP_HOST_DIR)/)'
 	@printf '  Config    %s\n' '$(if $(CONFIG_SNAPSHOTS),$(words $(CONFIG_SNAPSHOTS)) snapshot file(s) in $(CONFIG_HOST_DIR)/,none in $(CONFIG_HOST_DIR)/)'
 ifneq ($(SUZAKU_DBS),)
-	@printf '  Suzaku    %s file(s) in %s/:\n' '$(words $(SUZAKU_DBS))' '$(DB_HOST_DIR)'
-	@for db in $(SUZAKU_DBS); do printf '              %s\n' "$$db"; done
+	@printf '  Suzaku    %s file(s) in %s/\n' '$(words $(SUZAKU_DBS))' '$(DB_HOST_DIR)'
+	@if docker image inspect $(SUPERSET_IMAGE) >/dev/null 2>&1; then \
+	    $(SUZAKU_REPORT) | tail -n +2 | sed 's/^  /            /'; \
+	else \
+	    for db in $(SUZAKU_DBS); do printf '              %s\n' "$$db"; done; \
+	    printf '            run make up once to see which file each dashboard uses\n'; \
+	fi
 else
 	@printf '  Suzaku    no *.duckdb in %s/ — copy Suzaku output there to visualize it\n' '$(DB_HOST_DIR)'
 endif

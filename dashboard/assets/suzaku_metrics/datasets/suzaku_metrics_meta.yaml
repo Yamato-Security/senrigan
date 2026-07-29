@@ -1,4 +1,4 @@
-# Superset dataset for the `suzaku_meta` provenance row of an aws-ct-timeline file.
+# Superset dataset for the `suzaku_meta` provenance row of an aws-ct-metrics file.
 #
 # One row, written by Suzaku itself: which command produced this file, with which
 # arguments, when, against how many files and events, and how many duplicate rows
@@ -8,13 +8,13 @@
 # `generated_at` is when Suzaku RAN, not when anything was detected, so the
 # dashboard's Date Range filter deliberately excludes the tab holding this chart
 # (see dashboard.yaml).
-uuid: 5a021002-0000-4000-8000-000000000007
+uuid: 5a021002-0000-4000-8000-000000000009
 version: 1.0.0
-database_uuid: 5a021001-0000-4000-8000-000000000001
-table_name: suzaku_timeline_meta
+database_uuid: 5a021001-0000-4000-8000-000000000003
+table_name: suzaku_metrics_meta
 main_dttm_col: generated_at
 description: >
-  Provenance of the Suzaku aws-ct-timeline file this dashboard is reading:
+  Provenance of the Suzaku aws-ct-metrics file this dashboard is reading:
   command line, versions, scan counts and generation time.
 default_endpoint: null
 offset: 0
@@ -76,7 +76,7 @@ columns:
     type: VARCHAR
     groupby: true
     filterable: true
-    description: The producing subcommand — always aws-ct-timeline for this bundle
+    description: The producing subcommand — always aws-ct-metrics for this bundle
 
   - column_name: command_line
     verbose_name: Command Line

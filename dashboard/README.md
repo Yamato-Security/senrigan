@@ -226,9 +226,7 @@ make every chart fail with an IOError. A bundle whose database was not detected 
 not imported at all, so no connection is ever left pointing at a missing file.
 
 Because the datasets reference the database by UUID, re-running Suzaku under a
-different file name only rewrites a stored URI — no asset changes. When several
-files match one command the newest wins; `SUZAKU_TIMELINE_DB` /
-`SUZAKU_SUMMARY_DB` / `SUZAKU_METRICS_DB` pin a specific file. A bundle whose
+different file name only rewrites a stored URI — no asset changes. A bundle whose
 database was not detected is not imported, so an analyst with only one Suzaku
 file does not get dashboards full of errors.
 
@@ -236,9 +234,54 @@ A file whose `suzaku_meta.schema_version` is newer than this release understands
 is skipped rather than registered — misreading a renamed column silently is worse
 than a missing dashboard.
 
-The same detection runs in the agent (`agent/suzaku_db.py`); Superset cannot
-import that package, so the detection constants exist twice and
-`tests/test_suzaku_detection_parity.py` keeps the copies identical.
+Detection, fitness and the choice itself live in **one** module, `agent/suzaku_db.py`.
+Superset cannot install the agent package, so `docker/docker-compose.yml`
+bind-mounts that single dependency-free module into `superset-init` and
+`superset-resync` at `/app/suzaku_db.py`, and this script imports it. Two copies
+had already drifted once, which is why `tests/test_suzaku_detection_shared.py`
+now asserts there is nothing left to keep in sync.
+
+### Several files for one command
+
+See [doc/PLAN_SUZAKU_MULTI_DB.md](../doc/PLAN_SUZAKU_MULTI_DB.md). Only one file
+serves each command, and it is picked in this order:
+
+1. `SUZAKU_TIMELINE_DB` / `SUZAKU_SUMMARY_DB` / `SUZAKU_METRICS_DB`, when set to a
+   usable file.
+2. `suzaku_meta.generated_at` — **when Suzaku ran**, not when the file was copied.
+   `cp` rewrites mtime and `rsync -a` does not, so mtime is not the question the
+   analyst is asking.
+3. mtime, then the path — so a full tie resolves the same way on every machine
+   rather than in filesystem order.
+
+A candidate is only eligible when it carries every column the shipped datasets
+select (`REQUIRED_COLUMNS` in `agent/suzaku_db.py`). This is what keeps a metrics
+run made **without `--geo-ip`** from taking the Metrics dashboard down: it has no
+`SrcASN`/`SrcCity`/`SrcCountry`, the dataset SQL selects all three, and it is now
+rejected with that reason instead of registered and left failing on every chart.
+
+Nothing is dropped silently. `register_suzaku_dbs.py --report` — printed by
+`bootstrap.sh`, by `make resync`, and by `make status` / `make up` once the image
+exists — names the file each dashboard uses, the usable files it beat, the files
+rejected as unqueryable and why, and anything that could not be opened:
+
+```
+Suzaku databases in /data/db:
+  aws-ct-metrics   nogeo-metrics.duckdb — no usable file
+      rejected: nogeo-metrics.duckdb — missing SrcASN, SrcCity, SrcCountry — re-run Suzaku with --geo-ip
+  aws-ct-timeline  new.duckdb, generated 2026-07-20 00:00, 1,206,049 rows
+      ignored:  old.duckdb, generated 2026-07-01 00:00, 812,004 rows
+```
+
+Each dashboard also carries a **Suzaku Run Info** card whose `source_file` column
+comes from DuckDB's own `duckdb_databases()`, so the page names the file it is
+actually connected to and cannot be made to lie by editing YAML.
+
+Superset resolves the path **once**, at bootstrap. Copying in a newer run,
+replacing one or deleting one therefore changes nothing until `make resync`
+re-resolves it (or `make up` re-runs the bootstrap). A connection whose file has
+been deleted is hidden rather than left raising IOError on every chart; its row
+survives so a replacement lands on the same UUID.
 
 ### Why the datasets are virtual
 

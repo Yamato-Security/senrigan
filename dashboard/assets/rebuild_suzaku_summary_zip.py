@@ -33,7 +33,11 @@ FILE_MAP = {
     "datasets/suzaku_summary_attributes.yaml": (
         "datasets/Suzaku_Summary_DuckDB/suzaku_summary_attributes.yaml"
     ),
+    "datasets/suzaku_summary_meta.yaml": (
+        "datasets/Suzaku_Summary_DuckDB/suzaku_summary_meta.yaml"
+    ),
     # charts/
+    "charts/run_info.yaml": "charts/Suzaku_Run_Info.yaml",
     "charts/abused_api_catalogue.yaml": "charts/Abused_API_Catalogue.yaml",
     "charts/abused_apis_by_service.yaml": "charts/Abused_APIs_by_AWS_Service.yaml",
     "charts/abused_vs_other_per_identity.yaml": "charts/Abused_vs_Other_API_Calls_per_Identity.yaml",

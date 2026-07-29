@@ -24,7 +24,8 @@ table of a Suzaku `aws-ct-timeline` export. One pipeline serves both, parameteri
 Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
 `threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
 arbitrary: the producing command is read from the file's own `suzaku_meta` table
-(`agent/suzaku_db.py`, mirrored in `dashboard/init/register_suzaku_dbs.py`), which also carries the
+(`agent/suzaku_db.py`, bind-mounted into the Superset init/resync containers and imported by
+`dashboard/init/register_suzaku_dbs.py`), which also carries the
 `schema_version` both readers check before trusting the columns. `aws-ct-summary` and `aws-ct-metrics` are served by
 dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
 cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
@@ -163,9 +164,9 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (605 tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 730 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 757, root `tests/` ≈ 115 (Makefile / compose / docs / Suzaku-detection
-parity).
+Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 761 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 793, root `tests/` ≈ 132 (Makefile / compose / docs / Suzaku
+selection and lifecycle).
 Test count must not decrease in a PR.
 
 ---

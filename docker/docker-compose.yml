@@ -133,6 +133,11 @@ services:
       - ../dashboard/init/register_suzaku_dbs.py:/app/register_suzaku_dbs.py:ro
       - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
       - ../dashboard/init/import_dashboard.py:/app/import_dashboard.py:ro
+      # Suzaku detection, fitness and selection live in one module so the agent
+      # and the dashboard can never disagree about which file is the live one.
+      # The Superset image cannot install the agent package, but it can import
+      # a single dependency-free module placed next to the init scripts.
+      - ../agent/suzaku_db.py:/app/suzaku_db.py:ro
     environment:
       <<: *superset-env
       SUPERSET_ADMIN_USERNAME: ${SUPERSET_ADMIN_USERNAME:-admin}
@@ -153,11 +158,16 @@ services:
       - ${DUCKDB_HOST_PATH:-./data/db}:/data/db:ro
       - superset_home:/app/superset_home
       - ../dashboard/superset_config.py:/app/pythonpath/superset_config.py:ro
+      - ../dashboard/init/resync.sh:/app/resync.sh:ro
       - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
+      # Re-resolving the Suzaku file paths needs the registration script and the
+      # shared detection module, exactly as superset-init does.
+      - ../dashboard/init/register_suzaku_dbs.py:/app/register_suzaku_dbs.py:ro
+      - ../agent/suzaku_db.py:/app/suzaku_db.py:ro
     environment:
       <<: *superset-env
       FORCE_RESYNC: "true"
-    entrypoint: ["python3", "/app/register_dataset.py"]
+    entrypoint: ["/bin/bash", "/app/resync.sh"]
     restart: "no"
     profiles:
       - resync

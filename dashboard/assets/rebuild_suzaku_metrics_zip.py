@@ -26,7 +26,11 @@ FILE_MAP = {
     "datasets/suzaku_metrics.yaml": (
         "datasets/Suzaku_Metrics_DuckDB/suzaku_metrics.yaml"
     ),
+    "datasets/suzaku_metrics_meta.yaml": (
+        "datasets/Suzaku_Metrics_DuckDB/suzaku_metrics_meta.yaml"
+    ),
     # charts/
+    "charts/run_info.yaml": "charts/Suzaku_Run_Info.yaml",
     "charts/geo_value_matrix.yaml": "charts/Value_by_Country_and_City.yaml",
     "charts/kpi_distinct_countries.yaml": "charts/Source_Countries.yaml",
     "charts/kpi_distinct_fields.yaml": "charts/Fields_Counted.yaml",

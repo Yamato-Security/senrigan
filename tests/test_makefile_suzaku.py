@@ -60,3 +60,42 @@ def test_status_stays_documented() -> None:
 def test_makefile_mentions_the_suzaku_database_extension() -> None:
     """The detection variable is only obvious if the extension is spelled out."""
     assert ".duckdb" in makefile_text()
+
+
+# ---------------------------------------------------------------------------
+# Which file is live — PLAN_SUZAKU_MULTI_DB.md Phase 3 (F-5)
+# ---------------------------------------------------------------------------
+
+
+def test_status_reports_the_selection_not_just_the_file_names() -> None:
+    """Listing four files says nothing about which one a dashboard reads."""
+    recipe = run_make("status")
+    assert "--report" in recipe, "status must ask for the per-command selection"
+
+
+def test_status_degrades_without_the_dashboard_image() -> None:
+    """A cold checkout has no image; `status` must still work and say why."""
+    recipe = run_make("status")
+    assert "docker image inspect" in recipe
+    assert "make up" in recipe, "tell the user how to get the full report"
+
+
+def test_up_names_the_selected_files() -> None:
+    """After start-up the choice is knowable, so print it rather than a hint."""
+    recipe = run_make("up")
+    assert "--report" in recipe
+
+
+def test_detection_includes_the_other_duckdb_extension() -> None:
+    """agent/suzaku_db.py scans .db too; the Makefile must not disagree."""
+    definitions = variable_definitions()
+    expanded = expand_variables(definitions["SUZAKU_DBS"])
+    assert "*.duckdb" in expanded
+    assert "*.db" in expanded
+
+
+def test_senrigan_own_database_is_not_reported_as_suzaku() -> None:
+    """threat_hunting.db matches *.db but is the ingester's, not Suzaku's."""
+    definitions = variable_definitions()
+    assert "filter-out" in definitions["SUZAKU_DBS"]
+    assert "DB_FILE" in definitions["SUZAKU_DBS"]
