@@ -176,7 +176,7 @@ npm run build                 # Vite production build → ../static/
 
 Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 761 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 132 (Makefile / compose / docs consistency —
+run with `make test-dashboard`), root `tests/` ≈ 134 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.

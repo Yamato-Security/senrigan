@@ -165,7 +165,7 @@ pytest                        # all tests (605 tests)
 ```
 
 Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 761 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 793, root `tests/` ≈ 132 (Makefile / compose / docs / Suzaku
+114 frontend, dashboard ≈ 793, root `tests/` ≈ 134 (Makefile / compose / docs / Suzaku
 selection and lifecycle).
 Test count must not decrease in a PR.
 
