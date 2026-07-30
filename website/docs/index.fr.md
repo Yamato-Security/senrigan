@@ -27,6 +27,7 @@ ordinateur portable avec une seule commande <code>make up</code>. Aucun SIEM req
 <a href="https://github.com/Yamato-Security/senrigan/stargazers"><img src="https://img.shields.io/github/stars/Yamato-Security/senrigan?style=flat&label=GitHub%F0%9F%A6%85Stars"/></a>
 <a href="https://github.com/Yamato-Security/senrigan/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-AGPLv3-blue.svg?style=flat"/></a>
 <a href="https://github.com/Yamato-Security/senrigan/blob/main/docker/docker-compose.yml"><img src="https://img.shields.io/badge/docker-compose-blue"></a>
+<a href="https://www.blackhat.com/us-26/arsenal/schedule/index.html"><img src="https://img.shields.io/badge/Black%20Hat%20Arsenal%20USA-2026-blue"></a>
 <a href="https://defcon.org/html/defcon-34/dc-34-demolabs.html#content_66521"><img src="https://img.shields.io/badge/DEFCON-2026-red"></a>
 <a href="https://twitter.com/SecurityYamato"><img src="https://img.shields.io/twitter/follow/SecurityYamato?style=social"/></a>
 </p>

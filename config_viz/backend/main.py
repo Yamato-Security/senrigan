@@ -25,7 +25,7 @@ from .query import (
     snapshot_exists,
 )
 
-app = FastAPI(title="config-viz API", version="0.1.0")
+app = FastAPI(title="config-viz API", version="1.0.0")
 
 # ---------------------------------------------------------------------------
 # Static frontend (served from ../static after Vite build)
