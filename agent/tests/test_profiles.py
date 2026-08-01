@@ -22,11 +22,14 @@ from profiles import (
     CLOUDTRAIL_PROFILE,
     PROFILES,
     SHARED_STATE_KEYS,
+    SUZAKU_METRICS_PROFILE,
+    SUZAKU_SUMMARY_PROFILE,
     SUZAKU_TIMELINE_PROFILE,
     DatasetProfile,
 )
 from query import apply_date_filter, apply_filters
 from schema import get_column_names, get_schema_description
+from suzaku_db import SuzakuKind
 
 FIXTURE = (
     Path(__file__).resolve().parents[2]
@@ -75,13 +78,79 @@ def test_suzaku_timeline_profile_describes_the_timeline_table() -> None:
     )
 
 
+def test_suzaku_summary_profile_describes_the_summary_tables() -> None:
+    """Test 1a: the explorer profile for ``aws-ct-summary``.
+
+    Covers PLAN_SUZAKU_EXPLORERS.md §5.1. It reads a pre-aggregated file, so it
+    carries no LLM columns and no hunts — the page drives reviewed SQL instead.
+    """
+    profile = SUZAKU_SUMMARY_PROFILE
+    assert profile.table == "summary"
+    assert profile.time_column == "FirstTimestamp"
+    assert profile.state_prefix == "szs_"
+    assert profile.quote_identifiers is True
+    assert profile.supports_geo_enrich is False
+    assert profile.chat_enabled is False
+    assert profile.suzaku_kind is SuzakuKind.SUMMARY
+
+
+def test_suzaku_metrics_profile_describes_the_metrics_table() -> None:
+    """Test 1b: the explorer profile for ``aws-ct-metrics``."""
+    profile = SUZAKU_METRICS_PROFILE
+    assert profile.table == "metrics"
+    assert profile.time_column == "FirstSeen"
+    assert profile.state_prefix == "szm_"
+    assert profile.quote_identifiers is True
+    assert profile.supports_geo_enrich is False
+    assert profile.chat_enabled is False
+    assert profile.suzaku_kind is SuzakuKind.METRICS
+
+
+def test_chat_profiles_stay_chat_enabled() -> None:
+    """Test 4: the two chat pages must be unaffected by the new field."""
+    assert CLOUDTRAIL_PROFILE.chat_enabled is True
+    assert SUZAKU_TIMELINE_PROFILE.chat_enabled is True
+    assert CLOUDTRAIL_PROFILE.suzaku_kind is None
+    assert SUZAKU_TIMELINE_PROFILE.suzaku_kind is SuzakuKind.TIMELINE
+
+
+@pytest.mark.parametrize(
+    "profile", [SUZAKU_SUMMARY_PROFILE, SUZAKU_METRICS_PROFILE], ids=lambda p: p.key
+)
+def test_explorer_profiles_refuse_the_chat_pipeline(profile: DatasetProfile) -> None:
+    """Test 3: reaching the chat pipeline with an explorer profile is a bug.
+
+    Returning an empty prompt or a missing hunts path would ship the mistake to
+    OpenAI; raising makes it a test failure instead.
+    """
+    with pytest.raises(ValueError):
+        profile.hunts_path
+    with pytest.raises(ValueError):
+        profile.build_system_prompt()
+
+
 def test_profiles_registry_is_keyed_by_profile_key() -> None:
     """The registry is what the navigation and tests iterate over."""
-    assert set(PROFILES) == {"cloudtrail", "suzaku_timeline"}
+    assert set(PROFILES) == {
+        "cloudtrail",
+        "suzaku_timeline",
+        "suzaku_summary",
+        "suzaku_metrics",
+    }
     for key, profile in PROFILES.items():
         assert profile.key == key
         assert profile.default_row_limit > 0
         assert profile.label
+
+
+def test_state_prefixes_are_unique_across_profiles() -> None:
+    """Test 2: four pages share one ``st.session_state``."""
+    prefixes = [profile.state_prefix for profile in PROFILES.values()]
+    assert len(set(prefixes)) == len(prefixes)
+
+    for name in ("messages", "query_history", "suzaku_db"):
+        keys = [profile.state_key(name) for profile in PROFILES.values()]
+        assert len(set(keys)) == len(keys), name
 
 
 def test_state_key_namespaces_per_page_keys() -> None:
@@ -103,9 +172,16 @@ def test_quote_wraps_identifiers_only_when_required() -> None:
     assert CLOUDTRAIL_PROFILE.quote("event_time") == "event_time"
 
 
-def test_hunts_path_exists_for_every_profile() -> None:
-    """A profile whose hunts YAML is missing renders an empty sidebar."""
-    for profile in PROFILES.values():
+def test_hunts_path_exists_for_every_chat_profile() -> None:
+    """A profile whose hunts YAML is missing renders an empty sidebar.
+
+    Explorer profiles are excluded by construction: they have no hunts, and
+    asking for the path raises (see
+    :func:`test_explorer_profiles_refuse_the_chat_pipeline`).
+    """
+    chat_profiles = [p for p in PROFILES.values() if p.chat_enabled]
+    assert chat_profiles
+    for profile in chat_profiles:
         assert profile.hunts_path.exists(), profile.hunts_path
 
 

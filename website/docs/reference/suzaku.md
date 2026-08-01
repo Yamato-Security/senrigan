@@ -43,18 +43,29 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
 | `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 16 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (46 charts) |
-| `aws-ct-summary` | — | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
-| `aws-ct-metrics` | — | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
+| `aws-ct-summary` | 👤 **Suzaku Summary** — identity triage and drill-down | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
+| `aws-ct-metrics` | 📊 **Suzaku Metrics** — field explorer with live filters | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
 
 Each chart count includes that dashboard's **Suzaku Run Info** card. When the mounted
 directory holds several files for the same command, that card is how you tell which one
 the dashboard picked; `make status` prints the same choice before you open a browser.
 
-The split is deliberate. `aws-ct-timeline` is raw, high-cardinality detection data —
-exactly what ad-hoc SQL and AI narration are for. `aws-ct-summary` and
-`aws-ct-metrics` are **already aggregated by Suzaku**, so they go straight to
-dashboards; re-aggregating them through an LLM would add cost and a hallucination
-surface while removing nothing.
+The two kinds of agent page are not the same thing. `aws-ct-timeline` is raw,
+high-cardinality detection data, so its page is a **chat** page: you ask a question and
+an LLM writes the SQL. `aws-ct-summary` and `aws-ct-metrics` are **already aggregated by
+Suzaku**, so their pages are **explorers**: every query is a reviewed statement that
+ships with Senrigan, and no LLM writes SQL for them — that would add cost and a
+hallucination surface over numbers Suzaku already computed.
+
+Which tool to open, for the same file:
+
+| You want to… | Open |
+|--------------|------|
+| See the shape of the whole run at a glance | the **dashboard** |
+| Follow one identity, IP or value and see what it touches | the **explorer page** |
+| Compare two identities, or two counted fields | the **explorer page** |
+| Produce a Markdown / HTML report of what you found | the **explorer page** — only the agent writes reports |
+| Ask a free-form question about raw detections | the **🕒 Suzaku Timeline** chat page |
 
 ## Agent — 🕒 Suzaku Timeline page
 
@@ -84,6 +95,54 @@ Two things are specific to Suzaku data:
 
 Every hunt runs without an API key, carries an explicit `ORDER BY` and `LIMIT`, and
 is executed against a real Suzaku fixture in CI.
+
+## Agent — 👤 Suzaku Summary page
+
+An identity-centric explorer over `aws-ct-summary`. It opens on the **triage table**:
+every identity in the run, ordered by abused APIs and then by event volume. Click a
+row — or use the selector — to inspect one identity.
+
+| Section | What it shows |
+|---------|---------------|
+| Identity header | Type, total events, first and last seen |
+| 🔴 Abused APIs | Succeeded and failed side by side, each a bar chart over a table carrying Suzaku's own explanation of *why* the API is abusable |
+| ⚪ Other APIs | The same pair for everything Suzaku did not flag, collapsed — it is the bulk of the rows |
+| 🌐 Attributes | One tab per attribute the file records (source IPs, user agents, regions, access keys), each with a live search box and a **Rare first** toggle |
+| 🔗 Shared values | Pick one of that identity's IPs, user agents or access keys and see **every other identity that used it** |
+| ⚖️ Compare | Two identities side by side: values they share, and values unique to each |
+
+## Agent — 📊 Suzaku Metrics page
+
+A field explorer over `aws-ct-metrics`. The counted field comes from the file, never
+from the code, so a run counting `userName` works exactly like one counting
+`eventName`.
+
+| Section | What it shows |
+|---------|---------------|
+| KPI row | Distinct values · occurrences · top value's share · values seen once · observed span |
+| 📈 Top values | Suzaku's `percent` (share of the field) next to `share_of_filtered` (share of what your filters left) |
+| 🪶 Seen exactly once | The rare tail, where unusual activity hides |
+| 📉 Concentration | A cumulative curve plus one sentence: *the top N of M values cover 90% of the occurrences* |
+| 🆕 First seen after | Values that appear only after a date you choose |
+| 🌐 Source geography | Top countries, cities and ASNs — shown only when the geo columns actually hold values |
+| 🔀 Compare fields | Value overlap between two counted fields, when the file holds more than one |
+
+The sidebar controls — rows per panel, minimum count, value search, "first seen
+after" — recompute every panel as you move them. That is the difference from the
+dashboard, where each chart's row limit is fixed when the dashboard is built.
+
+### What both explorer pages share
+
+- **📌 Pin to report** on every panel — the pinned chart, table and SQL become an
+  entry in the same Markdown / HTML report the chat pages produce.
+- **⬇ CSV** of exactly the rows on screen.
+- **🤖 Explain** — a factual summary of the panel from the LLM. It is the only thing
+  on these pages that needs an API key; everything else works without one.
+- **🕒 Hunt this in the timeline** — jumps to the Suzaku Timeline page with the
+  identity or value already filtered. The timeline page reads its own file, which
+  may come from a different Suzaku run.
+- A **🧾 Suzaku Run Info** panel naming the file, Suzaku version and generation time,
+  matching the card on each dashboard, so you can tell whether the two UIs agree.
 
 ## Dashboards
 

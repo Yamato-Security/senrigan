@@ -63,13 +63,41 @@ filesystem and store them in DuckDB.
 - Generates SQL from natural language via OpenAI API
 - Executes queries and displays results
 - Generates threat hunting reports (Markdown / PDF)
-- Two-page Streamlit app (`st.navigation`), both pages driven by one pipeline:
-  - **🔭 Senrigan** — chat-based hunting over `cloudtrail_events` (DuckDB + OpenAI)
-  - **🕒 Suzaku Timeline** — the same UI over the `timeline` table of a
-    [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` export
+- Four-page Streamlit app (`st.navigation`), in two shapes:
+  - *Chat pages*, driven by one shared pipeline that has the LLM write the SQL:
+    - **🔭 Senrigan** — hunting over `cloudtrail_events` (DuckDB + OpenAI)
+    - **🕒 Suzaku Timeline** — the same UI over the `timeline` table of a
+      [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` export
+  - *Explorer pages*, which run only reviewed SQL that ships with Senrigan:
+    - **👤 Suzaku Summary** — identity triage and drill-down over `aws-ct-summary`
+    - **📊 Suzaku Metrics** — field explorer over `aws-ct-metrics`
 - A `DatasetProfile` (`agent/profiles.py`) carries everything table-specific — table
   name, time column, filter CTE, severity column, system prompt, hunts YAML and the
-  session-state namespace — so neither page duplicates the pipeline.
+  session-state namespace — so no page duplicates the pipeline.
+
+#### Chat pages and explorer pages
+
+The two shapes exist because the input differs, not the taste. `cloudtrail_events` and
+Suzaku's `timeline` are raw and high-cardinality: the question is unknown in advance, so
+an LLM writing SQL earns its cost. `aws-ct-summary` and `aws-ct-metrics` are **already
+aggregated by Suzaku** — 22 identities, 1,344 counted values in the reference data — so
+generating SQL over them would add cost and a hallucination surface while removing
+nothing.
+
+An explorer page therefore has no hunts YAML, no system prompt and no generated SQL.
+Every statement it runs is a reviewed, parameterized query in
+`agent/suzaku_summary_queries.py` / `agent/suzaku_metrics_queries.py`; those modules
+import no Streamlit, so they are unit-tested against the committed fixtures directly.
+Their profiles set `chat_enabled=False`, and `build_system_prompt()` / `hunts_path`
+**raise** for them — an explorer profile reaching the chat pipeline is a bug that should
+fail a test, not ship an empty prompt to OpenAI.
+
+What the explorer pages add over the equivalent Superset dashboard is the part a
+dashboard structurally cannot do: a selection that decides which panels even exist, live
+Top-N / minimum-count / search controls, set comparison between two identities or two
+fields, 📌 pinning any panel into the same Markdown/HTML report the chat pages produce,
+and a 🕒 pivot that hands a prepared statement to the timeline page (through its existing
+direct-SQL hook, so it needs no API key).
 
 #### Suzaku output as a third-party read-only input
 
@@ -106,8 +134,14 @@ A file is a candidate only if it carries every column the shipped datasets selec
 (`REQUIRED_COLUMNS`). This is why the Suzaku Field Metrics dashboard needs a run with
 `--geo-ip`: without it Suzaku omits `SrcASN` / `SrcCity` / `SrcCountry`, and the file is
 rejected with that reason rather than registered and left to fail at render time. Each
-Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
-`make status` / `make up` print which file won and which candidates lost.
+Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, each
+explorer page carries the same panel, and `make status` / `make up` print which file won
+and which candidates lost.
+
+Fitness is about the columns *existing*, which is not the same as their being populated:
+a `--geo-ip` run can still write `SrcASN` / `SrcCity` / `SrcCountry` as all-NULL. The
+Metrics explorer therefore asks separately (`has_geo_data`) and explains the absence
+instead of drawing three empty charts.
 
 ### config_viz (Python / FastAPI + React)
 

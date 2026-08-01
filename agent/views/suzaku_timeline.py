@@ -18,47 +18,25 @@ import streamlit as st
 
 from profiles import SUZAKU_TIMELINE_PROFILE
 from suzaku_db import SuzakuKind
+from views.explorer import db_directory, render_empty_state
 
 PROFILE = SUZAKU_TIMELINE_PROFILE
 KIND = SuzakuKind.TIMELINE
+
+_COMMAND = "suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb"
 
 
 def _render_empty_state(directory: str) -> None:
     """Explain how to produce and place a timeline database.
 
     Shown instead of the hunting UI when discovery found nothing usable: an
-    analyst arriving here with no Suzaku output needs the three commands, not an
+    analyst arriving here with no Suzaku output needs the commands, not an
     empty table.
 
     Args:
         directory: The directory that was scanned, shown verbatim.
     """
-    st.info(
-        f"No Suzaku `{KIND.value}` database was found in `{directory}`.\n\n"
-        "Senrigan reads Suzaku's DuckDB output directly — nothing is imported, "
-        "and the file is only ever opened read-only."
-    )
-    st.markdown(f"""
-#### Getting a timeline database
-
-1. Run Suzaku against your CloudTrail logs, writing DuckDB output:
-
-   ```bash
-   suzaku {KIND.value} -d <cloudtrail-logs> -o timeline.duckdb
-   ```
-
-2. Copy the result next to Senrigan's own database:
-
-   ```bash
-   cp timeline.duckdb docker/data/db/
-   ```
-
-3. Reload this page. The file name does not matter — the Suzaku command is
-   detected from the schema.
-
-Copy the file only after Suzaku has exited. A leftover `.wal` file cannot be
-replayed from a read-only mount, and the database will not open.
-""")
+    render_empty_state(KIND, directory, command=_COMMAND)
 
 
 def render() -> None:
@@ -81,12 +59,7 @@ def render() -> None:
         has_db = _render_suzaku_db_selector(PROFILE, KIND)
 
     if not has_db:
-        from config import DB_VARIANT_FULL, get_duckdb_path_for_variant  # noqa: PLC0415
-        from pathlib import Path  # noqa: PLC0415
-
-        _render_empty_state(
-            str(Path(get_duckdb_path_for_variant(DB_VARIANT_FULL)).parent)
-        )
+        _render_empty_state(db_directory())
         return
 
     render_sidebar(PROFILE)

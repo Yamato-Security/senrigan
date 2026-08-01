@@ -26,17 +26,21 @@ Four Docker containers share **one DuckDB file** via a bind mount
 | `dashboard`  | Apache Superset                         | READ_ONLY                 | 8088 |
 | `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK) | READ_ONLY                 | 8502 |
 
-- `agent` is a two-page Streamlit app (`st.navigation`): **🔭 Senrigan** (chat hunting over
-  `cloudtrail_events`) and **🕒 Suzaku Timeline** (chat hunting over Suzaku's `timeline` table).
-  Both pages share one pipeline, parameterized by a `DatasetProfile` (`agent/profiles.py`);
-  see [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
+- `agent` is a four-page Streamlit app (`st.navigation`), one `DatasetProfile`
+  (`agent/profiles.py`) per page. Two **chat** pages have the LLM write the SQL and share one
+  pipeline: **🔭 Senrigan** (`cloudtrail_events`) and **🕒 Suzaku Timeline** (Suzaku's `timeline`).
+  Two **explorer** pages (`chat_enabled=False`) run only reviewed SQL from
+  `agent/suzaku_{summary,metrics}_queries.py`: **👤 Suzaku Summary** and **📊 Suzaku Metrics**;
+  an explorer profile raises if it reaches the chat pipeline.
+  See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
 - **Suzaku output** (`*.duckdb` / `*.db` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`)
   is read as-is from the same mounted directory — never imported, never written. Detection, fitness
   and selection live **only** in `agent/suzaku_db.py`; the Superset image cannot install the agent
   package, so `docker/docker-compose.yml` bind-mounts that one module into `superset-init` and
   `superset-resync`, and `dashboard/init/register_suzaku_dbs.py` imports it (guarded by
   `tests/test_suzaku_detection_shared.py`). A `schema_version` newer than this release is refused.
-  `aws-ct-summary` / `aws-ct-metrics` are dashboard-only by design — Suzaku already aggregated them.
+  `aws-ct-summary` / `aws-ct-metrics` are pre-aggregated, so each gets a Superset dashboard **and**
+  an agent explorer page — the dashboard scans, the explorer drills down, compares and reports.
 - **Several Suzaku files in one directory** — one file serves each command, chosen by
   `generated_at` (when Suzaku ran) → mtime → path, so the choice is deterministic and identical in
   both UIs. A file is eligible only when it has every column the shipped datasets select
@@ -173,7 +177,7 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 186 (Rust), agent ≈ 761 (pytest),
+Approximate test totals (must not decrease in a PR): ingester ≈ 186 (Rust), agent ≈ 825 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
 run with `make test-dashboard`), root `tests/` ≈ 249 (Makefile / compose / docs consistency —
 run with `make test-repo`).
@@ -311,8 +315,9 @@ Four more standing rules:
 ```
 senrigan/
 ├── ingester/    # Rust log ingestion engine (ingest/enrich/config-import subcommands)
-├── agent/       # Python/Streamlit AI threat-hunting UI — CloudTrail + Suzaku timeline pages
+├── agent/       # Python/Streamlit UI — 2 AI chat pages + 2 Suzaku explorer pages
 │               #   (llm.py, query.py, report.py, profiles.py, suzaku_db.py,
+│               #    suzaku_queries.py, suzaku_summary_queries.py, suzaku_metrics_queries.py,
 │               #    builtin_hunts.yaml, suzaku_timeline_hunts.yaml, views/)
 ├── config_viz/  # AWS Config resource graph — FastAPI backend + React 18/Vite/TS frontend (ELK layout)
 ├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/

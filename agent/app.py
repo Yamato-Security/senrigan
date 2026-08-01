@@ -26,7 +26,13 @@ from handlers import (
     _handle_user_query,
 )
 from llm import MAX_CONTEXT_TURNS  # noqa: F401
-from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE, DatasetProfile
+from profiles import (
+    CLOUDTRAIL_PROFILE,
+    SUZAKU_METRICS_PROFILE,
+    SUZAKU_SUMMARY_PROFILE,
+    SUZAKU_TIMELINE_PROFILE,
+    DatasetProfile,
+)
 from query import DEFAULT_ROW_LIMIT
 from report import ReportEntry, generate_report, generate_html_report
 from suzaku_db import SuzakuKind, discover, select
@@ -775,66 +781,11 @@ def render_sidebar(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
 
         st.divider()
 
-        # AGT-06: Markdown / HTML report download
-        st.subheader("📄 Report")
-        history = st.session_state[profile.state_key("query_history")]
-        report_title = f"Senrigan {profile.label} Report"
-        if history:
-            report_md = generate_report(history, title=report_title)
-            report_html = generate_html_report(history, title=report_title)
-            dl1, dl2 = st.columns(2)
-            with dl1:
-                st.download_button(
-                    label="⬇ Markdown",
-                    data=report_md,
-                    file_name=f"{profile.key}_report.md",
-                    mime="text/markdown",
-                    use_container_width=True,
-                    key=f"_{prefix}_report_md",
-                )
-            with dl2:
-                st.download_button(
-                    label="⬇ HTML",
-                    data=report_html,
-                    file_name=f"{profile.key}_report.html",
-                    mime="text/html",
-                    use_container_width=True,
-                    key=f"_{prefix}_report_html",
-                )
-        else:
-            st.caption("Run at least one query to generate a report.")
+        render_report_section(profile)
 
         st.divider()
 
-        # AGT-08: Session export
-        st.subheader("💾 Session")
-        col1, col2 = st.columns(2)
-        with col1:
-            if history:
-                session_json = _export_session(
-                    history,
-                    title=f"Senrigan {profile.label} Session",
-                )
-                st.download_button(
-                    label="Export JSON",
-                    data=session_json,
-                    file_name=f"{profile.key}_session.json",
-                    mime="application/json",
-                    use_container_width=True,
-                    key=f"_{prefix}_export_json",
-                )
-            else:
-                st.button(
-                    "Export JSON",
-                    disabled=True,
-                    use_container_width=True,
-                    key=f"_{prefix}_export_json_disabled",
-                )
-
-        with col2:
-            if st.button("🗑 Clear", use_container_width=True, key=f"_{prefix}_clear"):
-                _clear_session(profile)
-                st.rerun()
+        render_session_section(profile)
 
         st.divider()
 
@@ -873,31 +824,121 @@ def render_sidebar(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
 
         st.divider()
 
-        # AGT-09: API key input (placed last — rarely changed after initial setup)
-        st.subheader("🔑 API Configuration")
-        api_key_input = st.text_input(
-            "OpenAI API Key",
-            value=st.session_state.api_key,
-            type="password",
-            key=f"_{prefix}_api_key_input",
-            help="Your OpenAI API key. Never stored outside this browser session.",
-        )
-        if api_key_input != st.session_state.api_key:
-            st.session_state.api_key = api_key_input
+        render_api_section(profile)
 
-        # Model selection
-        selected_model = st.selectbox(
-            "Model",
-            options=MODEL_OPTIONS,
-            key=f"_{prefix}_model_select",
-            index=(
-                MODEL_OPTIONS.index(st.session_state.model)
-                if st.session_state.model in MODEL_OPTIONS
-                else 0
-            ),
+
+def render_report_section(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
+    """Render the Markdown / HTML report downloads (AGT-06).
+
+    Shared with the explorer pages, whose panels pin findings into the same
+    ``query_history`` this reads (``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.3).
+
+    Args:
+        profile: Dataset profile whose history to report on.
+    """
+    prefix = profile.key
+    st.subheader("📄 Report")
+    history = st.session_state[profile.state_key("query_history")]
+    report_title = f"Senrigan {profile.label} Report"
+    if not history:
+        st.caption("Run at least one query to generate a report.")
+        return
+
+    report_md = generate_report(history, title=report_title)
+    report_html = generate_html_report(history, title=report_title)
+    dl1, dl2 = st.columns(2)
+    with dl1:
+        st.download_button(
+            label="⬇ Markdown",
+            data=report_md,
+            file_name=f"{profile.key}_report.md",
+            mime="text/markdown",
+            use_container_width=True,
+            key=f"_{prefix}_report_md",
         )
-        if selected_model != st.session_state.model:
-            st.session_state.model = selected_model
+    with dl2:
+        st.download_button(
+            label="⬇ HTML",
+            data=report_html,
+            file_name=f"{profile.key}_report.html",
+            mime="text/html",
+            use_container_width=True,
+            key=f"_{prefix}_report_html",
+        )
+
+
+def render_session_section(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
+    """Render the session export and the Clear button (AGT-08).
+
+    Args:
+        profile: Dataset profile whose session this manages.
+    """
+    prefix = profile.key
+    st.subheader("💾 Session")
+    history = st.session_state[profile.state_key("query_history")]
+    col1, col2 = st.columns(2)
+    with col1:
+        if history:
+            session_json = _export_session(
+                history,
+                title=f"Senrigan {profile.label} Session",
+            )
+            st.download_button(
+                label="Export JSON",
+                data=session_json,
+                file_name=f"{profile.key}_session.json",
+                mime="application/json",
+                use_container_width=True,
+                key=f"_{prefix}_export_json",
+            )
+        else:
+            st.button(
+                "Export JSON",
+                disabled=True,
+                use_container_width=True,
+                key=f"_{prefix}_export_json_disabled",
+            )
+
+    with col2:
+        if st.button("🗑 Clear", use_container_width=True, key=f"_{prefix}_clear"):
+            _clear_session(profile)
+            st.rerun()
+
+
+def render_api_section(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
+    """Render the API key and model selection (AGT-09).
+
+    Both are shared state: entered once, they apply to every page — including
+    the explorer pages, where the key enables per-panel AI narration.
+
+    Args:
+        profile: Dataset profile the page is on; scopes the widget keys only.
+    """
+    prefix = profile.key
+    # Placed last in the sidebar — rarely changed after initial setup.
+    st.subheader("🔑 API Configuration")
+    api_key_input = st.text_input(
+        "OpenAI API Key",
+        value=st.session_state.api_key,
+        type="password",
+        key=f"_{prefix}_api_key_input",
+        help="Your OpenAI API key. Never stored outside this browser session.",
+    )
+    if api_key_input != st.session_state.api_key:
+        st.session_state.api_key = api_key_input
+
+    selected_model = st.selectbox(
+        "Model",
+        options=MODEL_OPTIONS,
+        key=f"_{prefix}_model_select",
+        index=(
+            MODEL_OPTIONS.index(st.session_state.model)
+            if st.session_state.model in MODEL_OPTIONS
+            else 0
+        ),
+    )
+    if selected_model != st.session_state.model:
+        st.session_state.model = selected_model
 
 
 def _result_badge(entry: ReportEntry) -> str:
@@ -1287,16 +1328,39 @@ def _suzaku_timeline_page() -> None:
     render()
 
 
+def _suzaku_summary_page() -> None:
+    """Render the Suzaku ``aws-ct-summary`` explorer page."""
+    from views.suzaku_summary import render  # noqa: PLC0415
+
+    render()
+
+
+def _suzaku_metrics_page() -> None:
+    """Render the Suzaku ``aws-ct-metrics`` explorer page."""
+    from views.suzaku_metrics import render  # noqa: PLC0415
+
+    render()
+
+
+# Page objects built by :func:`build_pages`, keyed by profile. ``st.switch_page``
+# needs the very object ``st.navigation`` was given, so the pivot from an
+# explorer page into the timeline page (PLAN_SUZAKU_EXPLORERS.md §5.3) reads it
+# from here rather than rebuilding one.
+PAGES: dict[str, object] = {}
+
+
 def build_pages() -> list:
     """Return the navigation pages, CloudTrail first.
 
-    Both pages share the hunting UI; they differ only in their
-    :class:`~profiles.DatasetProfile` (see ``profiles.py``).
+    The first two are chat pages sharing the hunting UI, differing only in their
+    :class:`~profiles.DatasetProfile`. The last two are explorer pages over
+    Suzaku's pre-aggregated output, which generate no SQL at all
+    (``doc/PLAN_SUZAKU_EXPLORERS.md`` §1).
 
     Returns:
         A list of ``st.Page`` objects for :func:`st.navigation`.
     """
-    return [
+    pages = [
         st.Page(
             _chat_page,
             title=CLOUDTRAIL_PROFILE.label,
@@ -1310,7 +1374,32 @@ def build_pages() -> list:
             icon=SUZAKU_TIMELINE_PROFILE.icon,
             url_path="suzaku-timeline",
         ),
+        st.Page(
+            _suzaku_summary_page,
+            title=SUZAKU_SUMMARY_PROFILE.label,
+            icon=SUZAKU_SUMMARY_PROFILE.icon,
+            url_path="suzaku-summary",
+        ),
+        st.Page(
+            _suzaku_metrics_page,
+            title=SUZAKU_METRICS_PROFILE.label,
+            icon=SUZAKU_METRICS_PROFILE.icon,
+            url_path="suzaku-metrics",
+        ),
     ]
+    PAGES.clear()
+    PAGES.update(
+        zip(
+            (
+                CLOUDTRAIL_PROFILE.key,
+                SUZAKU_TIMELINE_PROFILE.key,
+                SUZAKU_SUMMARY_PROFILE.key,
+                SUZAKU_METRICS_PROFILE.key,
+            ),
+            pages,
+        )
+    )
+    return pages
 
 
 def main() -> None:
