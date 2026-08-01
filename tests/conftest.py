@@ -13,9 +13,14 @@ import re
 import subprocess
 from pathlib import Path
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAKEFILE = REPO_ROOT / "Makefile"
 COMPOSE_FILE = REPO_ROOT / "docker" / "docker-compose.yml"
+ASSETS_DIR = REPO_ROOT / "dashboard" / "assets"
+WEBSITE_DOCS = REPO_ROOT / "website" / "docs"
+MKDOCS_FILE = REPO_ROOT / "website" / "mkdocs.yml"
 
 
 def makefile_text() -> str:
@@ -181,6 +186,44 @@ _CODE_SPAN_RE = re.compile(
     r"```.*?```|`[^`\n]+`|<code>.*?</code>", re.DOTALL | re.IGNORECASE
 )
 _MAKE_CALL_RE = re.compile(r"\bmake\s+([a-z][a-z0-9-]*)\b")
+
+
+def chart_names(bundle: str) -> set[str]:
+    """Return the ``slice_name`` of every chart in a dashboard asset bundle.
+
+    The YAML directory is the source of truth: the ZIP is built from it, and
+    ``dashboard/tests/`` already fails when the two disagree.
+    """
+    return {
+        yaml.safe_load(path.read_text(encoding="utf-8"))["slice_name"].strip()
+        for path in (ASSETS_DIR / bundle / "charts").glob("*.yaml")
+    }
+
+
+def dataset_names(bundle: str) -> set[str]:
+    """Return the dataset names declared by a dashboard asset bundle."""
+    return {path.stem for path in (ASSETS_DIR / bundle / "datasets").rglob("*.yaml")}
+
+
+def hunt_labels(filename: str) -> list[str]:
+    """Return the ``label`` of every hunt in one of the agent's hunt catalogues."""
+    entries = yaml.safe_load((REPO_ROOT / "agent" / filename).read_text("utf-8"))
+    return [entry["label"].strip() for entry in entries]
+
+
+def hunt_categories(filename: str) -> set[str]:
+    """Return the distinct ``category`` of one of the agent's hunt catalogues."""
+    entries = yaml.safe_load((REPO_ROOT / "agent" / filename).read_text("utf-8"))
+    return {entry["category"].strip() for entry in entries}
+
+
+def site_locales() -> list[str]:
+    """Return the locale codes the documentation site builds, default first.
+
+    Read from ``mkdocs.yml`` rather than hardcoded so adding a language to the
+    site is a single-file change.
+    """
+    return re.findall(r"^\s*- locale: (\S+)$", MKDOCS_FILE.read_text("utf-8"), re.M)
 
 
 def make_calls_in(text: str) -> set[str]:
