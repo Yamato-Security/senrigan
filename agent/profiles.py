@@ -8,7 +8,13 @@ without a second copy of it.
 Every parameterized function keeps :data:`CLOUDTRAIL_PROFILE` as its default, so
 existing callers — and the existing tests — behave exactly as before.
 
-See ``doc/PLAN_SUZAKU_VIEWS.md`` §4.1.
+Two of the four profiles describe **explorer** pages rather than chat pages:
+Suzaku's ``aws-ct-summary`` and ``aws-ct-metrics`` output is already aggregated,
+so those pages run reviewed, parameterized SQL and never generate any. They are
+marked :attr:`DatasetProfile.chat_enabled` ``False``, and the chat-only members
+raise for them rather than returning something empty.
+
+See ``doc/PLAN_SUZAKU_VIEWS.md`` §4.1 and ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.1.
 """
 
 from __future__ import annotations
@@ -23,6 +29,7 @@ from schema import (
     SUZAKU_TIMELINE_COLUMNS,
     get_schema_description,
 )
+from suzaku_db import SuzakuKind
 
 _AGENT_DIR = Path(__file__).resolve().parent
 
@@ -61,6 +68,11 @@ class DatasetProfile:
         state_prefix:        Prefix applied to per-page session-state keys.
         default_row_limit:   Initial per-query row cap.
         system_prompt:       Prompt template containing a ``{schema}`` slot.
+        chat_enabled:        True for a page that generates SQL with an LLM;
+                             False for an explorer page whose SQL is reviewed
+                             and lives in the repository.
+        suzaku_kind:         The Suzaku command whose output this profile reads,
+                             or None for Senrigan's own database.
     """
 
     key: str
@@ -80,6 +92,8 @@ class DatasetProfile:
     default_row_limit: int = 200
     system_prompt: str = SYSTEM_PROMPT
     filter_alias: str = ""
+    chat_enabled: bool = True
+    suzaku_kind: SuzakuKind | None = None
 
     def __post_init__(self) -> None:
         """Derive the CTE alias and state prefix when the caller omitted them.
@@ -93,9 +107,30 @@ class DatasetProfile:
         if self.state_prefix is None:
             object.__setattr__(self, "state_prefix", f"{self.key}_")
 
+    def _require_chat(self, member: str) -> None:
+        """Raise when a chat-pipeline member is used on an explorer profile.
+
+        Args:
+            member: The member being accessed, named in the message.
+
+        Raises:
+            ValueError: When this profile has ``chat_enabled=False``.
+        """
+        if not self.chat_enabled:
+            raise ValueError(
+                f"{self.key} is an explorer profile: {member} does not apply. "
+                "Its page runs reviewed SQL and never generates any "
+                "(doc/PLAN_SUZAKU_EXPLORERS.md §5.1)."
+            )
+
     @property
     def hunts_path(self) -> Path:
-        """Absolute path to this profile's built-in hunts YAML."""
+        """Absolute path to this profile's built-in hunts YAML.
+
+        Raises:
+            ValueError: When this profile has no chat pipeline.
+        """
+        self._require_chat("hunts_path")
         return _AGENT_DIR / self.hunts_filename
 
     def state_key(self, name: str) -> str:
@@ -138,7 +173,12 @@ class DatasetProfile:
         return get_schema_description(self.table, self.columns)
 
     def build_system_prompt(self) -> str:
-        """Return the system prompt for this profile with the schema injected."""
+        """Return the system prompt for this profile with the schema injected.
+
+        Raises:
+            ValueError: When this profile has no chat pipeline.
+        """
+        self._require_chat("build_system_prompt()")
         return self.system_prompt.format(schema=self.schema_description())
 
 
@@ -177,9 +217,47 @@ SUZAKU_TIMELINE_PROFILE = DatasetProfile(
     default_row_limit=200,
     system_prompt=SUZAKU_TIMELINE_SYSTEM_PROMPT,
     filter_alias="_sz_filtered",
+    suzaku_kind=SuzakuKind.TIMELINE,
+)
+
+# The two explorer profiles. `columns` is empty and `hunts_filename` blank
+# because neither reaches the LLM: their pages run the reviewed SQL in
+# `suzaku_summary_queries.py` / `suzaku_metrics_queries.py`. `table` and
+# `time_column` still describe the file, since the report header and the
+# database selector both read them.
+SUZAKU_SUMMARY_PROFILE = DatasetProfile(
+    key="suzaku_summary",
+    label="Suzaku Summary",
+    icon="👤",
+    table="summary",
+    time_column="FirstTimestamp",
+    columns=(),
+    hunts_filename="",
+    quote_identifiers=True,
+    supports_geo_enrich=False,
+    state_prefix="szs_",
+    chat_enabled=False,
+    suzaku_kind=SuzakuKind.SUMMARY,
+)
+
+SUZAKU_METRICS_PROFILE = DatasetProfile(
+    key="suzaku_metrics",
+    label="Suzaku Metrics",
+    icon="📊",
+    table="metrics",
+    time_column="FirstSeen",
+    columns=(),
+    hunts_filename="",
+    quote_identifiers=True,
+    supports_geo_enrich=False,
+    state_prefix="szm_",
+    chat_enabled=False,
+    suzaku_kind=SuzakuKind.METRICS,
 )
 
 PROFILES: dict[str, DatasetProfile] = {
     CLOUDTRAIL_PROFILE.key: CLOUDTRAIL_PROFILE,
     SUZAKU_TIMELINE_PROFILE.key: SUZAKU_TIMELINE_PROFILE,
+    SUZAKU_SUMMARY_PROFILE.key: SUZAKU_SUMMARY_PROFILE,
+    SUZAKU_METRICS_PROFILE.key: SUZAKU_METRICS_PROFILE,
 }

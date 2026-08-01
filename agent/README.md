@@ -18,7 +18,7 @@ DuckDB is always opened in **`READ_ONLY`** mode.
 - [SQL Safety Guards](#sql-safety-guards)
 - [Date-Range Filter](#date-range-filter)
 - [Built-in Hunts](#built-in-hunts)
-- [Suzaku Timeline Page](#suzaku-timeline-page)
+- [Suzaku Pages](#suzaku-pages)
 - [Report Generation](#report-generation)
 - [Module Structure](#module-structure)
 - [Configuration](#configuration)
@@ -211,20 +211,27 @@ Each entry has:
 
 ---
 
-## Suzaku Timeline Page
+## Suzaku Pages
 
-The app has two pages, selected in the sidebar navigation:
+The app has four pages, selected in the sidebar navigation:
 
-| Page | Table | Data source |
-|------|-------|-------------|
-| 🔭 **Senrigan** | `cloudtrail_events` | `threat_hunting.db`, written by the ingester |
-| 🕒 **Suzaku Timeline** | `timeline` | a `*.duckdb` file produced by [Suzaku](https://github.com/Yamato-Security/suzaku) |
+| Page | Shape | Table | Data source |
+|------|-------|-------|-------------|
+| 🔭 **Senrigan** | chat | `cloudtrail_events` | `threat_hunting.db`, written by the ingester |
+| 🕒 **Suzaku Timeline** | chat | `timeline` | a `*.duckdb` from [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` |
+| 👤 **Suzaku Summary** | explorer | `summary*` | a `*.duckdb` from `aws-ct-summary` |
+| 📊 **Suzaku Metrics** | explorer | `metrics` | a `*.duckdb` from `aws-ct-metrics` |
 
-Both pages run the same machinery — built-in hunts, date range, result filters,
-AI chat, AI analysis, Markdown/HTML report, session export — driven by a
-`DatasetProfile` (`profiles.py`) that describes the table. Their session state is
-namespaced separately, so an investigation on one page is never disturbed by the
-other; the API key, model and row cap are shared.
+The two **chat** pages run the same machinery — built-in hunts, date range, result
+filters, AI chat, AI analysis, Markdown/HTML report, session export — driven by a
+`DatasetProfile` (`profiles.py`) that describes the table.
+
+The two **explorer** pages read files Suzaku has already aggregated, so they never
+generate SQL: every query is a reviewed statement in `suzaku_summary_queries.py` /
+`suzaku_metrics_queries.py`, and the profile raises if it reaches the chat pipeline.
+
+All four namespace their session state separately, so an investigation on one page is
+never disturbed by another; the API key, model and row cap are shared.
 
 ### Setting it up
 
@@ -264,9 +271,33 @@ carried by the profile (see
 insists on `"Level" >= 'high'::suzaku_level` for a threshold: DuckDB compares an
 ENUM against a bare string literal alphabetically.
 
-`aws-ct-summary` and `aws-ct-metrics` are intentionally *not* pages here: Suzaku
-has already aggregated them, so they are served by the
-[dashboard module](../dashboard/README.md) instead.
+### 👤 Suzaku Summary and 📊 Suzaku Metrics
+
+Both read a file Suzaku already aggregated, so they are *explorers* rather than chat
+pages — a dashboard scans, an explorer drills down.
+
+**👤 Suzaku Summary** opens on the identity triage table (every identity, most abused
+first). Selecting one shows its type, event count and activity window, its abused
+APIs split succeeded / failed with Suzaku's own explanation of why each is abusable,
+its other APIs behind an expander, and a tab per attribute the file records. From any
+source IP, user agent or access key you can ask **who else used it**, and any two
+identities can be compared on the values they share.
+
+**📊 Suzaku Metrics** explores whichever field the run counted — the field list comes
+from the file, so a `-f userName` run works exactly like `-f eventName`. Rows per
+panel, minimum count, value search and a "first seen after" cut-off recompute every
+panel live. It reports the concentration of the field in one sentence ("the top N of
+M values cover 90% of the occurrences") and shows the geo panels only when the geo
+columns actually hold values — they can exist and be empty.
+
+Both pages add 📌 **Pin to report**, ⬇ **CSV** and 🤖 **Explain** to every panel, and a
+🕒 **Hunt this in the timeline** button that jumps to the Suzaku Timeline page with the
+value already filtered. Only 🤖 Explain needs an API key.
+
+The same two commands also have Superset dashboards — see the
+[dashboard module](../dashboard/README.md). The dashboard answers "what does this run
+look like?"; these pages answer "walk me through this identity, and put what I found
+into my report".
 
 ## Report Generation
 
@@ -290,11 +321,17 @@ agent/
 ├── schema.py              # Column metadata for both tables (system prompt input)
 ├── profiles.py            # DatasetProfile — per-table config for the shared pipeline
 ├── suzaku_db.py           # Discovery + suzaku_meta-based detection of Suzaku DuckDB files
+├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
+├── suzaku_summary_queries.py   # Reviewed SQL for aws-ct-summary
+├── suzaku_metrics_queries.py   # Reviewed SQL for aws-ct-metrics
 ├── config.py              # Configuration management (env vars)
 ├── builtin_hunts.yaml     # Pre-built CloudTrail hunts (categorised)
 ├── suzaku_timeline_hunts.yaml  # Pre-built Suzaku timeline hunts (16, categorised)
 ├── views/
-│   └── suzaku_timeline.py # Streamlit page for Suzaku aws-ct-timeline output
+│   ├── explorer.py        # Shared panel kit for the explorer pages
+│   ├── suzaku_timeline.py # Streamlit page for Suzaku aws-ct-timeline output
+│   ├── suzaku_summary.py  # Streamlit page for Suzaku aws-ct-summary output
+│   └── suzaku_metrics.py  # Streamlit page for Suzaku aws-ct-metrics output
 ├── prompts/
 │   ├── system_prompt.py   # System prompt template for cloudtrail_events
 │   └── suzaku_timeline_prompt.py  # System prompt template for Suzaku's timeline
@@ -313,6 +350,9 @@ agent/
     ├── test_suzaku_db.py
     ├── test_suzaku_timeline_hunts.py
     ├── test_suzaku_timeline_view.py
+    ├── test_suzaku_summary_queries.py
+    ├── test_suzaku_metrics_queries.py
+    ├── test_suzaku_explorer_views.py
     └── test_result_card_charts.py
 ```
 
@@ -326,6 +366,8 @@ agent/
 | `OPENAI_MODEL_LITE` | No | `gpt-5.4-mini` | Lighter model (optional override) |
 | `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | No | — | CA bundle for corporate TLS proxy |
 | `SUZAKU_TIMELINE_DB` | No | — | Pin one Suzaku timeline file instead of auto-detecting |
+| `SUZAKU_SUMMARY_DB` | No | — | Pin one `aws-ct-summary` file instead of auto-detecting |
+| `SUZAKU_METRICS_DB` | No | — | Pin one `aws-ct-metrics` file instead of auto-detecting |
 
 ---
 

@@ -42,20 +42,25 @@ def _clear_discovery_cache():
 # ---------------------------------------------------------------------------
 
 
-def test_navigation_exposes_both_pages() -> None:
-    """The Suzaku page must be reachable, and CloudTrail must stay the default."""
+def test_navigation_exposes_the_timeline_page() -> None:
+    """The Suzaku page must be reachable, and CloudTrail must stay the default.
+
+    The full page list is asserted in ``test_suzaku_explorer_views.py``; this
+    test only owns the timeline page's own entry.
+    """
     from app import build_pages
 
     with patch("streamlit.Page") as mock_page:
         build_pages()
 
-    titles = [call.kwargs["title"] for call in mock_page.call_args_list]
-    url_paths = [call.kwargs["url_path"] for call in mock_page.call_args_list]
-    defaults = [call.kwargs.get("default", False) for call in mock_page.call_args_list]
+    entries = {
+        call.kwargs["url_path"]: call.kwargs for call in mock_page.call_args_list
+    }
 
-    assert titles == [CLOUDTRAIL_PROFILE.label, SUZAKU_TIMELINE_PROFILE.label]
-    assert url_paths == ["senrigan", "suzaku-timeline"]
-    assert defaults == [True, False]
+    assert entries["suzaku-timeline"]["title"] == SUZAKU_TIMELINE_PROFILE.label
+    assert entries["suzaku-timeline"].get("default", False) is False
+    assert entries["senrigan"]["title"] == CLOUDTRAIL_PROFILE.label
+    assert entries["senrigan"]["default"] is True
 
 
 def test_init_session_state_seeds_the_suzaku_namespace() -> None:

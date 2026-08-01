@@ -19,10 +19,13 @@ Four containers share one DuckDB file via a **bind mount** (`docker/data/db/thre
 | `dashboard` | Apache Superset | READ_ONLY | 8088 |
 | `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK layout) | READ_ONLY | 8502 |
 
-The `agent` container is a two-page Streamlit app (`st.navigation`): **🔭 Senrigan**, the chat
-hunting page over `cloudtrail_events`, and **🕒 Suzaku Timeline**, the same UI over the `timeline`
-table of a Suzaku `aws-ct-timeline` export. One pipeline serves both, parameterized by a
-`DatasetProfile` (`agent/profiles.py`); see `doc/ARCHITECTURE.md`.
+The `agent` container is a four-page Streamlit app (`st.navigation`), one `DatasetProfile`
+(`agent/profiles.py`) per page. **🔭 Senrigan** and **🕒 Suzaku Timeline** are *chat* pages: one
+pipeline over `cloudtrail_events` and over the `timeline` table of an `aws-ct-timeline` export,
+with the LLM writing the SQL. **👤 Suzaku Summary** and **📊 Suzaku Metrics** are *explorer* pages
+(`chat_enabled=False`): they run only reviewed, parameterized SQL from
+`agent/suzaku_summary_queries.py` / `agent/suzaku_metrics_queries.py`, and a profile that reaches
+the chat pipeline raises rather than sending an empty prompt to OpenAI. See `doc/ARCHITECTURE.md`.
 
 Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
 `threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
@@ -32,10 +35,13 @@ arbitrary: the producing command is read from the file's own `suzaku_meta` table
 `schema_version` both readers check before trusting the columns. When a directory holds several
 files for the same command, exactly one wins — `generated_at` → mtime → path, and only among
 files carrying every column the shipped datasets select (`REQUIRED_COLUMNS`) — so both UIs land
-on the same file; see `doc/ARCHITECTURE.md`. `aws-ct-summary` and `aws-ct-metrics` are served by
-dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
-cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
-removed upload-a-JSON viewer.
+on the same file; see `doc/ARCHITECTURE.md`. `aws-ct-summary` and `aws-ct-metrics` are
+pre-aggregated, so each is served by a Superset dashboard **and** an agent explorer page: the
+dashboard answers "what does this run look like?", the explorer drills down from one identity or
+value, compares two of them, pivots into the timeline page and pins findings into a report.
+Neither generates SQL — that would add cost and a hallucination surface over data Suzaku has
+already aggregated. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier upload-a-JSON viewer whose
+layout the Summary page follows.
 
 The bind-mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves
 relative paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry
@@ -176,7 +182,7 @@ npm run build                 # Vite production build → ../static/
 pytest                        # all tests (793 dashboard tests)
 ```
 
-Approximate test totals: ingester ≈ 186 (Rust), agent ≈ 761 (pytest), config_viz ≈ 67 backend +
+Approximate test totals: ingester ≈ 186 (Rust), agent ≈ 825 (pytest), config_viz ≈ 67 backend +
 114 frontend, dashboard ≈ 793, root `tests/` ≈ 249 (Makefile / compose / docs / Suzaku
 selection and lifecycle).
 Test count must not decrease in a PR.
@@ -383,7 +389,7 @@ senrigan/
 ├── agent/                     # Python / Streamlit AI-agent UI (two pages)
 │   ├── AGENTS.md              # Agent-specific TDD context
 │   ├── README.md              # agent module documentation
-│   ├── app.py                 # Entry point: st.navigation over both pages
+│   ├── app.py                 # Entry point: st.navigation over the four pages
 │   ├── handlers.py            # Stateful handler functions
 │   ├── llm.py
 │   ├── query.py
@@ -391,12 +397,18 @@ senrigan/
 │   ├── schema.py              # Columns the LLM sees (17 core + 7 GeoIP)
 │   ├── config.py
 │   ├── geo.py                 # Best-effort geo enrichment of IP result columns
-│   ├── profiles.py            # DatasetProfile: one pipeline, two datasets
+│   ├── profiles.py            # DatasetProfile: chat pages vs explorer pages
 │   ├── suzaku_db.py           # Suzaku file detection, fitness and selection
+│   ├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
+│   ├── suzaku_summary_queries.py  # Reviewed SQL for aws-ct-summary
+│   ├── suzaku_metrics_queries.py  # Reviewed SQL for aws-ct-metrics
 │   ├── builtin_hunts.yaml     # CloudTrail hunts (126)
 │   ├── suzaku_timeline_hunts.yaml  # Suzaku timeline hunts (16)
 │   ├── views/
-│   │   └── suzaku_timeline.py # 🕒 Suzaku Timeline page
+│   │   ├── explorer.py        # Panel kit: pin-to-report, CSV, AI explain, pivot
+│   │   ├── suzaku_timeline.py # 🕒 Suzaku Timeline page
+│   │   ├── suzaku_summary.py  # 👤 Suzaku Summary page
+│   │   └── suzaku_metrics.py  # 📊 Suzaku Metrics page
 │   ├── prompts/
 │   │   ├── system_prompt.py
 │   │   └── analysis_prompt.py

@@ -39,13 +39,20 @@ agent/
 ├── schema.py              # Column metadata for cloudtrail_events and Suzaku's timeline
 ├── profiles.py            # DatasetProfile — table, filters, prompt, state namespace per page
 ├── suzaku_db.py           # Discovery + suzaku_meta-based detection of Suzaku *.duckdb files
+├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
+├── suzaku_summary_queries.py  # Reviewed SQL for aws-ct-summary (no Streamlit import)
+├── suzaku_metrics_queries.py  # Reviewed SQL for aws-ct-metrics (no Streamlit import)
 ├── config.py              # Configuration management (env vars)
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised; each maps to
 │                          #   Threat Technique Catalog for AWS techniques via `techniques:`)
 ├── suzaku_timeline_hunts.yaml  # 15 pre-built hunts for Suzaku's timeline table (same schema)
 ├── views/
 │   ├── __init__.py
-│   └── suzaku_timeline.py # Page: hunting over Suzaku aws-ct-timeline output
+│   ├── explorer.py        # Panel kit for the explorer pages: pin-to-report, CSV,
+│   │                      #   AI explain, run info, empty state, timeline pivot
+│   ├── suzaku_timeline.py # Chat page: hunting over Suzaku aws-ct-timeline output
+│   ├── suzaku_summary.py  # Explorer page: identity triage over aws-ct-summary
+│   └── suzaku_metrics.py  # Explorer page: field explorer over aws-ct-metrics
 ├── prompts/
 │   ├── __init__.py
 │   ├── system_prompt.py   # System prompt template for cloudtrail_events
@@ -73,12 +80,15 @@ agent/
     ├── test_suzaku_db.py              # Suzaku detection, discovery, env overrides
     ├── test_suzaku_timeline_hunts.py  # Every Suzaku hunt executed against the fixture
     ├── test_suzaku_timeline_view.py   # Page wiring + session-state isolation between pages
+    ├── test_suzaku_summary_queries.py # aws-ct-summary SQL, verified by control queries
+    ├── test_suzaku_metrics_queries.py # aws-ct-metrics SQL, field-agnostic + geo-empty case
+    ├── test_suzaku_explorer_views.py  # Explorer pages: panels, pinning, pivot, no generated SQL
     └── test_result_card_charts.py     # Charts must not nest expanders; time-column detection
 ```
 
 ## Implemented Tests
 
-713 tests across 20 test files (counts below are approximate — run
+825 tests across 24 test files (counts below are approximate — run
 `python3 -m pytest <file> --collect-only -q` for exact numbers). Key coverage areas per module:
 
 ### config.py (`test_config.py` — 10 tests)
@@ -184,6 +194,34 @@ agent/
 - **UI-01:** `_export_session()` includes `analyst_note` per query
 - **UI-02:** `_handle_direct_sql()` stores label/category in ReportEntry
 - **UI-04:** `bulk_progress` session state default (`None`)
+
+### suzaku_summary_queries.py (`test_suzaku_summary_queries.py` — 26 tests)
+- Identity triage: 22 rows, one per identity, abused-first ordering
+- Abuse counts and KPI row checked against hand-written control queries
+- `IsAbused` x `Outcome` is a partition: the four quadrants sum to the identity's rows
+- `attribute_kinds()` comes from the data, so a new Suzaku attribute needs no code change
+- Rare-first ordering, case-insensitive search, shared-value drill-down
+- `compare_identities()` partitions into shared / only-A / only-B, NULL excluded
+- Robustness: an unknown ARN returns empty frames; a value carrying a quote is bound, not SQL
+
+### suzaku_metrics_queries.py (`test_suzaku_metrics_queries.py` — 14 tests)
+- Every statement is parameterized on `Field`; a field name with a quote returns empty
+- Live controls (`limit`, `min_count`, `max_count`, `search`, `seen_after`) compose
+- `share_of_filtered` re-derives the share over the filtered subset and sums to 100%
+- Pareto curve is monotonic and ends at 100%; `values_covering()` answers "how many reach 90%?"
+- `has_geo_data()` is **False** for the fixture — its geo columns exist but are all NULL —
+  and True for a synthetic file with values, so the page never draws blank geo charts
+
+### views/ (`test_suzaku_explorer_views.py` — 19 tests)
+- Navigation exposes four pages; CloudTrail stays the default
+- Both explorer pages render their empty state without opening a database
+- Both render end-to-end against the committed fixtures (every panel's SQL runs)
+- 📌 Pin adds exactly one `ReportEntry`, which both report renderers then emit
+- 🤖 Explain is disabled without an API key and calls `generate_analysis` once with the panel's SQL
+- Clearing one page's namespace leaves the other three intact
+- The timeline pivot escapes its literal, rejects an unknown column, seeds the chat page's
+  direct-SQL hook and is consumed exactly once
+- `generate_sql` / `fix_sql_with_llm` are never called from an explorer page
 
 ## OpenAI API Mocking Strategy
 
