@@ -73,6 +73,8 @@ agent/
     ├── test_prompts.py
     ├── test_report.py
     ├── test_app.py            # includes handlers.py tests (UI-03 bulk mode, geo enrichment, …)
+    ├── test_session.py        # session.py: namespace defaults, hunt loading, JSON export
+    ├── test_charts.py         # views/charts.py: bar / timeseries / auto dispatch
     ├── test_builtin_hunts_phase1.py … test_builtin_hunts_phase6.py
     ├── test_builtin_hunts_techniques.py  # Threat Technique Catalog metadata + rendering
     ├── test_console_login_oauth2.py
@@ -178,22 +180,30 @@ agent/
   label/category metadata.
 - **#GEO:** `_maybe_enrich_geo` integration for all three execution paths.
 
-### app.py (`test_app.py` — 74 tests)
-- Session state initialisation and idempotency
+### app.py (`test_app.py` — 49 tests)
 - Model options, built-in hunt YAML validation
 - Direct SQL execution (no API key path, date filter application)
 - Conversation context retention and `MAX_CONTEXT_TURNS` enforcement
 - SQL auto-correction retry loop (`execute_with_retry` integration)
 - No-API-key guidance banner rendering
-- Row limit session state defaults and enforcement
-- Chart rendering (bar, timeseries, auto modes)
+- Row limit enforcement
 - Edit/rerun SQL handler
 - `ReportEntry.description` field storage
 - Query index in messages
-- **UI-01:** `analyst_notes` session state default (`{}`)
-- **UI-01:** `_export_session()` includes `analyst_note` per query
 - **UI-02:** `_handle_direct_sql()` stores label/category in ReportEntry
-- **UI-04:** `bulk_progress` session state default (`None`)
+- **UI-BADGE / UI-FILTER:** result badges, expander titles, entry filtering
+
+### session.py (`test_session.py` — 20 tests)
+- Session state initialisation, idempotency and per-profile isolation
+- Defaults for `date_start`/`date_end`, `conversation_context`, `row_limit`
+- `_load_builtin_prompts()` shape and fallback
+- `_build_all_hunt_queries()` output shape, whitespace stripping, sql-less exclusion
+- **UI-01:** `analyst_notes` default (`{}`) and `_export_session()` `analyst_note`
+- **UI-04:** `bulk_progress` default (`None`)
+
+### views/charts.py (`test_charts.py` — 7 tests)
+- Chart rendering (bar, timeseries, auto modes) and the `type='none'` opt-out
+- Time-series skips: unparseable timestamps, a single bucket, no time column
 
 ### suzaku_summary_queries.py (`test_suzaku_summary_queries.py` — 26 tests)
 - Identity triage: 22 rows, one per identity, abused-first ordering

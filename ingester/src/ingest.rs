@@ -138,29 +138,6 @@ pub struct IngestOptions<'a> {
     pub perf_log: bool,
 }
 
-/// Ingest CloudTrail log files from `path` into `conn` using the given `options`.
-///
-/// This is the **primary entry point** for the ingestion pipeline.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// let stats = ingest(&log_dir, &conn, IngestOptions::default())?;
-/// ```
-pub fn ingest(path: &Path, conn: &Connection, options: IngestOptions<'_>) -> Result<IngestStats> {
-    ingest_core(
-        path,
-        conn,
-        options.show_progress,
-        &options.date_filter,
-        &options.path_filter,
-        options.geoip,
-        &options.field_filter,
-        options.strip_raw_event,
-        options.perf_log,
-    )
-}
-
 /// Read a file, compute its SHA-256 digest, and parse the CloudTrail records.
 ///
 /// Returns `(sha256_hex, records)`. This function is CPU/IO-bound and is
@@ -213,7 +190,15 @@ pub fn parse_file_content(
     Ok((sha256, records))
 }
 
-/// Core ingestion routine shared by all public entry points.
+/// Ingest CloudTrail log files from `path` into `conn` using the given `options`.
+///
+/// This is the **primary entry point** for the ingestion pipeline.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// let stats = ingest(&log_dir, &conn, IngestOptions::default())?;
+/// ```
 ///
 /// # Pipeline
 ///
@@ -243,22 +228,19 @@ pub fn parse_file_content(
 /// - A DuckDB insertion error causes the insertion loop to break, `rx` is
 ///   dropped (signalling the parser thread to exit), the parser thread is
 ///   joined, and then the error is propagated via `?`.
-//
-// Each parameter maps 1:1 to a logically distinct knob exposed via
-// `IngestOptions`. Bundling them into a struct here would just push the
-// same fan-out one level down without simplifying anything.
-#[allow(clippy::too_many_arguments)]
-fn ingest_core(
-    path: &Path,
-    conn: &Connection,
-    show_progress: bool,
-    date_filter: &DateFilter,
-    path_filter: &PathFilter,
-    geoip: Option<&GeoipEnricher>,
-    field_filter: &FieldFilter,
-    strip_raw_event: bool,
-    perf_log: bool,
-) -> Result<IngestStats> {
+pub fn ingest(path: &Path, conn: &Connection, options: IngestOptions<'_>) -> Result<IngestStats> {
+    // Named once here so the pipeline below reads in terms of what each knob
+    // does rather than which field it came from.
+    let IngestOptions {
+        show_progress,
+        ref date_filter,
+        ref path_filter,
+        geoip,
+        ref field_filter,
+        strip_raw_event,
+        perf_log,
+    } = options;
+
     ensure_table(conn)?;
 
     let start = Instant::now();

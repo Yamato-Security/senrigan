@@ -391,6 +391,7 @@ senrigan/
 │   ├── README.md              # agent module documentation
 │   ├── app.py                 # Entry point: st.navigation over the four pages
 │   ├── handlers.py            # Stateful handler functions
+│   ├── session.py             # Per-profile session state + built-in hunt loading
 │   ├── llm.py
 │   ├── query.py
 │   ├── report.py              # Chat-session Markdown / PDF report
@@ -405,6 +406,8 @@ senrigan/
 │   ├── builtin_hunts.yaml     # CloudTrail hunts (126)
 │   ├── suzaku_timeline_hunts.yaml  # Suzaku timeline hunts (16)
 │   ├── views/
+│   │   ├── charts.py          # render_chart: bar / time-series, drawn inline
+│   │   ├── db_selector.py     # Sidebar picker over the discovered Suzaku files
 │   │   ├── explorer.py        # Panel kit: pin-to-report, CSV, AI explain, pivot
 │   │   ├── suzaku_timeline.py # 🕒 Suzaku Timeline page
 │   │   ├── suzaku_summary.py  # 👤 Suzaku Summary page
