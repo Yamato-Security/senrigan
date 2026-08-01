@@ -9,3 +9,17 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(ci)"
+
+  # Track the Dockerfile base images too. Without this, tag and digest pins
+  # silently go stale — the node digest in config_viz/Dockerfile drifted a full
+  # patch release behind before anyone noticed.
+  - package-ecosystem: "docker"
+    directories:
+      - "/ingester"
+      - "/agent"
+      - "/config_viz"
+      - "/dashboard"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
