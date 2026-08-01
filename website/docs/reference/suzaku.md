@@ -122,7 +122,7 @@ Suzaku's DuckDB output is typed: real `TIMESTAMP`s, an ordered `suzaku_level`
 ENUM for the severity, `NULL` for absent values, and `VARCHAR[]` for multi-value
 fields. Senrigan reads it directly; the only adaptation left is the PascalCase →
 snake_case rename in the Superset datasets. The schema is documented in
-`doc/PLAN_SUZAKU_SCHEMA.md`.
+`doc/ARCHITECTURE.md`.
 
 Two things are worth knowing when you write your own SQL. `"Level"` is an ENUM, so
 `ORDER BY "Level" DESC` is already severity order — but a threshold needs the

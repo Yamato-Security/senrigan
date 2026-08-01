@@ -22,7 +22,7 @@ Four containers share one DuckDB file via a **bind mount** (`docker/data/db/thre
 The `agent` container is a two-page Streamlit app (`st.navigation`): **🔭 Senrigan**, the chat
 hunting page over `cloudtrail_events`, and **🕒 Suzaku Timeline**, the same UI over the `timeline`
 table of a Suzaku `aws-ct-timeline` export. One pipeline serves both, parameterized by a
-`DatasetProfile` (`agent/profiles.py`); see `doc/PLAN_SUZAKU_VIEWS.md` §4.
+`DatasetProfile` (`agent/profiles.py`); see `doc/ARCHITECTURE.md`.
 
 Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
 `threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
@@ -32,7 +32,7 @@ arbitrary: the producing command is read from the file's own `suzaku_meta` table
 `schema_version` both readers check before trusting the columns. When a directory holds several
 files for the same command, exactly one wins — `generated_at` → mtime → path, and only among
 files carrying every column the shipped datasets select (`REQUIRED_COLUMNS`) — so both UIs land
-on the same file; see `doc/PLAN_SUZAKU_MULTI_DB.md`. `aws-ct-summary` and `aws-ct-metrics` are served by
+on the same file; see `doc/ARCHITECTURE.md`. `aws-ct-summary` and `aws-ct-metrics` are served by
 dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
 cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
 removed upload-a-JSON viewer.
@@ -131,7 +131,7 @@ the matching ingester options itself, echoing what it found and what it skipped:
 Explicit overrides (`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`) live under
 `##@ Advanced ingest` in `make help-all`. Detection paths follow `GEOIP_HOST_PATH` /
 `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching `docker/docker-compose.yml`.
-Rationale and history: [doc/PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md).
+Operational details live in [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
 Superset never reads those YAML files directly — it only applies them from the compiled
@@ -454,14 +454,6 @@ senrigan/
 │   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (shipped: 19-chart dashboard)
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
-│   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
-│   ├── PLAN_THREAT_CATALOG.md # Threat Technique Catalog for AWS coverage + TID annotations
-│   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
-│   ├── PLAN_SUZAKU_VIEWS.md   # Suzaku DuckDB visualization (agent page + 3 dashboards)
-│   ├── PLAN_SUZAKU_SCHEMA.md  # Suzaku's DuckDB schema (proposal; shipped as suzaku PR #180)
-│   ├── PLAN_SUZAKU_MULTI_DB.md  # Several Suzaku files per directory: one deterministic winner
-│   ├── PLAN_SUZAKU_TIMELINE_DASHBOARD.md  # Timeline dashboard: 3 datasets, 46 charts (implemented)
-│   ├── PLAN_DOCS_REFRESH.md   # Bringing the docs back in step with the implementation
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 ├── docker/

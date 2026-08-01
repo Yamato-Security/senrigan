@@ -69,8 +69,7 @@ filesystem and store them in DuckDB.
     [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` export
 - A `DatasetProfile` (`agent/profiles.py`) carries everything table-specific — table
   name, time column, filter CTE, severity column, system prompt, hunts YAML and the
-  session-state namespace — so neither page duplicates the pipeline. See
-  [PLAN_SUZAKU_VIEWS.md](PLAN_SUZAKU_VIEWS.md) §4.
+  session-state namespace — so neither page duplicates the pipeline.
 
 #### Suzaku output as a third-party read-only input
 
@@ -108,8 +107,7 @@ A file is a candidate only if it carries every column the shipped datasets selec
 `--geo-ip`: without it Suzaku omits `SrcASN` / `SrcCity` / `SrcCountry`, and the file is
 rejected with that reason rather than registered and left to fail at render time. Each
 Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
-`make status` / `make up` print which file won and which candidates lost. Full rationale:
-[PLAN_SUZAKU_MULTI_DB.md](PLAN_SUZAKU_MULTI_DB.md).
+`make status` / `make up` print which file won and which candidates lost.
 
 ### config_viz (Python / FastAPI + React)
 
@@ -348,4 +346,3 @@ pub trait LogIngester: Send + Sync {
 | `s3_access`     | S3 Access Logs     | v2.0   |
 | `waf`           | AWS WAF Logs       | v2.0   |
 | `guardduty`     | GuardDuty Findings | v2.0   |
-

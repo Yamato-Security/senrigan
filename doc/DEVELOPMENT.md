@@ -320,7 +320,7 @@ pytest                            # From the repository root (~134 tests)
 This suite owns the claims no module can check alone: that the `Makefile`,
 `docker/docker-compose.yml` and the documentation agree with each other — command names,
 mount paths, chart and hunt counts, and the 15 localized site pages. See
-[PLAN_DOCS_REFRESH.md](PLAN_DOCS_REFRESH.md).
+[AGENTS.md](../AGENTS.md#documentation).
 
 #### Working with Suzaku output
 
@@ -392,4 +392,3 @@ duckdb -readonly docker/data/db/<suzaku>.duckdb "SELECT * FROM suzaku_meta"
 > The shared database is a **bind mount**, not a named volume — `docker volume inspect`
 > will not find it. Look at `docker/data/db/` on the host, or wherever
 > `DUCKDB_HOST_PATH` points.
-

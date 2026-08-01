@@ -246,7 +246,7 @@ now asserts there is nothing left to keep in sync.
 
 ### Several files for one command
 
-See [doc/PLAN_SUZAKU_MULTI_DB.md](../doc/PLAN_SUZAKU_MULTI_DB.md). Only one file
+See [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md). Only one file
 serves each command, and it is picked in this order:
 
 1. `SUZAKU_TIMELINE_DB` / `SUZAKU_SUMMARY_DB` / `SUZAKU_METRICS_DB`, when set to a
@@ -301,8 +301,8 @@ longer cast or unpack anything. Two reasons to stay **virtual** (`sql:`) remain:
 `suzaku_summary_identities` additionally pivots the per-API-call counts of
 `summary_api_calls` into one row per identity.
 
-[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) records the schema and
-which proposals upstream adopted.
+[doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) records the schema constraints and
+the shared-module arrangement.
 
 The metrics dashboard is deliberately **field-agnostic**: Suzaku counts whichever
 field it was given (`-f`), so no chart filters on a literal field name and the

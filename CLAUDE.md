@@ -10,14 +10,7 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [TDD_GUIDE.md](doc/TDD_GUIDE.md), [PRD.md](doc/PRD.md),
 > [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
 > [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md),
-> [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md), [PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md),
-> [PLAN_THREAT_CATALOG.md](doc/PLAN_THREAT_CATALOG.md),
-> [PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md),
-> [PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md),
-> [PLAN_SUZAKU_SCHEMA.md](doc/PLAN_SUZAKU_SCHEMA.md),
-> [PLAN_SUZAKU_MULTI_DB.md](doc/PLAN_SUZAKU_MULTI_DB.md),
-> [PLAN_SUZAKU_TIMELINE_DASHBOARD.md](doc/PLAN_SUZAKU_TIMELINE_DASHBOARD.md),
-> and [PLAN_DOCS_REFRESH.md](doc/PLAN_DOCS_REFRESH.md).
+and [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
 
 ---
 
@@ -36,7 +29,7 @@ Four Docker containers share **one DuckDB file** via a bind mount
 - `agent` is a two-page Streamlit app (`st.navigation`): **🔭 Senrigan** (chat hunting over
   `cloudtrail_events`) and **🕒 Suzaku Timeline** (chat hunting over Suzaku's `timeline` table).
   Both pages share one pipeline, parameterized by a `DatasetProfile` (`agent/profiles.py`);
-  see [doc/PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md) §4.
+  see [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
 - **Suzaku output** (`*.duckdb` / `*.db` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`)
   is read as-is from the same mounted directory — never imported, never written. Detection, fitness
   and selection live **only** in `agent/suzaku_db.py`; the Superset image cannot install the agent
@@ -44,8 +37,7 @@ Four Docker containers share **one DuckDB file** via a bind mount
   `superset-resync`, and `dashboard/init/register_suzaku_dbs.py` imports it (guarded by
   `tests/test_suzaku_detection_shared.py`). A `schema_version` newer than this release is refused.
   `aws-ct-summary` / `aws-ct-metrics` are dashboard-only by design — Suzaku already aggregated them.
-- **Several Suzaku files in one directory** — see
-  [doc/PLAN_SUZAKU_MULTI_DB.md](doc/PLAN_SUZAKU_MULTI_DB.md). One file serves each command, chosen by
+- **Several Suzaku files in one directory** — one file serves each command, chosen by
   `generated_at` (when Suzaku ran) → mtime → path, so the choice is deterministic and identical in
   both UIs. A file is eligible only when it has every column the shipped datasets select
   (`REQUIRED_COLUMNS`) — which is why the **Suzaku Metrics** dashboard needs a run with `--geo-ip`:
@@ -143,7 +135,7 @@ the matching ingester options itself, echoing what it found and what it skipped:
 Explicit overrides live under `##@ Advanced ingest` in `make help-all`
 (`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`). Detection paths follow
 `GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching
-`docker/docker-compose.yml`. See [doc/PLAN_MAKEFILE_UX.md](doc/PLAN_MAKEFILE_UX.md).
+`docker/docker-compose.yml`. See [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
 
 **After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
 Superset never reads those YAML files directly — it only applies them from the compiled
@@ -230,7 +222,7 @@ On failure, `agent`'s `execute_with_retry` calls `fix_sql_with_llm` once for aut
 Date-range UI filters inject a `_ct_filtered` CTE (see `apply_date_filter()` in `agent/query.py`).
 `agent/builtin_hunts.yaml` ships pre-built hunts; entries with an `sql` field run without an API key.
 Query results containing IP columns are automatically geo-enriched (`agent/geo.py`; sidebar toggle,
-best-effort — see [doc/PLAN_GEO_ENRICHMENT.md](doc/PLAN_GEO_ENRICHMENT.md)).
+best-effort — see [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)).
 
 ---
 
@@ -274,7 +266,7 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 **One owner per fact.** A number, path, or command name lives in exactly one place; every
 other mention links to it instead of repeating it. Repetition is how the docs decayed
 before — the Suzaku Run Info card added one chart to three dashboards and three documents
-kept quoting the old totals. See [PLAN_DOCS_REFRESH.md](doc/PLAN_DOCS_REFRESH.md).
+kept quoting the old totals; the root `tests/` suite now enforces that contract.
 
 Where the fact must appear in prose anyway (a headline count, a README tree), the root
 `tests/` suite asserts it against the artifact that produces it:
@@ -331,10 +323,7 @@ senrigan/
 ├── tests/       # Repository-level consistency suite (Makefile / compose / docs)
 ├── website/     # Material for MkDocs documentation site — docs/ in 15 locales
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
-                 #   PLAN_THREAT_CATALOG, PLAN_MAKEFILE_UX, PLAN_SUZAKU_VIEWS,
-                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_MULTI_DB, PLAN_SUZAKU_TIMELINE_DASHBOARD,
-                 #   PLAN_DOCS_REFRESH
+                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

@@ -250,7 +250,7 @@ page says so explicitly when it detects one.
 
 Suzaku's timeline table differs from `cloudtrail_events` in three ways, all
 carried by the profile (see
-[doc/PLAN_SUZAKU_SCHEMA.md](../doc/PLAN_SUZAKU_SCHEMA.md) for the schema):
+[doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) for the schema and page split):
 
 - **Severity filter** — `low` and `informational` are ~87% of a real timeline, so
   the sidebar defaults to `critical` / `high` / `medium`. Without it the page
@@ -349,4 +349,3 @@ black .                                       # Format
 - DuckDB connections in tests use the `tmp_duckdb` fixture from `conftest.py`
   (`tmp_path / "test.db"`), never a shared file.
 - Real OpenAI API calls in tests are **forbidden** — use `mock_openai_client`.
-
