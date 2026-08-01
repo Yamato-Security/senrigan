@@ -1,19 +1,21 @@
-"""Tests keeping the 15 localized Getting Started pages in step with the Makefile.
+"""Tests keeping the localized documentation site in step with the repository.
 
-Covers PLAN_MAKEFILE_UX.md Phase 4. Translations drift silently: a locale can
-fall a revision behind and nobody notices until a user follows it. These tests
-check structure and command names, which are identical across locales, and say
-nothing about the prose, which is not.
+Covers PLAN_MAKEFILE_UX.md Phase 4 and PLAN_DOCS_REFRESH.md Phase 1.
+Translations drift silently: a locale can fall a revision behind and nobody
+notices until a user follows it. These tests check structure and command names,
+which are identical across locales, and say nothing about the prose, which is
+not.
 """
 
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
 
-from tests.conftest import REPO_ROOT
+from tests.conftest import REPO_ROOT, WEBSITE_DOCS, site_locales
 
 GETTING_STARTED = sorted(
     (REPO_ROOT / "website" / "docs" / "getting-started").glob("index*.md")
@@ -25,6 +27,31 @@ CORE_COMMANDS = ["make ingest", "make up", "make down", "make logs", "make reset
 # Superseded by filesystem detection in Phase 2. Still valid targets, but the
 # quick start must not send a newcomer down the explicit-override path.
 SUPERSEDED = ["make ingest-geoip", "make ingest-config", "make ingest-full"]
+
+# The one page that has not been translated yet. `fallback_to_default: true` in
+# mkdocs.yml means the 14 other locales silently serve English for the newest
+# feature — invisible in a build, which is why it is recorded here instead.
+# Translating it is PLAN_DOCS_REFRESH.md Phase 5; remove this entry then.
+UNTRANSLATED = {"reference/suzaku"}
+
+
+def page_families() -> dict[str, set[str]]:
+    """Return ``{"<dir>/<stem>": {filename, ...}}`` for every site page.
+
+    A page is one family of files: ``index.md`` plus one ``index.<locale>.md``
+    per translation.
+    """
+    locales = set(site_locales())
+    families: dict[str, set[str]] = defaultdict(set)
+
+    for path in WEBSITE_DOCS.rglob("*.md"):
+        stem, _, suffix = path.name[: -len(".md")].partition(".")
+        if suffix and suffix not in locales:  # e.g. a stem containing a dot
+            stem = path.name[: -len(".md")]
+        family = f"{path.parent.relative_to(WEBSITE_DOCS)}/{stem}".removeprefix("./")
+        families[family].add(path.name)
+
+    return families
 
 
 def test_every_locale_is_present():
@@ -66,6 +93,32 @@ def test_locale_names_both_auto_detected_directories(path: Path):
 
     assert "docker/data/geoip/" in text
     assert "docker/data/config-snapshots/" in text
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        pytest.param(
+            name,
+            marks=(
+                pytest.mark.xfail(
+                    strict=True, reason="untranslated — PLAN_DOCS_REFRESH.md Phase 5"
+                )
+                if name in UNTRANSLATED
+                else ()
+            ),
+        )
+        for name in sorted(page_families())
+    ],
+)
+def test_every_site_page_ships_every_locale(family: str):
+    """A page that exists in one locale only serves English to the other 14."""
+    locales = site_locales()
+    stem = family.rsplit("/", 1)[-1]
+    expected = {f"{stem}.md"} | {f"{stem}.{locale}.md" for locale in locales[1:]}
+
+    missing = sorted(expected - page_families()[family])
+    assert not missing, f"{family} is missing {len(missing)} locales: {missing}"
 
 
 @pytest.mark.parametrize("path", GETTING_STARTED, ids=lambda p: p.name)

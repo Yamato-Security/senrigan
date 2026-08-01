@@ -42,9 +42,13 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 15 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) |
-| `aws-ct-summary` | — | Suzaku Identity Summary(aws-ct-summary) (18 charts) |
-| `aws-ct-metrics` | — | Suzaku Field Metrics(aws-ct-metrics) (14 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 16 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (46 charts) |
+| `aws-ct-summary` | — | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
+| `aws-ct-metrics` | — | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
+
+Each chart count includes that dashboard's **Suzaku Run Info** card. When the mounted
+directory holds several files for the same command, that card is how you tell which one
+the dashboard picked; `make status` prints the same choice before you open a browser.
 
 The split is deliberate. `aws-ct-timeline` is raw, high-cardinality detection data —
 exactly what ad-hoc SQL and AI narration are for. `aws-ct-summary` and
@@ -76,7 +80,7 @@ Two things are specific to Suzaku data:
 | 🔑 Identity | Top principals by severe detections · root-account detections · access keys behind detections |
 | 🌍 Origin | Top source IPs by distinct rules · top user agents · multi-region activity per principal |
 | ⚠ Failures | Failed API calls in detections |
-| 🧬 ATT&CK | Technique coverage · rule × technique matrix |
+| 🧬 ATT&CK | Technique coverage · tactic breakdown · rule × technique matrix |
 
 Every hunt runs without an API key, carries an explicit `ORDER BY` and `LIMIT`, and
 is executed against a real Suzaku fixture in CI.

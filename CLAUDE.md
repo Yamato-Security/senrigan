@@ -16,7 +16,8 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [PLAN_SUZAKU_VIEWS.md](doc/PLAN_SUZAKU_VIEWS.md),
 > [PLAN_SUZAKU_SCHEMA.md](doc/PLAN_SUZAKU_SCHEMA.md),
 > [PLAN_SUZAKU_MULTI_DB.md](doc/PLAN_SUZAKU_MULTI_DB.md),
-> and [PLAN_SUZAKU_TIMELINE_DASHBOARD.md](doc/PLAN_SUZAKU_TIMELINE_DASHBOARD.md).
+> [PLAN_SUZAKU_TIMELINE_DASHBOARD.md](doc/PLAN_SUZAKU_TIMELINE_DASHBOARD.md),
+> and [PLAN_DOCS_REFRESH.md](doc/PLAN_DOCS_REFRESH.md).
 
 ---
 
@@ -121,6 +122,12 @@ make up        # Start agent + dashboard + config_viz
 make down      # Stop everything
 make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
 make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
+```
+
+Two more worth knowing. Neither appears in the default help — reach for them when
+something looks wrong, not during a first run:
+
+```bash
 make status    # Container state, database size, and what ingest would detect
 make resync    # Fix a stale dashboard: re-syncs column metadata and re-resolves Suzaku file paths
 ```
@@ -174,9 +181,9 @@ npm test -- --run             # single-pass test
 npm run build                 # Vite production build → ../static/
 ```
 
-Approximate test totals (must not decrease in a PR): ingester ≈ 185 (Rust), agent ≈ 761 (pytest),
+Approximate test totals (must not decrease in a PR): ingester ≈ 186 (Rust), agent ≈ 761 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 134 (Makefile / compose / docs consistency —
+run with `make test-dashboard`), root `tests/` ≈ 249 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
@@ -262,6 +269,41 @@ DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db
 
 ---
 
+## Documentation
+
+**One owner per fact.** A number, path, or command name lives in exactly one place; every
+other mention links to it instead of repeating it. Repetition is how the docs decayed
+before — the Suzaku Run Info card added one chart to three dashboards and three documents
+kept quoting the old totals. See [PLAN_DOCS_REFRESH.md](doc/PLAN_DOCS_REFRESH.md).
+
+Where the fact must appear in prose anyway (a headline count, a README tree), the root
+`tests/` suite asserts it against the artifact that produces it:
+
+| Fact | Owned by | Asserted by |
+|------|----------|-------------|
+| Hunt counts and names | `agent/*_hunts.yaml` | `tests/test_doc_counts.py` |
+| Chart counts and names | `dashboard/assets/<bundle>/charts/` | `tests/test_doc_counts.py` |
+| Suite sizes | the suites | `tests/test_doc_counts.py` (cross-file agreement only) |
+| The five front-page commands | `Makefile` | `tests/test_doc_structure.py` |
+| Repository layout | the working tree | `tests/test_doc_structure.py` |
+| Locale coverage of the site | `website/mkdocs.yml` | `tests/test_docs.py` |
+
+So: when a PR changes one of these, run `make test-repo` — it names the stale sentence
+rather than leaving it for a later session to trip over. Adding a documented count without
+adding its assertion is how the next drift starts.
+
+Four more standing rules:
+
+- **English everywhere**, including `doc/`, `website/docs/` source pages, and commit messages.
+- **`doc/` is internal, `website/docs/` is the product.** A user-facing change needs the
+  site page, in all 15 locales — a missing locale silently serves English.
+- **`PLAN_*` / `PRD_*` are point-in-time records.** Do not rewrite them to match what
+  shipped; update their `Status:` line instead. The root suite excludes them from its
+  "must describe real behaviour" checks for this reason.
+- **`OLD-README.md` is frozen.** It is linked from `README.md` as a historical snapshot.
+
+---
+
 ## Security Rules
 
 1. **API keys:** never hardcode — always read from environment variables / `.env` (git-ignored).
@@ -283,12 +325,16 @@ senrigan/
 ├── config_viz/  # AWS Config resource graph — FastAPI backend + React 18/Vite/TS frontend (ELK layout)
 ├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/
 │               #   (cloudtrail_default, cloudtrail_rare, suzaku_{timeline,summary,metrics})
-├── sample/      # Trimmed Suzaku DuckDB fixtures + generate_fixtures.py (full runs are git-ignored)
+├── sample/      # sample/suzaku/: trimmed Suzaku fixtures + generate_fixtures.py
+│               #   (full Suzaku runs are git-ignored)
 ├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
+├── tests/       # Repository-level consistency suite (Makefile / compose / docs)
+├── website/     # Material for MkDocs documentation site — docs/ in 15 locales
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
                  #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA, PLAN_GEO_ENRICHMENT,
                  #   PLAN_THREAT_CATALOG, PLAN_MAKEFILE_UX, PLAN_SUZAKU_VIEWS,
-                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_MULTI_DB, PLAN_SUZAKU_TIMELINE_DASHBOARD
+                 #   PLAN_SUZAKU_SCHEMA, PLAN_SUZAKU_MULTI_DB, PLAN_SUZAKU_TIMELINE_DASHBOARD,
+                 #   PLAN_DOCS_REFRESH
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

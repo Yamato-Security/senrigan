@@ -186,8 +186,11 @@ imported into `threat_hunting.db`, and the files are only ever opened read-only.
 | Dashboard | Bundle | Suzaku command | Charts |
 |-----------|--------|----------------|:------:|
 | Suzaku Detection Timeline(aws-ct-timeline) | `suzaku_timeline.zip` | `aws-ct-timeline` | 46 across Overview / Rules / ATT&CK / Identities / Sources & Timing / Detail |
-| Suzaku Identity Summary(aws-ct-summary) | `suzaku_summary.zip` | `aws-ct-summary` | 18 across Overview / Identities / API Abuse / Attributes |
-| Suzaku Field Metrics(aws-ct-metrics) | `suzaku_metrics.zip` | `aws-ct-metrics` | 14 across Overview / Distribution / Rare & Temporal / GeoIP |
+| Suzaku Identity Summary(aws-ct-summary) | `suzaku_summary.zip` | `aws-ct-summary` | 19 across Overview / Identities / API Abuse / Attributes |
+| Suzaku Field Metrics(aws-ct-metrics) | `suzaku_metrics.zip` | `aws-ct-metrics` | 15 across Overview / Distribution / Rare & Temporal / GeoIP |
+
+Every count above includes the dashboard's **Suzaku Run Info** card, which names
+the file that dashboard is reading (see [Several files for one command](#several-files-for-one-command)).
 
 ### Setting them up
 
@@ -337,8 +340,8 @@ dashboard/
 │   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
 │   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
 │   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (46 charts)
-│   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (18 charts)
-│   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (14 charts)
+│   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (19 charts)
+│   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (15 charts)
 │   ├── zip_builder.py                  # Shared deterministic ZIP packaging
 │   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
 │   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
@@ -346,7 +349,7 @@ dashboard/
 │   ├── rebuild_suzaku_summary_zip.py   # Regenerate suzaku_summary.zip
 │   ├── rebuild_suzaku_metrics_zip.py   # Regenerate suzaku_metrics.zip
 │   ├── suzaku_timeline/                # Suzaku timeline definitions (3 virtual datasets)
-│   ├── suzaku_summary/                 # Suzaku summary definitions (3 virtual datasets)
+│   ├── suzaku_summary/                 # Suzaku summary definitions (4 virtual datasets)
 │   ├── suzaku_metrics/                 # Suzaku metrics definitions (field-agnostic)
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions
 │       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries

@@ -7,7 +7,10 @@ Module-level detail: [ingester/AGENTS.md](ingester/AGENTS.md) · [agent/AGENTS.m
 
 ## Architecture at a Glance
 
-Four Docker containers share one DuckDB file via a **bind mount** (`docker/data/db/threat_hunting.db`).
+Four containers share one DuckDB file via a **bind mount** (`docker/data/db/threat_hunting.db`).
+`docker/docker-compose.yml` declares six services in total: three long-running (`agent`,
+`config-viz`, `superset`) and three one-shot runners — `ingester` (profile `ingest`),
+`superset-init` (runs on every `up`) and `superset-resync` (profile `resync`).
 
 | Container | Language | DuckDB mode | Port |
 |-----------|----------|-------------|------|
@@ -26,7 +29,10 @@ Suzaku's `*.duckdb` output is read as-is from the same mounted directory — nev
 arbitrary: the producing command is read from the file's own `suzaku_meta` table
 (`agent/suzaku_db.py`, bind-mounted into the Superset init/resync containers and imported by
 `dashboard/init/register_suzaku_dbs.py`), which also carries the
-`schema_version` both readers check before trusting the columns. `aws-ct-summary` and `aws-ct-metrics` are served by
+`schema_version` both readers check before trusting the columns. When a directory holds several
+files for the same command, exactly one wins — `generated_at` → mtime → path, and only among
+files carrying every column the shipped datasets select (`REQUIRED_COLUMNS`) — so both UIs land
+on the same file; see `doc/PLAN_SUZAKU_MULTI_DB.md`. `aws-ct-summary` and `aws-ct-metrics` are served by
 dashboards only — Suzaku has already aggregated them, so re-aggregating through an LLM would add
 cost and a hallucination surface for nothing. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier,
 removed upload-a-JSON viewer.
@@ -103,7 +109,13 @@ make up        # Start agent + dashboard + config_viz
 make down      # Stop everything
 make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
 make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
-make status    # Container state, database size, and what ingest would detect
+```
+
+Three more that `make` does not advertise — two for when something looks wrong, one for
+before a PR:
+
+```bash
+make status    # Container state, database size, and which Suzaku file each dashboard uses
 make resync    # Fix blank dashboard after re-ingest (re-syncs column metadata)
 make check     # Everything CI enforces: tests + lint + format
 ```
@@ -161,13 +173,18 @@ npm run build                 # Vite production build → ../static/
 
 ```bash
 # Dashboard (dashboard/) — YAML/asset/config validation suite
-pytest                        # all tests (605 tests)
+pytest                        # all tests (793 dashboard tests)
 ```
 
-Approximate test totals: ingester ≈ 185 (Rust), agent ≈ 761 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 793, root `tests/` ≈ 134 (Makefile / compose / docs / Suzaku
+Approximate test totals: ingester ≈ 186 (Rust), agent ≈ 761 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 793, root `tests/` ≈ 249 (Makefile / compose / docs / Suzaku
 selection and lifecycle).
 Test count must not decrease in a PR.
+
+Documentation follows **one owner per fact**: a count, path or command name lives in one
+place and everything else links to it. The root suite asserts the ones that must appear in
+prose anyway, so run `make test-repo` after touching docs. Rules and the ownership table:
+`CLAUDE.md` → Documentation.
 
 ---
 
@@ -363,21 +380,28 @@ senrigan/
 │       ├── config_db.rs       # Config tables schema + Appender writes
 │       ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
 │       └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
-├── agent/                     # Python / Streamlit AI-agent UI
+├── agent/                     # Python / Streamlit AI-agent UI (two pages)
 │   ├── AGENTS.md              # Agent-specific TDD context
-│   ├── app.py                 # Entry point: chat hunting page
+│   ├── README.md              # agent module documentation
+│   ├── app.py                 # Entry point: st.navigation over both pages
 │   ├── handlers.py            # Stateful handler functions
 │   ├── llm.py
 │   ├── query.py
 │   ├── report.py              # Chat-session Markdown / PDF report
-│   ├── schema.py
+│   ├── schema.py              # Columns the LLM sees (17 core + 7 GeoIP)
 │   ├── config.py
-│   ├── builtin_hunts.yaml
-│   └── prompts/
-│       ├── system_prompt.py
-│       └── analysis_prompt.py
+│   ├── geo.py                 # Best-effort geo enrichment of IP result columns
+│   ├── profiles.py            # DatasetProfile: one pipeline, two datasets
+│   ├── suzaku_db.py           # Suzaku file detection, fitness and selection
+│   ├── builtin_hunts.yaml     # CloudTrail hunts (126)
+│   ├── suzaku_timeline_hunts.yaml  # Suzaku timeline hunts (16)
+│   ├── views/
+│   │   └── suzaku_timeline.py # 🕒 Suzaku Timeline page
+│   ├── prompts/
+│   │   ├── system_prompt.py
+│   │   └── analysis_prompt.py
+│   └── tests/                 # pytest suite (see agent/AGENTS.md)
 ├── config_viz/                # AWS Config resource graph (FastAPI + React)
-│   ├── PLAN.md                # Implementation plan (Phase A/B/C — all complete)
 │   ├── README.md              # config_viz module documentation
 │   ├── Dockerfile             # Multi-stage: Node build → Python runtime
 │   ├── backend/               # FastAPI backend (Python 3.14+)
@@ -427,7 +451,7 @@ senrigan/
 │   ├── ARCHITECTURE.md
 │   ├── DEVELOPMENT.md
 │   ├── PRD.md
-│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (removed impl; redesign pending)
+│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (shipped: 19-chart dashboard)
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
 │   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── PLAN_GEO_ENRICHMENT.md # auto geo columns for IP output (agent + dashboard)
@@ -435,9 +459,18 @@ senrigan/
 │   ├── PLAN_MAKEFILE_UX.md   # Makefile UX: two-tier help + filesystem-driven ingest
 │   ├── PLAN_SUZAKU_VIEWS.md   # Suzaku DuckDB visualization (agent page + 3 dashboards)
 │   ├── PLAN_SUZAKU_SCHEMA.md  # Suzaku's DuckDB schema (proposal; shipped as suzaku PR #180)
+│   ├── PLAN_SUZAKU_MULTI_DB.md  # Several Suzaku files per directory: one deterministic winner
 │   ├── PLAN_SUZAKU_TIMELINE_DASHBOARD.md  # Timeline dashboard: 3 datasets, 46 charts (implemented)
+│   ├── PLAN_DOCS_REFRESH.md   # Bringing the docs back in step with the implementation
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
-└── docker/
-    └── docker-compose.yml     # Orchestration (5 services + profiles)
+├── docker/
+│   └── docker-compose.yml     # Orchestration (5 services + ingest/resync profiles)
+├── sample/
+│   └── suzaku/                # Trimmed Suzaku fixtures + generate_fixtures.py
+├── tests/                     # Repository-level consistency suite (Makefile / compose / docs)
+├── website/                   # Material for MkDocs site, 15 locales (docs/, mkdocs.yml)
+├── Makefile                   # The command surface: `make` prints the five to start with
+├── README.md                  # Landing page → the documentation site
+└── OLD-README.md              # Frozen pre-site single-page README
 ```

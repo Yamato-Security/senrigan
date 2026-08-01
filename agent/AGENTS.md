@@ -111,7 +111,7 @@ agent/
 - `test_default_row_limit_is_500` — `DEFAULT_ROW_LIMIT` constant equals 500.
 - Plus 2 additional execute_query_large_row_limit and forwarding tests.
 
-### llm.py (`test_llm.py` — 49 tests)
+### llm.py (`test_llm.py` — 51 tests)
 - `test_build_system_prompt_includes_schema` — System prompt includes schema description.
 - `test_build_system_prompt_includes_duckdb_dialect` — DuckDB dialect note included.
 - `test_generate_sql_returns_sql_string` — Mocked OpenAI response → SQL string returned.

@@ -7,31 +7,39 @@ All architectural documentation, comments, and code annotations in this project 
 ## System Overview
 
 Senrigan is a locally-executed, AI-assisted threat hunting tool for AWS CloudTrail logs.
-It consists of four independent containers orchestrated by Docker Compose, sharing a DuckDB
-database via a Docker bind mount.
+Four services do the work, orchestrated by Docker Compose and sharing one bind-mounted
+directory. Two more exist and are not long-lived containers: `superset-init` runs once on
+every `up` to import the dashboard bundles, and `superset-resync` runs on demand behind the
+`resync` profile. See [Docker Compose Services](#docker-compose-services).
+
+That mounted directory holds more than one database. `threat_hunting.db` is the one
+Senrigan writes; alongside it sit any number of read-only `*.duckdb` files produced by
+[Suzaku](https://github.com/Yamato-Security/suzaku), which the readers open as-is.
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                         Docker Compose                              │
-│                                                                     │
-│  ┌────────────┐  ┌────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │  ingester  │  │   agent    │  │  config_viz  │  │ dashboard │  │
-│  │  (Rust)    │  │ (Streamlit)│  │(FastAPI+     │  │ (Superset)│  │
-│  │            │  │            │  │  React)      │  │           │  │
-│  │ CloudTrail │  │ AI-Agent   │  │ AWS Config   │  │ BI / Viz  │  │
-│  │ gz ingest  │  │ SQL gen/   │  │ Resource     │  │           │  │
-│  │ Config     │  │ exec       │  │ Graph        │  │           │  │
-│  │ import     │  │            │  │              │  │           │  │
-│  │ READ_WRITE │  │ READ_ONLY  │  │ READ_ONLY    │  │ READ_ONLY │  │
-│  └─────┬──────┘  └─────┬──────┘  └──────┬───────┘  └─────┬─────┘  │
-│        └───────────────┴─────────────────┴────────────────┘        │
-│                                   │                                 │
-│                          ┌────────▼──────┐                         │
-│                          │    DuckDB     │                         │
-│                          │ (Bind Mount)  │                         │
-│                          │   (SSD)       │                         │
-│                          └───────────────┘                         │
-└────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                          Docker Compose                              │
+│                                                                      │
+│  ┌────────────┐  ┌────────────┐  ┌──────────────┐  ┌─────────────┐   │
+│  │  ingester  │  │   agent    │  │  config_viz  │  │  dashboard  │   │
+│  │  (Rust)    │  │ (Streamlit)│  │(FastAPI+     │  │  (Superset) │   │
+│  │            │  │            │  │  React)      │  │             │   │
+│  │ CloudTrail │  │ AI-Agent   │  │ AWS Config   │  │  BI / Viz   │   │
+│  │ gz ingest  │  │ SQL gen/   │  │ Resource     │  │             │   │
+│  │ Config     │  │ exec       │  │ Graph        │  │             │   │
+│  │ import     │  │ 2 pages    │  │              │  │ 5 dashboards│   │
+│  │ READ_WRITE │  │ READ_ONLY  │  │ READ_ONLY    │  │  READ_ONLY  │   │
+│  └─────┬──────┘  └──┬──────┬──┘  └──────┬───────┘  └──┬───────┬──┘   │
+│        │            │      │            │             │       │      │
+│        └────────────┴──────┼────────────┴─────────────┘       │      │
+│                            │                                  │      │
+│                  ┌─────────▼─────────┐          ┌─────────────▼────┐ │
+│                  │ threat_hunting.db │          │  suzaku *.duckdb │ │
+│                  │  1 writer / N     │          │  third-party,    │ │
+│                  │  readers          │          │  never written   │ │
+│                  └───────────────────┘          └──────────────────┘ │
+│                       docker/data/db/  (bind mount, SSD recommended) │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Module Responsibilities
@@ -83,8 +91,25 @@ path per database connection, resolved once by `superset-init`:
 | `agent` | `agent/suzaku_db.py` | at runtime, per rerun |
 | `dashboard` | `dashboard/init/register_suzaku_dbs.py` | once, at bootstrap |
 
-The Superset image cannot import the agent package, so the detection constants are
-duplicated and `tests/test_suzaku_detection_parity.py` fails if the copies drift.
+The Superset image cannot import the agent package. `docker/docker-compose.yml` therefore
+bind-mounts `agent/suzaku_db.py` into `superset-init` and `superset-resync`, and
+`register_suzaku_dbs.py` imports it, so there is one implementation rather than two copies;
+`tests/test_suzaku_detection_shared.py` fails if that wiring is undone.
+
+##### Choosing between several files
+
+A directory routinely ends up holding more than one file for the same Suzaku command — a
+re-run, a second account, a colleague's export. Exactly one wins per command, chosen by
+`generated_at` (when Suzaku ran) → mtime → path, so the agent and the dashboard always land
+on the same file without coordinating.
+
+A file is a candidate only if it carries every column the shipped datasets select
+(`REQUIRED_COLUMNS`). This is why the Suzaku Field Metrics dashboard needs a run with
+`--geo-ip`: without it Suzaku omits `SrcASN` / `SrcCity` / `SrcCountry`, and the file is
+rejected with that reason rather than registered and left to fail at render time. Each
+Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
+`make status` / `make up` print which file won and which candidates lost. Full rationale:
+[PLAN_SUZAKU_MULTI_DB.md](PLAN_SUZAKU_MULTI_DB.md).
 
 ### config_viz (Python / FastAPI + React)
 
@@ -104,8 +129,15 @@ duplicated and `tests/test_suzaku_detection_parity.py` fails if the copies drift
 **Purpose:** BI dashboard for log visualization.
 
 - Reads from DuckDB (`READ_ONLY` mode)
-- Pre-seeded with CloudTrail-specific dashboards
-- Supports ad-hoc SQL visualization
+- Pre-seeded with five dashboards imported from versioned asset bundles:
+  - **CloudTrail Default** (101 charts) and **Rare Events**, derived from the same
+    definitions with ascending / bottom-N ordering
+  - **Suzaku Detection Timeline** (46), **Suzaku Identity Summary** (19) and
+    **Suzaku Field Metrics** (15), each over a Suzaku `*.duckdb` file
+- Supports ad-hoc SQL visualization (SQL Lab)
+- Superset never reads the YAML definitions directly — it imports the compiled ZIPs, so a
+  YAML edit takes effect only after a rebuild and a re-run of `superset-init`
+- Port 8088
 
 ## DuckDB Sharing Strategy
 
@@ -129,17 +161,23 @@ DuckDB is an in-process database. It does not support concurrent writes from mul
 1. `ingester` opens the database as `READ_WRITE` — it is the exclusive writer.
 2. `agent`, `config_viz`, and `dashboard` open the database as `READ_ONLY` — they are concurrent readers.
 3. The default workflow is sequential: ingester completes ingestion first, then read-only services query.
-4. SSD storage (SATA or NVMe) is strongly recommended; HDD is discouraged.
+4. Suzaku's `*.duckdb` files are opened `READ_ONLY` by every service, including `ingester`,
+   which never writes to them at all.
+5. SSD storage (SATA or NVMe) is strongly recommended; HDD is discouraged.
 
 ### Alternatives Considered
 
 | Option                         | Performance | Concurrency    | Complexity | Decision     |
 | ------------------------------ | ----------- | -------------- | ---------- | ------------ |
-| **Named Volume + READ_ONLY**   | ◎           | 1W / nR        | Low        | **Adopted**  |
-| Bind Mount (host path)         | ◎           | 1W / nR        | Low        | Equivalent   |
+| **Bind Mount (host path)**     | ◎           | 1W / nR        | Low        | **Adopted**  |
+| Named Volume + READ_ONLY       | ◎           | 1W / nR        | Low        | Rejected     |
 | DuckLake extension             | ○           | Multiple W     | High       | v2+ consider |
 | Arrow Flight proxy             | △           | Multiple W     | High       | Rejected     |
 | NAS / network storage          | ✕           | ✕              | Low        | Rejected     |
+
+The bind mount was chosen over a named volume for a portability reason rather than a
+performance one: Docker on Linux/WSL2 misresolves relative paths in named-volume
+`driver_opts`, so each service declares its own `volumes:` entry against a host path.
 
 ## Data Flow
 
