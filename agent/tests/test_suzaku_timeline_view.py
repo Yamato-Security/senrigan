@@ -442,3 +442,43 @@ def test_an_unfit_file_is_not_offered_and_is_explained(
     assert "unfit.duckdb" in captions
     assert "RuleID" in captions
     assert state["sz_suzaku_db"] == str(good)
+
+
+# ---------------------------------------------------------------------------
+# Provenance in the sidebar
+# ---------------------------------------------------------------------------
+
+
+def test_the_sidebar_carries_the_suzaku_run_info(tmp_path: Path, monkeypatch) -> None:
+    """The chat page reads a Suzaku run too, so it must name the run it reads.
+
+    The explorer pages and every Suzaku dashboard show the same card; without it
+    here the analyst cannot tell whether the timeline they are hunting in came
+    from the same Suzaku run as the panels they pivoted from.
+    """
+    monkeypatch.delenv("SUZAKU_TIMELINE_DB", raising=False)
+    from views.suzaku_timeline import render
+
+    copied = _copy_fixture(tmp_path, "timeline.duckdb")
+
+    state = MockSessionState(sz_suzaku_db=str(copied), api_key="")
+    with (
+        patch("streamlit.session_state", state),
+        patch(
+            "app.get_duckdb_path_for_variant",
+            return_value=str(tmp_path / "threat_hunting.db"),
+        ),
+        patch("app.render_sidebar"),
+        patch("app.render_chat"),
+        patch("streamlit.subheader"),
+        patch("streamlit.selectbox", return_value=str(copied)),
+        patch("streamlit.caption"),
+        patch("streamlit.markdown") as markdown,
+        patch("streamlit.expander") as expander,
+    ):
+        render()
+
+    labels = [call.args[0] for call in expander.call_args_list if call.args]
+    assert any("Suzaku Run Info" in label for label in labels)
+    body = " ".join(str(call.args[0]) for call in markdown.call_args_list if call.args)
+    assert "timeline.duckdb" in body

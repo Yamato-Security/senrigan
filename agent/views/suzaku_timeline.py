@@ -16,7 +16,12 @@ import streamlit as st
 
 from profiles import SUZAKU_TIMELINE_PROFILE
 from suzaku_db import SuzakuKind
-from views.explorer import db_directory, render_empty_state
+from views.explorer import (
+    db_directory,
+    load_db_info,
+    render_empty_state,
+    render_run_info,
+)
 
 PROFILE = SUZAKU_TIMELINE_PROFILE
 KIND = SuzakuKind.TIMELINE
@@ -60,11 +65,16 @@ def render() -> None:
         _render_empty_state(db_directory())
         return
 
-    render_sidebar(PROFILE)
-
     db_path = _get_duckdb_path(PROFILE)
     if not db_path:
         st.warning("Select a Suzaku database in the sidebar to start hunting.")
         return
+
+    # Directly under the picker, as on the explorer pages: the provenance of the
+    # file belongs next to the choice of file, not below the hunting controls.
+    with st.sidebar:
+        render_run_info(load_db_info(db_path))
+
+    render_sidebar(PROFILE)
 
     render_chat(PROFILE)

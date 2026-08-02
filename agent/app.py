@@ -5,6 +5,7 @@ AWS CloudTrail logs stored in DuckDB.
 """
 
 from datetime import date
+from pathlib import Path
 
 import streamlit as st
 
@@ -128,35 +129,45 @@ def render_sidebar(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
 
 
 def _render_db_variant_section(profile: DatasetProfile) -> None:
-    """Render the Full/Lite database variant radio, when a Lite DB is configured.
+    """Render the pulldown naming the DuckDB file this page reads.
+
+    The Suzaku pages resolve their file by discovery and say so in their own
+    🗄️ Suzaku Database picker; the CloudTrail page never did, so an analyst
+    running several databases had no way to tell which one answered a query.
+    The pulldown always renders here for that reason — with the Lite variant
+    as a second option only when ``DUCKDB_PATH_LITE`` is configured, and
+    otherwise as a one-entry, read-only statement of the active file.
 
     Renders nothing at all for the Suzaku profiles: the variant describes how
-    ``cloudtrail_events`` was ingested and means nothing to a Suzaku file.
+    ``cloudtrail_events`` was ingested and means nothing to a Suzaku file, and
+    a second database control would contradict the picker they already show.
 
     Args:
         profile: Dataset profile the page is querying.
     """
-    # Database variant selector — only shown when a Lite DB has been
-    # configured via the DUCKDB_PATH_LITE environment variable.
+    if profile.key != CLOUDTRAIL_PROFILE.key:
+        return
+
     # The Lite variant points at a DuckDB file produced by
     # `ingester ingest --strip-fields`, where pagination/idempotency
     # noise has been removed from request_parameters / response_elements.
-    lite_path = (
-        get_duckdb_path_lite() if profile.key == CLOUDTRAIL_PROFILE.key else None
-    )
-    if not lite_path:
-        return
+    lite_path = get_duckdb_path_lite()
+    variants = [DB_VARIANT_FULL] + ([DB_VARIANT_LITE] if lite_path else [])
 
     st.subheader("🗄️ Database")
-    variants = [DB_VARIANT_FULL, DB_VARIANT_LITE]
-    current = st.session_state.db_variant
+    current = st.session_state.get("db_variant", DB_VARIANT_FULL)
     if current not in variants:
         current = DB_VARIANT_FULL
-    chosen = st.radio(
+    chosen = st.selectbox(
         "Variant",
         options=variants,
         index=variants.index(current),
-        horizontal=True,
+        format_func=lambda variant: (
+            f"{variant} — {Path(get_duckdb_path_for_variant(variant)).name}"
+        ),
+        # One variant is nothing to choose between; the pulldown is then only
+        # there to say what is being read.
+        disabled=len(variants) == 1,
         help=(
             "Full = original CloudTrail records.  "
             "Lite = noise fields stripped from request_parameters "
@@ -165,9 +176,9 @@ def _render_db_variant_section(profile: DatasetProfile) -> None:
             "echoes, query-time filter echoes, redundant Host "
             "headers). raw_event is preserved in both variants."
         ),
-        key="_db_variant_radio",
+        key="_db_variant_select",
     )
-    if chosen != st.session_state.db_variant:
+    if chosen != st.session_state.get("db_variant"):
         st.session_state.db_variant = chosen
     active_path = get_duckdb_path_for_variant(st.session_state.db_variant)
     st.caption(f"📁 `{active_path}`")
