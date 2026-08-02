@@ -1,10 +1,10 @@
 # Superset dataset: one row per identity in Suzaku's `aws-ct-summary` output.
 #
 # VIRTUAL (sql:) because the file still needs two things before a BI tool can use
-# it (see doc/PLAN_SUZAKU_SCHEMA.md):
-#   * P5 — the abused/other x success/failed counts live one row per API call in
+# it:
+#   * The abused/other x success/failed counts live one row per API call in
 #     `summary_api_calls`, so they are pivoted to columns here.
-#   * P6 — PascalCase identifiers become snake_case, matching every other dataset;
+#   * PascalCase identifiers become snake_case, matching every other dataset;
 #     `UserTypes` is a VARCHAR[], which Superset cannot group by, so it is joined.
 # What it no longer needs: a CAST for the timestamps, and the `Category` string
 # split — the file ships `IsAbused` and `Outcome` already.

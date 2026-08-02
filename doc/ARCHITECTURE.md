@@ -151,7 +151,7 @@ instead of drawing three empty charts.
 - FastAPI backend exposes 4 REST endpoints for graph data
 - React 18 + Vite + TypeScript frontend renders hierarchical resource graph
   - `reactflow` for graph rendering, `elkjs` (ELK layered / Sugiyama algorithm) for auto-layout
-    — migrated from `@dagrejs/dagre`; see [PLAN_SUGIYAMA.md](PLAN_SUGIYAMA.md)
+    — migrated from `@dagrejs/dagre`
   - Container nesting: VPC / Subnet / EC2 shown as nested, collapsible boxes
   - Service-color legend and click-to-inspect detail panel with full configuration and tags
 - Port 8502

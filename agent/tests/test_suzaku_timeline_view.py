@@ -1,9 +1,9 @@
 """Tests for the Suzaku timeline page and its session isolation.
 
-Covers PLAN_SUZAKU_VIEWS.md §4.3 and §4.5 (tests 24-28). The page reuses the
-CloudTrail hunting UI through a profile, so what needs proving is that the reuse
-is actually isolated: separate history, separate filters, no geo enrichment
-against a table that has no geo columns, and a usable empty state.
+The page reuses the CloudTrail hunting UI through a profile, so what needs
+proving is that the reuse is actually isolated: separate history, separate
+filters, no geo enrichment against a table that has no geo columns, and a
+usable empty state.
 """
 
 from __future__ import annotations
@@ -333,7 +333,7 @@ def test_direct_sql_hunt_runs_against_the_fixture_with_filters() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Agreement with the dashboard — PLAN_SUZAKU_MULTI_DB.md Phase 6 (F-6)
+# Agreement with the dashboard
 # ---------------------------------------------------------------------------
 
 

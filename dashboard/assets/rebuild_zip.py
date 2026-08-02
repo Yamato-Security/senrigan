@@ -136,8 +136,7 @@ FILE_MAP = {
     "charts/bedrock_model_access_changes.yaml": "charts/Bedrock_Model_Access_Logging_Changes.yaml",
     "charts/bedrock_failed_invocations.yaml": "charts/Bedrock_Failed_Invocations.yaml",
     "charts/bedrock_callers_geo.yaml": "charts/Bedrock_Callers_By_Origin.yaml",
-    # Threat Technique Catalog gap charts (DSH-64 to DSH-73) —
-    # see doc/PLAN_THREAT_CATALOG.md
+    # Threat Technique Catalog gap charts (DSH-64 to DSH-73)
     "charts/iam_entity_deletion.yaml": "charts/IAM_Entity_Deletion.yaml",
     "charts/assume_root_events.yaml": "charts/AssumeRoot_Usage.yaml",
     "charts/s3_ssec_encryption.yaml": "charts/S3_SSE_C_Ransomware_Encryption.yaml",

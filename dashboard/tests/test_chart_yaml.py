@@ -298,7 +298,7 @@ def test_hrm_credential_access_table_exists() -> None:
 
 
 # ---------------------------------------------------------------------------
-# LLMjacking charts (DSH-98 to DSH-101) — see doc/PLAN_LLMJACKING.md
+# LLMjacking charts (DSH-98 to DSH-101)
 # ---------------------------------------------------------------------------
 
 

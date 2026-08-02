@@ -1,7 +1,7 @@
 """Structural tests for the Suzaku Superset asset bundles.
 
-Covers PLAN_SUZAKU_VIEWS.md §5.5 (tests 5-12). Parametrized over every Suzaku
-bundle, so a bundle added later is checked automatically.
+Parametrized over every Suzaku bundle, so a bundle added later is checked
+automatically.
 
 The checks that matter most here are the ones a human reviewer cannot do by
 reading YAML: that each virtual dataset's SQL actually runs against real Suzaku
@@ -417,7 +417,7 @@ def test_database_uri_is_an_obvious_placeholder(bundle: Path) -> None:
 TIMELINE = ASSETS / "suzaku_timeline"
 
 # Suzaku writes SrcASN / SrcCity / SrcCountry into `metrics` only, and never into
-# `timeline` — not even for a --geo-ip run (doc/PLAN_SUZAKU_SCHEMA.md P8).
+# `timeline` — not even for a --geo-ip run.
 GEO_COLUMNS = ("src_country", "src_city", "src_asn")
 
 # The tag kinds the suzaku_timeline_tags dataset derives from Suzaku's three

@@ -8,7 +8,7 @@
 #   2. `Tactics` / `TechniqueIDs` / `OtherTags` are VARCHAR[], and Superset cannot
 #      group by a list — they are joined back into readable strings here.
 # What the file no longer needs: a CAST for the timestamp, a nullif() for the `-`
-# placeholder, and a hand-written severity rank (see doc/PLAN_SUZAKU_SCHEMA.md).
+# placeholder, and a hand-written severity rank.
 #
 # The underlying file is resolved at bootstrap by init/register_suzaku_dbs.py,
 # which rewrites the URI of the database UUID referenced below.

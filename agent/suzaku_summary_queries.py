@@ -13,8 +13,6 @@ Two rules hold throughout:
 * **Columns are renamed to snake_case.** Suzaku writes PascalCase, the Superset
   virtual datasets already rename, and a report reads better with one
   convention.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.2.
 """
 
 from __future__ import annotations

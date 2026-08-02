@@ -463,7 +463,7 @@ def render_report_section(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
     """Render the Markdown / HTML report downloads (AGT-06).
 
     Shared with the explorer pages, whose panels pin findings into the same
-    ``query_history`` this reads (``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.3).
+    ``query_history`` this reads.
 
     Args:
         profile: Dataset profile whose history to report on.
@@ -976,7 +976,7 @@ def _suzaku_metrics_page() -> None:
 
 # Page objects built by :func:`build_pages`, keyed by profile. ``st.switch_page``
 # needs the very object ``st.navigation`` was given, so the pivot from an
-# explorer page into the timeline page (PLAN_SUZAKU_EXPLORERS.md §5.3) reads it
+# explorer page into the timeline page reads it
 # from here rather than rebuilding one.
 PAGES: dict[str, object] = {}
 
@@ -986,8 +986,7 @@ def build_pages() -> list:
 
     The first two are chat pages sharing the hunting UI, differing only in their
     :class:`~profiles.DatasetProfile`. The last two are explorer pages over
-    Suzaku's pre-aggregated output, which generate no SQL at all
-    (``doc/PLAN_SUZAKU_EXPLORERS.md`` §1).
+    Suzaku's pre-aggregated output, which generate no SQL at all.
 
     Returns:
         A list of ``st.Page`` objects for :func:`st.navigation`.

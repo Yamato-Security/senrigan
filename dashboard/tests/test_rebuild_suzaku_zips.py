@@ -1,9 +1,9 @@
 """Tests for the Suzaku bundle ZIP builders.
 
-Covers PLAN_SUZAKU_VIEWS.md §5.5 (tests 13-15). Superset never reads the bundle
-YAML directly — it only applies the compiled ZIP — so a ZIP that is stale, is
-missing a chart, or changes on every rebuild all lead to the same failure mode: a
-dashboard that does not match the files under review.
+Superset never reads the bundle YAML directly — it only applies the compiled
+ZIP — so a ZIP that is stale, is missing a chart, or changes on every rebuild
+all lead to the same failure mode: a dashboard that does not match the files
+under review.
 """
 
 from __future__ import annotations

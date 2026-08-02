@@ -1,7 +1,7 @@
 # SZK-12: Detection Timeline (event level)
 # One row per rule hit, newest first — the 'what happened, when, and to
 # whom' listing the rest of the dashboard drills into.
-# No geo columns: Suzaku's `timeline` table has none (PLAN_SUZAKU_SCHEMA P8),
+# No geo columns: Suzaku's `timeline` table has none,
 # so the region takes their place as the 'where' of a detection.
 # Sorted by event_time DESC; use the dashboard filters to narrow it.
 uuid: 5a021006-0000-4000-8000-000000000012

@@ -14,7 +14,7 @@
 # detection charts and once, scoped to the ATT&CK tab, for the tag dataset.
 #
 # NO GEO CHARTS: Suzaku writes SrcASN/SrcCity/SrcCountry into `metrics` only,
-# never into `timeline` (doc/PLAN_SUZAKU_SCHEMA.md P8), so geographic analysis
+# never into `timeline`, so geographic analysis
 # lives on the Suzaku Field Metrics dashboard.
 #
 # Rebuild after editing:

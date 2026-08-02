@@ -13,8 +13,6 @@ Suzaku's ``aws-ct-summary`` and ``aws-ct-metrics`` output is already aggregated,
 so those pages run reviewed, parameterized SQL and never generate any. They are
 marked :attr:`DatasetProfile.chat_enabled` ``False``, and the chat-only members
 raise for them rather than returning something empty.
-
-See ``doc/PLAN_SUZAKU_VIEWS.md`` §4.1 and ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.1.
 """
 
 from __future__ import annotations
@@ -119,8 +117,7 @@ class DatasetProfile:
         if not self.chat_enabled:
             raise ValueError(
                 f"{self.key} is an explorer profile: {member} does not apply. "
-                "Its page runs reviewed SQL and never generates any "
-                "(doc/PLAN_SUZAKU_EXPLORERS.md §5.1)."
+                "Its page runs reviewed SQL and never generates any."
             )
 
     @property

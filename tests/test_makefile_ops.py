@@ -1,8 +1,8 @@
 """Tests for the recovery, status, and guardrail targets.
 
-Covers PLAN_MAKEFILE_UX.md Phase 3 (findings F-7 and F-10). `reset` replaces a
-hand-copied `rm -f` recipe, so it is the one target in this Makefile that can
-destroy user data — most of the tests here exist to keep it narrow.
+`reset` replaces a hand-copied `rm -f` recipe, so it is the one target in this
+Makefile that can destroy user data — most of the tests here exist to keep it
+narrow.
 """
 
 from __future__ import annotations

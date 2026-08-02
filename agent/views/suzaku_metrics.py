@@ -5,8 +5,6 @@ Suzaku to count, so every query here is parameterized on ``Field`` — never on 
 literal such as ``eventName``. What the page adds over the Superset dashboard is
 control: the Top-N, the minimum count, the "first seen after" cut-off and the
 value search are all live, and any panel can be pinned into the report.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.5.
 """
 
 from __future__ import annotations

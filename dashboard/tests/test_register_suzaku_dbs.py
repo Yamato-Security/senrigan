@@ -1,8 +1,7 @@
 """Behaviour of the Suzaku registration script outside Superset.
 
-Covers PLAN_SUZAKU_MULTI_DB.md Phases 2 and 3: one scan shared by every
-bootstrap step (F-9), and a report that names the file each dashboard will
-query along with everything it passed over (F-5).
+One scan is shared by every bootstrap step, and the report names the file each
+dashboard will query along with everything it passed over.
 
 Superset itself is never imported — :func:`register_suzaku_dbs.main` defers
 that until it actually writes to the metadata database, so every path exercised
@@ -291,7 +290,7 @@ def test_every_kind_has_a_name_and_uuid(kind: SuzakuKind) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Stale registrations — PLAN_SUZAKU_MULTI_DB.md F-8
+# Stale registrations
 # ---------------------------------------------------------------------------
 
 
@@ -331,7 +330,7 @@ def test_an_unparseable_uri_is_not_reported_as_stale() -> None:
 # ---------------------------------------------------------------------------
 # Superset compatibility rules that outlived the old signature tests
 # (dashboard/tests/test_suzaku_signatures.py, retired with the duplicated
-# detection it covered — PLAN_SUZAKU_MULTI_DB.md Phase 2)
+# detection it covered)
 # ---------------------------------------------------------------------------
 
 

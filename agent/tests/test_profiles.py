@@ -1,9 +1,8 @@
 """Tests for the dataset-profile abstraction.
 
-Covers PLAN_SUZAKU_VIEWS.md §4.1 and §4.5 (tests 11-18). A profile describes one
-queryable table — Senrigan's own ``cloudtrail_events`` or Suzaku's ``timeline`` —
-so the chat pipeline (schema description, prompt, date filter, session state)
-works for either without duplicating it.
+A profile describes one queryable table — Senrigan's own ``cloudtrail_events``
+or Suzaku's ``timeline`` — so the chat pipeline (schema description, prompt,
+date filter, session state) works for either without duplicating it.
 
 Every parameterized function keeps ``CLOUDTRAIL_PROFILE`` as its default, which
 is what lets the pre-existing agent tests pass unchanged.
@@ -81,8 +80,8 @@ def test_suzaku_timeline_profile_describes_the_timeline_table() -> None:
 def test_suzaku_summary_profile_describes_the_summary_tables() -> None:
     """Test 1a: the explorer profile for ``aws-ct-summary``.
 
-    Covers PLAN_SUZAKU_EXPLORERS.md §5.1. It reads a pre-aggregated file, so it
-    carries no LLM columns and no hunts — the page drives reviewed SQL instead.
+    It reads a pre-aggregated file, so it carries no LLM columns and no hunts —
+    the page drives reviewed SQL instead.
     """
     profile = SUZAKU_SUMMARY_PROFILE
     assert profile.table == "summary"

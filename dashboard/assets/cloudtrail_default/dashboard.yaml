@@ -514,8 +514,7 @@ position:
       height: 50
       sliceName: Bedrock Callers by Origin
 
-  # Threat Technique Catalog gap charts (DSH-64 to DSH-73) —
-  # see doc/PLAN_THREAT_CATALOG.md
+  # Threat Technique Catalog gap charts (DSH-64 to DSH-73)
   ROW-ttc-iamdel:
     type: ROW
     id: ROW-ttc-iamdel

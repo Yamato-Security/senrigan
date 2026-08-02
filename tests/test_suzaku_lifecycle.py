@@ -1,10 +1,9 @@
 """Adding, replacing or deleting a Suzaku file must have a refresh path.
 
-Covers PLAN_SUZAKU_MULTI_DB.md Phase 4 (F-7, F-8). Superset stores one file
-path per database connection, resolved at bootstrap, so a running dashboard
-keeps reading whatever was there when it started. ``make resync`` — already the
-documented "the data changed, fix the dashboard" command — now re-resolves the
-Suzaku paths too.
+Superset stores one file path per database connection, resolved at bootstrap,
+so a running dashboard keeps reading whatever was there when it started. ``make
+resync`` — already the documented "the data changed, fix the dashboard" command
+— now re-resolves the Suzaku paths too.
 
 No new ``make`` verb: ``test_no_new_make_verb_for_suzaku`` in
 ``test_makefile_suzaku.py`` encodes the principle that copying a file is the

@@ -29,7 +29,7 @@ python3 /app/register_duckdb.py
 #
 # Scan the directory exactly once. Every later step selects from this inventory
 # instead of re-opening every file, which for a directory of 200 MB timelines is
-# the difference between one pass and three (PLAN_SUZAKU_MULTI_DB.md F-9).
+# the difference between one pass and three.
 SUZAKU_INVENTORY=/tmp/suzaku_inventory.json
 echo "==> Scanning for Suzaku DuckDB databases..."
 python3 /app/register_suzaku_dbs.py --scan "$SUZAKU_INVENTORY"

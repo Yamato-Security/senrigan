@@ -4,7 +4,7 @@
 # every other dataset uses. Since schema_version 1 the file itself already splits
 # what used to be packed: `IsAbused` + `Outcome` instead of the `abused_success`
 # category string, `API` + `EventSource` instead of "Action (service)", and real
-# TIMESTAMPs (doc/PLAN_SUZAKU_SCHEMA.md P3/P5).
+# TIMESTAMPs.
 #
 # `description` is Suzaku's own explanation of why an API is abusable and is the
 # highest-value column in this file — it is surfaced in the catalogue table.

@@ -1,11 +1,10 @@
 """Tests pinning every documented count to the artifact that produces it.
 
-Covers PLAN_DOCS_REFRESH.md Phase 1. A count written in prose is a copy of a
-fact that lives somewhere else, and the copy goes stale the moment a chart or a
-hunt is added — as happened when the Suzaku Run Info card landed and three
-documents kept quoting the pre-provenance numbers. These tests make the asset
-the owner and check the prose against it, so a count can only be wrong for as
-long as CI takes to run.
+A count written in prose is a copy of a fact that lives somewhere else, and the
+copy goes stale the moment a chart or a hunt is added — as happened when the
+Suzaku Run Info card landed and three documents kept quoting the pre-provenance
+numbers. These tests make the asset the owner and check the prose against it,
+so a count can only be wrong for as long as CI takes to run.
 
 Chart and hunt *names* stay in English in every locale, so the name-level tests
 run against all 15 translations, not just the source page.

@@ -6,7 +6,7 @@
 # `TimelineColumn` is the same field under the name the `timeline` table gives it,
 # which is what lets a chart here be cross-referenced with a timeline chart.
 #
-# VIRTUAL (sql:) to rename the PascalCase columns (doc/PLAN_SUZAKU_SCHEMA.md P6)
+# VIRTUAL (sql:) to rename the PascalCase columns
 # and to derive `active_days`; the file's timestamps, NULLs and full-precision
 # `Percent` are already typed (P2/P3/P8).
 #

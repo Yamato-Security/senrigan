@@ -183,7 +183,7 @@ pytest                        # all tests (793 dashboard tests)
 ```
 
 Approximate test totals: ingester ≈ 186 (Rust), agent ≈ 825 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 793, root `tests/` ≈ 249 (Makefile / compose / docs / Suzaku
+114 frontend, dashboard ≈ 793, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku
 selection and lifecycle).
 Test count must not decrease in a PR.
 
@@ -468,7 +468,6 @@ senrigan/
 │   ├── PRD.md
 │   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (shipped: 19-chart dashboard)
 │   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
-│   ├── PLAN_SUGIYAMA.md       # config_viz layout migration (dagre → ELK/Sugiyama)
 │   ├── TDD_GUIDE.md
 │   └── TESTING.md
 ├── docker/

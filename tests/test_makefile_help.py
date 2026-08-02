@@ -1,8 +1,7 @@
 """Tests for the two-tier ``make`` help surface.
 
-Covers PLAN_MAKEFILE_UX.md Phase 1 (findings F-6 and F-9). ``make help`` is a
-curated, hand-written front page; ``make help-all`` is generated from ``##@``
-section headers and ``##`` target comments.
+``make help`` is a curated, hand-written front page; ``make help-all`` is
+generated from ``##@`` section headers and ``##`` target comments.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from tests.conftest import (
     phony_targets,
 )
 
-# The commands a first-time user needs — PLAN_MAKEFILE_UX.md §2.1.
+# The commands a first-time user needs.
 CORE_COMMANDS = ["ingest", "up", "down", "logs", "reset"]
 
 # Contributor tooling and internal plumbing must not reach the front page.
@@ -58,8 +57,8 @@ def test_help_points_at_help_all():
 def test_help_advertises_no_flags_or_variables():
     """The front page offers commands only — no flags, no VAR=value switches.
 
-    PLAN_MAKEFILE_UX.md §2.3 resolves ingest options from the filesystem
-    precisely so that the front page never has to teach a switch.
+    `make ingest` resolves its options from the filesystem precisely so that
+    the front page never has to teach a switch.
     """
     output = help_output("help")
 

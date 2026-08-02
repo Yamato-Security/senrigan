@@ -1,8 +1,8 @@
 """There is one Suzaku detection implementation, and both services use it.
 
-Replaces the old parity test (PLAN_SUZAKU_VIEWS.md test 18), which compared two
-copies of the detection constants and could only catch drift in the constants —
-not in the logic, which had already diverged (PLAN_SUZAKU_MULTI_DB.md F-6).
+Replaces the old parity test, which compared two copies of the detection
+constants and could only catch drift in the constants — not in the logic,
+which had already diverged.
 
 ``agent/suzaku_db.py`` is now the single implementation. The Superset image
 still cannot install the agent package, so ``docker/docker-compose.yml``

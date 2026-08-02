@@ -9,7 +9,6 @@
 #   2. The file each Suzaku database connection points at. Superset resolves
 #      that path once, at bootstrap, so copying in a newer run, replacing one or
 #      deleting one has no effect on a running dashboard until this runs.
-#      See doc/PLAN_SUZAKU_MULTI_DB.md F-7.
 #
 # Idempotent: safe to run whenever a dashboard looks like it is showing the
 # wrong data.

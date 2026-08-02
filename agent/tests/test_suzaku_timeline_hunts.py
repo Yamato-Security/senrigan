@@ -1,10 +1,9 @@
 """Tests for the built-in Suzaku timeline hunts.
 
-Covers PLAN_SUZAKU_VIEWS.md §4.4 and §4.5 (tests 19-23). Every hunt runs for real
-against the committed fixture, which is what catches the mistakes this dataset
-invites: an unquoted PascalCase identifier, an uncast severity threshold, a
-placeholder comparison where the column is NULL-able, or a missing LIMIT on a
-table that has millions of rows in production.
+Every hunt runs for real against the committed fixture, which is what catches
+the mistakes this dataset invites: an unquoted PascalCase identifier, an uncast
+severity threshold, a placeholder comparison where the column is NULL-able, or
+a missing LIMIT on a table that has millions of rows in production.
 """
 
 from __future__ import annotations

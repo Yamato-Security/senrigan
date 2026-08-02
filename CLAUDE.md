@@ -9,8 +9,7 @@ Guidance for Claude Code when working in the **Senrigan** repository.
 > [DEVELOPMENT.md](doc/DEVELOPMENT.md), [TESTING.md](doc/TESTING.md),
 > [TDD_GUIDE.md](doc/TDD_GUIDE.md), [PRD.md](doc/PRD.md),
 > [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
-> [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md),
-and [PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
+and [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md).
 
 ---
 
@@ -50,7 +49,7 @@ Four Docker containers share **one DuckDB file** via a bind mount
   Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
   `make status` / `make up` print which file won and which candidates lost.
 - `config_viz`'s frontend uses **`elkjs`** (ELK layered / Sugiyama algorithm) for graph layout —
-  migrated from `@dagrejs/dagre`; see [doc/PLAN_SUGIYAMA.md](doc/PLAN_SUGIYAMA.md).
+  migrated from `@dagrejs/dagre`.
 - `ingester` must finish before the read-only services start. Concurrent writes are **not** supported.
 - The bind mount (not a named volume) is intentional — Docker on Linux/WSL2 misresolves relative
   paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry in
@@ -179,7 +178,7 @@ npm run build                 # Vite production build → ../static/
 
 Approximate test totals (must not decrease in a PR): ingester ≈ 186 (Rust), agent ≈ 825 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 249 (Makefile / compose / docs consistency —
+run with `make test-dashboard`), root `tests/` ≈ 238 (Makefile / compose / docs consistency —
 run with `make test-repo`).
 When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
 stale counts here cause false "regression" alarms in later sessions.
@@ -293,8 +292,8 @@ Four more standing rules:
 - **English everywhere**, including `doc/`, `website/docs/` source pages, and commit messages.
 - **`doc/` is internal, `website/docs/` is the product.** A user-facing change needs the
   site page, in all 15 locales — a missing locale silently serves English.
-- **`PLAN_*` / `PRD_*` are point-in-time records.** Do not rewrite them to match what
-  shipped; update their `Status:` line instead. The root suite excludes them from its
+- **`PRD_*` are point-in-time records.** Do not rewrite them to match what shipped;
+  update their `Status:` line instead. The root suite excludes them from its
   "must describe real behaviour" checks for this reason.
 - **`OLD-README.md` is frozen.** It is linked from `README.md` as a historical snapshot.
 
@@ -328,7 +327,7 @@ senrigan/
 ├── tests/       # Repository-level consistency suite (Makefile / compose / docs)
 ├── website/     # Material for MkDocs documentation site — docs/ in 15 locales
 └── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW, PLAN_SUGIYAMA
+                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW
 ```
 
 See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.

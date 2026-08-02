@@ -1,9 +1,9 @@
 """The fitness contract must cover exactly what the bundles query.
 
 ``agent/suzaku_db.py`` refuses a Suzaku file that lacks a column the shipped
-datasets select (PLAN_SUZAKU_MULTI_DB.md F-1) — a metrics run without
-``--geo-ip`` is the case that motivated it. That gate is only worth anything if
-``REQUIRED_COLUMNS`` and the dataset YAML cannot drift apart.
+datasets select — a metrics run without ``--geo-ip`` is the case that motivated
+it. That gate is only worth anything if ``REQUIRED_COLUMNS`` and the dataset
+YAML cannot drift apart.
 
 Rather than parse SQL, each test builds a **reduced** copy of the fixture
 holding only the columns ``REQUIRED_COLUMNS`` promises — with the fixture's own

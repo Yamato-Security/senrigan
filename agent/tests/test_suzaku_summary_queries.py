@@ -1,9 +1,9 @@
 """Tests for the ``aws-ct-summary`` query layer.
 
-Covers PLAN_SUZAKU_EXPLORERS.md §5.2 and §6 (tests 5-15). Every statement the
-Summary page runs lives here, so this is where the SQL is proved: against the
-committed fixture, with a hand-written control query wherever a number matters,
-and with bound parameters wherever a value comes from the data.
+Every statement the Summary page runs lives here, so this is where the SQL is
+proved: against the committed fixture, with a hand-written control query
+wherever a number matters, and with bound parameters wherever a value comes
+from the data.
 """
 
 from __future__ import annotations

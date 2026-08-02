@@ -10,8 +10,6 @@ Suzaku's ``Percent`` is the share of the whole field, computed from
 adds up, so each statement also returns ``share_of_filtered`` — the share within
 whatever subset the analyst is looking at. Both are meaningful and the
 difference between them is exactly what the filter did.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.2.
 """
 
 from __future__ import annotations

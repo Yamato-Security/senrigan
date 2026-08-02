@@ -215,7 +215,7 @@ def format_report(
     Names the file each dashboard will query, the usable files it beat, the
     files rejected as unqueryable and why, and anything that could not be
     opened. A silently dropped candidate is what makes "the dashboard shows old
-    numbers" unanswerable (PLAN_SUZAKU_MULTI_DB.md F-5).
+    numbers" unanswerable.
 
     Args:
         selections: Output of :func:`load_selections`.
@@ -272,7 +272,7 @@ def is_stale(uri: str) -> bool:
 
     Deleting or renaming a Suzaku export leaves the Superset database behind,
     and every chart on it then fails with an IOError that names a path the
-    analyst no longer recognises (PLAN_SUZAKU_MULTI_DB.md F-8). A URI with no
+    analyst no longer recognises. A URI with no
     parseable path is left alone: retiring a connection on a guess is worse
     than leaving it.
 

@@ -1,6 +1,6 @@
 """Technique metadata tests for builtin_hunts.yaml and its rendering.
 
-Implements the Phase-1 test list from doc/PLAN_THREAT_CATALOG.md:
+Threat Technique Catalog test list:
   TC-1: every threat-category hunt declares a non-empty `techniques` list
   TC-2: every tid matches the catalog TID format (T1078, T1562.008,
         T1486.A001, AT1669, AT1023.001)

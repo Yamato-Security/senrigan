@@ -6,8 +6,6 @@ placeholder instead of NULL, a packed tag string — is gone. What is left is wh
 the types alone do not say: PascalCase identifiers, the one ENUM comparison that
 is a trap, the list columns, the row grain, and a table too large to query
 without a LIMIT.
-
-See ``doc/PLAN_SUZAKU_SCHEMA.md`` for the schema this is written against.
 """
 
 SUZAKU_TIMELINE_SYSTEM_PROMPT = """You are a DuckDB SQL expert specializing in AWS CloudTrail

@@ -1,9 +1,8 @@
 """Consistency tests for the root Makefile and the docs that reference it.
 
-Covers PLAN_MAKEFILE_UX.md Phase 0 (findings F-1 through F-4). The failure mode
-these guard against is drift: a target gets renamed, or a documented host path
-stops matching the compose bind mount, and nothing notices until a user runs a
-command that does not exist.
+The failure mode these guard against is drift: a target gets renamed, or a
+documented host path stops matching the compose bind mount, and nothing notices
+until a user runs a command that does not exist.
 """
 
 from __future__ import annotations

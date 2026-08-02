@@ -1,9 +1,8 @@
 """Tests for Suzaku DuckDB discovery and metadata-based kind detection.
 
-Covers PLAN_SUZAKU_VIEWS.md §2.4 and §4.5. Since Suzaku schema_version 1 every
-output file carries a ``suzaku_meta`` table naming the command that wrote it, so
-the producing command is read rather than inferred from a table signature —
-see doc/PLAN_SUZAKU_SCHEMA.md P1.
+Since Suzaku schema_version 1 every output file carries a ``suzaku_meta`` table
+naming the command that wrote it, so the producing command is read rather than
+inferred from a table signature.
 """
 
 from __future__ import annotations
@@ -341,7 +340,7 @@ def test_env_override_pointing_at_a_missing_file_falls_back(
 
 
 # ---------------------------------------------------------------------------
-# Provenance — PLAN_SUZAKU_MULTI_DB.md Phase 0
+# Provenance
 # ---------------------------------------------------------------------------
 
 
@@ -387,7 +386,7 @@ def test_inspect_db_reads_run_size_counters(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Deterministic ordering — PLAN_SUZAKU_MULTI_DB.md F-3 / F-4
+# Deterministic ordering
 # ---------------------------------------------------------------------------
 
 
@@ -434,7 +433,7 @@ def test_full_tie_breaks_on_path_not_filesystem_order(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Candidate set — PLAN_SUZAKU_MULTI_DB.md F-10
+# Candidate set
 # ---------------------------------------------------------------------------
 
 
@@ -590,7 +589,7 @@ def test_select_accepts_a_restored_inventory(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Fitness — PLAN_SUZAKU_MULTI_DB.md Phase 1 / F-1
+# Fitness
 # ---------------------------------------------------------------------------
 
 

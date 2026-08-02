@@ -7,8 +7,6 @@ along with its rows — a pinned panel reports the SQL it ran.
 
 No Streamlit import here, or in the modules that build on it, so every query is
 unit-tested against the committed fixtures directly.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.2.
 """
 
 from __future__ import annotations

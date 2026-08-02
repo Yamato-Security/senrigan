@@ -1,9 +1,8 @@
 """Tests for the Makefile's handling of Suzaku databases.
 
-Covers PLAN_SUZAKU_VIEWS.md §6.2. Suzaku files are copied in by hand, so the
-Makefile's job is only to report what it can see — the same "the filesystem is
-the configuration" principle as PLAN_MAKEFILE_UX.md §2.3 — and, critically, to
-never delete them.
+Suzaku files are copied in by hand, so the Makefile's job is only to report
+what it can see — the same "the filesystem is the configuration" principle
+that drives `make ingest` — and, critically, to never delete them.
 """
 
 from __future__ import annotations
@@ -63,7 +62,7 @@ def test_makefile_mentions_the_suzaku_database_extension() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Which file is live — PLAN_SUZAKU_MULTI_DB.md Phase 3 (F-5)
+# Which file is live
 #
 # `SUZAKU_DBS` is a wildcard over the developer's own docker/data/db, so these
 # tests override it on the make command line (which wins over `:=`) and pin the

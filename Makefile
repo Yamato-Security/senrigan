@@ -22,7 +22,7 @@ GEOIP_ASN     ?= /data/geoip/GeoLite2-ASN.mmdb
 # ── Option detection ─────────────────────────────────────
 # `make ingest` takes no flags. Instead it looks at the directories the user
 # was already told to populate, and enables the matching ingester options.
-# The filesystem is the configuration; see doc/PLAN_MAKEFILE_UX.md §2.3.
+# The filesystem is the configuration.
 #
 # These two variables mirror docker-compose.yml's bind mounts, defaults
 # included, so an override moves the mount and the detection together.

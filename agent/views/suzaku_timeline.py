@@ -8,8 +8,6 @@ report, session export, AI chat and AI analysis.
 What is specific to this page is the input: Suzaku databases are third-party
 files an analyst copies into the mounted database directory, so the page has to
 discover them, let the analyst pick one, and explain itself when there are none.
-
-See ``doc/PLAN_SUZAKU_VIEWS.md`` §4.3.
 """
 
 from __future__ import annotations

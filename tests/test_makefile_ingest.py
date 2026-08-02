@@ -1,8 +1,8 @@
 """Tests for filesystem-driven ingest options and the consolidated logs target.
 
-Covers PLAN_MAKEFILE_UX.md Phase 2 (finding F-5). `make ingest` reads the
-directories the compose bind mounts already point at and enables the matching
-ingester options itself, so the front page never has to teach a switch.
+`make ingest` reads the directories the compose bind mounts already point at
+and enables the matching ingester options itself, so the front page never has
+to teach a switch.
 
 Every test overrides both host-path variables at an empty or fabricated
 directory. Without that the result would depend on whether the developer
@@ -17,8 +17,8 @@ import pytest
 
 from tests.conftest import declared_targets, run_make
 
-# Targets that predate the consolidation. PLAN_MAKEFILE_UX.md §2.3.1 keeps them
-# working so existing docs, scripts, and muscle memory do not break.
+# Targets that predate the consolidation. They keep working so existing docs,
+# scripts, and muscle memory do not break.
 LEGACY_TARGETS = [
     "ingest-full",
     "ingest-geoip",

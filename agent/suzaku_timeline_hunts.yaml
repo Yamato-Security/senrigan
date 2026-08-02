@@ -9,7 +9,7 @@
 #   prompt:      Natural language prompt sent to the AI agent (requires API key)
 #   sql:         Pre-built DuckDB SQL for direct execution (no API key needed)
 #
-# SQL conventions for this dataset (see doc/PLAN_SUZAKU_SCHEMA.md for the reasons):
+# SQL conventions for this dataset:
 #   - Table: timeline — every row is one rule match against one CloudTrail event.
 #   - ALL identifiers are double-quoted: the columns are PascalCase.
 #   - "Timestamp" is a real TIMESTAMP — used directly, never CAST.

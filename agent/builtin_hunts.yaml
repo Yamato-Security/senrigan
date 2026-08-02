@@ -3315,7 +3315,7 @@
     LIMIT 50
 
 # ===========================================================================
-# AI & LLM Abuse (LLMjacking — see doc/PLAN_LLMJACKING.md)
+# AI & LLM Abuse (LLMjacking)
 # ===========================================================================
 
 - category: "\U0001f916 AI & LLM Abuse"

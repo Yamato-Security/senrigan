@@ -1,8 +1,8 @@
 """Every Suzaku dashboard must name the file it is reading.
 
-Covers PLAN_SUZAKU_MULTI_DB.md Phase 5 (F-2). With several runs in the mounted
-directory, "which file is this?" is the first question a number that looks wrong
-raises — and before this the answer was not on the page anywhere.
+With several runs in the mounted directory, "which file is this?" is the first
+question a number that looks wrong raises — and before this the answer was not
+on the page anywhere.
 
 The file path is not a column in the data: it comes from DuckDB's own
 ``duckdb_databases()``, so the header reports the connection Superset actually

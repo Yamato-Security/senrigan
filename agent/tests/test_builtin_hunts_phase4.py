@@ -1,7 +1,6 @@
 """Phase 4 — LLMjacking detection tests for builtin_hunts.yaml.
 
-Tests LJ-1 through LJ-6 in the Red-Green-Refactor cycle (see
-doc/PLAN_LLMJACKING.md):
+Tests LJ-1 through LJ-6 in the Red-Green-Refactor cycle:
   LJ-1: Bedrock Model Invocation Spike
   LJ-2: Bedrock Model Access Enablement
   LJ-3: Bedrock Invocation Logging Tampering

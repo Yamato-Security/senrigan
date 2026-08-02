@@ -5,7 +5,7 @@ directory, so every Suzaku page has to discover what is there, let the analyst
 choose, and say why a file was rejected. That is all this module does — the
 detection, fitness and selection rules themselves live in ``suzaku_db.py``,
 which ``dashboard/init/register_suzaku_dbs.py`` imports too so both UIs resolve
-the same file (``doc/PLAN_SUZAKU_MULTI_DB.md`` F-6).
+the same file.
 
 Which file the page then *queries* is ``app._get_duckdb_path``: this module only
 writes the choice into the profile's session namespace.
@@ -32,8 +32,7 @@ def _discover_suzaku_dbs(directory: str) -> dict:
 
     ``served`` is what the Superset dashboards resolve to — the same
     :func:`suzaku_db.select` both services use — so this page can point out
-    when the analyst is looking at a different file (PLAN_SUZAKU_MULTI_DB.md
-    F-6).
+    when the analyst is looking at a different file.
 
     Args:
         directory: Directory to scan.

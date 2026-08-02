@@ -9,7 +9,7 @@
 #
 # `source_file` names the .duckdb file behind this dashboard. When several runs
 # sit in the mounted directory only one serves each command, and this is where
-# the analyst can see which one won (doc/PLAN_SUZAKU_MULTI_DB.md F-2).
+# the analyst can see which one won.
 uuid: 5a021006-0000-4000-8000-000000000055
 version: 1.0.0
 dataset_uuid: 5a021002-0000-4000-8000-000000000007

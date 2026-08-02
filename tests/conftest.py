@@ -169,15 +169,13 @@ def expand_variables(value: str) -> str:
 def doc_files() -> list[Path]:
     """Return every Markdown file that documents current, real behaviour.
 
-    ``PLAN_*`` and ``PRD*`` documents are excluded: they describe proposed or
-    hypothetical state, so a target they name is not expected to exist yet.
+    ``PRD*`` documents are excluded: they describe proposed or hypothetical
+    state, so a target they name is not expected to exist yet.
     """
     paths = sorted(REPO_ROOT.glob("*.md"))
     paths += sorted((REPO_ROOT / "doc").rglob("*.md"))
     paths += sorted((REPO_ROOT / "website" / "docs").rglob("*.md"))
-    return [
-        path for path in paths if not path.name.startswith(("PLAN_", "PRD_", "PRD."))
-    ]
+    return [path for path in paths if not path.name.startswith(("PRD_", "PRD."))]
 
 
 # ``make`` followed by a target name, inside a fenced block, an inline code

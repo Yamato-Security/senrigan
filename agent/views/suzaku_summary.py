@@ -9,8 +9,6 @@ matters into the report.
 The layout follows the prototype in ``doc/img-suzaku-summary.png`` — identity
 selector, identity KPI row, abused APIs split succeeded / failed — with the
 input changed from an uploaded JSON to the DuckDB file in the mounted directory.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.4.
 """
 
 from __future__ import annotations

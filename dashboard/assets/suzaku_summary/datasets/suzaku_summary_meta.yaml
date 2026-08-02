@@ -57,8 +57,7 @@ columns:
     description: >
       The .duckdb file this dashboard is connected to, read from DuckDB itself
       rather than from anything Suzaku wrote. With several runs in the mounted
-      directory this is the only way to tell which one is on screen — see
-      doc/PLAN_SUZAKU_MULTI_DB.md.
+      directory this is the only way to tell which one is on screen.
 
   - column_name: generated_at
     verbose_name: Generated At

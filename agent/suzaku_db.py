@@ -12,8 +12,7 @@ is checked before anything else: a file written by a layout Senrigan does not
 know is refused rather than mis-visualized.
 
 An analyst can leave several files in the mounted directory, so this module also
-decides **which one** each consumer uses, and records what it passed over
-(doc/PLAN_SUZAKU_MULTI_DB.md):
+decides **which one** each consumer uses, and records what it passed over:
 
 * **Fitness** — a file serves a command only when it carries the payload tables
   *and* the columns the shipped dashboards select. A metrics file from a run
@@ -56,7 +55,7 @@ DEFAULT_SENRIGAN_DB_NAME = "threat_hunting.db"
 
 # Extensions scanned. `.db` is included because the extension is the analyst's
 # choice, not Suzaku's; Senrigan's own database is excluded by name and then a
-# second time by table (PLAN_SUZAKU_MULTI_DB.md F-10).
+# second time by table.
 DB_SUFFIXES = (".duckdb", ".db")
 
 # Suzaku's provenance table and the layout version Senrigan is written against

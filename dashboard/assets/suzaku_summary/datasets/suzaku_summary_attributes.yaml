@@ -3,7 +3,7 @@
 # One row per (identity, attribute, value): source IPs, user agents, regions and
 # access key IDs, each with an occurrence count and a first/last seen window.
 # VIRTUAL (sql:) only to rename the PascalCase columns to snake_case; the file's
-# own timestamps are already typed (doc/PLAN_SUZAKU_SCHEMA.md P3/P6).
+# own timestamps are already typed.
 #
 # `attribute` is deliberately left as data rather than pivoted into columns: a
 # future Suzaku release adding a new attribute kind then appears in the dashboard

@@ -1,10 +1,9 @@
 """Tests for the two Suzaku explorer pages and the kit they share.
 
-Covers PLAN_SUZAKU_EXPLORERS.md §5.3-§5.6 and §6 (tests 24-31). These pages read
-data Suzaku already aggregated, so what needs proving is different from the chat
-pages: no SQL is ever generated, every panel can become a report entry, the four
-session namespaces stay apart, and a file whose optional columns are empty is
-explained rather than drawn as blank charts.
+These pages read data Suzaku already aggregated, so what needs proving is
+different from the chat pages: no SQL is ever generated, every panel can become
+a report entry, the four session namespaces stay apart, and a file whose
+optional columns are empty is explained rather than drawn as blank charts.
 """
 
 from __future__ import annotations

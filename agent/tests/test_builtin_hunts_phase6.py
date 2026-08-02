@@ -1,6 +1,6 @@
 """Phase 6 — Priority-2 catalog hunts and extensions for builtin_hunts.yaml.
 
-See doc/PLAN_THREAT_CATALOG.md §3, Priority 2:
+Priority-2 entries of the Threat Technique Catalog:
   New hunts:
     TC-Q1: WorkSpaces Hijacking          (T1496.A009)
     TC-Q2: Support Case Manipulation     (T1098.A001)

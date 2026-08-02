@@ -127,7 +127,7 @@ def test_databases_yaml_uri_uses_explicit_driver() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Suzaku registration and dashboard import (PLAN_SUZAKU_VIEWS.md §5.5, 16-17)
+# Suzaku registration and dashboard import
 # ---------------------------------------------------------------------------
 
 REGISTER_SUZAKU_PATH = os.path.join(

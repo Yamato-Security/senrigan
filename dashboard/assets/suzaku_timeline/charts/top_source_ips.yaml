@@ -1,5 +1,5 @@
 # SZK-39: Top Source IPs
-# Suzaku's `timeline` table carries no geo columns (PLAN_SUZAKU_SCHEMA P8),
+# Suzaku's `timeline` table carries no geo columns,
 # so the context here is behavioural rather than geographic: how many
 # principals and rules an address touched, and how long it was active.
 uuid: 5a021006-0000-4000-8000-000000000039

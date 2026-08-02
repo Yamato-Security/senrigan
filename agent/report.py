@@ -206,7 +206,7 @@ class ReportEntry:
     category: str = ""  # UI-02: category group (e.g. "🔑 Identity & Access")
     source: str = "chat"  # UI-03: "chat" | "bulk"
     # TC: Threat Technique Catalog for AWS mappings — list of dicts with
-    # tid / name / summary / url keys (see doc/PLAN_THREAT_CATALOG.md).
+    # tid / name / summary / url keys.
     techniques: list[dict] = field(default_factory=list)
     # Prevent pandas DataFrame equality issues in dataclass comparisons
     _results_placeholder: None = field(default=None, init=False, repr=False)

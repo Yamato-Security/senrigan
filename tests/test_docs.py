@@ -1,6 +1,5 @@
 """Tests keeping the localized documentation site in step with the repository.
 
-Covers PLAN_MAKEFILE_UX.md Phase 4 and PLAN_DOCS_REFRESH.md Phase 1.
 Translations drift silently: a locale can fall a revision behind and nobody
 notices until a user follows it. These tests check structure and command names,
 which are identical across locales, and say nothing about the prose, which is
@@ -31,7 +30,7 @@ SUPERSEDED = ["make ingest-geoip", "make ingest-config", "make ingest-full"]
 # The one page that has not been translated yet. `fallback_to_default: true` in
 # mkdocs.yml means the 14 other locales silently serve English for the newest
 # feature — invisible in a build, which is why it is recorded here instead.
-# Translating it is PLAN_DOCS_REFRESH.md Phase 5; remove this entry then.
+# Remove this entry once the page has been translated.
 UNTRANSLATED = {"reference/suzaku"}
 
 
@@ -101,9 +100,7 @@ def test_locale_names_both_auto_detected_directories(path: Path):
         pytest.param(
             name,
             marks=(
-                pytest.mark.xfail(
-                    strict=True, reason="untranslated — PLAN_DOCS_REFRESH.md Phase 5"
-                )
+                pytest.mark.xfail(strict=True, reason="untranslated")
                 if name in UNTRANSLATED
                 else ()
             ),

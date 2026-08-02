@@ -8,8 +8,6 @@ be pinned into the report, downloaded as CSV, and narrated by the LLM.
 Everything here is layout plus session-state plumbing. The SQL lives in
 ``suzaku_summary_queries.py`` / ``suzaku_metrics_queries.py``, which import no
 Streamlit and are unit-tested directly.
-
-See ``doc/PLAN_SUZAKU_EXPLORERS.md`` §5.3.
 """
 
 from __future__ import annotations

@@ -1,10 +1,10 @@
 """Tests for the ``aws-ct-metrics`` query layer.
 
-Covers PLAN_SUZAKU_EXPLORERS.md §5.2 and §6 (tests 16-23). Two properties matter
-most here and both are asserted directly: every statement is parameterized on
-``Field`` — the file may hold several, and the shipped fixture's single
-``eventName`` must never be baked in — and a file whose geo columns exist but are
-empty is reported as having no geo data rather than drawn as three blank charts.
+Two properties matter most here and both are asserted directly: every statement
+is parameterized on ``Field`` — the file may hold several, and the shipped
+fixture's single ``eventName`` must never be baked in — and a file whose geo
+columns exist but are empty is reported as having no geo data rather than drawn
+as three blank charts.
 """
 
 from __future__ import annotations

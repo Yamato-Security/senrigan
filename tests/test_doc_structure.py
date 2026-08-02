@@ -1,10 +1,10 @@
 """Tests keeping structural documentation pointed at things that exist.
 
-Covers PLAN_DOCS_REFRESH.md Phase 1. The repository map in ``AGENTS.md`` and the
-link web across ``doc/`` are what an agent reads before it opens any source
-file, so a path that moved or a document that was never committed sends the
-next session looking in the wrong place. Nothing here reads prose — only paths,
-links and command names, which are mechanical enough to check.
+The repository map in ``AGENTS.md`` and the link web across ``doc/`` are what
+an agent reads before it opens any source file, so a path that moved or a
+document that was never committed sends the next session looking in the wrong
+place. Nothing here reads prose — only paths, links and command names, which
+are mechanical enough to check.
 """
 
 from __future__ import annotations

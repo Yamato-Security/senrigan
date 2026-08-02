@@ -1,7 +1,7 @@
 """Phase 5 — Threat Technique Catalog gap-closing hunts for builtin_hunts.yaml.
 
-Tests TC-P1 through TC-P10 in the Red-Green-Refactor cycle (see
-doc/PLAN_THREAT_CATALOG.md §3, Priority 1):
+Tests TC-P1 through TC-P10 in the Red-Green-Refactor cycle, closing the
+Priority-1 gaps in the Threat Technique Catalog:
   TC-P1:  IAM Entity Deletion               (T1070.A001)
   TC-P2:  AssumeRoot Usage                  (AT1669)
   TC-P3:  S3 SSE-C Encryption (Ransomware)  (T1486.A001)
