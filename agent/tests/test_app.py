@@ -1809,3 +1809,94 @@ def test_clear_button_resets_filters_without_writing_live_widget_keys(profile):
 
     assert state[result_key] == "All"
     assert state[keyword_key] == ""
+
+
+# ---------------------------------------------------------------------------
+# Sidebar database section — which DuckDB file the CloudTrail page reads
+# ---------------------------------------------------------------------------
+
+
+def _render_db_section(profile, **env):
+    """Render the sidebar database section and report what it drew.
+
+    ``format_func`` is applied inside the render because it resolves paths from
+    the environment, which is only patched for the duration of the call.
+
+    Args:
+        profile: Dataset profile the section is rendered for.
+        env:     Environment variables for the render, plus an optional
+                 ``variant`` seeding the session's current selection.
+
+    Returns:
+        ``(state, subheader, options, labels, captions)`` for the render, where
+        *options* are the pulldown's values and *labels* what it displays.
+    """
+    from app import _render_db_variant_section
+    from config import DB_VARIANT_FULL
+
+    state = MockSessionState(db_variant=env.pop("variant", DB_VARIANT_FULL))
+    options: list[str] = []
+    labels: list[str] = []
+
+    def _selectbox(_label, **kwargs):
+        options.extend(kwargs["options"])
+        labels.extend(kwargs["format_func"](option) for option in kwargs["options"])
+        return options[kwargs["index"]]
+
+    with (
+        patch.dict("os.environ", env, clear=False),
+        patch("streamlit.session_state", state),
+        patch("streamlit.subheader") as subheader,
+        patch("streamlit.selectbox", side_effect=_selectbox),
+        patch("streamlit.caption") as caption,
+    ):
+        _render_db_variant_section(profile)
+
+    captions = " ".join(
+        str(call.args[0]) for call in caption.call_args_list if call.args
+    )
+    return state, subheader, options, labels, captions
+
+
+def test_database_section_names_the_active_file_without_a_lite_db(monkeypatch):
+    """The page must say which DuckDB it reads even when there is one choice."""
+    monkeypatch.delenv("DUCKDB_PATH_LITE", raising=False)
+
+    _, subheader, options, labels, captions = _render_db_section(
+        CLOUDTRAIL_PROFILE, DUCKDB_PATH="/data/db/threat_hunting.db"
+    )
+
+    assert subheader.called
+    assert options == ["Full"]
+    # The pulldown labels the option with the file it resolves to.
+    assert labels == ["Full — threat_hunting.db"]
+    assert "/data/db/threat_hunting.db" in captions
+
+
+def test_database_section_offers_both_variants_as_a_pulldown(monkeypatch):
+    """With a Lite DB configured the pulldown carries both files."""
+    state, _, options, labels, captions = _render_db_section(
+        CLOUDTRAIL_PROFILE,
+        DUCKDB_PATH="/data/db/full.db",
+        DUCKDB_PATH_LITE="/data/db/lite.db",
+        variant="Lite",
+    )
+
+    assert options == ["Full", "Lite"]
+    assert labels == ["Full — full.db", "Lite — lite.db"]
+    # The selection round-trips through the shared session key, and the caption
+    # names the file that selection resolves to.
+    assert state["db_variant"] == "Lite"
+    assert "/data/db/lite.db" in captions
+
+
+def test_database_section_is_silent_for_a_suzaku_profile(monkeypatch):
+    """Suzaku pages have their own picker; a second one would contradict it."""
+    monkeypatch.delenv("DUCKDB_PATH_LITE", raising=False)
+
+    _, subheader, options, _, _ = _render_db_section(
+        SUZAKU_TIMELINE_PROFILE, DUCKDB_PATH="/data/db/threat_hunting.db"
+    )
+
+    assert not subheader.called
+    assert options == []
