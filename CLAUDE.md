@@ -1,108 +1,66 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working in the **Senrigan** repository.
+Senrigan — a locally-executed, AI-assisted threat hunting tool for AWS CloudTrail logs.
 
-> Senrigan is a locally-executed, AI-assisted threat hunting tool for AWS CloudTrail logs.
-> Source of truth for agent context is [AGENTS.md](AGENTS.md); module-level detail lives in
-> [ingester/AGENTS.md](ingester/AGENTS.md) and [agent/AGENTS.md](agent/AGENTS.md).
-> Background docs are under [doc/](doc/) — see [ARCHITECTURE.md](doc/ARCHITECTURE.md),
-> [DEVELOPMENT.md](doc/DEVELOPMENT.md), [TESTING.md](doc/TESTING.md),
-> [TDD_GUIDE.md](doc/TDD_GUIDE.md), [PRD.md](doc/PRD.md),
-> [PRD_SUZAKU_SUMMARY.md](doc/PRD_SUZAKU_SUMMARY.md),
-and [PRD_DASHBOARD_REVIEW.md](doc/PRD_DASHBOARD_REVIEW.md).
+This file holds only what changes how you act. Reference material is linked, never copied:
+[AGENTS.md](AGENTS.md) (schema, CLI, env vars, file map), [ingester/AGENTS.md](ingester/AGENTS.md),
+[agent/AGENTS.md](agent/AGENTS.md), [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md),
+[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md), [doc/TESTING.md](doc/TESTING.md),
+[doc/TDD_GUIDE.md](doc/TDD_GUIDE.md), [doc/PRD.md](doc/PRD.md).
 
 ---
 
-## Architecture at a Glance
+## Architecture
 
-Four Docker containers share **one DuckDB file** via a bind mount
-(`docker/data/db/threat_hunting.db`) using a **1-writer / N-readers** model.
+Four containers share **one DuckDB file** (`docker/data/db/threat_hunting.db`) via a bind mount,
+**1 writer / N readers**.
 
-| Container    | Language                                | DuckDB mode               | Port |
-|--------------|-----------------------------------------|---------------------------|------|
-| `ingester`   | Rust 1.85+                              | READ_WRITE (sole writer)  | —    |
-| `agent`      | Python 3.14+ / Streamlit                | READ_ONLY                 | 8501 |
-| `dashboard`  | Apache Superset                         | READ_ONLY                 | 8088 |
-| `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK) | READ_ONLY                 | 8502 |
+| Container | Language | DuckDB mode | Port |
+|-----------|----------|-------------|------|
+| `ingester` | Rust 1.85+ | READ_WRITE (sole writer) | — |
+| `agent` | Python 3.14+ / Streamlit | READ_ONLY | 8501 |
+| `dashboard` | Apache Superset | READ_ONLY | 8088 |
+| `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK) | READ_ONLY | 8502 |
 
-- `agent` is a four-page Streamlit app (`st.navigation`), one `DatasetProfile`
-  (`agent/profiles.py`) per page. Two **chat** pages have the LLM write the SQL and share one
-  pipeline: **🔭 Senrigan** (`cloudtrail_events`) and **🕒 Suzaku Timeline** (Suzaku's `timeline`).
-  Two **explorer** pages (`chat_enabled=False`) run only reviewed SQL from
-  `agent/suzaku_{summary,metrics}_queries.py`: **👤 Suzaku Summary** and **📊 Suzaku Metrics**;
-  an explorer profile raises if it reaches the chat pipeline.
-  See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
-- **Suzaku output** (`*.duckdb` / `*.db` from `aws-ct-timeline` / `aws-ct-summary` / `aws-ct-metrics`)
-  is read as-is from the same mounted directory — never imported, never written. Detection, fitness
-  and selection live **only** in `agent/suzaku_db.py`; the Superset image cannot install the agent
-  package, so `docker/docker-compose.yml` bind-mounts that one module into `superset-init` and
-  `superset-resync`, and `dashboard/init/register_suzaku_dbs.py` imports it (guarded by
-  `tests/test_suzaku_detection_shared.py`). A `schema_version` newer than this release is refused.
-  `aws-ct-summary` / `aws-ct-metrics` are pre-aggregated, so each gets a Superset dashboard **and**
-  an agent explorer page — the dashboard scans, the explorer drills down, compares and reports.
-- **Several Suzaku files in one directory** — one file serves each command, chosen by
-  `generated_at` (when Suzaku ran) → mtime → path, so the choice is deterministic and identical in
-  both UIs. A file is eligible only when it has every column the shipped datasets select
-  (`REQUIRED_COLUMNS`) — which is why the **Suzaku Metrics** dashboard needs a run with `--geo-ip`:
-  Suzaku writes `SrcASN`/`SrcCity`/`SrcCountry` only for an enriched run, and a metrics file without
-  them is rejected with that reason rather than registered and left failing at render time. Every
-  Suzaku dashboard carries a **Suzaku Run Info** card naming its own `source_file`, and
-  `make status` / `make up` print which file won and which candidates lost.
-- `config_viz`'s frontend uses **`elkjs`** (ELK layered / Sugiyama algorithm) for graph layout —
-  migrated from `@dagrejs/dagre`.
-- `ingester` must finish before the read-only services start. Concurrent writes are **not** supported.
-- The bind mount (not a named volume) is intentional — Docker on Linux/WSL2 misresolves relative
-  paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry in
-  `docker/docker-compose.yml`.
-- SSD/NVMe storage is strongly recommended for the DuckDB file.
+- **`ingester` is the sole writer.** Readers pass `read_only=True`; it must finish before they
+  start, and concurrent writers are unsupported.
+- **Suzaku output is read as-is** — never imported, never opened writable. Detection, fitness and
+  file selection live **only** in `agent/suzaku_db.py`, bind-mounted into `superset-init` /
+  `superset-resync` for `dashboard/init/register_suzaku_dbs.py` (guarded by
+  `tests/test_suzaku_detection_shared.py`). Fix selection bugs there, not in a second copy.
+- **One file wins per Suzaku command** — `generated_at` → mtime → path, among files carrying every
+  column in `REQUIRED_COLUMNS`, so both UIs agree. Hence the Metrics dashboard needs a Suzaku run
+  with `--geo-ip`: without `SrcASN`/`SrcCity`/`SrcCountry` the file is rejected with a reason
+  instead of failing at render time. `make status` prints winner and losers.
+- **The bind mount is deliberate** — Docker on Linux/WSL2 misresolves relative paths for
+  named-volume `driver_opts`, so each service declares its own `volumes:` entry.
+- **`agent` is four pages** (`st.navigation`, one `DatasetProfile` each): two *chat* pages where
+  the LLM writes SQL (🔭 Senrigan, 🕒 Suzaku Timeline) and two *explorer* pages
+  (`chat_enabled=False`) running only reviewed SQL from `agent/suzaku_{summary,metrics}_queries.py`
+  — an explorer profile raises if it reaches the chat pipeline.
 
----
+## TDD (non-negotiable)
 
-## Development Methodology: TDD (Non-Negotiable)
+Red → Green → Refactor: write the test list, write ONE failing test, confirm it fails, write the
+minimum code to pass, refactor green, repeat. **Never write production code without a failing test
+first.** Exceptions: boilerplate (Dockerfile, compose, config), UI layout (test the logic behind
+it), third-party wiring (mock + test the interface). Business logic and data transformations are
+never exempt.
 
-This project strictly follows **Test-Driven Development** (Red → Green → Refactor).
+Tests live in `#[cfg(test)] mod tests` + `ingester/tests/` (Rust), `agent|config_viz|dashboard/tests/`
+and root `tests/` (Python), `config_viz/frontend/src/__tests__/` (TypeScript).
 
-1. Write a **test list** before coding any feature.
-2. Write ONE failing test (Red) — confirm it fails first.
-3. Write the **minimum** code to make it pass (Green).
-4. Refactor while keeping all tests green.
-5. Repeat for the next list item.
+## Conventions
 
-**Never write production code without a corresponding failing test first.** When in doubt, ask
-"What is the test list for this feature?" See [doc/TDD_GUIDE.md](doc/TDD_GUIDE.md).
-
-Test homes:
-- **Rust:** `#[test]` in `#[cfg(test)] mod tests` in the same source file; integration tests in `ingester/tests/`.
-- **Python:** `def test_*` in `agent/tests/` or `config_viz/tests/`.
-- **TypeScript:** `*.test.tsx` / `*.test.ts` in `config_viz/frontend/src/__tests__/`.
-
-Strict-TDD exceptions: boilerplate (Dockerfiles, compose, config), UI layout (test the logic
-behind it), and third-party wiring (mock + test the interface). Always TDD business logic and data
-transformations.
-
----
-
-## Coding Conventions
-
-### All modules
-- **Language:** every comment, doc comment, docstring, commit message, and PR description MUST be
-  in **English**. No exceptions, anywhere in the codebase or git history.
-- **Commits:** Conventional Commits — `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`.
-- **Branches:** `feature/<module>-<short-desc>` / `fix/<module>-<short-desc>`.
-
-### Rust (`ingester/`)
-- Format with `cargo fmt`; lint with `cargo clippy -- -D warnings` (zero warnings).
-- Errors: `anyhow::Result` everywhere; add context with `.with_context(|| format!("..."))`.
-- DB writes: **always** use `duckdb::Appender`, never individual `INSERT` statements.
-- Tests use temporary DBs (`tempfile::NamedTempFile`); keep the temp handle alive.
-
-### Python (`agent/`, `config_viz/backend/`)
-- Format with `black` (line length 88); lint with `ruff`.
-- Type hints required on all signatures; Google-style docstrings.
-- Imports: stdlib → third-party → local (enforced by `ruff`).
-- **OpenAI mocks:** patch `llm.OpenAI`, **not** `agent.llm.OpenAI` (`pytest.ini` sets `pythonpath = .`).
-- DuckDB in tests: use temp DBs via the `tmp_duckdb` / `tmp_db_*` fixtures — never a shared file.
-- **Real OpenAI API calls in tests are forbidden** — always mock `llm.OpenAI`.
+- **English everywhere** — comments, docstrings, commits, PRs, `doc/`, `website/docs/`.
+- **Commits:** Conventional Commits. **Branches:** `feature|fix/<module>-<short-desc>`.
+- **Rust:** `cargo fmt`, `cargo clippy -- -D warnings` (zero warnings), `anyhow::Result` with
+  `.with_context(...)`, DB writes **always** via `duckdb::Appender`, temp DBs in tests
+  (keep the `NamedTempFile` handle alive).
+- **Python:** `black` (88) + `ruff`, type hints everywhere, Google docstrings. Patch OpenAI as
+  `llm.OpenAI`, **not** `agent.llm.OpenAI` (`pytest.ini` sets `pythonpath = .`). Use the
+  `tmp_duckdb` / `tmp_db_*` fixtures, never a shared file. **Real OpenAI calls in tests are
+  forbidden.**
 
 ---
 
@@ -119,215 +77,110 @@ make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
 make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
 ```
 
-Two more worth knowing. Neither appears in the default help — reach for them when
-something looks wrong, not during a first run:
+Not advertised: `make status` (state, DB size, which Suzaku file each dashboard uses),
+`make resync` (stale dashboard: re-sync columns, re-resolve Suzaku paths), `make check`
+(everything CI enforces). Per-module loops: `cargo test` / `cargo clippy -- -D warnings` /
+`cargo fmt --check`; `pytest` / `ruff check .` / `black --check .`; `npm test -- --run` /
+`npm run build`.
+
+`make ingest` takes **no flags** — it reads the compose bind-mount directories
+(`GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`) and enables the matching options
+itself, echoing what it found and skipped: GeoLite2 `.mmdb` files add the `--geoip-*` flags (City
+supersedes Country), a non-empty `docker/data/config-snapshots/` runs `config-import` as a second
+pass. Overrides live under `##@ Advanced ingest` in `make help-all`; see
+[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
+
+**Dashboard YAML is compiled, not read.** Superset applies only the ZIPs, imported by the one-shot
+`superset-init` container, so editing YAML alone — or rebuilding the ZIP alone — changes nothing
+in a running dashboard. Finish every edit under `dashboard/assets/<bundle>/` with both steps:
 
 ```bash
-make status    # Container state, database size, and what ingest would detect
-make resync    # Fix a stale dashboard: re-syncs column metadata and re-resolves Suzaku file paths
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # or rebuild_suzaku_<name>_zip.py
+cd ../../docker && docker compose run --rm superset-init   # re-import (idempotent)
 ```
 
-`make ingest` takes **no flags**. It reads the compose bind-mount directories and enables
-the matching ingester options itself, echoing what it found and what it skipped:
+`cloudtrail_rare.zip` is derived from `cloudtrail_default/` (ascending/bottom-N ordering), and
+`dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
 
-| Directory | Effect on `make ingest` |
-|-----------|-------------------------|
-| `docker/data/geoip/GeoLite2-{City,Country,ASN}.mmdb` | adds the matching `--geoip-*` flags (City supersedes Country) |
-| `docker/data/config-snapshots/` non-empty | runs `config-import` as a second pass |
-
-Explicit overrides live under `##@ Advanced ingest` in `make help-all`
-(`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`). Detection paths follow
-`GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching
-`docker/docker-compose.yml`. See [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
-
-**After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
-Superset never reads those YAML files directly — it only applies them from the compiled
-`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the "Rare Events" dashboard, derived
-from `cloudtrail_default/` by `rebuild_rare_zip.py` with ascending/bottom-N ordering),
-which are imported into Superset's own metadata DB by the one-shot `superset-init`
-container. Editing the YAML alone (or even rebuilding the zips alone) has no effect on the
-running dashboards. Always finish with all steps:
-
-```bash
-cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
-cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
-```
-
-The same rule applies to the three Suzaku bundles (`suzaku_timeline/`,
-`suzaku_summary/`, `suzaku_metrics/`) — rebuild with
-`python3 rebuild_suzaku_<name>_zip.py`. `dashboard/tests/test_rebuild_suzaku_zips.py`
-fails when a committed Suzaku ZIP is stale, so an unrebuilt edit cannot pass CI.
-
-Per-module dev loops (`make check` runs everything CI enforces in one go):
-
-```bash
-# Rust (ingester/)
-cargo test                    # unit + integration + CLI tests
-cargo clippy -- -D warnings   # lint
-cargo fmt --check             # format check
-
-# Python (agent/, config_viz/, dashboard/)
-pytest                        # all tests
-ruff check .                  # lint
-black --check .               # format check
-
-# TypeScript (config_viz/frontend/)
-npm test -- --run             # single-pass test
-npm run build                 # Vite production build → ../static/
-```
-
-Approximate test totals (must not decrease in a PR): ingester ≈ 186 (Rust), agent ≈ 825 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (asset/YAML/config validation suite —
-run with `make test-dashboard`), root `tests/` ≈ 238 (Makefile / compose / docs consistency —
-run with `make test-repo`).
-When your PR changes a count, update this line and [AGENTS.md](AGENTS.md) in the same PR —
-stale counts here cause false "regression" alarms in later sessions.
-
-Every PR must pass: all tests green, no lint warnings, format compliance, and no test-count regression.
+Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 825 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (`make test-dashboard`), root `tests/` ≈ 238
+(`make test-repo`). A PR that changes a count updates this line **and** [AGENTS.md](AGENTS.md)
+together — stale counts cause false "regression" alarms later.
 
 ---
 
-## DuckDB Schema & Access Rules
+## Schema & SQL
 
-`cloudtrail_events` has **48 columns** (17 core → 7 GeoIP → 24 extended). JSON blobs are stored as
-**`VARCHAR`**, not DuckDB JSON type — query them with `json_extract_string(col, '$.field')`.
-GeoIP and extended columns are added via `ALTER TABLE ADD COLUMN IF NOT EXISTS`, so existing DBs
-migrate transparently. `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives SHA-256
-dedup. Full schema: [AGENTS.md](AGENTS.md#duckdb-schema).
+`cloudtrail_events` has **48 columns** (17 core → 7 GeoIP → 24 extended; full inventory in
+[AGENTS.md](AGENTS.md#duckdb-schema)). JSON blobs are `VARCHAR`, not DuckDB JSON — read them with
+`json_extract_string(col, '$.field')`. GeoIP and extended columns arrive via `ALTER TABLE ADD
+COLUMN IF NOT EXISTS`, so existing DBs migrate transparently. `ingested_files` drives SHA-256
+dedup. The LLM sees only the columns in `agent/schema.py` (17 core + 7 GeoIP) — anything absent
+there never appears in generated SQL.
 
-The LLM only "sees" the columns listed in `agent/schema.py` (currently the 17 core + 7 GeoIP
-columns — the 24 extended columns are deliberately excluded to keep the prompt small). A column
-that exists in DuckDB but not in `agent/schema.py` will never be used by AI-generated SQL.
+**Adding or exposing a column** touches: (1) the Rust schema + migration, (2) `agent/schema.py`
+and the idioms in `agent/prompts/system_prompt.py`, (3) [AGENTS.md](AGENTS.md#duckdb-schema),
+(4) `dashboard/assets/cloudtrail_default/datasets/` YAML → rebuild ZIPs → re-import → `make resync`.
 
-**Schema-change checklist** — when adding or newly exposing a column, update every one of:
-1. `ingester/` Rust schema + migration (`ALTER TABLE ADD COLUMN IF NOT EXISTS`),
-2. `agent/schema.py` (if the LLM should use it) and the idioms in `agent/prompts/system_prompt.py`,
-3. the schema section in [AGENTS.md](AGENTS.md#duckdb-schema),
-4. `dashboard/assets/cloudtrail_default/datasets/` YAML, then rebuild both zips + re-import
-   (see the dashboard-assets steps above) and run the `superset-resync` profile.
+Three guards run before any LLM-generated SQL executes (`agent/query.py`,
+`config_viz/backend/query.py`): a **keyword blocklist** (`INSERT`, `UPDATE`, `DELETE`, `DROP`,
+`ALTER`, `CREATE`), **EXPLAIN validation** on the READ_ONLY connection, and a **row-limit cap**
+wrapping un-`LIMIT`ed queries. On failure `execute_with_retry` calls `fix_sql_with_llm` once.
+Date filters inject a `_ct_filtered` CTE; hunts in `agent/builtin_hunts.yaml` with an `sql` field
+run without an API key; IP columns in results are geo-enriched best-effort (`agent/geo.py`).
 
-Access rules:
-1. `ingester` is the **sole writer** — never open `READ_WRITE` from `agent`/`dashboard`/`config_viz`.
-2. Readers always use `read_only=True`.
-3. Tests must use temporary databases (`tempfile` in Rust, `tmp_path` in pytest).
+## OpenAI models
 
----
-
-## SQL Safety (`agent/` and `config_viz/backend/`)
-
-Before executing any LLM-generated SQL, three guards run in order:
-1. **Keyword blocklist** — rejects `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`
-   (word-boundary, case-insensitive regex).
-2. **EXPLAIN validation** — runs `EXPLAIN <sql>` on the READ_ONLY connection.
-3. **Row-limit cap** — wraps un-`LIMIT`ed queries in `SELECT * FROM (...) AS _limited LIMIT N`.
-
-On failure, `agent`'s `execute_with_retry` calls `fix_sql_with_llm` once for automatic correction.
-Date-range UI filters inject a `_ct_filtered` CTE (see `apply_date_filter()` in `agent/query.py`).
-`agent/builtin_hunts.yaml` ships pre-built hunts; entries with an `sql` field run without an API key.
-Query results containing IP columns are automatically geo-enriched (`agent/geo.py`; sidebar toggle,
-best-effort — see [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)).
-
----
-
-## Ingester CLI Reference
-
-```
-ingester ingest --path <dir>
-                [--db <path>] [--from <YYYYMMDD>] [--to <YYYYMMDD>]
-                [--include <globs>] [--exclude <globs>]   # comma-separated; * crosses /
-                [--workers <N>] [--no-progress]
-                [--geoip-city <path>] [--geoip-country <path>] [--geoip-asn <path>]
-                [--strip-fields]      # drop low-signal keys from request/responseParameters
-                [--strip-raw-event]   # write NULL for raw_event (saves storage)
-
-ingester enrich [--db <path>] [--geoip-city/--geoip-country/--geoip-asn <path>]
-ingester config-import --path <dir> [--db <path>]
-```
-
-DB path resolution: `--db` → `DUCKDB_PATH` env → `/data/db/threat_hunting.db`.
-
----
-
-## Key Environment Variables
-
-| Variable | Used by | Default | Notes |
-|----------|---------|---------|-------|
-| `OPENAI_API_KEY` | agent | — | Required for AI features |
-| `OPENAI_MODEL` | agent | `gpt-5.5` | SQL generation + analysis model |
-| `OPENAI_MODEL_LITE` | agent | `gpt-5.4-mini` | Optional lighter model |
-| `DUCKDB_PATH` | all | — | Overrides default DB path |
-| `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount dir |
-| `GEOIP_CITY/COUNTRY/ASN_PATH` | ingester | — | GeoLite2 mmdb paths |
-| `SUZAKU_{TIMELINE,SUMMARY,METRICS}_DB` | agent, dashboard | — | Pin one Suzaku `.duckdb` instead of discovery |
-| `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
-| `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies (see DEVELOPMENT.md §6) |
+Defaults `gpt-5.5` / `gpt-5.4-mini` (`OPENAI_MODEL` / `OPENAI_MODEL_LITE` in
+`docker/docker-compose.yml`); the sidebar offers `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`. When the
+lineup changes, move all of these together or the UI will offer a model the API rejects:
+`MODEL_OPTIONS` in `agent/app.py` and the default in `agent/session.py`; `_NO_TEMPERATURE_MODELS`
+in `agent/llm.py` (models that reject an explicit temperature, `gpt-5.5` among them); the compose
+defaults; the tables in [AGENTS.md](AGENTS.md#environment-variables) and
+[agent/AGENTS.md](agent/AGENTS.md). Everything else about the API surface is a code detail — read
+`agent/llm.py`.
 
 ---
 
 ## Documentation
 
-**One owner per fact.** A number, path, or command name lives in exactly one place; every
-other mention links to it instead of repeating it. Repetition is how the docs decayed
-before — the Suzaku Run Info card added one chart to three dashboards and three documents
-kept quoting the old totals; the root `tests/` suite now enforces that contract.
-
-Where the fact must appear in prose anyway (a headline count, a README tree), the root
-`tests/` suite asserts it against the artifact that produces it:
+**One owner per fact.** A number, path or command name lives in one place; every other mention
+links to it. Repetition is how these docs decayed before. Where a fact must appear in prose
+anyway, the root suite asserts it against the artifact that produces it — run `make test-repo`
+after touching docs and it names the stale sentence.
 
 | Fact | Owned by | Asserted by |
 |------|----------|-------------|
 | Hunt counts and names | `agent/*_hunts.yaml` | `tests/test_doc_counts.py` |
 | Chart counts and names | `dashboard/assets/<bundle>/charts/` | `tests/test_doc_counts.py` |
-| Suite sizes | the suites | `tests/test_doc_counts.py` (cross-file agreement only) |
+| Suite sizes | the suites | `tests/test_doc_counts.py` (cross-file agreement) |
 | The five front-page commands | `Makefile` | `tests/test_doc_structure.py` |
 | Repository layout | the working tree | `tests/test_doc_structure.py` |
-| Locale coverage of the site | `website/mkdocs.yml` | `tests/test_docs.py` |
+| Locale coverage | `website/mkdocs.yml` | `tests/test_docs.py` |
 
-So: when a PR changes one of these, run `make test-repo` — it names the stale sentence
-rather than leaving it for a later session to trip over. Adding a documented count without
-adding its assertion is how the next drift starts.
+`doc/` is internal, `website/docs/` is the product — a user-facing change needs the site page in
+all 15 locales, since a missing locale silently serves English. `PRD_*` are point-in-time records:
+update their `Status:` line, never rewrite them. `OLD-README.md` is frozen.
 
-Four more standing rules:
+## Security
 
-- **English everywhere**, including `doc/`, `website/docs/` source pages, and commit messages.
-- **`doc/` is internal, `website/docs/` is the product.** A user-facing change needs the
-  site page, in all 15 locales — a missing locale silently serves English.
-- **`PRD_*` are point-in-time records.** Do not rewrite them to match what shipped;
-  update their `Status:` line instead. The root suite excludes them from its
-  "must describe real behaviour" checks for this reason.
-- **`OLD-README.md` is frozen.** It is linked from `README.md` as a historical snapshot.
-
----
-
-## Security Rules
-
-1. **API keys:** never hardcode — always read from environment variables / `.env` (git-ignored).
-2. **SQL safety:** READ_ONLY connection + keyword blocklist + EXPLAIN validation (agent & config_viz).
-3. **No external data upload:** the only external call is the OpenAI API (SQL prompt + results).
-   DuckDB data never leaves the local machine.
-4. **Network:** all services are local-only by default.
-
----
+API keys come from env vars / git-ignored `.env`, never hardcoded. SQL safety = READ_ONLY +
+blocklist + EXPLAIN. The OpenAI call (prompt + results) is the only outbound traffic; DuckDB data
+never leaves the machine. All services are local-only by default.
 
 ## Repository Map
 
 ```
 senrigan/
-├── ingester/    # Rust log ingestion engine (ingest/enrich/config-import subcommands)
-├── agent/       # Python/Streamlit UI — 2 AI chat pages + 2 Suzaku explorer pages
-│               #   (llm.py, query.py, report.py, profiles.py, suzaku_db.py,
-│               #    suzaku_queries.py, suzaku_summary_queries.py, suzaku_metrics_queries.py,
-│               #    builtin_hunts.yaml, suzaku_timeline_hunts.yaml, views/)
-├── config_viz/  # AWS Config resource graph — FastAPI backend + React 18/Vite/TS frontend (ELK layout)
-├── dashboard/   # Apache Superset config + pre-built dashboard assets + asset-validation tests/
-│               #   (cloudtrail_default, cloudtrail_rare, suzaku_{timeline,summary,metrics})
-├── sample/      # sample/suzaku/: trimmed Suzaku fixtures + generate_fixtures.py
-│               #   (full Suzaku runs are git-ignored)
-├── docker/      # docker-compose.yml (5 services + ingest/resync profiles)
+├── ingester/    # Rust ingestion engine (ingest / enrich / config-import)
+├── agent/       # Streamlit UI — 2 AI chat pages + 2 Suzaku explorer pages
+├── config_viz/  # AWS Config resource graph — FastAPI + React 18/Vite/TS (ELK)
+├── dashboard/   # Superset config, asset bundles, asset-validation tests
+├── sample/      # Trimmed Suzaku fixtures (full runs are git-ignored)
+├── docker/      # docker-compose.yml (6 services + ingest/resync profiles)
 ├── tests/       # Repository-level consistency suite (Makefile / compose / docs)
-├── website/     # Material for MkDocs documentation site — docs/ in 15 locales
-└── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-                 #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW
+├── website/     # Material for MkDocs site — docs/ in 15 locales
+└── doc/         # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD*
 ```
 
-See [AGENTS.md](AGENTS.md#file-structure) for the full file-level breakdown.
+File-level breakdown: [AGENTS.md](AGENTS.md#file-structure).

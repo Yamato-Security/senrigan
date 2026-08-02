@@ -1,16 +1,19 @@
 # AGENTS.md — Senrigan
 
-AI coding agent guide for the Senrigan project.
-Module-level detail: [ingester/AGENTS.md](ingester/AGENTS.md) · [agent/AGENTS.md](agent/AGENTS.md)
+Reference context for AI coding agents. Working rules (TDD, conventions, schema-change and
+documentation checklists) are in [CLAUDE.md](CLAUDE.md) and apply to every agent. Module detail:
+[ingester/AGENTS.md](ingester/AGENTS.md) · [agent/AGENTS.md](agent/AGENTS.md). Background:
+[doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) · [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md) ·
+[doc/TESTING.md](doc/TESTING.md) · [doc/TDD_GUIDE.md](doc/TDD_GUIDE.md) · [doc/PRD.md](doc/PRD.md).
 
 ---
 
-## Architecture at a Glance
+## Architecture
 
-Four containers share one DuckDB file via a **bind mount** (`docker/data/db/threat_hunting.db`).
-`docker/docker-compose.yml` declares six services in total: three long-running (`agent`,
-`config-viz`, `superset`) and three one-shot runners — `ingester` (profile `ingest`),
-`superset-init` (runs on every `up`) and `superset-resync` (profile `resync`).
+Four containers share one DuckDB file (`docker/data/db/threat_hunting.db`) via a bind mount.
+`docker/docker-compose.yml` declares six services: three long-running (`agent`, `config-viz`,
+`superset`) and three one-shot runners — `ingester` (profile `ingest`), `superset-init` (every
+`up`) and `superset-resync` (profile `resync`).
 
 | Container | Language | DuckDB mode | Port |
 |-----------|----------|-------------|------|
@@ -19,88 +22,29 @@ Four containers share one DuckDB file via a **bind mount** (`docker/data/db/thre
 | `dashboard` | Apache Superset | READ_ONLY | 8088 |
 | `config_viz` | Python 3.14+ / FastAPI + React 18 (ELK layout) | READ_ONLY | 8502 |
 
-The `agent` container is a four-page Streamlit app (`st.navigation`), one `DatasetProfile`
-(`agent/profiles.py`) per page. **🔭 Senrigan** and **🕒 Suzaku Timeline** are *chat* pages: one
-pipeline over `cloudtrail_events` and over the `timeline` table of an `aws-ct-timeline` export,
-with the LLM writing the SQL. **👤 Suzaku Summary** and **📊 Suzaku Metrics** are *explorer* pages
-(`chat_enabled=False`): they run only reviewed, parameterized SQL from
-`agent/suzaku_summary_queries.py` / `agent/suzaku_metrics_queries.py`, and a profile that reaches
-the chat pipeline raises rather than sending an empty prompt to OpenAI. See `doc/ARCHITECTURE.md`.
+`ingester` must finish before the readers start; concurrent writers are unsupported. The bind
+mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves relative
+paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry.
 
-Suzaku's `*.duckdb` output is read as-is from the same mounted directory — never imported into
-`threat_hunting.db`, never opened writable, so the 1-writer invariant is untouched. File names are
-arbitrary: the producing command is read from the file's own `suzaku_meta` table
-(`agent/suzaku_db.py`, bind-mounted into the Superset init/resync containers and imported by
-`dashboard/init/register_suzaku_dbs.py`), which also carries the
-`schema_version` both readers check before trusting the columns. When a directory holds several
-files for the same command, exactly one wins — `generated_at` → mtime → path, and only among
-files carrying every column the shipped datasets select (`REQUIRED_COLUMNS`) — so both UIs land
-on the same file; see `doc/ARCHITECTURE.md`. `aws-ct-summary` and `aws-ct-metrics` are
-pre-aggregated, so each is served by a Superset dashboard **and** an agent explorer page: the
-dashboard answers "what does this run look like?", the explorer drills down from one identity or
-value, compares two of them, pivots into the timeline page and pins findings into a report.
-Neither generates SQL — that would add cost and a hallucination surface over data Suzaku has
-already aggregated. `doc/PRD_SUZAKU_SUMMARY.md` records the earlier upload-a-JSON viewer whose
-layout the Summary page follows.
+**The agent's four pages** (`st.navigation`, one `DatasetProfile` from `agent/profiles.py` each):
+🔭 Senrigan (`cloudtrail_events`) and 🕒 Suzaku Timeline (the `timeline` table of an
+`aws-ct-timeline` export) are *chat* pages sharing one pipeline, with the LLM writing the SQL.
+👤 Suzaku Summary and 📊 Suzaku Metrics are *explorer* pages (`chat_enabled=False`) running only
+reviewed, parameterized SQL from `agent/suzaku_{summary,metrics}_queries.py`; a profile reaching
+the chat pipeline raises rather than sending an empty prompt to OpenAI. Generating SQL over
+pre-aggregated Suzaku output would add cost and a hallucination surface for no gain — the
+dashboard answers "what does this run look like?", the explorer drills down, compares, pivots
+into the timeline page and pins findings into a report.
 
-The bind-mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves
-relative paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry
-in `docker/docker-compose.yml`.
-
-`ingester` must finish before `agent`/`dashboard`/`config_viz` start. Concurrent write sessions are not supported.
-
----
-
-## Development Methodology: TDD
-
-This project strictly follows **Test-Driven Development** (Red-Green-Refactor).
-
-1. Write a test list before coding any feature.
-2. Write ONE failing test (Red) — confirm it fails before proceeding.
-3. Write the **minimum** code to make it pass (Green).
-4. Refactor while keeping all tests green.
-5. Repeat for the next item on the test list.
-
-**Never write production code without a corresponding failing test first.**
-
-When implementing a feature:
-- Ask: "What is the test list for this feature?"
-- Rust: `#[test]` in `#[cfg(test)] mod tests` within the same source file.
-- Python: `def test_*` in `agent/tests/test_*.py` or `config_viz/tests/test_*.py`.
-- TypeScript (frontend): `*.test.tsx` / `*.test.ts` in `config_viz/frontend/src/__tests__/`.
-
----
-
-## Coding Conventions
-
-### All modules
-
-- **Language:** All code comments, `///` doc comments, docstrings, commit messages, and PR
-  descriptions MUST be written in **English**. No exceptions.
-- **Commits:** Conventional Commits — `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`.
-- **Branch naming:** `feature/<module>-<short-desc>` / `fix/<module>-<short-desc>`.
-
-### Rust (`ingester/`)
-
-- **Formatter:** `rustfmt` (default settings) — run `cargo fmt`.
-- **Linter:** `clippy` — all warnings must be resolved (`cargo clippy -- -D warnings`).
-- **Errors:** `anyhow::Result` everywhere; `.with_context(|| format!("..."))` for context.
-- **DB writes:** always use `duckdb::Appender`, never individual `INSERT` statements.
-- **Tests:** unit tests in `#[cfg(test)] mod tests` in the same file; integration tests in
-  `ingester/tests/`.
-
-### Python (`agent/` and `config_viz/backend/`)
-
-- **Formatter:** `black` (line length 88).
-- **Linter:** `ruff`.
-- **Type hints:** required on all function signatures.
-- **Docstrings:** Google style.
-- **Imports:** stdlib → third-party → local (enforced by `ruff`).
-- **OpenAI mocks:** mock as `llm.OpenAI`, **not** `agent.llm.OpenAI`.
-  `pytest.ini` sets `pythonpath = .` so modules resolve at the top level.
-- **DuckDB in tests:** use `tmp_path / "test.db"` via the `tmp_duckdb` fixture in
-  `agent/tests/conftest.py`. Never use a shared file.
-- **Real API calls in tests are forbidden** — always mock `llm.OpenAI`.
+**Suzaku files are read as-is** — never imported into `threat_hunting.db`, never opened writable,
+so the 1-writer invariant holds. Names are arbitrary: the producing command and the
+`schema_version` both readers check come from the file's own `suzaku_meta` table (a version newer
+than this release is refused). Detection, fitness and selection live only in `agent/suzaku_db.py`,
+bind-mounted into the Superset init/resync containers and imported by
+`dashboard/init/register_suzaku_dbs.py` — `tests/test_suzaku_detection_shared.py` guards that.
+With several files for one command, exactly one wins (`generated_at` → mtime → path, among files
+carrying every column in `REQUIRED_COLUMNS`), so both UIs agree; `make status` reports the winner
+and the rejected candidates.
 
 ---
 
@@ -117,245 +61,142 @@ make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
 make reset     # Stop, delete the DuckDB file, and start over (FORCE=1 to skip the prompt)
 ```
 
-Three more that `make` does not advertise — two for when something looks wrong, one for
-before a PR:
+Unadvertised: `make status` (state, DB size, which Suzaku file each dashboard uses),
+`make resync` (blank dashboard after re-ingest), `make check` (everything CI enforces).
+
+`make ingest` takes **no flags** — it reads the compose bind-mount directories
+(`GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`) and enables the matching options
+itself: GeoLite2 `.mmdb` files add the `--geoip-*` flags (City supersedes Country), a non-empty
+`docker/data/config-snapshots/` runs `config-import` as a second pass. Overrides
+(`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`) sit under `##@ Advanced ingest` in
+`make help-all`; operational detail in [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
+
+**Editing dashboard YAML changes nothing on its own** — Superset applies only the compiled ZIPs,
+imported by the one-shot `superset-init` container, so every edit under
+`dashboard/assets/<bundle>/` ends with both steps:
 
 ```bash
-make status    # Container state, database size, and which Suzaku file each dashboard uses
-make resync    # Fix blank dashboard after re-ingest (re-syncs column metadata)
-make check     # Everything CI enforces: tests + lint + format
-```
-
-`make ingest` takes **no flags** — it reads the compose bind-mount directories and enables
-the matching ingester options itself, echoing what it found and what it skipped:
-
-| Directory | Effect on `make ingest` |
-|-----------|-------------------------|
-| `docker/data/geoip/GeoLite2-{City,Country,ASN}.mmdb` | adds the matching `--geoip-*` flags (City supersedes Country) |
-| `docker/data/config-snapshots/` non-empty | runs `config-import` as a second pass |
-
-Explicit overrides (`ingest-full`, `ingest-geoip`, `ingest-config`, `enrich`) live under
-`##@ Advanced ingest` in `make help-all`. Detection paths follow `GEOIP_HOST_PATH` /
-`CONFIG_HOST_PATH` / `DUCKDB_HOST_PATH`, matching `docker/docker-compose.yml`.
-Operational details live in [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md).
-
-**After editing any file under `dashboard/assets/cloudtrail_default/`** (chart/dashboard YAML):
-Superset never reads those YAML files directly — it only applies them from the compiled
-`cloudtrail_default.zip` and `cloudtrail_rare.zip` (the derived "Rare Events" dashboard),
-imported into Superset's own metadata DB by the one-shot `superset-init` container.
-Editing the YAML (or even rebuilding the zips) alone has no effect on the running
-dashboards. Always finish with all steps:
-
-```bash
-cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # regenerate both zips
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # or rebuild_suzaku_<name>_zip.py
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
-Development (run from module directories):
+Per-module loops — Rust (`ingester/`): `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt`.
+Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (793 dashboard tests)): `pytest`,
+`ruff check .`, `black .`. TypeScript (`config_viz/frontend/`): `npm test -- --run`
+(114 frontend tests), `npm run build` (Vite → `../static/`).
 
-```bash
-# Rust (ingester/)
-cargo test                    # unit + integration + CLI tests
-cargo clippy -- -D warnings   # lint
-cargo fmt                     # format
-
-# Python backend (agent/)
-pytest                        # all tests
-pytest --cov=. --cov-report=term-missing
-ruff check .                  # lint
-black .                       # format
-```
-
-```bash
-# Python backend (config_viz/)
-pytest                        # all tests (67 backend tests)
-ruff check .                  # lint
-black .                       # format
-
-# TypeScript frontend (config_viz/frontend/)
-npm test                      # all tests (114 frontend tests)
-npm run build                 # Vite production build → ../static/
-```
-
-```bash
-# Dashboard (dashboard/) — YAML/asset/config validation suite
-pytest                        # all tests (793 dashboard tests)
-```
-
-Approximate test totals: ingester ≈ 186 (Rust), agent ≈ 825 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 793, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku
-selection and lifecycle).
-Test count must not decrease in a PR.
-
-Documentation follows **one owner per fact**: a count, path or command name lives in one
-place and everything else links to it. The root suite asserts the ones that must appear in
-prose anyway, so run `make test-repo` after touching docs. Rules and the ownership table:
-`CLAUDE.md` → Documentation.
+Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 825 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 793, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
+and lifecycle). Test count must not decrease in a PR, and a PR that changes one updates this line
+and [CLAUDE.md](CLAUDE.md) together.
 
 ---
 
 ## DuckDB Schema
 
-### `cloudtrail_events` (48 columns)
+`cloudtrail_events` — **48 columns**, laid out core (17) → geo (7) → extended (24). Everything is
+`VARCHAR` except `event_time TIMESTAMP`, `read_only BOOLEAN`, and `geo_latitude` / `geo_longitude`
+`DOUBLE`. JSON blobs (`request_parameters`, `response_elements`, `resources`,
+`additional_event_data`, `service_event_details`, `raw_event`) are stored as `VARCHAR`, not DuckDB
+JSON type — query them with `json_extract_string(column, '$.field')`. `ingester/src/db.rs` is the
+authority; geo and extended columns are added with `ALTER TABLE ADD COLUMN IF NOT EXISTS`, so
+existing databases migrate transparently on the next ingest run.
 
-JSON blobs are stored as **`VARCHAR`**, not DuckDB JSON type.
-Use `json_extract_string(column, '$.field')` for ad-hoc queries.
+```text
+core (17)     event_time, event_name, event_source, aws_region, source_ip_address, user_agent,
+              user_identity_type, user_identity_arn, user_identity_account_id,
+              request_parameters, response_elements, error_code, error_message, read_only,
+              event_type, recipient_account_id, raw_event   -- raw_event NULL with --strip-raw-event
 
-Column layout: **core (17) → geo (7) → extended (24)**.
-Geo and extended columns are added via `ALTER TABLE ADD COLUMN IF NOT EXISTS` so existing
-databases are migrated transparently on the next ingest run.
+geo (7)       geo_country_code, geo_country_name, geo_city, geo_latitude, geo_longitude,
+              geo_asn, geo_org                              -- NULL without a GeoLite2 database
 
-```sql
-CREATE TABLE IF NOT EXISTS cloudtrail_events (
-    -- Core columns (17)
-    event_time               TIMESTAMP,
-    event_name               VARCHAR,
-    event_source             VARCHAR,
-    aws_region               VARCHAR,
-    source_ip_address        VARCHAR,
-    user_agent               VARCHAR,
-    user_identity_type       VARCHAR,
-    user_identity_arn        VARCHAR,
-    user_identity_account_id VARCHAR,
-    request_parameters       VARCHAR,   -- JSON stored as VARCHAR
-    response_elements        VARCHAR,   -- JSON stored as VARCHAR
-    error_code               VARCHAR,
-    error_message            VARCHAR,
-    read_only                BOOLEAN,
-    event_type               VARCHAR,
-    recipient_account_id     VARCHAR,
-    raw_event                VARCHAR    -- full original event JSON as VARCHAR; NULL when --strip-raw-event
-);
-
--- GeoIP columns (7) — added via ALTER TABLE ADD COLUMN IF NOT EXISTS
--- NULL when ingested without a GeoLite2 database
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_country_code VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_country_name VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_city         VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_latitude     DOUBLE;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_longitude    DOUBLE;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_asn          VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS geo_org          VARCHAR;
-
--- Extended columns (24) — hoisted sub-fields; added via ALTER TABLE ADD COLUMN IF NOT EXISTS
--- userIdentity sub-fields
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS user_identity_principal_id      VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS user_identity_access_key_id     VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS user_identity_user_name         VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS user_identity_invoked_by        VARCHAR;
--- userIdentity.sessionContext.attributes
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_mfa_authenticated       VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_creation_date           VARCHAR;
--- userIdentity.sessionContext.sessionIssuer
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_issuer_type             VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_issuer_arn              VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_issuer_account_id       VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_issuer_user_name        VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_issuer_principal_id     VARCHAR;
--- top-level identifiers / categorisation
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS event_id                        VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS event_category                  VARCHAR;
--- resources / additional / shared / VPC
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS resources                       VARCHAR;  -- JSON array
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS additional_event_data           VARCHAR;  -- JSON object
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS shared_event_id                 VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS vpc_endpoint_id                 VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS management_event                VARCHAR;  -- "true"/"false"
--- TLS posture
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS tls_version                     VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS tls_cipher_suite                VARCHAR;
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS tls_client_provided_host_header VARCHAR;
--- service-specific / misc
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS service_event_details           VARCHAR;  -- JSON object
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS session_credential_from_console VARCHAR;  -- "true"/"false"
-ALTER TABLE cloudtrail_events ADD COLUMN IF NOT EXISTS api_version                     VARCHAR;
+extended (24) userIdentity:   user_identity_principal_id, user_identity_access_key_id,
+                              user_identity_user_name, user_identity_invoked_by
+              sessionContext: session_mfa_authenticated, session_creation_date
+              sessionIssuer:  session_issuer_type, session_issuer_arn, session_issuer_account_id,
+                              session_issuer_user_name, session_issuer_principal_id
+              identifiers:    event_id, event_category, shared_event_id, vpc_endpoint_id
+              payloads:       resources, additional_event_data, service_event_details
+              TLS:            tls_version, tls_cipher_suite, tls_client_provided_host_header
+              misc:           management_event, session_credential_from_console, api_version
+                              -- the two boolean-ish ones hold the strings "true"/"false"
 ```
 
-### `ingested_files`
+Only the 17 core + 7 GeoIP columns are exposed to the LLM (`agent/schema.py`); the 24 extended
+ones are withheld to keep the prompt small. Adding or exposing a column follows the
+schema-change checklist in [CLAUDE.md](CLAUDE.md).
 
-`file_path` (PK), `sha256`, `ingested_at` — tracks ingested files for SHA-256-based deduplication.
+Other tables: `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives SHA-256
+deduplication for both `ingest` and `config-import`; `config_snapshots`, `config_resources` and
+`config_edges` are written by `config-import` and read by `config_viz`.
 
-### DuckDB Access Rules
-
-1. `ingester` is the **sole writer** — never open `READ_WRITE` from `agent` or `dashboard`.
-2. `agent` and `dashboard` always use `read_only=True`.
-3. Tests must use temporary databases (`tempfile` in Rust, `tmp_path` in pytest).
-4. SSD storage is strongly recommended for the DuckDB bind mount.
-
----
-
-## SQL Safety in `agent/`
-
-Before executing any LLM-generated SQL, `query.py` applies three guards in order:
-
-1. **Keyword blocklist** — rejects `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`
-   (regex, word-boundary, case-insensitive).
-2. **EXPLAIN validation** — runs `EXPLAIN <sql>` on the READ_ONLY connection.
-3. **Row-limit cap** — wraps queries without `LIMIT` in `SELECT * FROM (...) AS _limited LIMIT N`.
-
-If validation fails, `execute_with_retry` calls `fix_sql_with_llm` once for automatic correction.
-
-Date-range UI filters inject a `_ct_filtered` CTE — see `apply_date_filter()` in `agent/query.py`.
-
-`agent/builtin_hunts.yaml` ships pre-built queries with `label`, `description`, `prompt`, and an
-optional `sql` field. Entries with `sql` run without an OpenAI API key.
+**Access rules:** `ingester` is the sole `READ_WRITE` opener; every other service passes
+`read_only=True`; tests use temporary databases (`tempfile` in Rust, `tmp_path` in pytest).
+SSD/NVMe storage is strongly recommended for the bind mount.
 
 ---
 
-## Ingester CLI Reference
+## SQL Safety
+
+`agent/query.py` applies three guards to LLM-generated SQL, in order: a **keyword blocklist**
+(`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`; word-boundary, case-insensitive),
+**EXPLAIN validation** on the READ_ONLY connection, and a **row-limit cap** wrapping un-`LIMIT`ed
+queries in `SELECT * FROM (...) AS _limited LIMIT N`. On failure `execute_with_retry` calls
+`fix_sql_with_llm` once. The same blocklist + EXPLAIN pair guards `config_viz/backend/query.py`.
+
+Date-range UI filters inject a `_ct_filtered` CTE (`apply_date_filter()` in `agent/query.py`).
+`agent/builtin_hunts.yaml` entries carry `label`, `description`, `prompt` and an optional `sql`;
+those with `sql` run without an OpenAI API key.
+
+## Ingester CLI
 
 ```
 ingester ingest --path <dir>
-                [--db           <path>]     # overrides DUCKDB_PATH env var
-                [--from         <YYYYMMDD>]
-                [--to           <YYYYMMDD>]
-                [--include      <globs>]    # comma-separated, e.g. "*CloudTrail*"
-                [--exclude      <globs>]    # comma-separated, e.g. "*us-west-2*"
-                [--workers      <N>]        # parallel threads (default: CPU count)
+                [--db <path>]                   # else DUCKDB_PATH, else /data/db/threat_hunting.db
+                [--from <YYYYMMDD>] [--to <YYYYMMDD>]
+                [--include <globs>] [--exclude <globs>]   # comma-separated; * crosses /
+                [--workers <N>]                 # default: CPU count
                 [--no-progress]
-                [--geoip-city   <path>]     # GeoLite2-City.mmdb   (or GEOIP_CITY_PATH)
-                [--geoip-country <path>]    # GeoLite2-Country.mmdb (or GEOIP_COUNTRY_PATH)
-                [--geoip-asn    <path>]     # GeoLite2-ASN.mmdb    (or GEOIP_ASN_PATH)
-                [--strip-fields]            # remove low-signal keys from requestParameters / responseElements
-                [--strip-raw-event]         # write NULL for raw_event column (saves storage)
+                [--geoip-city|--geoip-country|--geoip-asn <path>]   # or GEOIP_*_PATH
+                [--strip-fields]                # drop low-signal request/response keys
+                [--strip-raw-event]             # write NULL for raw_event
 
-ingester enrich
-                [--db           <path>]
-                [--geoip-city / --geoip-country / --geoip-asn <path>]
+ingester enrich [--db <path>] [--geoip-city|--geoip-country|--geoip-asn <path>]
+ingester config-import --path <dir> [--db <path>] [--no-progress]
 ```
 
-DB path resolution order: `--db` CLI arg → `DUCKDB_PATH` env var → `/data/db/threat_hunting.db`.
-
-`--include`/`--exclude` globs use `*` that crosses `/` boundaries.
-Files without a recognisable `yyyy/mm/dd` segment in their path are always included.
-
----
+Files without a recognisable `yyyy/mm/dd` segment in their path are always included by the
+`--from` / `--to` filter.
 
 ## Environment Variables
 
 | Variable | Used by | Default | Notes |
 |----------|---------|---------|-------|
 | `OPENAI_API_KEY` | agent | — | Required for AI features |
-| `DUCKDB_PATH` | all | — | Overrides default DB path |
-| `OPENAI_MODEL` | agent | `gpt-5.5` | SQL generation + analysis model (`gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini` available) |
-| `OPENAI_MODEL_LITE` | agent | `gpt-5.4-mini` | Optional lighter model |
-| `DUCKDB_HOST_PATH` | docker host | `./data/db` | Host-side bind-mount directory |
-| `GEOIP_HOST_PATH` | docker host | `./data/geoip` | Host-side GeoIP directory |
-| `GEOIP_CITY_PATH` | ingester | — | Path to GeoLite2-City.mmdb |
-| `GEOIP_COUNTRY_PATH` | ingester | — | Path to GeoLite2-Country.mmdb |
-| `GEOIP_ASN_PATH` | ingester | — | Path to GeoLite2-ASN.mmdb |
+| `OPENAI_MODEL` / `OPENAI_MODEL_LITE` | agent | `gpt-5.5` / `gpt-5.4-mini` | UI offers `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`; see [CLAUDE.md](CLAUDE.md) before changing |
+| `DUCKDB_PATH` | all | — | Overrides the default DB path |
+| `DUCKDB_PATH_LITE` | agent | — | Optional `--strip-fields` DB; enables the Full/Lite selector |
+| `SUZAKU_{TIMELINE,SUMMARY,METRICS}_DB` | agent, dashboard | — | Pin one Suzaku file instead of discovery |
+| `DUCKDB_HOST_PATH` / `GEOIP_HOST_PATH` / `CONFIG_HOST_PATH` | docker host | `./data/{db,geoip,config-snapshots}` | Host-side bind-mount dirs; also drive `make ingest` detection |
+| `GEOIP_CITY_PATH` / `GEOIP_COUNTRY_PATH` / `GEOIP_ASN_PATH` | ingester | — | GeoLite2 `.mmdb` paths |
 | `SUPERSET_SECRET_KEY` | dashboard | auto-generated | `make up` writes a per-install key to `docker/.env`; Superset refuses to start without one |
-| `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | agent | — | CA bundle for corporate TLS proxy |
-| `RAYON_NUM_THREADS` | ingester | CPU count | Limits rayon thread pool |
+| `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies |
+| `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | agent | — | CA bundle for a corporate TLS proxy |
+| `RAYON_NUM_THREADS` | ingester | CPU count | Limits the rayon thread pool |
 
----
+## Security
 
-## Security Rules
+API keys come from environment variables, never hardcoded. LLM-generated SQL runs on a READ_ONLY
+connection behind the blocklist + EXPLAIN guards (`agent` and `config_viz`). The OpenAI call (SQL
+prompt + results) is the only outbound traffic; all services are local-only by default.
 
-1. **API keys:** never hardcode — always read from environment variables.
-2. **SQL safety:** `READ_ONLY` DuckDB connection + keyword blocklist + `EXPLAIN` validation (applies to `agent` and `config_viz` backend).
-3. **No external data upload:** only the OpenAI API call sends data externally (SQL prompt + results).
-4. **Network:** all services are local-only by default.
+## Documentation
+
+**One owner per fact** — a count, path or command name lives in one place and everything else
+links to it. The root suite asserts the ones that must appear in prose anyway, so run
+`make test-repo` after touching docs. Ownership table and the `doc/` vs `website/docs/` rules:
+[CLAUDE.md](CLAUDE.md).
 
 ---
 
@@ -363,120 +204,47 @@ Files without a recognisable `yyyy/mm/dd` segment in their path are always inclu
 
 ```
 senrigan/
-├── .github/
-│   ├── AGENTS.md              # Short pointer → see root AGENTS.md
-│   └── copilot-instructions.md
-├── ingester/                  # Rust log ingestion engine
-│   ├── AGENTS.md              # Ingester-specific TDD context
-│   ├── README.md
-│   ├── Cargo.toml
-│   └── src/
-│       ├── main.rs            # CLI (ingest + enrich + config-import subcommands)
-│       ├── lib.rs
-│       ├── parser.rs          # CloudTrail JSON parsing (serde_json)
-│       ├── db.rs              # DuckDB schema, batch insert (Appender), geo columns
-│       ├── ingest.rs          # Pipeline: walk → filter → parallel parse → insert
-│       ├── enrich.rs          # Geo back-fill (UPDATE per unique IP)
-│       ├── geoip.rs           # MaxMind GeoLite2 lookup + private-IP classification
-│       ├── field_filter.rs    # --strip-fields: recursive JSON key removal (FieldFilter)
-│       ├── date_filter.rs     # --from / --to path-based date filter
-│       ├── path_filter.rs     # --include / --exclude glob filter
-│       ├── progress.rs        # Progress bar (indicatif)
-│       ├── config_parser.rs   # AWS Config snapshot JSON → typed structs
-│       ├── config_db.rs       # Config tables schema + Appender writes
-│       ├── config_import.rs   # config-import pipeline: walk → SHA dedup → parse → insert
-│       └── test_util.rs       # Shared test fixtures (only compiled under #[cfg(test)])
-├── agent/                     # Python / Streamlit AI-agent UI (two pages)
-│   ├── AGENTS.md              # Agent-specific TDD context
-│   ├── README.md              # agent module documentation
+├── .github/                   # AGENTS.md pointer, copilot-instructions.md, workflows
+├── ingester/                  # Rust ingestion engine (see ingester/AGENTS.md)
+│   └── src/                   # main.rs (CLI) · parser.rs · db.rs · ingest.rs · enrich.rs
+│                              #   geoip.rs · field_filter.rs · date_filter.rs · path_filter.rs
+│                              #   progress.rs · config_{parser,db,import}.rs · test_util.rs
+├── agent/                     # Streamlit UI — 2 chat + 2 explorer pages (see agent/AGENTS.md)
 │   ├── app.py                 # Entry point: st.navigation over the four pages
 │   ├── handlers.py            # Stateful handler functions
 │   ├── session.py             # Per-profile session state + built-in hunt loading
-│   ├── llm.py
-│   ├── query.py
+│   ├── llm.py                 # OpenAI calls: SQL generation, analysis, SQL fix
+│   ├── query.py               # Execution, validation, date filter, row limit, retry
 │   ├── report.py              # Chat-session Markdown / PDF report
 │   ├── schema.py              # Columns the LLM sees (17 core + 7 GeoIP)
-│   ├── config.py
-│   ├── geo.py                 # Best-effort geo enrichment of IP result columns
 │   ├── profiles.py            # DatasetProfile: chat pages vs explorer pages
 │   ├── suzaku_db.py           # Suzaku file detection, fitness and selection
 │   ├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
-│   ├── suzaku_summary_queries.py  # Reviewed SQL for aws-ct-summary
-│   ├── suzaku_metrics_queries.py  # Reviewed SQL for aws-ct-metrics
-│   ├── builtin_hunts.yaml     # CloudTrail hunts (126)
-│   ├── suzaku_timeline_hunts.yaml  # Suzaku timeline hunts (16)
-│   ├── views/
-│   │   ├── charts.py          # render_chart: bar / time-series, drawn inline
-│   │   ├── db_selector.py     # Sidebar picker over the discovered Suzaku files
-│   │   ├── explorer.py        # Panel kit: pin-to-report, CSV, AI explain, pivot
-│   │   ├── suzaku_timeline.py # 🕒 Suzaku Timeline page
-│   │   ├── suzaku_summary.py  # 👤 Suzaku Summary page
-│   │   └── suzaku_metrics.py  # 📊 Suzaku Metrics page
-│   ├── prompts/
-│   │   ├── system_prompt.py
-│   │   └── analysis_prompt.py
-│   └── tests/                 # pytest suite (see agent/AGENTS.md)
-├── config_viz/                # AWS Config resource graph (FastAPI + React)
-│   ├── README.md              # config_viz module documentation
-│   ├── Dockerfile             # Multi-stage: Node build → Python runtime
-│   ├── backend/               # FastAPI backend (Python 3.14+)
-│   │   ├── __init__.py
-│   │   ├── main.py            # FastAPI app + 4 REST endpoints + /icons static mount
-│   │   ├── db.py              # DuckDB READ_ONLY connection (get_conn dependency)
-│   │   ├── query.py           # SQL queries + keyword blocklist
-│   │   ├── requirements.txt
-│   │   └── scripts/
-│   │       └── extract_icons.py   # AWS icon download (runs at Docker build time; failure-safe)
-│   ├── frontend/              # React 18 + Vite + TypeScript SPA
-│   │   ├── package.json       # (type: module) — reactflow + elkjs
-│   │   ├── vite.config.ts     # outDir: ../static
-│   │   ├── vitest.config.ts
-│   │   └── src/
-│   │       ├── App.tsx        # Root component (state management)
-│   │       ├── types.ts       # Shared TypeScript types
-│   │       ├── api.ts         # fetch wrappers for 4 API endpoints
-│   │       ├── components/
-│   │       │   ├── AwsNode.tsx        # Leaf node + hover tooltip
-│   │       │   ├── AwsGroupNode.tsx   # Container node (dashed border)
-│   │       │   ├── GraphCanvas.tsx    # ReactFlow + ELK layout
-│   │       │   ├── Sidebar.tsx        # Snapshot list + filter + layout toggle
-│   │       │   ├── DetailPanel.tsx    # Resource detail slide-in panel
-│   │       │   ├── CollapseContext.tsx # Collapse/expand state for group nodes
-│   │       │   └── Legend.tsx         # Service-color legend
-│   │       ├── utils/
-│   │       │   ├── layout.ts        # ELK (elkjs) Sugiyama layered layout for the compound graph
-│   │       │   ├── collapse.ts      # Group collapse/expand helpers
-│   │       │   ├── label.ts         # Node label formatting
-│   │       │   ├── serviceColors.ts # AWS service → color mapping
-│   │       │   └── icons.ts         # AWS resource type → icon URL (with fallback)
-│   │       └── mocks/          # MSW v2 handlers for tests
-│   ├── static/                # Vite build output (served by FastAPI)
-│   └── tests/
-│       ├── conftest.py         # tmp_db_empty, tmp_db_seeded, tmp_db_hierarchy fixtures
-│       └── test_query.py       # backend tests (BA-* series)
-├── dashboard/                 # Apache Superset BI dashboard
-│   ├── Dockerfile
-│   ├── superset_config.py
-│   ├── pytest.ini
-│   ├── assets/                # cloudtrail_default + cloudtrail_rare + suzaku_{timeline,summary,
-│   │                          #   metrics} bundles, their ZIPs, and zip_builder.py
+│   ├── geo.py                 # Best-effort geo enrichment of IP result columns
+│   ├── config.py              # Env-var configuration helpers
+│   ├── views/                 # charts.py · db_selector.py · explorer.py · one file per Suzaku page
+│   ├── prompts/               # system_prompt.py · suzaku_timeline_prompt.py · analysis_prompt.py
+│   └── tests/                 # pytest suite
+│                              # plus builtin_hunts.yaml, suzaku_timeline_hunts.yaml,
+│                              #   suzaku_{summary,metrics}_queries.py (reviewed SQL)
+├── config_viz/                # AWS Config resource graph
+│   ├── backend/               # FastAPI, READ_ONLY DuckDB, SQL keyword blocklist
+│   ├── frontend/              # React 18 + Vite + TS (reactflow + elkjs layout)
+│   ├── static/                # Vite build output, served by FastAPI
+│   └── tests/                 # Backend tests (BA-* series)
+├── dashboard/                 # Apache Superset
+│   ├── assets/                # cloudtrail_{default,rare} + suzaku_{timeline,summary,metrics}
+│   │                          #   bundles, their ZIPs, and the rebuild scripts
 │   ├── init/                  # bootstrap.sh, register_duckdb.py, register_suzaku_dbs.py
-│   └── tests/                 # YAML/asset/config/Dockerfile validation suite
-├── doc/                       # Documentation
-│   ├── ARCHITECTURE.md
-│   ├── DEVELOPMENT.md
-│   ├── PRD.md
-│   ├── PRD_SUZAKU_SUMMARY.md  # Suzaku aws-ct-summary viewer requirements (shipped: 19-chart dashboard)
-│   ├── PRD_DASHBOARD_REVIEW.md # Superset dashboard DFIR review & redesign
-│   ├── TDD_GUIDE.md
-│   └── TESTING.md
-├── docker/
-│   └── docker-compose.yml     # Orchestration (5 services + ingest/resync profiles)
-├── sample/
-│   └── suzaku/                # Trimmed Suzaku fixtures + generate_fixtures.py
+│   └── tests/                 # YAML/asset/config validation suite
+├── doc/                       # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
+│                              #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW (point-in-time)
+├── docker/                    # docker-compose.yml (6 services + ingest/resync profiles)
+├── sample/                    # sample/suzaku: trimmed fixtures + generate_fixtures.py
 ├── tests/                     # Repository-level consistency suite (Makefile / compose / docs)
-├── website/                   # Material for MkDocs site, 15 locales (docs/, mkdocs.yml)
-├── Makefile                   # The command surface: `make` prints the five to start with
+├── website/                   # Material for MkDocs site, 15 locales
+├── Makefile                   # The command surface
+├── CLAUDE.md                  # Working rules for coding agents
 ├── README.md                  # Landing page → the documentation site
 └── OLD-README.md              # Frozen pre-site single-page README
 ```
