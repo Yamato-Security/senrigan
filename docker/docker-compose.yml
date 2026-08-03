@@ -24,7 +24,7 @@ services:
       # Set INGESTER_BUILD_TARGET=runtime to compile from source (useful for local development / debugging).
       target: ${INGESTER_BUILD_TARGET:-prebuilt-runtime}
       args:
-        INGESTER_VERSION: ${INGESTER_VERSION:-v0.1.0}
+        INGESTER_VERSION: ${INGESTER_VERSION:-v1.0.0}
         <<: *ca-cert-arg
     container_name: threat-hunting-ingester
     volumes:
