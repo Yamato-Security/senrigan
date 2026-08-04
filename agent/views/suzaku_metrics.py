@@ -30,8 +30,8 @@ PROFILE = SUZAKU_METRICS_PROFILE
 KIND = SuzakuKind.METRICS
 
 _COMMAND = (
-    "suzaku aws-ct-metrics -d <cloudtrail-logs> -f eventName "
-    "-o metrics.duckdb --geo-ip"
+    "suzaku aws-ct-metrics -d <cloudtrail-logs> -t duckdb -F eventName,sourceIPAddress"
+    "-o metrics -G <MAXMIND-DB-DIR>"
 )
 _NOTE = (
     "\n`--geo-ip` is required: Suzaku writes `SrcASN` / `SrcCity` / `SrcCountry` "

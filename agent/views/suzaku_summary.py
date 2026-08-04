@@ -34,7 +34,7 @@ from views.explorer import (
 PROFILE = SUZAKU_SUMMARY_PROFILE
 KIND = SuzakuKind.SUMMARY
 
-_COMMAND = "suzaku aws-ct-summary -d <cloudtrail-logs> -o summary.duckdb"
+_COMMAND = "suzaku aws-ct-summary -d <cloudtrail-logs> -t duckdb -o summary -G <MAXMIND-DB-DIR>"
 
 # Attributes whose values are worth following to other identities. A region is
 # shared by everyone, so offering the drill-down there would be noise.

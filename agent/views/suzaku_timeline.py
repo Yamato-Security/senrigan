@@ -26,7 +26,7 @@ from views.explorer import (
 PROFILE = SUZAKU_TIMELINE_PROFILE
 KIND = SuzakuKind.TIMELINE
 
-_COMMAND = "suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline.duckdb"
+_COMMAND = "suzaku aws-ct-timeline -d <cloudtrail-logs> -o timeline -t duckdb -G <MAXMIND-DB-DIR>"
 
 
 def _render_empty_state(directory: str) -> None:
