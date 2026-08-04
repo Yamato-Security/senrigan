@@ -107,7 +107,7 @@ def test_metrics_empty_state_requires_geo_ip() -> None:
     assert "aws-ct-metrics" in info_text
     assert "suzaku aws-ct-metrics" in markdown_text
     assert "--geo-ip" in markdown_text
-    assert "-f " in markdown_text  # the field flag is mandatory for this command
+    assert "-F " in markdown_text  # the field flag is mandatory for this command
 
 
 @pytest.mark.parametrize(
