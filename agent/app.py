@@ -40,6 +40,8 @@ from session import (
     _build_all_hunt_queries,
     _clear_session,
     _export_session,
+    _format_playbook_caption,
+    _format_severity_caption,
     _format_technique_caption,
     _init_session_state,
     _load_builtin_prompts,
@@ -231,6 +233,9 @@ def _render_bulk_run_buttons(
                     "techniques": p.get("techniques") or [],
                     "label": p["label"],
                     "category": p.get("category", ""),
+                    "severity": p.get("severity", ""),
+                    "playbook": p.get("playbook") or {},
+                    "next_steps": p.get("next_steps", ""),
                 }
                 for p in sql_queries
             ]
@@ -311,6 +316,16 @@ def _render_preset_section(profile: DatasetProfile) -> None:
             if desc:
                 st.caption(f"ℹ️ {desc}")
 
+            # Triage first: how urgent this is, and which playbook owns the
+            # response. Both come before the technique mappings because they are
+            # what an analyst acts on.
+            severity_caption = _format_severity_caption(matched.get("severity", ""))
+            if severity_caption:
+                st.caption(severity_caption)
+            playbook_caption = _format_playbook_caption(matched.get("playbook"))
+            if playbook_caption:
+                st.caption(playbook_caption)
+
             # Show Threat Technique Catalog mappings when available
             for technique in matched.get("techniques") or []:
                 st.caption(_format_technique_caption(technique))
@@ -339,6 +354,15 @@ def _render_preset_section(profile: DatasetProfile) -> None:
                     )
                     st.session_state[f"_{prefix}_pending_preset_techniques"] = (
                         matched.get("techniques") or []
+                    )
+                    st.session_state[f"_{prefix}_pending_preset_severity"] = (
+                        matched.get("severity", "")
+                    )
+                    st.session_state[f"_{prefix}_pending_preset_playbook"] = (
+                        matched.get("playbook") or {}
+                    )
+                    st.session_state[f"_{prefix}_pending_preset_next_steps"] = (
+                        matched.get("next_steps", "")
                     )
                     st.rerun()
             else:
@@ -750,6 +774,12 @@ def _render_result_card(
                 st.markdown(f"### {entry.label}")
         if entry.description:
             st.caption(f"ℹ️ {entry.description}")
+        severity_caption = _format_severity_caption(entry.severity)
+        if severity_caption:
+            st.caption(severity_caption)
+        playbook_caption = _format_playbook_caption(entry.playbook)
+        if playbook_caption:
+            st.caption(playbook_caption)
         for technique in entry.techniques:
             st.caption(_format_technique_caption(technique))
         st.code(entry.sql, language="sql")
@@ -762,6 +792,9 @@ def _render_result_card(
                 )
             st.dataframe(entry.results, use_container_width=True)
             render_chart(entry.results, entry.chart_config)
+            # Containment guidance belongs with a hit, not with an empty result.
+            if entry.next_steps:
+                st.warning(f"**Next steps** — {entry.next_steps}")
         else:
             st.info("No results returned.")
 
@@ -837,6 +870,15 @@ def render_chat(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
     pending_preset_techniques = st.session_state.pop(
         f"_{prefix}_pending_preset_techniques", []
     )
+    pending_preset_severity = st.session_state.pop(
+        f"_{prefix}_pending_preset_severity", ""
+    )
+    pending_preset_playbook = st.session_state.pop(
+        f"_{prefix}_pending_preset_playbook", {}
+    )
+    pending_preset_next_steps = st.session_state.pop(
+        f"_{prefix}_pending_preset_next_steps", ""
+    )
     if pending_direct_sql:
         _handle_direct_sql(
             pending_direct_sql,
@@ -846,6 +888,9 @@ def render_chat(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
             label=pending_preset_label,
             category=pending_preset_category,
             techniques=pending_preset_techniques,
+            severity=pending_preset_severity,
+            playbook=pending_preset_playbook,
+            next_steps=pending_preset_next_steps,
             bulk_mode=True,  # no chat bubble — show in Query Results section
             profile=profile,
         )
@@ -875,6 +920,9 @@ def render_chat(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
                 label=q["label"],
                 category=q.get("category", ""),
                 techniques=q.get("techniques") or [],
+                severity=q.get("severity", ""),
+                playbook=q.get("playbook") or {},
+                next_steps=q.get("next_steps", ""),
                 profile=profile,
             )
         progress_placeholder.empty()

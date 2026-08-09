@@ -1,0 +1,34 @@
+# PB-03: API Calls Without MFA (Triage KPI card)
+# session_mfa_authenticated is a string 'true'/'false', not a BOOLEAN, and it is
+# populated for every call — the MFAUsed field in additional_event_data exists
+# only for ConsoleLogin, which is why the two KPI cards do not agree.
+# Playbook: IRP-CredCompromise
+uuid: c1a10003-0000-4000-8000-0000000c1a03
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: API Calls Without MFA
+viz_type: big_number_total
+description: >
+  API calls made by a session that was not MFA-authenticated. Unlike the
+  MFA-less Console Logins card this covers every API call, not just ConsoleLogin,
+  using the promoted session_mfa_authenticated column.
+  MITRE ATT&CK: TA0001 Initial Access / T1078 Valid Accounts.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE session_mfa_authenticated = 'false'
+          AND read_only IS NOT TRUE
+      )
+    label: non_mfa_write_calls
+    hasCustomLabel: true
+    optionName: metric_kpi_non_mfa_calls
+  adhoc_filters: []
+  subheader: "Write calls from non-MFA sessions"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

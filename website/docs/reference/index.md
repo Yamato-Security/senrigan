@@ -2,25 +2,25 @@
 
 > 💡 No SQL or deep AWS knowledge required — just select a hunt from the dropdown and get results instantly.
 
-## 🎯 Built-in Hunts — 126 queries
+## 🎯 Built-in Hunts — 151 queries
 
 Categories are ordered by DFIR triage priority — check detection-tool tampering first, then identity abuse, then data impact.
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP deletion · alarm suppression · log exfiltration |
-| 🔑 Identity & Access | 30 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity deletion · AssumeRoot takeover · Cognito user-pool/token abuse · Support case suppression |
-| 🪣 Data & Storage | 26 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS Data API manipulation · storage re-encryption for impact |
+| 🛡 Detection & Response | 13 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP deletion · alarm suppression · log exfiltration · ransomware kill-chain correlation |
+| 🔑 Identity & Access | 44 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity deletion · AssumeRoot takeover · Cognito user-pool/token abuse · Support case suppression · role chaining · session credential tracing · GetCallerIdentity recon · federated console logins · Identity Center permission sets & delegated admin · role chaining · session credential trace · non-MFA API calls · federated logins · Identity Center permission sets |
+| 🪣 Data & Storage | 30 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS Data API manipulation · storage re-encryption for impact · ransom note placement · breach-notification scoping · cross-account object copy · presigned URL generation |
 | ⚡ Compute & Serverless | 17 | EC2 mass stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail abuse · IMDS/SSRF weakening · AMI/snapshot deletion · WorkSpaces hijacking |
-| 🤖 AI & LLM Abuse | 6 | Bedrock invocation spikes · model access enablement · invocation-logging tampering · region-sweep reconnaissance · failed-invocation bursts · caller/origin inventory (LLMjacking) |
-| 🌐 Network & Infrastructure | 15 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys · Route 53/domain hijack |
-| 🕵 Threat Patterns | 5 | Reconnaissance burst · unusual user agents · multi-region spread · first-time API calls · first-seen region activity |
+| 🤖 AI & LLM Abuse | 11 | Bedrock invocation spikes · model access enablement · invocation-logging tampering · region-sweep reconnaissance · failed-invocation bursts · caller/origin inventory (LLMjacking) · AgentCore token vault · gateway authorization bypass · memory integrity · sandbox network drift · observability tampering |
+| 🌐 Network & Infrastructure | 16 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys · Route 53/domain hijack · DDoS protection weakening |
+| 🕵 Threat Patterns | 10 | Reconnaissance burst · unusual user agents · multi-region spread · first-time API calls · first-seen region activity · off-hours activity · self-service privilege escalation · daily volume deviation · creation in unused regions · high-volume API use |
 | 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors |
 | 🌍 GeoIP Analysis | 10 | Console logins/denials/writes by country · rare-country access · country/ASN/city breakdown · event_name × country · identity × country · private-IP baseline |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
 <details markdown="1">
-<summary>📋 Full list — all 126 queries (click to expand)</summary>
+<summary>📋 Full list — all 151 queries (click to expand)</summary>
 
 ## Built-in Hunts
 
@@ -40,6 +40,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Detects read-only GuardDuty API calls. Pacu's guardduty__list_findings module reads active findings to understand what the defender has already detected, allowing the attacker to adapt their tactics and avoid triggering new alerts. |
 | 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Detects deletion or modification of AWS Budgets and Cost Anomaly monitors. Attackers remove budget alerts to hide cryptomining or resource-intensive operations. |
 | 12 | 🚫 Access Denied Errors | bar | Groups AccessDenied errors by identity and API. Top offenders may indicate credential misuse. |
+| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Correlates the three ransomware stages — recovery removed, protection disabled, data destroyed or encrypted — per principal and day. Each stage alone is operational noise; all three together are not. |
 
 ### 🔑 Identity & Access
 
@@ -75,6 +76,15 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 28 | 👑 AssumeRoot Usage | timeseries | Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way. |
 | 29 | 🎫 Support Case Manipulation | timeseries | Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise. |
 | 30 | 🪪 Cognito User Pool Manipulation | timeseries | Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users. |
+| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Detects an assumed-role session assuming a further role. Single AssumeRole calls look ordinary; the chain is how an attacker walks from a compromised instance role to the permissions they actually want. |
+| 32 | 🎫 Session Credential Trace | bar | Summarises what each temporary STS session (ASIA… access key) did: how many calls, which services, which IPs and over what window. The scoping question every credential-compromise investigation starts with. |
+| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Detects account-boundary crossings by reading the target account out of the requested roleArn, which works even when only the calling account's logs were ingested. |
+| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Ranks roles by who assumes them and from where. A role normally assumed by one account that suddenly gains a second caller stands out here, while the raw event list buries it. |
+| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | Surfaces GetCallerIdentity calls per principal and source IP. It is the first command run against stolen credentials — and a single call, which volume-threshold recon hunts never reach. |
+| 36 | 🪪 Federated Console Logins | timeseries | Lists console logins that arrived through an external identity provider, with the provider name and origin. When the IdP is the compromised component, AWS sees only a valid login. |
+| 37 | 🎟 Identity Center Permission Set Grants | timeseries | Detects IAM Identity Center permission-set creation, policy attachment and account assignment — the path to standing admin access across every account in the organisation. |
+| 38 | 🧑 Identity Store User & Group Creation | timeseries | Detects users, groups and memberships created directly in the Identity Center identity store — persistence that never appears in IAM and so is missed by IAM-only monitoring. |
+| 39 | 👑 Delegated Administrator Registration | timeseries | Detects registration of a delegated administrator for an organisation service. The only event the upstream Identity Center playbook grades CRITICAL — it hands organisation-wide control to another account. |
 
 ### 🪣 Data & Storage
 
@@ -106,6 +116,10 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 24 | 🗃 RDS Query & Instance Manipulation | timeseries | Detects RDS Data API queries, master-password resets, and snapshot restores. Attackers read data directly, reset credentials to gain access, or restore snapshots into instances they control. |
 | 25 | 🔎 S3 Bucket Enumeration | bar | Detects callers sweeping bucket and object metadata (≥10 List/GetBucket* reads in one hour). A common early step to locate valuable data before exfiltration. |
 | 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Detects EBS/RDS snapshots and volumes re-encrypted with an explicit KMS key, plus disabling of default EBS encryption. Re-encrypting with an attacker-held key holds the data for ransom. |
+| 27 | 📝 Ransom Note Placement | timeseries | Detects PutObject calls whose object key looks like a ransom note. Unlike the other ransomware hunts this one confirms impact rather than suggesting it — a note means the operator is already demanding payment. |
+| 28 | 📐 Data Access Scope (Breach Notification) | bar | Quantifies what each principal read per day: buckets touched and approximate distinct objects. Produces the 'approximate number of records' figure a GDPR Article 33 notification requires. |
+| 29 | 📤 Cross-Account Object Copy | timeseries | Detects objects copied between buckets, including PutObject calls carrying an x-amz-copy-source header. Staging data into an account you do not control leaves this trace and no other. |
+| 30 | 🔗 Presigned URL Generation | bar | Counts presigned URL generation per principal. A presigned URL moves data to anyone holding the link, with no further authentication and no further CloudTrail record. |
 
 ### ⚡ Compute & Serverless
 
@@ -139,6 +153,11 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | Identifies callers enumerating Bedrock models across 2+ regions or with 10+ enumeration calls in one hour. Stolen-key holders sweep regions to find where models are usable. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Finds bursts of failed Bedrock invocations (AccessDenied / ValidationException). Stolen-key testing produces failure storms across models and regions before a working combination is found. |
 | 6 | 🌍 Bedrock Callers & Origins | — | Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all. |
+| 7 | 🔑 AgentCore Token Vault Abuse | bar | Aggregates AgentCore token-vault issuance per principal and source. These calls hand out third-party OAuth tokens and API keys, so abuse here reaches services outside AWS entirely. |
+| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Detects AgentCore Gateway and policy changes, including a Cedar policy engine dropped to LOG_ONLY. Authorization that only logs still returns success, so nothing downstream looks wrong. |
+| 9 | 🧠 AgentCore Memory Integrity | timeseries | Detects AgentCore Memory and Registry changes, including a memory stream repointed at a foreign Kinesis ARN. Poisoned long-term memory persists across every future session of the agent. |
+| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Lists AgentCore code interpreter and browser lifecycle events with their network mode. The mode cannot be edited, so a delete followed by a create is the only way to widen a sandbox's network access. |
+| 11 | 🙈 AgentCore Observability Tampering | timeseries | Detects AgentCore evaluator changes and X-Ray sampling or trace-destination changes. An attacker-created evaluator reads every response it grades, exporting model output through a legitimate channel. |
 
 ### 🌐 Network & Infrastructure
 
@@ -159,6 +178,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy. |
 | 15 | 🌐 Route 53 & Domain Changes | timeseries | Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing. |
+| 16 | 🛡 DDoS Protection Weakening | timeseries | Detects edge protections being loosened rather than removed: a WebACL default action flipped to allow, rule groups relaxed, Shield protections deleted, CloudFront origins repointed. |
 
 ### 🕵 Threat Patterns
 
@@ -169,6 +189,11 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 3 | 🌍 Multi-Region Activity | bar | Detects identities performing writes in 3+ regions in one day. Geographic spread may indicate compromise. |
 | 4 | 🕵 First-Time API Calls (24h) | — | Finds API calls seen in the last 24h but never before. Novel operations may indicate attacker tooling. |
 | 5 | 🗺 First-Seen Region Activity | bar | Finds AWS regions whose first-ever activity falls in the last 24h of the dataset. Operating in a never-before-used region is a classic way to hide cryptomining or staging from region-scoped monitoring. |
+| 6 | 🌙 Off-Hours Activity | bar | Groups activity by principal and hour of day inside a configurable out-of-hours window. The first indicator the upstream insider-threat playbook lists, and one no other hunt covers. |
+| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Detects a principal modifying its own permissions — the caller ARN and the target user or role name are the same. Existing escalation hunts see the grant but lose the fact that it was self-applied. |
+| 8 | 📈 Principal Daily Volume Deviation | bar | Compares each principal's daily call volume against its own average, splitting reads from writes. Catches the exfiltration that uses only permitted APIs, where the anomaly is quantity rather than action. |
+| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Flags resource creation in regions the account barely uses, with the baseline derived from the data rather than hardcoded. Cryptomining and private side projects both land here. |
+| 10 | 📞 High-Volume API Calls per Principal | bar | Lists principal and API pairings exceeding 50 successful calls, with the first and last call. Enumeration, bulk extraction and mass deletion all share this shape. |
 
 ### 📊 Activity & Baseline
 
@@ -204,24 +229,24 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 ---
 
-## 📊 Dashboard Charts — 101 charts
+## 📊 Dashboard Charts — 115 charts
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (events, principals, IPs, root, MFA-less logins, access denied, defense evasion, countries, regions) + global event-volume trend |
-| 🎯 Threat Detection | 12 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio |
+| 🎯 Threat Detection | 14 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio · P1/P2 escalation-trigger KPI cards |
 | 🔑 Identity & Access | 16 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API logs · top high-risk calls · top actors · high-risk call volume over time |
 | 📊 API Activity | 6 | Top APIs · access-denied actions · region distribution · error-code composition · source IPs · user agents |
-| 🪣 S3 & RDS | 15 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact |
+| 🪣 S3 & RDS | 18 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact · breach-notification access scope · cross-account object copy · ransom note placement |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS weakening · AMI/snapshot deletion · WorkSpaces hijacking |
-| 🤖 AI / LLM | 4 | Bedrock invocation trend · model access & logging changes · failed invocations · callers by origin (LLMjacking triage) |
+| 🤖 AI / LLM | 6 | Bedrock invocation trend · model access & logging changes · failed invocations · callers by origin (LLMjacking triage) · AgentCore token issuance · gateway & policy changes |
 | 🌐 Network | 5 | Security group changes · NACL/route table changes · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS changes |
-| 🕒 Temporal Analysis | 6 | Event velocity spikes · dormant accounts reactivated · first/last seen by identity/IP/API/service source |
+| 🕒 Temporal Analysis | 8 | Event velocity spikes · dormant accounts reactivated · first/last seen by identity/IP/API/service source · off-hours write heatmap · principal daily read/write volume |
 | 🌍 GeoIP Intelligence | 6 | Impossible travel (multi-country principals) · top countries/cities/ASNs · world map · event_name × country |
 
 <details markdown="1">
-<summary>📋 Full list — all 101 charts (click to expand)</summary>
+<summary>📋 Full list — all 115 charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -256,6 +281,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 10 | Write/Read Ratio Trend | Hourly breakdown of read vs write API calls (DSH-20). A sustained increase in write_events relative to read_events indicates that an attacker has moved from reconnaissance to active exploitation. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | Hourly Read vs Write event volume over time (DSH-01). Stacked bars show the Read/Write split: a sudden rise in write_events signals that an attacker is transitioning from reconnaissance to active exploitation.  Useful for identifying activity spikes and off-hours operations. |
 | 12 | Organization Membership Changes | Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
+| 13 | P1 Escalation Triggers | Events matching the TRIAGE_GUIDE escalation triggers that demand a response within 15 minutes: root usage, logging or detection tampering, ransom notes, delegated-administrator registration. Non-zero means start the clock. |
+| 14 | P2 Escalation Triggers | Events matching the TRIAGE_GUIDE conditions for a response within the hour: credential creation, privilege grants, trust-policy edits and cross-account role assumption. Read it against the P1 card, not on its own. |
 
 ### 🔑 Identity & Access
 
@@ -277,6 +304,11 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 14 | IAM Identity Center (SSO) Events | AWS IAM Identity Center management events (DSH-44) from sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com, and identitystore.amazonaws.com. Identity Center is the primary authentication path in multi-account organizations. Key threats: CreatePermissionSet (backdoor admin access), CreateAccountAssignment (assigning accounts to attacker-controlled users), and AttachManagedPolicyToPermissionSet (privilege escalation). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
 | 15 | IAM Entity Deletion | Deletion of IAM users, roles, policies, and MFA devices used to erase traces of attacker-created identities or lock defenders out. Threat Technique Catalog for AWS: T1070.A001. |
 | 16 | AssumeRoot Usage | sts:AssumeRoot calls from the management account into member-account root — a full member-account takeover path. Threat Technique Catalog for AWS: AT1669. |
+| 17 | Role Chaining (Session → Role) | Role-chain hops — an assumed-role session assuming a further role. Depth is the signal: a session that assumes a role which assumes another role is moving laterally, not doing its job. Requires the promoted session_issuer_arn column. |
+| 18 | Session Credential Trace (ASIA keys) | What each temporary STS session did, keyed by its ASIA access key: call count, distinct APIs, source IPs, regions and time span. A session spanning several source IPs is the one to pull apart first. |
+| 19 | API Calls Without MFA | Write calls made by a session that was not MFA-authenticated. Unlike the MFA-less Console Logins card this covers every API call, not just ConsoleLogin. |
+| 20 | Federated Console Logins by Provider & Origin | Console logins brokered by an external identity provider, with the provider name, country and ASN. When the IdP is the compromised component AWS sees only a valid login. |
+| 21 | Identity Center Permission Set Grants | Daily IAM Identity Center privilege grants by event name. A permission set is organisation-wide: one assignment can grant admin in an account the actor never touched directly. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -318,6 +350,9 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 13 | S3 Lifecycle-Triggered Deletion | S3 lifecycle rules that expire objects (and lifecycle-config deletion) used to silently purge data without DeleteObject bursts. Threat Technique Catalog for AWS: T1485.001. |
 | 14 | RDS Query & Instance Manipulation | RDS Data API queries and snapshot restores used to read data directly or restore into an attacker-controlled instance. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
 | 15 | Storage Re-Encryption for Impact | EBS/RDS snapshots and volumes re-encrypted with an explicit attacker-controlled KMS key, plus default-encryption disable. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
+| 16 | Data Access Scope (Breach Notification) | Per principal: S3 read calls, distinct buckets and approximate distinct objects. Produces the 'approximate number of records' figure GDPR Article 33 requires. Needs CloudTrail data events on the buckets. |
+| 17 | Cross-Account Object Copy | S3 CopyObject calls and PutObject calls carrying an x-amz-copy-source header, with source and destination. The replication charts cover configuration; this covers the individual copies. |
+| 18 | Ransom Note Placement | PutObject calls whose object key looks like a ransom note. Unlike the other ransomware panels this confirms impact rather than suggesting it — any row here is a P1. |
 
 ### 🖥️ Computing
 
@@ -349,6 +384,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 2 | Bedrock Model Access & Logging Changes | Foundation-model access enablement and invocation-logging tampering (DSH-99).  Attackers with stolen credentials self-enable Bedrock model access before abusing it, and check or delete the model-invocation logging configuration so their prompts are not recorded — both documented LLMjacking indicators.  Any row in an org that never adopted Bedrock warrants immediate investigation. MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496). |
 | 3 | Bedrock Failed Invocations | Failed Amazon Bedrock invocation attempts grouped by caller and error code (DSH-100).  Bursts of AccessDenied / ValidationException errors across multiple models and regions indicate an attacker probing which models a stolen key can invoke — the reconnaissance phase of LLMjacking. MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery. |
 | 4 | Bedrock Callers by Origin | Inventory of all Amazon Bedrock callers with origin and model diversity (DSH-101).  Baseline view for LLMjacking triage: principals calling from unexpected countries, hosting/VPN ASNs, or generic scripting user agents (python-requests, curl) with high call volume are prime suspects. MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking). |
+| 5 | AgentCore Token Issuance (Daily) | Daily AgentCore token-vault issuance by operation. These calls hand out third-party OAuth tokens and API keys, so abuse reaches services outside AWS entirely. |
+| 6 | AgentCore Gateway & Policy Changes | AgentCore Gateway, target and policy changes, surfacing the Cedar policy engine mode. An engine moved from ENFORCE to LOG_ONLY still returns success, so nothing downstream looks wrong. |
 
 ### 🌐 Network
 
@@ -370,6 +407,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 4 | First / Last Seen per Source IP | Source IPs with first/last seen, distinct identities, distinct APIs, and GeoIP context (DSH-32).  New IPs appearing late in the dataset suggest lateral movement or new attacker infrastructure. MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement. |
 | 5 | First / Last Seen per API Call | API actions ordered by first appearance (DSH-33).  New API calls appearing for the first time suggest reconnaissance or privilege escalation attempts. MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation. |
 | 6 | First / Last Seen per Service Source | First and last seen timestamps for every distinct AWS service source (DSH-26). Sort by first_seen DESC to surface newly introduced services (potential attacker infrastructure).  Sort by last_seen ASC to find services that have gone silent (possible cleanup after compromise). MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery. |
+| 7 | Off-Hours Write Activity (Hour x Day) | Write-event counts as a heatmap of hour-of-day by day-of-week in JST. The login heatmap covers ConsoleLogin only; this covers every mutating call, which is where bulk off-hours access shows up. |
+| 8 | Principal Daily Volume (Read vs Write) | Daily call volume per principal, split into reads and writes. Judge each principal against itself: a build role making ten thousand calls a day is normal, a human making two hundred is not. |
 
 ### 🌍 GeoIP Intelligence
 

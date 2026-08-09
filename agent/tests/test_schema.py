@@ -35,6 +35,13 @@ def test_get_column_names_returns_list():
         "event_type",
         "recipient_account_id",
         "raw_event",
+        # Extended columns promoted for the role-chain / session-trace hunts.
+        "user_identity_access_key_id",
+        "session_issuer_arn",
+        "session_mfa_authenticated",
+        "additional_event_data",
+        "event_id",
+        "vpc_endpoint_id",
         "geo_country_code",
         "geo_country_name",
         "geo_city",

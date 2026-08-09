@@ -4,6 +4,16 @@
 #   category:    Sidebar grouping label
 #   label:       Display name shown in the UI
 #   description: One-line explanation of what this query detects and why it matters
+#   severity:    P1..P4 from the AWS incident response playbooks' TRIAGE_GUIDE
+#                severity matrix (P1 = respond within 15 minutes, P4 = within 24
+#                hours). Required on every hunt so the list can be read by
+#                urgency, not just by topic.
+#   playbook:    (optional) name + url of the upstream playbook that owns the
+#                response procedure for this finding. Senrigan says what
+#                happened; the playbook says what to do next.
+#   next_steps:  (optional, required for P1) one or two lines of containment
+#                guidance shown under the results.
+#   techniques:  (optional) Threat Technique Catalog for AWS mappings
 #   prompt:      Natural language prompt sent to the AI agent (requires API key)
 #   sql:         (optional) Pre-built DuckDB SQL for direct execution (no API key needed)
 #
@@ -19,6 +29,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6d1 CloudTrail Tampering"
   description: "Detects any attempt to stop or modify CloudTrail. The most critical alert — indicates cover-up."
+  severity: "P1"
+  next_steps: >-
+    Re-enable logging immediately, then treat every event after the gap as unobserved. Preserve
+    the digest files before any remediation.
   techniques:
     - tid: "T1562.008"
       name: "Impair Defenses: Disable Cloud Logs"
@@ -29,23 +43,27 @@
     bucket: day
   prompt: |
     Check for any attempts to disable or modify CloudTrail:
-    StopLogging, DeleteTrail, UpdateTrail, PutEventSelectors.
-    Also check for CloudWatch Logs deletion or GuardDuty DisableDetector.
+    StopLogging, DeleteTrail, UpdateTrail, PutEventSelectors, PutInsightSelectors.
+    PutEventSelectors and PutInsightSelectors can silently drop event categories
+    while the trail still reports as healthy. Also check for CloudWatch Logs
+    deletion and log retention reduction.
   sql: |
     SELECT
         event_time,
         event_name,
         user_identity_arn,
-        json_extract_string(request_parameters, '$.name')     AS trail_name,
-        json_extract_string(request_parameters, '$.trailARN') AS trail_arn,
+        json_extract_string(request_parameters, '$.name')             AS trail_name,
+        json_extract_string(request_parameters, '$.trailARN')         AS trail_arn,
+        json_extract_string(request_parameters, '$.retentionInDays')  AS retention_days,
         source_ip_address,
         aws_region,
         error_code
     FROM cloudtrail_events
     WHERE event_name IN (
         'CreateTrail', 'UpdateTrail', 'DeleteTrail',
-        'StartLogging', 'StopLogging', 'PutEventSelectors',
-        'DeleteLogGroup', 'DisableDetector'
+        'StartLogging', 'StopLogging',
+        'PutEventSelectors', 'PutInsightSelectors',
+        'DeleteLogGroup', 'PutRetentionPolicy', 'DeleteRetentionPolicy'
     )
     ORDER BY event_time DESC
     LIMIT 100
@@ -53,6 +71,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6e1\ufe0f GuardDuty Detector Tampering"
   description: "Detects GuardDuty disable, delete, and threat-intel manipulation. Any GuardDuty change mid-investigation is a critical indicator."
+  severity: "P1"
+  next_steps: >-
+    Re-enable the detector, re-run findings for the blind window, and check whether any IPSet or
+    ThreatIntelSet was added to whitelist the actor.
   techniques:
     - tid: "T1562.A001"
       name: "Impair Defenses: Disable or Modify GuardDuty"
@@ -62,18 +84,20 @@
     type: timeseries
     bucket: day
   prompt: |
-    Find any GuardDuty tampering events: DisableDetector, DeleteDetector,
-    UpdateDetector (suspicious state changes), DeletePublishingDestination,
+    Find any GuardDuty tampering events. There is no DisableDetector API —
+    a detector is disabled with UpdateDetector and enable=false, so surface
+    that flag alongside DeleteDetector, DeletePublishingDestination,
     CreateIPSet / CreateThreatIntelSet (attacker whitelisting their own IPs),
     and DeleteIPSet / DeleteThreatIntelSet. GuardDuty changes during an
     incident are a strong defense evasion indicator. Show detector ID,
-    caller, region, and time.
+    the enable flag, caller, region, and time.
   sql: |
     SELECT
         event_time,
         event_name,
         user_identity_arn,
         json_extract_string(request_parameters, '$.detectorId')    AS detector_id,
+        json_extract_string(request_parameters, '$.enable')        AS enable_flag,
         json_extract_string(request_parameters, '$.destinationId') AS destination_id,
         source_ip_address,
         aws_region,
@@ -81,7 +105,7 @@
     FROM cloudtrail_events
     WHERE event_source = 'guardduty.amazonaws.com'
       AND event_name IN (
-          'DisableDetector',          'DeleteDetector',
+          'UpdateDetector',           'DeleteDetector',
           'DeletePublishingDestination',
           'CreateIPSet',              'DeleteIPSet',
           'CreateThreatIntelSet',     'DeleteThreatIntelSet',
@@ -93,6 +117,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\u26d4 Security Hub Tampering"
   description: "Detects Security Hub disable, standard disable, and finding suppression. Silencing Security Hub removes the central aggregation point for all security findings."
+  severity: "P1"
+  next_steps: >-
+    Re-enable Security Hub and the disabled standards, then review findings suppressed via
+    BatchUpdateFindings during the window.
   techniques:
     - tid: "T1562"
       name: "Impair Defenses"
@@ -134,6 +162,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\u2699\ufe0f AWS Config Tampering"
   description: "Detects AWS Config recorder/rule deletion. Stopping Config eliminates compliance evidence and change-tracking for an entire region."
+  severity: "P1"
+  next_steps: >-
+    Restart the configuration recorder and delivery channel, then reconstruct resource state for
+    the gap from CloudTrail alone.
   techniques:
     - tid: "T1562.008"
       name: "Impair Defenses: Disable Cloud Logs"
@@ -171,6 +203,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6e1 Organizations Service Control Policy (SCP) Changes"
   description: "Detects SCP creation, modification, and deletion. Removing a Deny SCP immediately eliminates guardrails across every account in the affected OU."
+  severity: "P1"
+  next_steps: >-
+    Revert the policy, then enumerate what the relaxed SCP permitted while it was in effect
+    across every member account.
   techniques:
     - tid: "T1562"
       name: "Impair Defenses"
@@ -224,6 +260,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6ab AWS Macie Tampering"
   description: "Detects Macie disable and finding-filter creation. Attackers suppress Macie findings before exfiltrating sensitive data from S3."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
   techniques:
     - tid: "T1562"
       name: "Impair Defenses"
@@ -268,6 +308,7 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6a8 CloudWatch Alarm Deletion / Disable"
   description: "Detects CloudWatch alarm deletion and disabling. Silencing alarms tied to GuardDuty, CloudTrail metric filters, or billing thresholds is a key defense-evasion indicator."
+  severity: "P2"
   techniques:
     - tid: "T1562"
       name: "Impair Defenses"
@@ -309,6 +350,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f4dc CloudWatch Logs Subscription Changes"
   description: "Detects CW Logs subscription filter creation/deletion and log group deletion. Attackers stream logs to an external destination or destroy evidence in place."
+  severity: "P1"
+  next_steps: >-
+    Delete any subscription filter pointing outside the account, then treat everything the
+    filter carried as exfiltrated.
   techniques:
     - tid: "T1562.008"
       name: "Impair Defenses: Disable Cloud Logs"
@@ -320,18 +365,22 @@
   prompt: |
     Find all CloudWatch Logs tampering events: PutSubscriptionFilter (log
     exfiltration to attacker-controlled Kinesis/Lambda), DeleteSubscriptionFilter,
-    DeleteLogGroup, DeleteLogStream, and DeleteRetentionPolicy.
+    DeleteLogGroup, DeleteLogStream, DeleteDelivery, DisassociateKmsKey, and
+    both retention operations. PutRetentionPolicy deserves as much attention as
+    DeleteLogGroup: dropping retention to one day destroys the evidence on a
+    timer while the log group still exists and looks healthy.
     PutSubscriptionFilter to an external account silently streams all log events
     to the attacker in real time. Show log group name, destination ARN,
-    caller, region, and time.
+    retention days, caller, region, and time.
   sql: |
     SELECT
         event_time,
         event_name,
         user_identity_arn,
-        json_extract_string(request_parameters, '$.logGroupName')    AS log_group_name,
-        json_extract_string(request_parameters, '$.filterName')      AS filter_name,
-        json_extract_string(request_parameters, '$.destinationArn')  AS destination_arn,
+        json_extract_string(request_parameters, '$.logGroupName')     AS log_group_name,
+        json_extract_string(request_parameters, '$.filterName')       AS filter_name,
+        json_extract_string(request_parameters, '$.destinationArn')   AS destination_arn,
+        json_extract_string(request_parameters, '$.retentionInDays')  AS retention_days,
         source_ip_address,
         aws_region,
         error_code
@@ -340,7 +389,8 @@
       AND event_name IN (
           'PutSubscriptionFilter', 'DeleteSubscriptionFilter',
           'DeleteLogGroup',        'DeleteLogStream',
-          'DeleteRetentionPolicy', 'DisassociateKmsKey'
+          'PutRetentionPolicy',    'DeleteRetentionPolicy',
+          'DeleteDelivery',        'DisassociateKmsKey'
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -348,6 +398,10 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f3f9 WAF WebACL Changes"
   description: "Detects WAF WebACL creation, update, and deletion. Removing or weakening a WebACL disables protection against SQLi, XSS, and DDoS attacks."
+  severity: "P2"
+  playbook:
+    name: "IRP-DoS"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md"
   techniques:
     - tid: "T1562.007"
       name: "Impair Defenses: Disable or Modify Cloud Firewall"
@@ -389,6 +443,7 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f50d GuardDuty Findings Read"
   description: "Detects read-only GuardDuty API calls. Pacu's guardduty__list_findings module reads active findings to understand what the defender has already detected, allowing the attacker to adapt their tactics and avoid triggering new alerts."
+  severity: "P3"
   techniques:
     - tid: "T1562.A001"
       name: "Impair Defenses: Disable or Modify GuardDuty"
@@ -434,6 +489,7 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f4b0 Budget / Cost Anomaly Changes"
   description: "Detects deletion or modification of AWS Budgets and Cost Anomaly monitors. Attackers remove budget alerts to hide cryptomining or resource-intensive operations."
+  severity: "P3"
   techniques:
     - tid: "T1562"
       name: "Impair Defenses"
@@ -481,6 +537,7 @@
 - category: "\U0001f6e1 Detection & Response"
   label: "\U0001f6ab Access Denied Errors"
   description: "Groups AccessDenied errors by identity and API. Top offenders may indicate credential misuse."
+  severity: "P3"
   techniques:
     - tid: "T1087.004"
       name: "Account Discovery: Cloud Account"
@@ -513,6 +570,75 @@
     ORDER BY denied_count DESC
     LIMIT 50
 
+- category: "\U0001f6e1 Detection & Response"
+  label: "⛓ Ransomware Kill-Chain Sequence"
+  description: "Correlates the three ransomware stages — recovery removed, protection disabled, data destroyed or encrypted — per principal and day. Each stage alone is operational noise; all three together are not."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Suspend the principal's credentials before continuing the investigation, then establish what
+    recovery points survive. Ordering matters: the actor removed the recovery path first for a reason.
+  techniques:
+    - tid: "T1486"
+      name: "Data Encrypted for Impact"
+      summary: "Adversaries encrypt data with attacker-controlled keys for ransom."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.html"
+    - tid: "T1490"
+      name: "Inhibit System Recovery"
+      summary: "Adversaries delete backups and snapshots so the victim cannot restore."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1490.html"
+  chart:
+    type: bar
+    x: principal
+    y:
+      - events
+  prompt: |
+    Correlate ransomware stages per principal and day: (1) recovery removed —
+    backup vault, recovery point, snapshot or AMI deletion; (2) protection
+    disabled — versioning suspended, lifecycle or logging removed, vault lock
+    dropped; (3) impact — bulk object deletion, KMS key disable or deletion, bulk
+    encryption, instance termination. Report only principals showing all three,
+    with the events observed and the time span. The individual hunts each cover
+    one stage; this one is about the order they appear in.
+  sql: |
+    WITH stages AS (
+        SELECT
+            user_identity_arn        AS principal,
+            CAST(event_time AS DATE) AS activity_date,
+            MAX(CASE WHEN event_name IN (
+                    'DeleteBackupVault', 'DeleteRecoveryPoint', 'DeleteBackupPlan',
+                    'DeleteDBSnapshot',  'DeleteDBClusterSnapshot',
+                    'DeleteSnapshot',    'DeregisterImage'
+                ) THEN 1 ELSE 0 END) AS stage_recovery_removed,
+            MAX(CASE WHEN (
+                        event_name = 'PutBucketVersioning'
+                        AND request_parameters LIKE '%Suspended%'
+                    )
+                    OR event_name IN (
+                        'DeleteBucketLifecycle', 'PutBucketLogging',
+                        'DeleteBackupVaultLockConfiguration'
+                    ) THEN 1 ELSE 0 END) AS stage_protection_disabled,
+            MAX(CASE WHEN event_name IN (
+                    'DeleteObject', 'DeleteObjects', 'ScheduleKeyDeletion',
+                    'DisableKey',   'ReEncrypt',     'Encrypt',
+                    'TerminateInstances'
+                ) THEN 1 ELSE 0 END) AS stage_impact,
+            COUNT(*)                         AS events,
+            array_agg(DISTINCT event_name)   AS observed_events,
+            MIN(event_time)                  AS first_event,
+            MAX(event_time)                  AS last_event
+        FROM cloudtrail_events
+        WHERE user_identity_arn IS NOT NULL
+        GROUP BY principal, activity_date
+    )
+    SELECT *
+    FROM stages
+    WHERE stage_recovery_removed + stage_protection_disabled + stage_impact >= 3
+    ORDER BY last_event DESC
+    LIMIT 100
+
 # ===========================================================================
 # Identity & Access
 # ===========================================================================
@@ -520,6 +646,13 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f511 Root Account Activity"
   description: "Detects any API call made by the root account. Root should never be used in production."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Root use escalates to P1 on its own. Rotate root credentials and MFA, and confirm with the
+    account owner before assuming it was legitimate.
   techniques:
     - tid: "T1078.A002"
       name: "Valid Accounts: Account Root User"
@@ -547,6 +680,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f513 Console Login without MFA"
   description: "Detects console logins where MFA was not used. High-risk indicator of account compromise."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1078.A001"
       name: "Valid Accounts: IAM Users"
@@ -577,6 +714,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f310 Console Logins"
   description: "Lists all console login attempts. Brute force = multiple failures followed by success."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1078.A001"
       name: "Valid Accounts: IAM Users"
@@ -620,6 +761,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f510 MFA & Password Changes"
   description: "Detects MFA deactivation and password resets. Strong indicator of account takeover."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1098"
       name: "Account Manipulation"
@@ -656,6 +801,13 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 Privilege Escalation (IAM)"
   description: "Detects IAM policy attachment and role manipulation events used for privilege escalation."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Detach the added policy, then enumerate everything the principal did while holding it.
+    Assume persistence was established.
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -692,6 +844,13 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 IAM Role Trust Policy Changes"
   description: "Detects UpdateAssumeRolePolicy calls. Adding external account principals to a trust policy creates a persistent backdoor."
+  severity: "P1"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  next_steps: >-
+    Revert the trust policy, then find every AssumeRole against that role since the change —
+    each one is a session to revoke.
   techniques:
     - tid: "T1484.002"
       name: "Domain or Tenant Policy Modification: Trust Modification"
@@ -727,6 +886,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f6a7 IAM Permission Boundary Changes"
   description: "Detects permission boundary put/delete events. Removing a permission boundary immediately expands a principal's effective permissions, enabling privilege escalation."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -765,6 +925,12 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f451 User Added to Admin Group"
   description: "Detects users added to groups with 'admin' in the name. Classic privilege escalation technique."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Remove the membership and audit every action taken by the user since it was granted.
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -794,6 +960,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f465 IAM Group Membership Changes"
   description: "Detects all AddUserToGroup and RemoveUserFromGroup events regardless of group name. Any group addition may indicate privilege escalation through group-inherited policies."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -827,6 +994,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f464 New IAM Users / Keys"
   description: "Identifies IAM user and access key creation events. Unexpected creation may indicate persistence."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1136.003"
       name: "Create Account: Cloud Account"
@@ -860,6 +1031,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f3af IAM PassRole Abuse"
   description: "Detects iam:PassRole calls. Passing a privileged role to EC2/Lambda/Glue/ECS/SageMaker is the most common lateral privilege escalation path."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -917,6 +1092,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f510 AssumeRole Cross-Account"
   description: "Shows AssumeRole events where caller and target are in different AWS accounts. Indicates lateral movement."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1199.A002"
       name: "Trusted Relationship: Role Assumption and Federated Access"
@@ -950,6 +1129,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f3e2 Cross-Account Access"
   description: "Finds events where the caller account differs from the recipient account. Lateral movement signal."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1199.A002"
       name: "Trusted Relationship: Role Assumption and Federated Access"
@@ -981,6 +1164,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f511 STS Federation Token Issuance"
   description: "Detects GetFederationToken and GetSessionToken calls. Attackers use these to convert long-lived keys into persistent temporary credentials."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1199.A002"
       name: "Trusted Relationship: Role Assumption and Federated Access"
@@ -1014,7 +1201,11 @@
 
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9e9 STS AssumeRoleWithWebIdentity"
-  description: "Detects AssumeRoleWithWebIdentity calls. Abusing a misconfigured OIDC trust (e.g., overly broad sub claim) lets attackers hijack a role using attacker-controlled tokens."
+  description: "Detects AssumeRoleWithWebIdentity and AssumeRoleWithSAML calls. Abusing a misconfigured OIDC trust (e.g., overly broad sub claim) or a compromised SAML IdP lets attackers hijack a role with externally minted assertions."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1199.A002"
       name: "Trusted Relationship: Role Assumption and Federated Access"
@@ -1024,12 +1215,15 @@
     type: timeseries
     bucket: day
   prompt: |
-    Find all AssumeRoleWithWebIdentity events from sts.amazonaws.com.
-    A misconfigured OIDC trust policy (e.g., sub claim matched with a wildcard,
-    or GitHub Actions OIDC without a repo condition) lets attackers obtain
-    temporary credentials by presenting a forged or stolen third-party token.
-    Show role ARN, session name, source IP, and time.
-    Flag sessions where the requesting IP is unexpected.
+    Find all AssumeRoleWithWebIdentity and AssumeRoleWithSAML events from
+    sts.amazonaws.com — the two ways a role is assumed with an externally
+    issued assertion rather than AWS credentials. A misconfigured OIDC trust
+    policy (e.g., sub claim matched with a wildcard, or GitHub Actions OIDC
+    without a repo condition) lets attackers obtain temporary credentials by
+    presenting a forged or stolen third-party token; a compromised SAML IdP
+    lets them mint an assertion for any federated user. Show role ARN, session
+    name, principal ARN, source IP, geo and time.
+    Flag sessions where the requesting IP or country is unexpected.
   sql: |
     SELECT
         event_time,
@@ -1037,18 +1231,25 @@
         user_identity_arn,
         json_extract_string(request_parameters, '$.roleArn')          AS role_arn,
         json_extract_string(request_parameters, '$.roleSessionName')  AS session_name,
+        json_extract_string(request_parameters, '$.principalArn')     AS saml_principal_arn,
         source_ip_address,
+        geo_country_code,
+        geo_org,
         aws_region,
         error_code
     FROM cloudtrail_events
     WHERE event_source = 'sts.amazonaws.com'
-      AND event_name = 'AssumeRoleWithWebIdentity'
+      AND event_name IN ('AssumeRoleWithWebIdentity', 'AssumeRoleWithSAML')
     ORDER BY event_time DESC
     LIMIT 100
 
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f194 IAM Identity Center (SSO) Events"
   description: "Detects AWS IAM Identity Center management actions. Attackers abuse SSO to create backdoor permission sets or assign accounts to attacker-controlled users."
+  severity: "P2"
+  playbook:
+    name: "IRP-IdentityCenterCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-IdentityCenterCompromise.md"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -1091,6 +1292,13 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f517 SAML / OIDC Provider Updates"
   description: "Detects SAML/OIDC identity provider changes. Updating a SAML provider with attacker-controlled metadata creates a persistent authentication backdoor."
+  severity: "P1"
+  playbook:
+    name: "IRP-FederatedAccessAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-FederatedAccessAbuse.md"
+  next_steps: >-
+    A modified provider authenticates any federated user. Restore the trusted metadata, then
+    revoke every federated session issued since the change.
   techniques:
     - tid: "T1484.002"
       name: "Domain or Tenant Policy Modification: Trust Modification"
@@ -1101,28 +1309,35 @@
     bucket: day
   prompt: |
     Find all SAML and OIDC provider management events: CreateSAMLProvider,
-    UpdateSAMLProvider, DeleteSAMLProvider, CreateOIDCProvider,
-    UpdateOIDCProviderThumbprint, DeleteOIDCProvider,
-    AddClientIDToOIDCProvider, and RemoveClientIDFromOIDCProvider.
-    Updating a SAML provider with attacker-controlled IdP metadata allows
-    the attacker to authenticate as any federated user permanently.
-    Show provider ARN, caller, and time.
+    UpdateSAMLProvider, DeleteSAMLProvider, CreateOpenIDConnectProvider,
+    UpdateOpenIDConnectProviderThumbprint, DeleteOpenIDConnectProvider,
+    AddClientIDToOpenIDConnectProvider, and
+    RemoveClientIDFromOpenIDConnectProvider. IAM spells the OIDC operations
+    out in full — the abbreviated "OIDCProvider" forms are not API names and
+    match nothing. Updating a SAML provider with attacker-controlled IdP
+    metadata allows the attacker to authenticate as any federated user
+    permanently. Show provider ARN, caller, and time.
   sql: |
     SELECT
         event_time,
         event_name,
         user_identity_arn,
-        json_extract_string(request_parameters, '$.sAMLProviderArn') AS saml_provider_arn,
-        json_extract_string(request_parameters, '$.url')             AS oidc_url,
+        json_extract_string(request_parameters, '$.sAMLProviderArn')            AS saml_provider_arn,
+        json_extract_string(request_parameters, '$.openIDConnectProviderArn')   AS oidc_provider_arn,
+        json_extract_string(request_parameters, '$.url')                        AS oidc_url,
+        json_extract_string(request_parameters, '$.clientID')                   AS oidc_client_id,
         source_ip_address,
         aws_region,
         error_code
     FROM cloudtrail_events
     WHERE event_source = 'iam.amazonaws.com'
       AND event_name IN (
-          'CreateSAMLProvider',          'UpdateSAMLProvider',          'DeleteSAMLProvider',
-          'CreateOIDCProvider',          'UpdateOIDCProviderThumbprint', 'DeleteOIDCProvider',
-          'AddClientIDToOIDCProvider',   'RemoveClientIDFromOIDCProvider'
+          'CreateSAMLProvider',                  'UpdateSAMLProvider',
+          'DeleteSAMLProvider',
+          'CreateOpenIDConnectProvider',         'DeleteOpenIDConnectProvider',
+          'UpdateOpenIDConnectProviderThumbprint',
+          'AddClientIDToOpenIDConnectProvider',
+          'RemoveClientIDFromOpenIDConnectProvider'
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -1130,6 +1345,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9d0 IAM Access Analyzer Calls"
   description: "Detects any use of IAM Access Analyzer. Attackers use the native AWS analyzer to enumerate externally accessible resources without writing custom recon scripts."
+  severity: "P3"
   techniques:
     - tid: "T1087.004"
       name: "Account Discovery: Cloud Account"
@@ -1163,6 +1379,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 Credential Report & Enumeration"
   description: "Detects IAM enumeration activity that maps the entire IAM landscape. Common in early attack stages."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1087.004"
       name: "Account Discovery: Cloud Account"
@@ -1195,6 +1415,10 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f5dd Access Key Abuse"
   description: "Detects access keys used from 3+ distinct source IPs in 7 days. Strong indicator of key leak."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1078.A001"
       name: "Valid Accounts: IAM Users"
@@ -1230,6 +1454,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f4f0 AWS Organizations Account Creation"
   description: "Detects Organizations account creation and delegated administrator changes. Attackers create shadow accounts to establish persistent footholds outside the main account."
+  severity: "P2"
   techniques:
     - tid: "T1666.A001"
       name: "Modify Cloud Resource Hierarchy: Create or Invite AWS Account"
@@ -1292,6 +1517,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f465 Cognito Unauthenticated Access"
   description: "Detects Cognito Identity Pools with unauthenticated access enabled. Allows anonymous users to call AWS APIs with the unauthenticated IAM role's permissions."
+  severity: "P3"
   techniques:
     - tid: "T1098.A006"
       name: "Account Manipulation: Cognito Refresh Token Abuse"
@@ -1331,6 +1557,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9ea Glue DevEndpoint Privilege Escalation"
   description: "Detects Glue development endpoint creation and connection enumeration. iam:PassRole + glue:CreateDevEndpoint grants full role permissions via SSH — one of the most overlooked IAM privilege escalation techniques."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -1373,6 +1600,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9ea SageMaker Notebook Privilege Escalation"
   description: "Detects SageMaker notebook instance creation and presigned URL generation. iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter environment with the passed role's full AWS permissions. CreatePresignedNotebookInstanceUrl alone can grant access to an existing notebook."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -1418,6 +1646,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f6e0 Data Pipeline / CodeStar Privilege Escalation"
   description: "Detects Data Pipeline and CodeStar resource creation. Both accept iam:PassRole and can execute arbitrary code with the passed role's permissions. CodeStar:CreateProjectFromTemplate is an undocumented API that creates an admin IAM role."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -1471,6 +1700,7 @@
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f9e9 Step Functions Privilege Escalation"
   description: "Detects Step Functions state machine creation and execution. iam:PassRole + states:CreateStateMachine + states:StartExecution allows running arbitrary Lambda / ECS tasks under the passed role's permissions."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -1512,6 +1742,7 @@
 - category: "🔑 Identity & Access"
   label: "🪓 IAM Entity Deletion"
   description: "Detects deletion of IAM users, roles, policies, and MFA devices. Attackers delete IAM entities to remove traces of their activity or lock defenders out."
+  severity: "P2"
   techniques:
     - tid: "T1070.A001"
       name: "Indicator Removal: Delete IAM Entities"
@@ -1559,6 +1790,13 @@
 - category: "🔑 Identity & Access"
   label: "👑 AssumeRoot Usage"
   description: "Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Confirm the invocation was authorised; if not, treat every member account reachable from
+    that root session as in scope.
   techniques:
     - tid: "AT1669"
       name: "Assume Root into Organization Member Account"
@@ -1596,6 +1834,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4a3 S3 Bulk Object Deletion"
   description: "Detects high-volume DeleteObject/DeleteObjects calls (>=50/hour). Distinct from exfiltration — this is data destruction / ransomware pattern."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Check whether versioning was suspended first. If versions survive, restore before the actor
+    deletes them too.
   techniques:
     - tid: "T1485.A003"
       name: "Data Destruction: S3 Object and Bucket Deletion"
@@ -1631,6 +1876,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f525 AWS Backup Tampering"
   description: "Detects Backup Vault/Plan/RecoveryPoint deletion. Destroying backups is the first step in ransomware attacks to prevent recovery."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Backup deletion precedes encryption. Lock remaining vaults and copy critical recovery points
+    to an isolated account now.
   techniques:
     - tid: "T1485"
       name: "Data Destruction"
@@ -1674,6 +1926,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f513 KMS Key Operations"
   description: "Flags sensitive KMS operations including key deletion and high-volume Decrypt calls."
+  severity: "P2"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
   techniques:
     - tid: "T1486"
       name: "Data Encrypted for Impact"
@@ -1687,23 +1943,31 @@
     type: timeseries
     bucket: day
   prompt: |
-    Find sensitive KMS operations: DisableKey, ScheduleKeyDeletion,
-    CreateGrant, PutKeyPolicy, Decrypt (high volume from single source).
-    Attackers may disable encryption or decrypt stolen data.
+    Find sensitive KMS operations across the full ransomware sequence: CreateKey
+    (an attacker-controlled CMK is the usual first step), Encrypt / ReEncrypt
+    (bulk re-keying of victim data), DisableKey / ScheduleKeyDeletion (making
+    data unrecoverable), RevokeGrant / RetireGrant / PutKeyPolicy (locking the
+    owner out of their own key), and high-volume Decrypt from a single source.
     Show caller identity, key ID from request_parameters, and time.
   sql: |
     SELECT
         event_time,
         event_name,
         user_identity_arn,
-        json_extract_string(request_parameters, '$.keyId') AS key_id,
+        json_extract_string(request_parameters, '$.keyId')            AS key_id,
+        json_extract_string(request_parameters, '$.destinationKeyId') AS destination_key_id,
+        json_extract_string(request_parameters, '$.granteePrincipal') AS grantee_principal,
         source_ip_address,
         aws_region,
         error_code
     FROM cloudtrail_events
-    WHERE event_name IN (
+    WHERE event_source = 'kms.amazonaws.com'
+      AND event_name IN (
+        'CreateKey', 'ReplicateKey',
+        'Encrypt', 'ReEncrypt', 'Decrypt',
         'DisableKey', 'ScheduleKeyDeletion', 'CancelKeyDeletion',
-        'CreateGrant', 'PutKeyPolicy', 'Decrypt'
+        'CreateGrant', 'RevokeGrant', 'RetireGrant',
+        'PutKeyPolicy'
     )
     ORDER BY event_time DESC
     LIMIT 100
@@ -1711,6 +1975,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f513 S3 Public Access Block Disabled"
   description: "Detects S3 public access block settings being disabled. Immediate data exposure risk."
+  severity: "P1"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
+  next_steps: >-
+    Re-enable the block, then determine what was readable while it was off and whether anything
+    was fetched anonymously.
   techniques:
     - tid: "T1530.A001"
       name: "Data from Cloud Storage: S3 Object Collection"
@@ -1741,6 +2012,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001faa3 S3 Bucket Policy / ACL Changes"
   description: "Detects S3 bucket policy and ACL modifications. These can make a bucket publicly readable or grant access to attacker-controlled accounts."
+  severity: "P2"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1530.A001"
       name: "Data from Cloud Storage: S3 Object Collection"
@@ -1750,11 +2025,13 @@
     type: timeseries
     bucket: day
   prompt: |
-    Find all S3 bucket permission changes: PutBucketPolicy, DeleteBucketPolicy,
-    PutBucketAcl, PutBucketCors, PutBucketWebsite, and DeleteBucketWebsite.
-    These modifications can expose bucket contents publicly or to attackers.
-    PutBucketPolicy with Principal='*' is especially critical.
-    Show bucket name, caller, source IP, and time.
+    Find all S3 permission changes: PutBucketPolicy, DeleteBucketPolicy,
+    PutBucketAcl, PutObjectAcl, PutBucketCors, PutBucketWebsite, and
+    DeleteBucketWebsite. These modifications can expose bucket contents publicly
+    or to attackers. PutBucketPolicy with Principal='*' is especially critical,
+    and PutObjectAcl exposes a single object without touching the bucket policy —
+    a quieter path that bucket-level monitoring misses entirely.
+    Show bucket name, object key, the requested ACL, caller, source IP, and time.
   sql: |
     SELECT
         event_time,
@@ -1762,13 +2039,16 @@
         user_identity_arn,
         aws_region,
         json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+        json_extract_string(request_parameters, '$.key')        AS object_key,
+        json_extract_string(request_parameters, '$."x-amz-acl"') AS requested_acl,
         source_ip_address,
         error_code
     FROM cloudtrail_events
     WHERE event_source = 's3.amazonaws.com'
       AND event_name IN (
           'PutBucketPolicy',   'DeleteBucketPolicy',
-          'PutBucketAcl',      'PutBucketCors',
+          'PutBucketAcl',      'PutObjectAcl',
+          'PutBucketCors',
           'PutBucketWebsite',  'DeleteBucketWebsite'
       )
     ORDER BY event_time DESC
@@ -1777,6 +2057,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001faa3 S3 Data Access Anomalies"
   description: "Detects bulk GetObject calls (>=100/hour) that may indicate data exfiltration."
+  severity: "P2"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1530.A001"
       name: "Data from Cloud Storage: S3 Object Collection"
@@ -1788,18 +2072,23 @@
     y:
       - call_count
   prompt: |
-    Find unusual S3 activity: large numbers of GetObject calls from a single
-    IP or user within a short time window (potential exfiltration).
-    Also flag DeleteBucket, DeleteObject, and PutBucketPolicy events.
+    Find unusual S3 read activity: large numbers of object reads from a single
+    IP or user within a short time window (potential exfiltration). Count
+    SelectObjectContent alongside GetObject — S3 Select reads object contents
+    just as GetObject does, and querying a PII bucket that way otherwise leaves
+    no trace in a GetObject-only hunt.
   sql: |
     SELECT
         user_identity_arn,
         source_ip_address,
-        DATE_TRUNC('hour', event_time) AS hour_bucket,
-        COUNT(*)                       AS call_count
+        DATE_TRUNC('hour', event_time)                                AS hour_bucket,
+        COUNT(*)                                                      AS call_count,
+        COUNT(*) FILTER (WHERE event_name = 'SelectObjectContent')    AS s3_select_calls,
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.bucketName'))
+                                                                      AS distinct_buckets
     FROM cloudtrail_events
     WHERE event_source = 's3.amazonaws.com'
-      AND event_name   = 'GetObject'
+      AND event_name IN ('GetObject', 'SelectObjectContent')
     GROUP BY user_identity_arn, source_ip_address, hour_bucket
     HAVING COUNT(*) >= 100
     ORDER BY call_count DESC
@@ -1808,6 +2097,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f510 Secrets Manager Bulk GetSecretValue"
   description: "Detects bulk retrieval of secrets (DB passwords, API keys, etc.). Ten or more GetSecretValue calls in one hour is a strong credential-harvesting signal."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Rotate every secret read during the window; assume each one is compromised regardless of
+    what the actor did next.
   techniques:
     - tid: "T1552"
       name: "Unsecured Credentials"
@@ -1843,6 +2139,7 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f5dd Secrets Manager Deletion & Cross-Account Policy"
   description: "Detects Secrets Manager secret deletion and cross-account resource policy changes. Complements existing bulk-read detection with destruction and policy-exfiltration vectors."
+  severity: "P2"
   techniques:
     - tid: "T1552"
       name: "Unsecured Credentials"
@@ -1891,6 +2188,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f510 SSM Parameter Store Bulk Read"
   description: "Detects bulk reads of SSM Parameter Store entries. An often-overlooked exfiltration channel compared with Secrets Manager."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1552"
       name: "Unsecured Credentials"
@@ -1927,6 +2228,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4be RDS Snapshot Cross-Account Share"
   description: "Detects RDS/Aurora snapshots shared to external AWS accounts. Classic data exfiltration via snapshot sharing."
+  severity: "P1"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
+  next_steps: >-
+    Revoke the share, then determine whether the destination account copied the snapshot before
+    revocation — the copy survives.
   techniques:
     - tid: "T1578.001"
       name: "Modify Cloud Compute Infrastructure: Create Snapshot"
@@ -1972,6 +2280,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4a3 RDS Deleted without Final Snapshot"
   description: "Detects RDS instance/cluster deletion with skipFinalSnapshot=true. Potential data destruction."
+  severity: "P2"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
   techniques:
     - tid: "T1485.A001"
       name: "Data Destruction: RDS Instances and Backups"
@@ -1999,6 +2311,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4bd RDS Public Accessibility Enabled"
   description: "Detects RDS instances created or modified with PubliclyAccessible=true. Exposes the database directly to the internet, bypassing VPC security controls."
+  severity: "P2"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1213.A013"
       name: "Data from Information Repositories: RDS Instance Manipulation"
@@ -2040,6 +2356,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f5c4 DynamoDB Export / Bulk Exfiltration"
   description: "Detects DynamoDB ExportTableToPointInTime (silent full-table export to S3) and table deletion. High-risk exfiltration and destruction vector."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
   techniques:
     - tid: "T1530"
       name: "Data from Cloud Storage"
@@ -2082,6 +2402,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4be EBS Direct API Snapshot Exfiltration"
   description: "Detects EBS Direct API calls (ListSnapshotBlocks / GetSnapshotBlock). Pacu's ebs__download_snapshots uses this API to stream raw snapshot data without creating EC2 instances, bypassing traditional snapshot-sharing detection."
+  severity: "P2"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1530"
       name: "Data from Cloud Storage"
@@ -2129,6 +2453,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f30a Kinesis Firehose / Stream Exfiltration Channel"
   description: "Detects Kinesis Firehose delivery stream creation/update pointing to external S3. Real-time data pipeline exfiltration invisible to network DLP."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
   techniques:
     - tid: "T1530"
       name: "Data from Cloud Storage"
@@ -2173,6 +2501,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f501 S3 Cross-Account Replication"
   description: "Detects PutBucketReplication and DeleteBucketReplication. Cross-account replication silently copies all new objects to an attacker-controlled bucket."
+  severity: "P2"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1530.A001"
       name: "Data from Cloud Storage: S3 Object Collection"
@@ -2205,6 +2537,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4c2 S3 Versioning / Logging Disabled"
   description: "Detects S3 versioning suspension and server access logging disable. Disabling versioning enables data destruction; disabling logging erases the access evidence trail."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Suspending versioning is the step that makes later deletion irreversible. Re-enable it and
+    verify existing versions are intact.
   techniques:
     - tid: "T1562.008"
       name: "Impair Defenses: Disable Cloud Logs"
@@ -2247,6 +2586,7 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e7 SES Identity & Forwarding Config Changes"
   description: "Detects SES receipt rule and identity configuration changes. Forwarding rules can auto-relay all inbound mail to attacker addresses; verified identities enable phishing campaigns."
+  severity: "P3"
   techniques:
     - tid: "T1496.A001"
       name: "Resource Hijacking: Cloud Service Hijacking - SES Messaging"
@@ -2296,6 +2636,7 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e1 SQS / SNS Cross-Account Policy Changes"
   description: "Detects SQS/SNS queue/topic policy changes that grant access to external accounts. Creates a silent exfiltration channel without triggering high-volume send alerts."
+  severity: "P3"
   techniques:
     - tid: "T1530"
       name: "Data from Cloud Storage"
@@ -2345,6 +2686,13 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4f8 EC2 Public Snapshot / AMI Sharing"
   description: "Detects EBS snapshots or AMIs shared publicly (group=all). Enables anyone to copy your disk images and extract data."
+  severity: "P1"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
+  next_steps: >-
+    Make the snapshot private immediately, then check whether it was copied while public — a
+    copy in another account cannot be recalled.
   techniques:
     - tid: "T1578.001"
       name: "Modify Cloud Compute Infrastructure: Create Snapshot"
@@ -2383,6 +2731,10 @@
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e7 Data Exfiltration Channels"
   description: "Detects high-volume SNS/SQS/SES/S3 PutObject calls (>=50/hour) that may indicate exfiltration."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
   techniques:
     - tid: "T1530"
       name: "Data from Cloud Storage"
@@ -2423,6 +2775,13 @@
 - category: "🪣 Data & Storage"
   label: "🔐 S3 SSE-C Encryption (Ransomware)"
   description: "Detects S3 objects re-encrypted with attacker-supplied SSE-C keys, plus bucket default-encryption changes. Without the customer key the victim cannot decrypt — a cloud-native ransomware pattern."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    SSE-C keys are never stored by AWS. Stop further writes, then restore from versions or
+    backups — the objects cannot be decrypted otherwise.
   techniques:
     - tid: "T1486.A001"
       name: "Data Encrypted for Impact: S3 Encryption - SSE-C Key Encryption"
@@ -2466,8 +2825,57 @@
     LIMIT 100
 
 - category: "🪣 Data & Storage"
+  label: "📝 Ransom Note Placement"
+  description: "Detects PutObject calls whose object key looks like a ransom note. Unlike the other ransomware hunts this one confirms impact rather than suggesting it — a note means the operator is already demanding payment."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    A note means encryption is finished. Do not pay or delete it: preserve it as evidence,
+    isolate the bucket, and verify backup integrity before restoring.
+  techniques:
+    - tid: "T1486"
+      name: "Data Encrypted for Impact"
+      summary: "Adversaries encrypt data with attacker-controlled keys for ransom."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1486.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find S3 PutObject calls where the object key looks like a ransom note —
+    keys containing RANSOM, DECRYPT, RECOVER, RESTORE_FILES, README, HOW_TO or
+    YOUR_FILES, typically written at a bucket or prefix root as .txt / .html.
+    Every other ransomware hunt reports something suspicious; a ransom note
+    confirms the operator has finished encrypting and is demanding payment, so
+    treat any hit as P1. Show bucket, object key, caller, source IP and time.
+  sql: |
+    SELECT
+        event_time,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.bucketName') AS bucket_name,
+        json_extract_string(request_parameters, '$.key')        AS object_key,
+        source_ip_address,
+        geo_country_code,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND event_name   = 'PutObject'
+      AND regexp_matches(
+            upper(COALESCE(json_extract_string(request_parameters, '$.key'), '')),
+            'RANSOM|DECRYPT|RECOVER|RESTORE[_-]?FILES|README|HOW[_-]?TO|YOUR[_-]?FILES|UNLOCK'
+          )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "🪣 Data & Storage"
   label: "⏳ S3 Lifecycle-Triggered Deletion"
   description: "Detects S3 lifecycle rules that expire objects, plus lifecycle-config deletion. Attackers set a short expiration to silently purge data over time without issuing DeleteObject calls."
+  severity: "P2"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
   techniques:
     - tid: "T1485.001"
       name: "Data Destruction: Lifecycle-Triggered Deletion"
@@ -2509,6 +2917,7 @@
 - category: "🪣 Data & Storage"
   label: "🗃 RDS Query & Instance Manipulation"
   description: "Detects RDS Data API queries, master-password resets, and snapshot restores. Attackers read data directly, reset credentials to gain access, or restore snapshots into instances they control."
+  severity: "P3"
   techniques:
     - tid: "AT1023.001"
       name: "Cloud Database Discovery: Query RDS"
@@ -2563,6 +2972,10 @@
 - category: "🪣 Data & Storage"
   label: "🔎 S3 Bucket Enumeration"
   description: "Detects callers sweeping bucket and object metadata (≥10 List/GetBucket* reads in one hour). A common early step to locate valuable data before exfiltration."
+  severity: "P3"
+  playbook:
+    name: "IRP-DataAccess"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md"
   techniques:
     - tid: "T1619.A001"
       name: "Cloud Storage Discovery: S3 Object and Bucket Enumeration"
@@ -2604,6 +3017,13 @@
 - category: "🪣 Data & Storage"
   label: "🔑 Storage Re-Encryption for Impact"
   description: "Detects EBS/RDS snapshots and volumes re-encrypted with an explicit KMS key, plus disabling of default EBS encryption. Re-encrypting with an attacker-held key holds the data for ransom."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Identify the key the actor re-encrypted with and whether you still control it. Preserve one
+    encrypted object as evidence before restoring.
   techniques:
     - tid: "T1486.A002"
       name: "Data Encrypted for Impact: EC2/EBS Data Encryption"
@@ -2647,6 +3067,141 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "🪣 Data & Storage"
+  label: "\U0001f517 Presigned URL Generation"
+  description: "Counts presigned URL generation per principal. A presigned URL moves data to anyone holding the link, with no further authentication and no further CloudTrail record."
+  severity: "P3"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  techniques:
+    - tid: "T1537"
+      name: "Transfer Data to Cloud Account"
+      summary: "Adversaries move data to storage they control rather than downloading it."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1537.html"
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - urls_generated
+  prompt: |
+    Count presigned-URL generation per principal:
+    CreatePresignedNotebookInstanceUrl, CreatePresignedDomainUrl and
+    CreatePresignedMlflowTrackingServerUrl. The generated URL is the last thing
+    CloudTrail sees — whoever opens it afterwards leaves no record, so volume and
+    who generated it are all the evidence there is.
+  sql: |
+    SELECT
+        user_identity_arn,
+        event_name,
+        event_source,
+        COUNT(*)                          AS urls_generated,
+        COUNT(DISTINCT source_ip_address) AS distinct_source_ips,
+        MIN(event_time)                   AS first_seen,
+        MAX(event_time)                   AS last_seen
+    FROM cloudtrail_events
+    WHERE event_name IN (
+        'CreatePresignedNotebookInstanceUrl',
+        'CreatePresignedDomainUrl',
+        'CreatePresignedMlflowTrackingServerUrl'
+    )
+    GROUP BY user_identity_arn, event_name, event_source
+    ORDER BY urls_generated DESC
+    LIMIT 100
+
+- category: "🪣 Data & Storage"
+  label: "\U0001f4e4 Cross-Account Object Copy"
+  description: "Detects objects copied between buckets, including PutObject calls carrying an x-amz-copy-source header. Staging data into an account you do not control leaves this trace and no other."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
+  techniques:
+    - tid: "T1537"
+      name: "Transfer Data to Cloud Account"
+      summary: "Adversaries move data to storage they control rather than downloading it."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1537.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find S3 CopyObject calls, and PutObject calls whose request_parameters carry
+    an x-amz-copy-source header, showing both the destination bucket and key and
+    the copy source. Compare the caller's account with recipient_account_id.
+    Existing hunts cover replication *configuration*; this covers the individual
+    copies, which need no configuration change at all.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        user_identity_account_id                                 AS caller_account,
+        recipient_account_id,
+        json_extract_string(request_parameters, '$.bucketName')  AS destination_bucket,
+        json_extract_string(request_parameters, '$.key')          AS destination_key,
+        COALESCE(
+            json_extract_string(request_parameters, '$."x-amz-copy-source"'),
+            json_extract_string(request_parameters, '$.copySource')
+        )                                                        AS copy_source,
+        source_ip_address,
+        geo_country_code,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND (
+          event_name = 'CopyObject'
+          OR (event_name = 'PutObject' AND request_parameters LIKE '%x-amz-copy-source%')
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "🪣 Data & Storage"
+  label: "\U0001f4d0 Data Access Scope (Breach Notification)"
+  description: "Quantifies what each principal read per day: buckets touched and approximate distinct objects. Produces the 'approximate number of records' figure a GDPR Article 33 notification requires."
+  severity: "P2"
+  playbook:
+    name: "IRP-PersonalDataBreach"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md"
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
+  chart:
+    type: bar
+    x: principal
+    y:
+      - approx_distinct_objects
+  prompt: |
+    For each principal and day, count S3 read operations (GetObject,
+    SelectObjectContent, CopyObject, ListObjects, ListObjectsV2), the distinct
+    buckets, an approximate distinct object count, and how many of those calls
+    crossed an account boundary. This answers the regulator's question — roughly
+    how many records — rather than the responder's. It needs CloudTrail data
+    events enabled on the buckets; without them S3 reads are simply absent.
+  sql: |
+    SELECT
+        user_identity_arn                                                     AS principal,
+        CAST(event_time AS DATE)                                              AS access_date,
+        COUNT(*)                                                              AS read_calls,
+        COUNT(DISTINCT json_extract_string(request_parameters, '$.bucketName')) AS distinct_buckets,
+        approx_count_distinct(json_extract_string(request_parameters, '$.key')) AS approx_distinct_objects,
+        COUNT(*) FILTER (
+            WHERE recipient_account_id IS DISTINCT FROM user_identity_account_id
+        )                                                                     AS cross_account_calls,
+        array_agg(DISTINCT json_extract_string(request_parameters, '$.bucketName')) AS buckets,
+        MIN(event_time)                                                       AS first_access,
+        MAX(event_time)                                                       AS last_access
+    FROM cloudtrail_events
+    WHERE event_source = 's3.amazonaws.com'
+      AND event_name IN (
+          'GetObject', 'SelectObjectContent', 'CopyObject',
+          'ListObjects', 'ListObjectsV2'
+      )
+    GROUP BY principal, access_date
+    ORDER BY approx_distinct_objects DESC
+    LIMIT 100
+
 # ===========================================================================
 # Compute & Serverless
 # ===========================================================================
@@ -2654,6 +3209,13 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4a5 EC2 Mass Stop / Terminate"
   description: "Detects high-volume EC2 StopInstances/TerminateInstances (>=5 in one hour). Indicates ransomware disruption or destructive attack."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Confirm whether the instances are recoverable from AMIs or snapshots before the actor
+    deletes those too.
   techniques:
     - tid: "T1578.003"
       name: "Modify Cloud Compute Infrastructure: Delete Cloud Instance"
@@ -2693,6 +3255,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f5a5\ufe0f SSM Session / Run Command"
   description: "Detects SSM StartSession, SendCommand, and automation executions. Primary lateral movement path via managed instances."
+  severity: "P2"
   techniques:
     - tid: "T1651"
       name: "Cloud Administration Command"
@@ -2729,6 +3292,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f511 EC2 Instance Connect / Serial Console Access"
   description: "Detects EC2 Instance Connect and Serial Console access, which lets attackers reach an instance from a browser or CLI without an SSH key or bastion host. A primary lateral-movement path for attackers who lack SSH keys."
+  severity: "P2"
   techniques:
     - tid: "T1651"
       name: "Cloud Administration Command"
@@ -2769,6 +3333,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4dd EC2 User Data Modification"
   description: "Detects ModifyInstanceAttribute calls that change the userData field. User data scripts run as root at next boot, providing a persistent code-execution backdoor."
+  severity: "P2"
   techniques:
     - tid: "T1578.005"
       name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
@@ -2803,6 +3368,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\u26a1 Lambda Function Tampering"
   description: "Detects Lambda creation, code updates, and permission changes. Attackers use Lambda for persistence."
+  severity: "P2"
   techniques:
     - tid: "T1648"
       name: "Serverless Execution"
@@ -2849,6 +3415,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4e6 Lambda Layer Addition"
   description: "Detects Lambda layer publication and permission changes. Publishing a malicious shared layer and adding it to production functions injects attacker code into the dependency chain."
+  severity: "P2"
   techniques:
     - tid: "T1648.A002"
       name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
@@ -2888,6 +3455,7 @@
 - category: "⚡ Compute & Serverless"
   label: "\U0001f4e6 ECS Task Definition"
   description: "Detects ECS task definition registration and service updates. Pacu's ecs__backdoor_task_def registers a new task definition version pointing to a malicious container image, then updates the service to deploy it — all without touching ECR."
+  severity: "P3"
   techniques:
     - tid: "T1496.A006"
       name: "Resource Hijacking: Compute Hijacking - ECS"
@@ -2933,6 +3501,10 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f464 EC2 Instance Profile Changes"
   description: "Detects IAM instance profile association and replacement. Attaching a privileged profile grants the instance elevated permissions for lateral movement."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"
@@ -2972,6 +3544,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f5a5 EC2 Instance Launches"
   description: "Lists all RunInstances events. Unexpected launches in unusual regions may indicate cryptomining."
+  severity: "P3"
   techniques:
     - tid: "T1578.002"
       name: "Modify Cloud Compute Infrastructure: Create Cloud Instance"
@@ -3009,6 +3582,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4b0 EC2 Spot Fleet / Reserved Instance Abuse"
   description: "Detects large Spot Fleet requests, Reserved Instance purchases, and Auto Scaling group creation with high capacity. Cryptomining financial-impact indicator."
+  severity: "P3"
   techniques:
     - tid: "T1496.A008"
       name: "Resource Hijacking: Compute Hijacking - EC2 Use"
@@ -3060,6 +3634,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\u2638\ufe0f EKS Cluster API Calls"
   description: "Detects EKS cluster control-plane modifications. Public API server exposure or rogue Fargate profiles enable container platform takeover."
+  severity: "P3"
   techniques:
     - tid: "T1190.A020"
       name: "Exploit Public-Facing Application: EKS"
@@ -3108,6 +3683,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f433 ECR Repository / Image Changes"
   description: "Detects ECR repository creation/deletion, policy changes, and image pushes. Injecting malicious images into a production repository is a supply-chain persistence technique."
+  severity: "P2"
   techniques:
     - tid: "T1648.A002"
       name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
@@ -3149,6 +3725,7 @@
 - category: "\u26a1 Compute & Serverless"
   label: "\U0001f4c5 EventBridge / CloudWatch Rule Changes"
   description: "Detects EventBridge rule and EventBridge Scheduler modifications. Attackers use scheduled rules to establish persistence without a long-running process."
+  severity: "P3"
   techniques:
     - tid: "T1648.A001"
       name: "Serverless Execution: Invoking Lambda Function"
@@ -3187,6 +3764,7 @@
 - category: "⚡ Compute & Serverless"
   label: "\U0001f4a1 Lightsail Instance & Key Abuse"
   description: "Detects Lightsail instance access, key pair operations, and port exposure. Pacu has three dedicated Lightsail modules (enum, download_ssh_keys, generate_temp_access). Lightsail resources operate outside the standard EC2 security boundary."
+  severity: "P3"
   techniques:
     - tid: "T1496.001"
       name: "Resource Hijacking: Compute Hijacking"
@@ -3237,6 +3815,10 @@
 - category: "⚡ Compute & Serverless"
   label: "🛰 IMDS Options Weakening"
   description: "Detects ModifyInstanceMetadataOptions calls that make IMDSv2 optional or re-enable the metadata endpoint. Weakening IMDS re-opens the SSRF path to steal instance-role credentials."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
   techniques:
     - tid: "T1552.005"
       name: "Unsecured Credentials: Cloud Instance Metadata API"
@@ -3280,6 +3862,13 @@
 - category: "⚡ Compute & Serverless"
   label: "💥 AMI & Snapshot Deletion"
   description: "Detects bulk deregistration of AMIs and deletion of EBS snapshots (≥5 in one hour). Destroying golden images and backups removes recovery options during a destructive attack."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Deleting images removes the recovery path. Establish what remains restorable before
+    continuing the investigation.
   techniques:
     - tid: "T1485.A002"
       name: "Data Destruction: AMI Image Deletion"
@@ -3321,6 +3910,7 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f916 Bedrock Model Invocation Spike"
   description: "Detects principals invoking Bedrock models 50+ times in one hour. High-volume inference on stolen credentials (LLMjacking) can cost the victim tens of thousands of dollars per day."
+  severity: "P3"
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3359,6 +3949,7 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f513 Bedrock Model Access Enablement"
   description: "Detects foundation-model access being enabled or provisioned capacity purchased. In orgs that never adopted Bedrock this is a near-zero-noise LLMjacking indicator — the attacker's canonical first write."
+  severity: "P3"
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3398,6 +3989,10 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f648 Bedrock Invocation Logging Tampering"
   description: "Detects deletion or modification of Bedrock model-invocation logging, plus attackers checking whether logging is enabled before abusing the account (a documented LLMjacking IOC)."
+  severity: "P1"
+  next_steps: >-
+    Restore the logging configuration, then treat every invocation during the gap as uninspected
+    — prompts and completions both go unrecorded.
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3439,6 +4034,7 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f9ed Bedrock Reconnaissance Sweep"
   description: "Identifies callers enumerating Bedrock models across 2+ regions or with 10+ enumeration calls in one hour. Stolen-key holders sweep regions to find where models are usable."
+  severity: "P3"
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3482,6 +4078,7 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "⛔ Failed Bedrock Invocations"
   description: "Finds bursts of failed Bedrock invocations (AccessDenied / ValidationException). Stolen-key testing produces failure storms across models and regions before a working combination is found."
+  severity: "P3"
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3524,6 +4121,7 @@
 - category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f30d Bedrock Callers & Origins"
   description: "Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all."
+  severity: "P4"
   techniques:
     - tid: "T1496.A007"
       name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
@@ -3557,6 +4155,270 @@
     ORDER BY total_calls DESC
     LIMIT 200
 
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f648 AgentCore Observability Tampering"
+  description: "Detects AgentCore evaluator changes and X-Ray sampling or trace-destination changes. An attacker-created evaluator reads every response it grades, exporting model output through a legitimate channel."
+  severity: "P1"
+  playbook:
+    name: "IRP-AgentCoreObservabilityTampering"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/Amazon%20Bedrock%20AgentCore%20Playbooks/IRP-AgentCoreObservabilityTampering.md"
+  next_steps: >-
+    Delete evaluators and online evaluation configs you cannot attribute to a change request,
+    restore the X-Ray sampling rate, and treat every trace missing from the gap as unavailable evidence.
+  techniques:
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "Adversaries disable or reroute cloud logging to erase evidence of their activity."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find two kinds of AgentCore observability tampering. From
+    bedrock-agentcore.amazonaws.com: CreateEvaluator, UpdateEvaluator,
+    DeleteEvaluator and the online evaluation config operations — an evaluator
+    sees every response it scores, so one created outside a change request is an
+    export path, not a quality measure. From xray.amazonaws.com:
+    UpdateTraceSegmentDestination, UpdateIndexingRule, UpdateSamplingRule and
+    DeleteSamplingRule — sampling zeroed out ends every span-based investigation
+    without deleting a single log.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        event_source,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.name')            AS resource_name,
+        json_extract_string(request_parameters, '$.evaluatorId')     AS evaluator_id,
+        CAST(
+            json_extract(request_parameters, '$.samplingRuleUpdate') AS VARCHAR
+        )                                                            AS sampling_rule_update,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE (
+            event_source = 'bedrock-agentcore.amazonaws.com'
+            AND event_name IN (
+                'CreateEvaluator',              'UpdateEvaluator',
+                'DeleteEvaluator',
+                'CreateOnlineEvaluationConfig', 'UpdateOnlineEvaluationConfig',
+                'DeleteOnlineEvaluationConfig'
+            )
+          )
+       OR (
+            event_source = 'xray.amazonaws.com'
+            AND event_name IN (
+                'UpdateTraceSegmentDestination', 'UpdateIndexingRule',
+                'UpdateSamplingRule',            'DeleteSamplingRule'
+            )
+          )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f4e6 AgentCore Sandbox Network Mode Drift"
+  description: "Lists AgentCore code interpreter and browser lifecycle events with their network mode. The mode cannot be edited, so a delete followed by a create is the only way to widen a sandbox's network access."
+  severity: "P2"
+  playbook:
+    name: "IRP-AgentCoreToolAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/Amazon%20Bedrock%20AgentCore%20Playbooks/IRP-AgentCoreToolAbuse.md"
+  techniques:
+    - tid: "T1610"
+      name: "Deploy Container"
+      summary: "Adversaries deploy or reconfigure execution environments to run their own code."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1610.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    List CreateCodeInterpreter, DeleteCodeInterpreter, CreateBrowser,
+    DeleteBrowser, CreateBrowserProfile and DeleteBrowserProfile with the network
+    mode from the request. Read the sequence rather than the individual rows: a
+    delete immediately followed by a create of the same sandbox with a different
+    networkMode — most of all one ending in PUBLIC — is a deliberate widening of
+    the sandbox's reach, since the mode is immutable once set.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.name'),
+            json_extract_string(request_parameters, '$.codeInterpreterId'),
+            json_extract_string(request_parameters, '$.browserId')
+        )                                                                     AS sandbox_id,
+        json_extract_string(
+            request_parameters, '$.networkConfiguration.networkMode'
+        )                                                                     AS network_mode,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock-agentcore.amazonaws.com'
+      AND event_name IN (
+          'CreateCodeInterpreter', 'DeleteCodeInterpreter',
+          'CreateBrowser',         'DeleteBrowser',
+          'CreateBrowserProfile',  'DeleteBrowserProfile'
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f9e0 AgentCore Memory Integrity"
+  description: "Detects AgentCore Memory and Registry changes, including a memory stream repointed at a foreign Kinesis ARN. Poisoned long-term memory persists across every future session of the agent."
+  severity: "P2"
+  playbook:
+    name: "IRP-AgentCoreAgentIntegrity"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/Amazon%20Bedrock%20AgentCore%20Playbooks/IRP-AgentCoreAgentIntegrity.md"
+  techniques:
+    - tid: "T1565"
+      name: "Data Manipulation"
+      summary: "Adversaries modify stored data to influence downstream decisions or outcomes."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1565.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find AgentCore Memory and Registry mutations: CreateMemory, UpdateMemory,
+    DeleteMemory, and the registry record operations including
+    UpdateRegistryRecordStatus. Surface streamDeliveryResources — an UpdateMemory
+    that repoints the stream at a Kinesis ARN in another account turns the agent's
+    conversation memory into an exfiltration channel while the agent keeps working
+    normally.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.memoryId') AS memory_id,
+        json_extract_string(request_parameters, '$.name')     AS resource_name,
+        CAST(
+            json_extract(request_parameters, '$.streamDeliveryResources') AS VARCHAR
+        )                                                     AS stream_delivery_resources,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock-agentcore.amazonaws.com'
+      AND event_name IN (
+          'CreateMemory',         'UpdateMemory',         'DeleteMemory',
+          'CreateRegistryRecord', 'UpdateRegistryRecord',
+          'UpdateRegistryRecordStatus', 'DeleteRegistryRecord'
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f6aa AgentCore Gateway Authorization Bypass"
+  description: "Detects AgentCore Gateway and policy changes, including a Cedar policy engine dropped to LOG_ONLY. Authorization that only logs still returns success, so nothing downstream looks wrong."
+  severity: "P1"
+  playbook:
+    name: "IRP-AgentCoreAuthorizationBypass"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/Amazon%20Bedrock%20AgentCore%20Playbooks/IRP-AgentCoreAuthorizationBypass.md"
+  next_steps: >-
+    Restore the policy engine to ENFORCE and remove any gateway target pointing outside the
+    account, then treat every tool call made while the engine was permissive as unauthorised.
+  techniques:
+    - tid: "T1562"
+      name: "Impair Defenses"
+      summary: "Adversaries disable or tamper with security services to avoid detection."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find AgentCore Gateway and authorization changes: CreateGateway,
+    UpdateGateway, DeleteGateway, the gateway target operations, the Cedar policy
+    and policy-engine operations, and PutResourcePolicy / DeleteResourcePolicy.
+    Surface the Cedar mode and the raw target configuration. Two things matter:
+    a policy engine moved from ENFORCE to LOG_ONLY, and a target whose ARN or URL
+    points at an account or host you do not own.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.gatewayIdentifier') AS gateway_id,
+        json_extract_string(
+            request_parameters, '$.policyEngineConfiguration.cedarConfiguration.mode'
+        )                                                              AS cedar_mode,
+        CAST(
+            json_extract(request_parameters, '$.targetConfiguration') AS VARCHAR
+        )                                                              AS target_configuration,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock-agentcore.amazonaws.com'
+      AND event_name IN (
+          'CreateGateway',       'UpdateGateway',       'DeleteGateway',
+          'CreateGatewayTarget', 'UpdateGatewayTarget', 'DeleteGatewayTarget',
+          'CreatePolicy',        'UpdatePolicy',        'DeletePolicy',
+          'CreatePolicyEngine',  'UpdatePolicyEngine',
+          'PutResourcePolicy',   'DeleteResourcePolicy'
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f916 AI & LLM Abuse"
+  label: "\U0001f511 AgentCore Token Vault Abuse"
+  description: "Aggregates AgentCore token-vault issuance per principal and source. These calls hand out third-party OAuth tokens and API keys, so abuse here reaches services outside AWS entirely."
+  severity: "P1"
+  playbook:
+    name: "IRP-AgentCoreIdentityCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/Amazon%20Bedrock%20AgentCore%20Playbooks/IRP-AgentCoreIdentityCompromise.md"
+  next_steps: >-
+    Revoke the affected credential providers and rotate the third-party secrets they vend —
+    those live outside AWS and survive any action taken inside the account.
+  techniques:
+    - tid: "T1528"
+      name: "Steal Application Access Token"
+      summary: "Adversaries obtain application tokens to act as a trusted workload."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1528.html"
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - token_requests
+  prompt: |
+    Group AgentCore identity calls from bedrock-agentcore.amazonaws.com by
+    principal, source IP and operation: GetWorkloadAccessToken,
+    GetWorkloadAccessTokenForJWT, GetWorkloadAccessTokenForUserId,
+    GetResourceOauth2Token, GetResourceApiKey, plus the vault and workload
+    identity mutations CreateWorkloadIdentity, DeleteWorkloadIdentity,
+    SetTokenVaultCMK, CreateApiKeyCredentialProvider and
+    CreateOauth2CredentialProvider. Baseline is per workload: an agent that
+    fetches one token per run and suddenly fetches hundreds is being driven by
+    something other than its own logic.
+  sql: |
+    SELECT
+        user_identity_arn,
+        source_ip_address,
+        event_name,
+        json_extract_string(request_parameters, '$.workloadName') AS workload_name,
+        geo_country_code,
+        geo_org,
+        COUNT(*)                    AS token_requests,
+        COUNT(DISTINCT aws_region)  AS distinct_regions,
+        MIN(event_time)             AS first_seen,
+        MAX(event_time)             AS last_seen
+    FROM cloudtrail_events
+    WHERE event_source = 'bedrock-agentcore.amazonaws.com'
+      AND event_name IN (
+          'GetWorkloadAccessToken',      'GetWorkloadAccessTokenForJWT',
+          'GetWorkloadAccessTokenForUserId',
+          'GetResourceOauth2Token',      'GetResourceApiKey',
+          'CreateWorkloadIdentity',      'DeleteWorkloadIdentity',
+          'SetTokenVaultCMK',
+          'CreateApiKeyCredentialProvider', 'CreateOauth2CredentialProvider'
+      )
+    GROUP BY
+        user_identity_arn, source_ip_address, event_name,
+        workload_name, geo_country_code, geo_org
+    ORDER BY token_requests DESC
+    LIMIT 100
+
 # ===========================================================================
 # Network & Infrastructure
 # ===========================================================================
@@ -3564,6 +4426,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f30d Security Group Opened to Internet"
   description: "Finds security group rules that allow traffic from 0.0.0.0/0. Direct public exposure risk."
+  severity: "P2"
   techniques:
     - tid: "T1190.A019"
       name: "Exploit Public-Facing Application: Overly Permissive VPC Security Groups"
@@ -3598,6 +4461,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f525 Security Group Modifications"
   description: "Detects security group rule changes, especially rules allowing 0.0.0.0/0 on any port."
+  severity: "P3"
   techniques:
     - tid: "T1562.007"
       name: "Impair Defenses: Disable or Modify Cloud Firewall"
@@ -3638,6 +4502,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f30a VPC Flow Log Changes"
   description: "Detects deletion of VPC Flow Logs. Removing flow logs eliminates network-level evidence — a critical defense evasion indicator."
+  severity: "P2"
   techniques:
     - tid: "T1562.008"
       name: "Impair Defenses: Disable Cloud Logs"
@@ -3669,6 +4534,10 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f310 CloudFront Distribution Tampering"
   description: "Detects CloudFront distribution creation and origin changes. Modifying origins redirects CDN traffic to attacker-controlled servers for MitM interception or data collection."
+  severity: "P2"
+  playbook:
+    name: "IRP-DoS"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md"
   techniques:
     - tid: "T1491.A001"
       name: "Defacement: Subdomain Takeover"
@@ -3710,6 +4579,10 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6e1 Network Firewall / Shield Tampering"
   description: "Detects Network Firewall and Shield protection removal. Deleting network-layer defenses exposes VPCs to direct attack traffic."
+  severity: "P2"
+  playbook:
+    name: "IRP-DoS"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md"
   techniques:
     - tid: "T1562.007"
       name: "Impair Defenses: Disable or Modify Cloud Firewall"
@@ -3763,6 +4636,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f9f1 Network ACL Changes"
   description: "Detects Network ACL entry creation, deletion, and replacement. NACLs override security groups and can open entire subnets to attackers."
+  severity: "P3"
   techniques:
     - tid: "T1562.007"
       name: "Impair Defenses: Disable or Modify Cloud Firewall"
@@ -3801,6 +4675,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6e3\ufe0f Route Table Changes"
   description: "Detects route table modifications. Adding or replacing routes can redirect traffic to attacker-controlled hosts (MitM, traffic hijacking)."
+  severity: "P3"
   techniques:
     - tid: "T1578.005"
       name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
@@ -3840,6 +4715,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f9f1 VPN / Direct Connect / Transit Gateway"
   description: "Detects new VPN connections, Direct Connect, and Transit Gateway attachments. Attackers create covert network tunnels for persistent C2 or data exfiltration channels."
+  severity: "P3"
   techniques:
     - tid: "T1578.005"
       name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
@@ -3886,6 +4762,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f4e1 Elastic IP Allocation / Association"
   description: "Detects Elastic IP allocation and association. Attackers assign a fixed public IP to a compromised instance to create stable C2 infrastructure."
+  severity: "P4"
   techniques:
     - tid: "T1578.005"
       name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
@@ -3925,6 +4802,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f5dd\ufe0f EC2 Key Pair Creation"
   description: "Detects CreateKeyPair and ImportKeyPair events. Attackers create or import SSH keys as a persistence mechanism to maintain instance access."
+  severity: "P3"
   techniques:
     - tid: "T1098.001"
       name: "Account Manipulation: Additional Cloud Credentials"
@@ -3956,6 +4834,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f4e1 Network Infrastructure Changes"
   description: "Detects VPC and network-level changes that may establish attacker-controlled infrastructure."
+  severity: "P3"
   techniques:
     - tid: "T1578.005"
       name: "Modify Cloud Compute Infrastructure: Modify Cloud Compute Configurations"
@@ -3991,6 +4870,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f3f7 ACM Certificate Operations"
   description: "Detects ACM certificate requests and deletions. Attackers use compromised accounts to issue TLS certificates for attacker-controlled domains to build phishing infrastructure."
+  severity: "P3"
   techniques:
     - tid: "T1583.001"
       name: "Acquire Infrastructure: Domains"
@@ -4035,6 +4915,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f511 API Gateway Key Creation & Management"
   description: "Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls."
+  severity: "P3"
   techniques:
     - tid: "AT1667.001"
       name: "Application API Abuse: API Gateway"
@@ -4083,6 +4964,7 @@
 - category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f6a7 VPC Endpoint Access Denied"
   description: "Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy."
+  severity: "P4"
   techniques:
     - tid: "T1059.009"
       name: "Command and Scripting Interpreter: Cloud API"
@@ -4114,6 +4996,7 @@
 - category: "⚡ Compute & Serverless"
   label: "🖥 WorkSpaces Hijacking"
   description: "Detects Amazon WorkSpaces provisioning and pool creation. Attackers spin up desktops at the victim's expense, an under-monitored compute-hijacking channel outside the EC2 boundary."
+  severity: "P2"
   techniques:
     - tid: "T1496.A009"
       name: "Resource Hijacking: Compute Hijacking - WorkSpaces"
@@ -4150,6 +5033,7 @@
 - category: "🔑 Identity & Access"
   label: "🎫 Support Case Manipulation"
   description: "Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise."
+  severity: "P3"
   techniques:
     - tid: "T1098.A001"
       name: "Account Manipulation: AWS Support Case Closure"
@@ -4184,6 +5068,7 @@
 - category: "🔑 Identity & Access"
   label: "🪪 Cognito User Pool Manipulation"
   description: "Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users."
+  severity: "P2"
   techniques:
     - tid: "T1098.A006"
       name: "Account Manipulation: Cognito Refresh Token Abuse"
@@ -4218,9 +5103,406 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f451 Delegated Administrator Registration"
+  description: "Detects registration of a delegated administrator for an organisation service. The only event the upstream Identity Center playbook grades CRITICAL — it hands organisation-wide control to another account."
+  severity: "P1"
+  playbook:
+    name: "IRP-IdentityCenterCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-IdentityCenterCompromise.md"
+  next_steps: >-
+    Deregister the account immediately and confirm from the management account which service
+    principal was delegated. Treat the delegated account as fully compromised until proven otherwise.
+  techniques:
+    - tid: "T1098.A001"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries grant themselves durable elevated access through identity services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find RegisterDelegatedAdministrator and DeregisterDelegatedAdministrator, plus
+    EnableAWSServiceAccess and DisableAWSServiceAccess. Show the account ID being
+    delegated and the service principal. Delegating administration of a security
+    service — Identity Center, GuardDuty, Security Hub, Config — moves control of
+    that service to another account, where your monitoring may not reach.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.accountId')        AS delegated_account_id,
+        json_extract_string(request_parameters, '$.servicePrincipal') AS service_principal,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'organizations.amazonaws.com'
+      AND event_name IN (
+          'RegisterDelegatedAdministrator', 'DeregisterDelegatedAdministrator',
+          'EnableAWSServiceAccess',         'DisableAWSServiceAccess'
+      )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f9d1 Identity Store User & Group Creation"
+  description: "Detects users, groups and memberships created directly in the Identity Center identity store — persistence that never appears in IAM and so is missed by IAM-only monitoring."
+  severity: "P2"
+  playbook:
+    name: "IRP-IdentityCenterCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-IdentityCenterCompromise.md"
+  techniques:
+    - tid: "T1136.003"
+      name: "Create Account: Cloud Account"
+      summary: "Adversaries create additional identities to retain access after remediation."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1136.003.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find identity-store mutations from identitystore.amazonaws.com: CreateUser,
+    UpdateUser, DeleteUser, CreateGroup, DeleteGroup, CreateGroupMembership and
+    DeleteGroupMembership. Show the identity store ID, user or group identifier
+    and the caller. A user created here holds no permissions until a group
+    membership or account assignment lands, so correlate with the permission-set
+    hunt over the same window.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.identityStoreId') AS identity_store_id,
+        json_extract_string(request_parameters, '$.userName')        AS user_name,
+        json_extract_string(request_parameters, '$.groupId')         AS group_id,
+        json_extract_string(request_parameters, '$.memberId')        AS member_id,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'identitystore.amazonaws.com'
+      AND event_name IN (
+          'CreateUser',            'UpdateUser',            'DeleteUser',
+          'CreateGroup',           'DeleteGroup',
+          'CreateGroupMembership', 'DeleteGroupMembership'
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f39f Identity Center Permission Set Grants"
+  description: "Detects IAM Identity Center permission-set creation, policy attachment and account assignment — the path to standing admin access across every account in the organisation."
+  severity: "P1"
+  playbook:
+    name: "IRP-IdentityCenterCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-IdentityCenterCompromise.md"
+  next_steps: >-
+    Delete the assignment and the permission set, then enumerate every account it was
+    provisioned into. Identity Center sessions survive the deletion — revoke them explicitly.
+  techniques:
+    - tid: "T1098.A001"
+      name: "Account Manipulation: Additional Cloud Roles"
+      summary: "Adversaries grant themselves durable elevated access through identity services."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find IAM Identity Center privilege grants from sso.amazonaws.com:
+    CreatePermissionSet, UpdatePermissionSet, AttachManagedPolicyToPermissionSet,
+    PutInlinePolicyToPermissionSet,
+    AttachCustomerManagedPolicyReferenceToPermissionSet, CreateAccountAssignment,
+    DeleteAccountAssignment and ProvisionPermissionSet. Show the permission set
+    name, the policy attached, the target account and the principal it was
+    assigned to. A permission set is organisation-wide: one assignment can grant
+    admin in an account the actor never touched directly.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.name')             AS permission_set_name,
+        json_extract_string(request_parameters, '$.permissionSetArn') AS permission_set_arn,
+        json_extract_string(request_parameters, '$.managedPolicyArn') AS managed_policy_arn,
+        json_extract_string(request_parameters, '$.targetId')         AS target_account_id,
+        json_extract_string(request_parameters, '$.principalId')      AS principal_id,
+        json_extract_string(request_parameters, '$.instanceArn')      AS instance_arn,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'sso.amazonaws.com'
+      AND event_name IN (
+          'CreatePermissionSet',     'UpdatePermissionSet',    'DeletePermissionSet',
+          'AttachManagedPolicyToPermissionSet',
+          'PutInlinePolicyToPermissionSet',
+          'AttachCustomerManagedPolicyReferenceToPermissionSet',
+          'CreateAccountAssignment', 'DeleteAccountAssignment',
+          'ProvisionPermissionSet'
+      )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001faaa Federated Console Logins"
+  description: "Lists console logins that arrived through an external identity provider, with the provider name and origin. When the IdP is the compromised component, AWS sees only a valid login."
+  severity: "P2"
+  playbook:
+    name: "IRP-FederatedAccessAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-FederatedAccessAbuse.md"
+  techniques:
+    - tid: "T1078.004"
+      name: "Valid Accounts: Cloud Accounts"
+      summary: "Adversaries authenticate with legitimate credentials or assertions to blend in."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.004.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find ConsoleLogin events carrying additional_event_data.federatedProvider —
+    logins brokered by an external IdP rather than by IAM. Show the provider,
+    whether MFA was used, and the source IP with its country, city and ASN.
+    Nothing about the AWS side of a federated login looks wrong when the IdP
+    itself is compromised, so origin and provider are the only signals available.
+  sql: |
+    SELECT
+        event_time,
+        user_identity_arn,
+        user_identity_type,
+        json_extract_string(additional_event_data, '$.federatedProvider') AS federated_provider,
+        json_extract_string(additional_event_data, '$.MFAUsed')           AS mfa_used,
+        source_ip_address,
+        geo_country_code,
+        geo_city,
+        geo_org,
+        user_agent,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name = 'ConsoleLogin'
+      AND json_extract_string(additional_event_data, '$.federatedProvider') IS NOT NULL
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f50d GetCallerIdentity Reconnaissance"
+  description: "Surfaces GetCallerIdentity calls per principal and source IP. It is the first command run against stolen credentials — and a single call, which volume-threshold recon hunts never reach."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate identities and permissions to understand what access they hold."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
+  chart:
+    type: bar
+    x: source_ip_address
+    y:
+      - calls
+  prompt: |
+    Group GetCallerIdentity calls by principal, access key, source IP, geo and
+    user agent. Exclude AWS Internal and service-domain callers, which are noise.
+    Attackers call this to learn what the credentials they just obtained can do,
+    so treat a new IP or a new access key here as the possible first minute of an
+    incident — the count does not have to be high.
+  sql: |
+    SELECT
+        user_identity_arn,
+        user_identity_type,
+        user_identity_access_key_id AS access_key_id,
+        source_ip_address,
+        geo_country_code,
+        geo_org,
+        user_agent,
+        COUNT(*)        AS calls,
+        MIN(event_time) AS first_seen,
+        MAX(event_time) AS last_seen
+    FROM cloudtrail_events
+    WHERE event_name = 'GetCallerIdentity'
+      AND source_ip_address IS NOT NULL
+      AND source_ip_address <> 'AWS Internal'
+      AND source_ip_address NOT LIKE '%.amazonaws.com'
+    GROUP BY
+        user_identity_arn, user_identity_type, access_key_id,
+        source_ip_address, geo_country_code, geo_org, user_agent
+    ORDER BY first_seen DESC
+    LIMIT 100
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f4ca AssumeRole Fan-In by Target Role"
+  description: "Ranks roles by who assumes them and from where. A role normally assumed by one account that suddenly gains a second caller stands out here, while the raw event list buries it."
+  severity: "P3"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
+  chart:
+    type: bar
+    x: target_role_arn
+    y:
+      - assume_count
+  prompt: |
+    Aggregate successful AssumeRole calls by target role and calling account.
+    Report the count, the distinct callers and source IPs, the list of source IPs,
+    and the first and last time each pairing was seen. Read it for new pairings
+    and for roles with an unexpected breadth of callers, not for the largest
+    numbers.
+  sql: |
+    SELECT
+        json_extract_string(request_parameters, '$.roleArn') AS target_role_arn,
+        user_identity_account_id                             AS source_account,
+        COUNT(*)                                             AS assume_count,
+        COUNT(DISTINCT user_identity_arn)                    AS distinct_callers,
+        COUNT(DISTINCT source_ip_address)                    AS distinct_source_ips,
+        array_agg(DISTINCT source_ip_address)                AS source_ips,
+        MIN(event_time)                                      AS first_seen,
+        MAX(event_time)                                      AS last_seen
+    FROM cloudtrail_events
+    WHERE event_name = 'AssumeRole'
+      AND error_code IS NULL
+      AND json_extract_string(request_parameters, '$.roleArn') IS NOT NULL
+    GROUP BY target_role_arn, source_account
+    ORDER BY assume_count DESC
+    LIMIT 100
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f310 AssumeRole Target Account (roleArn)"
+  description: "Detects account-boundary crossings by reading the target account out of the requested roleArn, which works even when only the calling account's logs were ingested."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find cross-account role assumption by comparing the caller's account with the
+    account embedded in request_parameters.roleArn (the fifth colon-separated
+    field). This complements the recipient_account_id comparison: that one needs
+    the target account's own trail, while this one works from the caller's side
+    alone. Include AssumeRoleWithSAML and AssumeRoleWithWebIdentity.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn                                            AS caller,
+        user_identity_account_id                                     AS caller_account,
+        split_part(
+            json_extract_string(request_parameters, '$.roleArn'), ':', 5
+        )                                                            AS target_account,
+        json_extract_string(request_parameters, '$.roleArn')         AS target_role_arn,
+        json_extract_string(request_parameters, '$.roleSessionName') AS session_name,
+        json_extract_string(request_parameters, '$.externalId')      AS external_id,
+        source_ip_address,
+        geo_country_code,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name IN ('AssumeRole', 'AssumeRoleWithSAML', 'AssumeRoleWithWebIdentity')
+      AND json_extract_string(request_parameters, '$.roleArn') IS NOT NULL
+      AND user_identity_account_id IS NOT NULL
+      AND split_part(json_extract_string(request_parameters, '$.roleArn'), ':', 5)
+          <> user_identity_account_id
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f3ab Session Credential Trace"
+  description: "Summarises what each temporary STS session (ASIA… access key) did: how many calls, which services, which IPs and over what window. The scoping question every credential-compromise investigation starts with."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  techniques:
+    - tid: "T1550.001"
+      name: "Use Alternate Authentication Material: Application Access Token"
+      summary: "Adversaries reuse stolen temporary session tokens to act as a legitimate principal."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1550.001.html"
+  chart:
+    type: bar
+    x: session_key_id
+    y:
+      - api_calls
+  prompt: |
+    Group activity by user_identity_access_key_id where the key starts with ASIA
+    (temporary STS session credentials, as opposed to long-lived AKIA IAM user
+    keys). For each session report the call count, distinct APIs, distinct source
+    IPs and regions, the services touched, and the first and last call. A session
+    that spans several source IPs or unusually many services is the one to pull
+    apart first.
+  sql: |
+    SELECT
+        user_identity_access_key_id       AS session_key_id,
+        user_identity_arn                 AS session_arn,
+        session_issuer_arn                AS issuing_role,
+        COUNT(*)                          AS api_calls,
+        COUNT(DISTINCT event_name)        AS distinct_apis,
+        COUNT(DISTINCT source_ip_address) AS distinct_source_ips,
+        COUNT(DISTINCT aws_region)        AS distinct_regions,
+        array_agg(DISTINCT event_source)  AS services,
+        MIN(event_time)                   AS first_seen,
+        MAX(event_time)                   AS last_seen
+    FROM cloudtrail_events
+    WHERE user_identity_access_key_id LIKE 'ASIA%'
+    GROUP BY session_key_id, session_arn, issuing_role
+    ORDER BY api_calls DESC
+    LIMIT 100
+
+- category: "\U0001f511 Identity & Access"
+  label: "\U0001f517 Role Chaining (Session → Role)"
+  description: "Detects an assumed-role session assuming a further role. Single AssumeRole calls look ordinary; the chain is how an attacker walks from a compromised instance role to the permissions they actually want."
+  severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  techniques:
+    - tid: "T1199.A002"
+      name: "Trusted Relationship: Role Assumption and Federated Access"
+      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find role chaining: AssumeRole calls made by a principal that is itself an
+    assumed-role session. Join the issuing role (session_issuer_arn) to the role
+    being assumed next (request_parameters.roleArn) so each row is one hop of the
+    chain. Depth is the signal — a session that assumes a role which assumes
+    another role is walking laterally, not doing its job.
+  sql: |
+    SELECT
+        event_time,
+        session_issuer_arn                                           AS from_role,
+        json_extract_string(request_parameters, '$.roleArn')         AS to_role,
+        json_extract_string(request_parameters, '$.roleSessionName') AS session_name,
+        json_extract_string(request_parameters, '$.durationSeconds') AS duration_seconds,
+        user_identity_arn                                            AS calling_session,
+        user_identity_access_key_id                                  AS session_key_id,
+        source_ip_address,
+        geo_country_code,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name = 'AssumeRole'
+      AND user_identity_type = 'AssumedRole'
+      AND session_issuer_arn IS NOT NULL
+    ORDER BY event_time DESC
+    LIMIT 200
+
 - category: "🌐 Network & Infrastructure"
   label: "🌐 Route 53 & Domain Changes"
   description: "Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing."
+  severity: "P3"
   techniques:
     - tid: "T1583.001"
       name: "Acquire Infrastructure: Domains"
@@ -4263,6 +5545,58 @@
     ORDER BY event_time DESC
     LIMIT 100
 
+- category: "\U0001f310 Network & Infrastructure"
+  label: "\U0001f6e1 DDoS Protection Weakening"
+  description: "Detects edge protections being loosened rather than removed: a WebACL default action flipped to allow, rule groups relaxed, Shield protections deleted, CloudFront origins repointed."
+  severity: "P2"
+  playbook:
+    name: "IRP-DoS"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md"
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries weaken cloud firewall and edge protections before an attack."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find edge protections being weakened rather than deleted: UpdateWebACL and
+    UpdateRuleGroup (default action moved to Allow, rate thresholds raised, rules
+    switched to Count), WAF logging configuration changes, Shield DeleteProtection
+    / DeleteProtectionGroup / DisableProactiveEngagement and the DRT
+    disassociations, CloudFront UpdateDistribution (origin repointed or origin
+    access control removed) and API Gateway UpdateStage throttle changes. Existing
+    hunts catch deletion; a protection left in place but set to count nothing is
+    the quieter version and reads as healthy on a dashboard.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        event_source,
+        user_identity_arn,
+        json_extract_string(request_parameters, '$.name')         AS resource_name,
+        CAST(
+            json_extract(request_parameters, '$.defaultAction') AS VARCHAR
+        )                                                         AS default_action,
+        json_extract_string(request_parameters, '$.protectionId') AS protection_id,
+        json_extract_string(request_parameters, '$.id')           AS distribution_id,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name IN (
+        'UpdateWebACL',            'DeleteWebACL',
+        'UpdateRuleGroup',         'DeleteRuleGroup',
+        'PutLoggingConfiguration', 'DeleteLoggingConfiguration',
+        'DeleteProtection',        'DeleteProtectionGroup',
+        'DisableProactiveEngagement',
+        'DisassociateDRTRole',     'DisassociateDRTLogBucket',
+        'UpdateDistribution',      'UpdateStage'
+    )
+    ORDER BY event_time DESC
+    LIMIT 200
+
 # ===========================================================================
 # Threat Patterns
 # ===========================================================================
@@ -4270,6 +5604,10 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f50d Reconnaissance Pattern"
   description: "Identifies callers who ran 10+ distinct read-only API calls in one hour. Common early attack phase."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   techniques:
     - tid: "T1087.004"
       name: "Account Discovery: Cloud Account"
@@ -4309,6 +5647,7 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f916 Unusual User Agents"
   description: "Lists rare user agents (<5 events). Custom tooling like Pacu or curl may indicate attacker tooling."
+  severity: "P3"
   techniques:
     - tid: "T1059.009"
       name: "Command and Scripting Interpreter: Cloud API"
@@ -4346,6 +5685,7 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f30d Multi-Region Activity"
   description: "Detects identities performing writes in 3+ regions in one day. Geographic spread may indicate compromise."
+  severity: "P3"
   techniques:
     - tid: "T1535"
       name: "Unused/Unsupported Cloud Regions"
@@ -4378,6 +5718,7 @@
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f575 First-Time API Calls (24h)"
   description: "Finds API calls seen in the last 24h but never before. Novel operations may indicate attacker tooling."
+  severity: "P3"
   techniques:
     - tid: "T1059.009"
       name: "Command and Scripting Interpreter: Cloud API"
@@ -4391,6 +5732,7 @@
 - category: "🕵 Threat Patterns"
   label: "🗺 First-Seen Region Activity"
   description: "Finds AWS regions whose first-ever activity falls in the last 24h of the dataset. Operating in a never-before-used region is a classic way to hide cryptomining or staging from region-scoped monitoring."
+  severity: "P3"
   techniques:
     - tid: "T1535"
       name: "Unused/Unsupported Cloud Regions"
@@ -4434,6 +5776,248 @@
     ORDER BY r.first_seen DESC
     LIMIT 50
 
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001f4de High-Volume API Calls per Principal"
+  description: "Lists principal and API pairings exceeding 50 successful calls, with the first and last call. Enumeration, bulk extraction and mass deletion all share this shape."
+  severity: "P3"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  techniques:
+    - tid: "T1087.004"
+      name: "Account Discovery: Cloud Account"
+      summary: "Adversaries enumerate identities and permissions to understand what access they hold."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.004.html"
+  chart:
+    type: bar
+    x: event_name
+    y:
+      - call_count
+  prompt: |
+    Group successful calls by principal, API name and service, keeping pairings
+    above 50 calls, and report the count, distinct source IPs and the first and
+    last call. Read the time span rather than the count: fifty calls over a
+    working day is a job, fifty calls in ninety seconds is a script.
+  sql: |
+    SELECT
+        user_identity_arn,
+        event_name,
+        event_source,
+        COUNT(*)                          AS call_count,
+        COUNT(DISTINCT source_ip_address) AS distinct_source_ips,
+        MIN(event_time)                   AS first_call,
+        MAX(event_time)                   AS last_call
+    FROM cloudtrail_events
+    WHERE error_code IS NULL
+      AND user_identity_arn IS NOT NULL
+    GROUP BY user_identity_arn, event_name, event_source
+    HAVING COUNT(*) > 50
+    ORDER BY call_count DESC
+    LIMIT 100
+
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001f5fa Resource Creation Outside Normal Regions"
+  description: "Flags resource creation in regions the account barely uses, with the baseline derived from the data rather than hardcoded. Cryptomining and private side projects both land here."
+  severity: "P3"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  techniques:
+    - tid: "T1535"
+      name: "Unused/Unsupported Cloud Regions"
+      summary: "Adversaries operate in rarely used regions where monitoring is weaker."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1535.html"
+  chart:
+    type: bar
+    x: aws_region
+    y:
+      - events
+  prompt: |
+    Derive the account's normal regions from the data — those carrying at least
+    5% of all events — then list creation calls (Create*, RunInstances,
+    StartInstances) that happened anywhere else. Show the instance type where
+    present, since GPU families in an unused region are the classic cryptomining
+    signature. This differs from first-seen-region: a region can be long-known
+    and still be where nobody should be building anything.
+  sql: |
+    WITH region_use AS (
+        SELECT aws_region, COUNT(*) AS events
+        FROM cloudtrail_events
+        GROUP BY aws_region
+    ),
+    normal_regions AS (
+        SELECT aws_region
+        FROM region_use
+        WHERE events >= (SELECT SUM(events) FROM region_use) * 0.05
+    )
+    SELECT
+        event_time,
+        user_identity_arn,
+        aws_region,
+        event_name,
+        event_source,
+        json_extract_string(request_parameters, '$.instanceType') AS instance_type,
+        source_ip_address,
+        geo_country_code,
+        error_code
+    FROM cloudtrail_events
+    WHERE (event_name LIKE 'Create%' OR event_name IN ('RunInstances', 'StartInstances'))
+      AND aws_region NOT IN (SELECT aws_region FROM normal_regions)
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001f4c8 Principal Daily Volume Deviation"
+  description: "Compares each principal's daily call volume against its own average, splitting reads from writes. Catches the exfiltration that uses only permitted APIs, where the anomaly is quantity rather than action."
+  severity: "P3"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  techniques:
+    - tid: "T1530.A001"
+      name: "Data from Cloud Storage: S3 Object Collection"
+      summary: "Adversaries download or expose S3 objects at scale."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
+  chart:
+    type: bar
+    x: principal
+    y:
+      - times_baseline
+  prompt: |
+    For every principal and day, count total calls, S3 calls, reads and writes,
+    then compare each day against that principal's own mean and express it as a
+    multiple. The upstream playbook's threshold is five times baseline for
+    GetObject volume. Judge each principal against itself: a build role making
+    ten thousand calls a day is normal, a human making two hundred is not.
+  sql: |
+    WITH daily AS (
+        SELECT
+            user_identity_arn                             AS principal,
+            CAST(event_time AS DATE)                      AS activity_date,
+            COUNT(*)                                      AS total_calls,
+            COUNT(*) FILTER (WHERE event_source = 's3.amazonaws.com') AS s3_calls,
+            COUNT(*) FILTER (WHERE read_only IS TRUE)     AS read_calls,
+            COUNT(*) FILTER (WHERE read_only IS NOT TRUE) AS write_calls
+        FROM cloudtrail_events
+        WHERE user_identity_arn IS NOT NULL
+        GROUP BY principal, activity_date
+    )
+    SELECT
+        principal,
+        activity_date,
+        total_calls,
+        s3_calls,
+        read_calls,
+        write_calls,
+        ROUND(AVG(total_calls) OVER (PARTITION BY principal), 1) AS avg_daily_calls,
+        ROUND(
+            total_calls / NULLIF(AVG(total_calls) OVER (PARTITION BY principal), 0), 2
+        )                                                        AS times_baseline
+    FROM daily
+    ORDER BY times_baseline DESC, total_calls DESC
+    LIMIT 100
+
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001fa9e Self-Service Privilege Escalation"
+  description: "Detects a principal modifying its own permissions — the caller ARN and the target user or role name are the same. Existing escalation hunts see the grant but lose the fact that it was self-applied."
+  severity: "P1"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  next_steps: >-
+    Detach the policy or delete the key the principal granted itself, then audit everything it
+    did while holding the extra rights. Self-granted access is rarely a one-off action.
+  techniques:
+    - tid: "T1098"
+      name: "Account Manipulation"
+      summary: "Adversaries modify accounts to maintain or elevate their level of access."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find IAM changes where the caller modified its own principal — compare the
+    trailing name in user_identity_arn with request_parameters.userName or
+    roleName. Cover CreateAccessKey, PutUserPolicy, AttachUserPolicy,
+    AddUserToGroup, CreateLoginProfile, UpdateLoginProfile, PutRolePolicy,
+    AttachRolePolicy, UpdateAssumeRolePolicy and permission-boundary changes.
+    An administrator granting someone else access is routine; granting it to
+    oneself is the pattern to escalate on.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.userName'),
+            json_extract_string(request_parameters, '$.roleName')
+        )                                                       AS target_principal,
+        json_extract_string(request_parameters, '$.policyArn')  AS policy_arn,
+        json_extract_string(request_parameters, '$.groupName')  AS group_name,
+        source_ip_address,
+        aws_region,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_source = 'iam.amazonaws.com'
+      AND event_name IN (
+          'CreateAccessKey',      'PutUserPolicy',        'AttachUserPolicy',
+          'AddUserToGroup',       'CreateLoginProfile',   'UpdateLoginProfile',
+          'PutRolePolicy',        'AttachRolePolicy',     'UpdateAssumeRolePolicy',
+          'PutUserPermissionsBoundary', 'DeleteUserPermissionsBoundary'
+      )
+      AND COALESCE(
+              json_extract_string(request_parameters, '$.userName'),
+              json_extract_string(request_parameters, '$.roleName')
+          ) IS NOT NULL
+      AND user_identity_arn LIKE '%/' || COALESCE(
+              json_extract_string(request_parameters, '$.userName'),
+              json_extract_string(request_parameters, '$.roleName')
+          )
+    ORDER BY event_time DESC
+    LIMIT 100
+
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001f319 Off-Hours Activity"
+  description: "Groups activity by principal and hour of day inside a configurable out-of-hours window. The first indicator the upstream insider-threat playbook lists, and one no other hunt covers."
+  severity: "P3"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
+  techniques:
+    - tid: "T1078.004"
+      name: "Valid Accounts: Cloud Accounts"
+      summary: "Adversaries authenticate with legitimate credentials or assertions to blend in."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.004.html"
+  chart:
+    type: bar
+    x: user_identity_arn
+    y:
+      - calls
+  prompt: |
+    Report activity that falls outside business hours, grouped by principal and
+    hour of day. The SQL uses 15:00–23:00 UTC, which is roughly midnight to 08:00
+    in JST — adjust the two hour bounds for the timezone the team actually works
+    in. Show the call count, how many of those were writes, the distinct APIs and
+    source IPs. Legitimate automation is steady across every night; a person is
+    not.
+  sql: |
+    SELECT
+        user_identity_arn,
+        EXTRACT(hour FROM event_time)                   AS event_hour_utc,
+        COUNT(*)                                        AS calls,
+        COUNT(*) FILTER (WHERE read_only IS NOT TRUE)   AS write_calls,
+        COUNT(DISTINCT event_name)                      AS distinct_apis,
+        COUNT(DISTINCT source_ip_address)               AS distinct_source_ips,
+        MIN(event_time)                                 AS first_seen,
+        MAX(event_time)                                 AS last_seen
+    FROM cloudtrail_events
+    WHERE user_identity_arn IS NOT NULL
+      AND EXTRACT(hour FROM event_time) >= 15
+      AND EXTRACT(hour FROM event_time) <  23
+    GROUP BY user_identity_arn, event_hour_utc
+    ORDER BY calls DESC
+    LIMIT 100
+
 # ===========================================================================
 # Activity & Baseline
 # ===========================================================================
@@ -4441,6 +6025,10 @@
 - category: "\U0001f4ca Activity & Baseline"
   label: "\U0001f5a5 Write Events from Management Console"
   description: "Identifies mutating API calls made via the AWS console. Useful when CLI-only access is expected."
+  severity: "P4"
+  playbook:
+    name: "IRP-InsiderThreat"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md"
   chart:
     type: timeseries
     bucket: day
@@ -4472,6 +6060,7 @@
 - category: "\U0001f4ca Activity & Baseline"
   label: "\U0001f50d Events with Errors (24h)"
   description: "Lists all error events in the past 24 hours. Quick overview of what is failing right now."
+  severity: "P4"
   chart:
     type: timeseries
     bucket: hour
@@ -4499,6 +6088,7 @@
 - category: "\U0001f4ca Activity & Baseline"
   label: "\u274c Error Spike Detection"
   description: "Finds 1-hour windows where error count exceeds the daily average by 3x. Signals scanning or outage."
+  severity: "P3"
   prompt: |
     Find time windows (1-hour buckets) where the total number of API errors
     (error_code IS NOT NULL) exceeds the daily average by 3x or more.
@@ -4512,6 +6102,10 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f5fa Console Logins by Country"
   description: "Maps console login events to their geographic origin. Logins from unexpected countries are high-risk."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   chart:
     type: timeseries
     bucket: day
@@ -4547,6 +6141,10 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f6a8 Unusual Country Access"
   description: "Detects API calls from unexpected countries by showing rare country/identity combinations."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
   chart:
     type: bar
     x: geo_country_code
@@ -4577,6 +6175,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f6ab Access Denied by Country"
   description: "Groups access denied errors by source country. Concentrated denials from one country may signal an attack."
+  severity: "P3"
   chart:
     type: bar
     x: geo_country_name
@@ -4606,6 +6205,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f50d Write Events by Country"
   description: "Shows mutating (write) API calls grouped by country. Writes from unexpected countries are high-priority."
+  severity: "P3"
   chart:
     type: bar
     x: geo_country_name
@@ -4635,6 +6235,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f30d Top Source Countries"
   description: "Ranks source countries by API call volume. Identifies the geographic distribution of all activity."
+  severity: "P4"
   chart:
     type: bar
     x: geo_country_name
@@ -4663,6 +6264,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f3e2 Top ASN / Organizations"
   description: "Lists autonomous systems (ISPs/cloud providers) by API call volume. Spot VPN/hosting providers."
+  severity: "P4"
   chart:
     type: bar
     x: geo_org
@@ -4689,6 +6291,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f4cd Top Source Cities"
   description: "Ranks source cities by event volume. Pinpoints the most active geographic origins."
+  severity: "P4"
   chart:
     type: bar
     x: geo_city
@@ -4715,6 +6318,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f4cb API Calls by Country (Event Name)"
   description: "Shows which API operations are called from each country. Write events from unexpected countries indicate credential compromise."
+  severity: "P4"
   chart:
     type: bar
     x: geo_country_name
@@ -4745,6 +6349,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f464 Identities by Country (user_identity_arn)"
   description: "Shows which IAM identities are active from each country. An identity appearing from a new country is a high-confidence compromise indicator."
+  severity: "P4"
   chart:
     type: bar
     x: geo_country_name
@@ -4777,6 +6382,7 @@
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f310 Private / Internal IP Summary"
   description: "Summarizes events from private, loopback, and AWS-internal IPs. Baseline for expected internal traffic."
+  severity: "P4"
   chart:
     type: bar
     x: ip_type
@@ -4805,6 +6411,7 @@
 - category: "\u2601 IaC & Platform"
   label: "\U0001f6e0 CodeBuild / CodePipeline Supply Chain Attack"
   description: "Detects CI/CD pipeline creation and modification. Injecting malicious build steps or modifying pipeline sources poisons all subsequent deployments."
+  severity: "P2"
   techniques:
     - tid: "T1648.A002"
       name: "Serverless Execution: Malicious Code from Compromised Third Party Packages"
@@ -4861,6 +6468,7 @@
 - category: "\u2601 IaC & Platform"
   label: "\U0001f3d7 CloudFormation / IaC Abuse"
   description: "Detects CloudFormation stack operations. Attackers may use IaC to rapidly deploy malicious infrastructure."
+  severity: "P2"
   techniques:
     - tid: "T1098.003"
       name: "Account Manipulation: Additional Cloud Roles"

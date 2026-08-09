@@ -81,12 +81,12 @@ cd ../../docker && docker compose run --rm superset-init   # re-import into Supe
 ```
 
 Per-module loops — Rust (`ingester/`): `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt`.
-Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (793 dashboard tests)): `pytest`,
+Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (961 dashboard tests)): `pytest`,
 `ruff check .`, `black .`. TypeScript (`config_viz/frontend/`): `npm test -- --run`
 (114 frontend tests), `npm run build` (Vite → `../static/`).
 
-Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 830 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 793, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
+Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 1059 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 961, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
 and lifecycle). Test count must not decrease in a PR, and a PR that changes one updates this line
 and [CLAUDE.md](CLAUDE.md) together.
 
@@ -123,8 +123,11 @@ extended (24) userIdentity:   user_identity_principal_id, user_identity_access_k
                               -- the two boolean-ish ones hold the strings "true"/"false"
 ```
 
-Only the 17 core + 7 GeoIP columns are exposed to the LLM (`agent/schema.py`); the 24 extended
-ones are withheld to keep the prompt small. Adding or exposing a column follows the
+Only 30 of the 48 columns are exposed to the LLM (`agent/schema.py`): the 17 core, the 7 GeoIP,
+and 6 extended ones promoted because each unlocks a hunt that cannot be written without it —
+`user_identity_access_key_id`, `session_issuer_arn`, `session_mfa_authenticated`,
+`additional_event_data`, `event_id`, `vpc_endpoint_id`. The remaining 18 extended columns are
+withheld to keep the prompt small; hunt SQL may still use them. Adding or exposing a column follows the
 schema-change checklist in [CLAUDE.md](CLAUDE.md).
 
 Other tables: `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives SHA-256
@@ -216,7 +219,7 @@ senrigan/
 │   ├── llm.py                 # OpenAI calls: SQL generation, analysis, SQL fix
 │   ├── query.py               # Execution, validation, date filter, row limit, retry
 │   ├── report.py              # Chat-session Markdown / PDF report
-│   ├── schema.py              # Columns the LLM sees (17 core + 7 GeoIP)
+│   ├── schema.py              # Columns the LLM sees (17 core + 6 extended + 7 GeoIP)
 │   ├── profiles.py            # DatasetProfile: chat pages vs explorer pages
 │   ├── suzaku_db.py           # Suzaku file detection, fitness and selection
 │   ├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL

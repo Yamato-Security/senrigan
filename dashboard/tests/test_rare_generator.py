@@ -120,11 +120,11 @@ def test_transform_chart_non_table_gets_no_sort_by_metric() -> None:
 
 
 def test_transform_chart_corpus_properties() -> None:
-    """Across all 101 charts: order_desc flips exactly where present, table
+    """Across all 115 charts: order_desc flips exactly where present, table
     charts get a sort-by metric, and derived uuids are unique and disjoint
     from the source uuid set."""
     charts = _load_all_charts()
-    assert len(charts) == 101
+    assert len(charts) == 115
     src_uuids = {doc["uuid"] for doc in charts.values()}
     derived_uuids = set()
     flipped = 0
@@ -145,8 +145,8 @@ def test_transform_chart_corpus_properties() -> None:
                 assert "timeseries_limit_metric" not in out["params"], fname
         else:
             assert out["params"] == doc["params"], fname
-    assert flipped == 83
-    assert sorted_tables == 72
+    assert flipped == 93
+    assert sorted_tables == 79
     assert len(derived_uuids) == len(charts)
     assert derived_uuids.isdisjoint(src_uuids)
 
@@ -235,7 +235,7 @@ def test_build_rare_files_structure() -> None:
     assert "databases/CloudTrail_DuckDB.yaml" in files
     assert "datasets/CloudTrail_DuckDB/cloudtrail_events.yaml" in files
     chart_arcs = [n for n in files if n.startswith("charts/")]
-    assert len(chart_arcs) == 101
+    assert len(chart_arcs) == 115
 
 
 def test_build_rare_files_shared_objects_verbatim() -> None:

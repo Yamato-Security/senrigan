@@ -1,0 +1,66 @@
+# PB-14: AgentCore Gateway & Policy Changes
+# Two things matter here: a policy engine dropped to LOG_ONLY, and a gateway
+# target whose ARN or URL points at an account or host you do not own.
+# Playbook: IRP-AgentCoreAuthorizationBypass
+uuid: c1a1000e-0000-4000-8000-0000000c1a0e
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AgentCore Gateway & Policy Changes
+viz_type: table
+description: >
+  AgentCore Gateway, target and policy changes, surfacing the Cedar policy
+  engine mode (IRP-AgentCoreAuthorizationBypass). An engine moved from ENFORCE
+  to LOG_ONLY still returns success, so nothing downstream looks wrong.
+  MITRE ATT&CK: TA0005 Defense Evasion / T1562.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: changes
+      hasCustomLabel: true
+      optionName: metric_agw_changes
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_agw_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_agw_last
+  groupby:
+    - event_name
+    - user_identity_arn
+    - expressionType: SQL
+      sqlExpression: >-
+        json_extract_string(
+          request_parameters, '$.policyEngineConfiguration.cedarConfiguration.mode'
+        )
+      label: cedar_mode
+      hasCustomLabel: true
+    - expressionType: SQL
+      sqlExpression: "json_extract_string(request_parameters, '$.gatewayIdentifier')"
+      label: gateway_id
+      hasCustomLabel: true
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'bedrock-agentcore.amazonaws.com'
+        AND event_name IN (
+          'CreateGateway',       'UpdateGateway',       'DeleteGateway',
+          'CreateGatewayTarget', 'UpdateGatewayTarget', 'DeleteGatewayTarget',
+          'CreatePolicy',        'UpdatePolicy',        'DeletePolicy',
+          'CreatePolicyEngine',  'UpdatePolicyEngine',
+          'PutResourcePolicy',   'DeleteResourcePolicy'
+        )
+      filterOptionName: filter_agw
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

@@ -158,6 +158,9 @@ def _handle_direct_sql(
     label: str = "",
     category: str = "",
     techniques: list[dict] | None = None,
+    severity: str = "",
+    playbook: dict | None = None,
+    next_steps: str = "",
     profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> None:
     """Execute a pre-built SQL query directly without requiring an API key.
@@ -180,6 +183,9 @@ def _handle_direct_sql(
         category:     Category group (e.g. "🔑 Identity & Access").
         techniques:   Threat Technique Catalog mappings for the preset
                       (list of dicts with tid / name / summary / url keys).
+        severity:     Triage severity P1..P4 from the preset entry.
+        playbook:     AWS incident response playbook mapping (name / url).
+        next_steps:   Containment guidance shown alongside the results.
         profile:      Dataset profile selecting the table, filters and state.
     """
     # Apply the active UI filters (date range, severity) as a scoped CTE.
@@ -223,6 +229,9 @@ def _handle_direct_sql(
                 category=category,
                 source=source,
                 techniques=techniques or [],
+                severity=severity,
+                playbook=playbook or {},
+                next_steps=next_steps,
             )
         )
         if not bulk_mode:

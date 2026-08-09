@@ -1,0 +1,63 @@
+# PB-12: Ransom Note Placement
+# Any row here is a P1. Preserve the object as evidence before restoring.
+# Playbook: IRP-Ransomware
+uuid: c1a1000c-0000-4000-8000-0000000c1a0c
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Ransom Note Placement
+viz_type: table
+description: >
+  PutObject calls whose object key looks like a ransom note (IRP-Ransomware).
+  Unlike the other ransomware panels this confirms impact rather than
+  suggesting it — a note means encryption finished and payment is being
+  demanded. MITRE ATT&CK: TA0040 Impact / T1486.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: notes
+      hasCustomLabel: true
+      optionName: metric_ransomnote_count
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_ransomnote_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_ransomnote_last
+  groupby:
+    - user_identity_arn
+    - expressionType: SQL
+      sqlExpression: "json_extract_string(request_parameters, '$.bucketName')"
+      label: bucket_name
+      hasCustomLabel: true
+    - expressionType: SQL
+      sqlExpression: "json_extract_string(request_parameters, '$.key')"
+      label: object_key
+      hasCustomLabel: true
+    - source_ip_address
+    - geo_country_code
+    - geo_city
+    - geo_org
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name = 'PutObject'
+        AND REGEXP_MATCHES(
+          UPPER(COALESCE(json_extract_string(request_parameters, '$.key'), '')),
+          'RANSOM|DECRYPT|RECOVER|RESTORE[_-]?FILES|README|HOW[_-]?TO|YOUR[_-]?FILES|UNLOCK'
+        )
+      filterOptionName: filter_ransomnote
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

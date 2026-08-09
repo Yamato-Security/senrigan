@@ -4,6 +4,7 @@
 #   category:    Sidebar grouping label
 #   label:       Display name shown in the UI
 #   description: One-line explanation of what this query surfaces and why it matters
+#   severity:    P1..P4, as in builtin_hunts.yaml
 #   techniques:  Optional Threat Technique Catalog / ATT&CK mappings
 #   chart:       Optional chart config (type: bar|timeseries, x/y/bucket)
 #   prompt:      Natural language prompt sent to the AI agent (requires API key)
@@ -27,6 +28,7 @@
 - category: "\U0001f6a8 Triage"
   label: "\U0001f6a8 Critical & High Detections"
   description: "The shortest path to what matters: newest critical and high severity rule matches."
+  severity: "P1"
   chart:
     type: timeseries
     bucket: day
@@ -51,6 +53,7 @@
 - category: "\U0001f6a8 Triage"
   label: "\U0001f4ca Detection Volume by Severity"
   description: "How the dataset is distributed across severities — sets expectations before drilling in."
+  severity: "P4"
   chart:
     type: bar
     x: "detections"
@@ -74,6 +77,7 @@
 - category: "\U0001f6a8 Triage"
   label: "\U0001f4c8 Detection Trend per Day"
   description: "Daily detection volume split by severity — spikes mark the days worth investigating."
+  severity: "P4"
   chart:
     type: timeseries
     bucket: day
@@ -99,6 +103,7 @@
 - category: "\U0001f4dc Rules"
   label: "\U0001f3af Top Rules (Medium and Above)"
   description: "Which detections dominate the medium+ signal, and over how many principals they spread."
+  severity: "P3"
   chart:
     type: bar
     x: "detections"
@@ -124,6 +129,7 @@
 - category: "\U0001f4dc Rules"
   label: "\U0001f48e Rare Rules (Fired Once)"
   description: "Rules that matched exactly once. Rarity is the cheapest anomaly signal in a large dataset."
+  severity: "P3"
   prompt: |
     Find Suzaku rules that fired exactly once in the whole dataset, with the
     event and principal involved.
@@ -144,6 +150,7 @@
 - category: "\U0001f4dc Rules"
   label: "\U0001f195 Rule Onset (First / Last Seen)"
   description: "Rules that only started firing recently — a new detection appearing mid-timeline is a lead."
+  severity: "P3"
   prompt: |
     For each Suzaku rule show when it was first and last seen and how long its
     activity window is, ordered by the most recent first appearance.
@@ -168,6 +175,7 @@
 - category: "\U0001f511 Identity"
   label: "\U0001f464 Top Principals by Severe Detections"
   description: "Which identities carry the most severe detections — the usual starting point of an investigation."
+  severity: "P2"
   chart:
     type: bar
     x: "severe"
@@ -200,6 +208,7 @@
 - category: "\U0001f511 Identity"
   label: "\U0001f451 Root Account Detections"
   description: "Any detection on the root identity. Root should never be used for day-to-day API calls."
+  severity: "P1"
   techniques:
     - tid: "T1078.004"
       name: "Valid Accounts: Cloud Accounts"
@@ -226,6 +235,7 @@
 - category: "\U0001f511 Identity"
   label: "\U0001f5dd Access Keys Behind Detections"
   description: "Long-lived access keys ranked by detections — a compromised key shows up here first."
+  severity: "P2"
   techniques:
     - tid: "T1552.001"
       name: "Unsecured Credentials: Credentials In Files"
@@ -257,6 +267,7 @@
 - category: "\U0001f30d Origin"
   label: "\U0001f310 Top Source IPs by Distinct Rules"
   description: "An IP triggering many different rules is behaving unlike a normal client."
+  severity: "P3"
   chart:
     type: bar
     x: "rules"
@@ -282,6 +293,7 @@
 - category: "\U0001f30d Origin"
   label: "\U0001f6e0 Top User Agents"
   description: "Hacking-distro and SDK user agents. An unexpected client string is a strong lead."
+  severity: "P4"
   techniques:
     - tid: "T1078"
       name: "Valid Accounts"
@@ -306,6 +318,7 @@
 - category: "\U0001f30d Origin"
   label: "\U0001f5fa Multi-Region Activity per Principal"
   description: "A principal touching many regions in one day often means enumeration or resource abuse."
+  severity: "P3"
   techniques:
     - tid: "T1580"
       name: "Cloud Infrastructure Discovery"
@@ -335,6 +348,7 @@
 - category: "⚠ Failures"
   label: "\U0001f6ab Failed API Calls in Detections"
   description: "Detections that also failed at the API. Repeated denials are probing or brute force."
+  severity: "P3"
   techniques:
     - tid: "T1580"
       name: "Cloud Infrastructure Discovery"
@@ -365,6 +379,7 @@
 - category: "\U0001f9ec ATT&CK"
   label: "\U0001f9ec Technique Coverage"
   description: "Which ATT&CK techniques the detections map to — the coverage view for a report."
+  severity: "P4"
   chart:
     type: bar
     x: "detections"
@@ -387,6 +402,7 @@
 - category: "\U0001f9ec ATT&CK"
   label: "\U0001f3f4 Tactic Breakdown"
   description: "Which ATT&CK tactics the detections cover — where in the kill chain this dataset sits."
+  severity: "P4"
   chart:
     type: bar
     x: "detections"
@@ -409,6 +425,7 @@
 - category: "\U0001f9ec ATT&CK"
   label: "\U0001f5c2 Rule × Technique Matrix"
   description: "Which rules cover which techniques, for medium+ detections. Reveals coverage gaps and overlaps."
+  severity: "P4"
   prompt: |
     For medium-and-above Suzaku detections, list each rule with the ATT&CK
     techniques it maps to and how often it fired.
@@ -422,4 +439,99 @@
     WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY detections DESC
+    LIMIT 100
+
+# ===========================================================================
+# Response — routing detections to the AWS incident response playbooks
+# ===========================================================================
+
+- category: "\U0001f4d5 Response"
+  label: "\U0001f4d5 Impact Detections → Ransomware Playbook"
+  description: "Detections mapped to the Impact tactic, ordered by severity. Every row here is an input to the ransomware containment procedure, not something to keep investigating."
+  severity: "P1"
+  playbook:
+    name: "IRP-Ransomware"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md"
+  next_steps: >-
+    Establish what recovery points survive before continuing the investigation. If backup deletion
+    appears alongside these detections, treat the account as an active ransomware incident.
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Show Suzaku detections whose Tactics include Impact, with rule title,
+    principal, event name and source IP, ordered by severity then time.
+  sql: |
+    SELECT
+        "Timestamp",
+        "Level",
+        "RuleTitle",
+        "EventName",
+        "UserARN",
+        "SrcIP",
+        "AwsRegion",
+        "ErrorCode"
+    FROM timeline
+    WHERE list_contains("Tactics", 'Impact')
+    ORDER BY "Level" DESC, "Timestamp" DESC
+    LIMIT 200
+
+- category: "\U0001f4d5 Response"
+  label: "\U0001f4d5 Credential Access → Credential Compromise Playbook"
+  description: "Detections mapped to Credential Access or Initial Access. These identify which credentials to rotate, which is the first containment step of the credential-compromise procedure."
+  severity: "P1"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Rotate or disable every access key and session listed here before eradication. A credential
+    left live keeps the actor's foothold regardless of what else you remediate.
+  chart:
+    type: bar
+    x: "UserAccessKeyID"
+    y: "detections"
+  prompt: |
+    Show Suzaku detections whose Tactics include Credential Access or Initial
+    Access, grouped by access key and principal, with the rules that fired.
+  sql: |
+    SELECT
+        "UserAccessKeyID",
+        "UserARN",
+        count(*)                                AS detections,
+        count(DISTINCT "RuleTitle")             AS distinct_rules,
+        string_agg(DISTINCT "RuleTitle", ', ')  AS rules,
+        max("Level")                            AS max_level,
+        min("Timestamp")                        AS first_seen,
+        max("Timestamp")                        AS last_seen
+    FROM timeline
+    WHERE list_contains("Tactics", 'Credential Access')
+       OR list_contains("Tactics", 'Initial Access')
+    GROUP BY "UserAccessKeyID", "UserARN"
+    ORDER BY detections DESC
+    LIMIT 100
+
+- category: "\U0001f4d5 Response"
+  label: "\U0001f4d5 Tactic Coverage by Playbook"
+  description: "Every ATT&CK tactic present in the run, with detection and principal counts, so the responder can see at a glance which playbooks this dataset actually calls for."
+  severity: "P3"
+  chart:
+    type: bar
+    x: "tactic"
+    y: "detections"
+  prompt: |
+    Break Suzaku detections down by ATT&CK tactic with counts of detections,
+    distinct rules and distinct principals, so each tactic can be routed to the
+    playbook that owns its response.
+  sql: |
+    SELECT
+        tactic,
+        count(*)                                                  AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "RuleTitle")                               AS distinct_rules,
+        count(DISTINCT "UserARN")                                 AS distinct_principals,
+        min("Timestamp")                                          AS first_seen,
+        max("Timestamp")                                          AS last_seen
+    FROM timeline, unnest("Tactics") AS t(tactic)
+    GROUP BY tactic
+    ORDER BY severe DESC, detections DESC
     LIMIT 100

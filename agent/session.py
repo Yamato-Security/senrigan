@@ -96,6 +96,56 @@ def _format_technique_caption(technique: dict) -> str:
     return caption
 
 
+# Response-time expectations from the AWS incident response playbooks'
+# TRIAGE_GUIDE severity matrix. Showing the clock next to the level is what makes
+# the level actionable — "P1" alone is just a colour.
+_SEVERITY_LABELS: dict[str, str] = {
+    "P1": "Critical — respond within 15 minutes",
+    "P2": "High — respond within 1 hour",
+    "P3": "Medium — respond within 4 hours",
+    "P4": "Low — respond within 24 hours",
+}
+
+
+def _format_severity_caption(severity: str) -> str:
+    """Format a triage severity as a caption line.
+
+    Args:
+        severity: One of P1..P4. Anything else renders as an empty string so an
+            unannotated hunt simply shows nothing.
+
+    Returns:
+        A Markdown caption like ``🚨 **P1** — Critical — respond within 15
+        minutes``, or ``""`` when *severity* is not a known level.
+    """
+    label = _SEVERITY_LABELS.get(str(severity or ""))
+    if not label:
+        return ""
+    icon = "🚨" if severity == "P1" else "⚠️" if severity == "P2" else "ℹ️"
+    return f"{icon} **{severity}** — {label}"
+
+
+def _format_playbook_caption(playbook: dict | None) -> str:
+    """Format the AWS incident response playbook mapping as a caption line.
+
+    Args:
+        playbook: Dict with ``name`` and optional ``url``. Falsy input renders
+            as an empty string.
+
+    Returns:
+        A Markdown caption like ``📕 Response playbook: [IRP-Ransomware](url)``,
+        with the link omitted when no url is present.
+    """
+    if not playbook:
+        return ""
+    name = str(playbook.get("name", "")).strip()
+    if not name:
+        return ""
+    url = str(playbook.get("url", "")).strip()
+    target = f"[{name}]({url})" if url else name
+    return f"📕 Response playbook: {target}"
+
+
 def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
     """Return a flat list of bulk-query dicts for every entry that has a sql field.
 
@@ -104,8 +154,9 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
 
     Returns:
         List of dicts with keys sql, description, chart_config, label, category,
-        techniques, covering every entry whose sql field is non-empty.  sql
-        values are stripped of leading/trailing whitespace.
+        techniques, severity, playbook and next_steps, covering every entry whose
+        sql field is non-empty.  sql values are stripped of leading/trailing
+        whitespace.
     """
     return [
         {
@@ -115,6 +166,9 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
             "label": p["label"],
             "category": p.get("category", ""),
             "techniques": p.get("techniques") or [],
+            "severity": p.get("severity", ""),
+            "playbook": p.get("playbook") or {},
+            "next_steps": p.get("next_steps", ""),
         }
         for p in prompts
         if p.get("sql", "").strip()

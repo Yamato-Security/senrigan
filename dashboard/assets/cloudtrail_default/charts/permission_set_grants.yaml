@@ -1,0 +1,50 @@
+# PB-05: Identity Center Permission Set Grants (Daily)
+# Isolates the sso.amazonaws.com privilege-granting operations the upstream
+# playbook grades HIGH, rather than dumping every SSO event source together.
+# Playbook: IRP-IdentityCenterCompromise
+uuid: c1a10005-0000-4000-8000-0000000c1a05
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Identity Center Permission Set Grants
+viz_type: echarts_timeseries_bar
+description: >
+  Daily IAM Identity Center privilege grants by event name
+  (IRP-IdentityCenterCompromise). A permission set is organisation-wide: one
+  assignment can grant admin in an account the actor never touched directly.
+  MITRE ATT&CK: TA0004 Privilege Escalation / T1098.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: grants
+      hasCustomLabel: true
+      optionName: metric_permset_grants
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'sso.amazonaws.com'
+        AND event_name IN (
+          'CreatePermissionSet',     'UpdatePermissionSet',    'DeletePermissionSet',
+          'AttachManagedPolicyToPermissionSet',
+          'PutInlinePolicyToPermissionSet',
+          'AttachCustomerManagedPolicyReferenceToPermissionSet',
+          'CreateAccountAssignment', 'DeleteAccountAssignment',
+          'ProvisionPermissionSet'
+        )
+      filterOptionName: filter_permset
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Grants
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null

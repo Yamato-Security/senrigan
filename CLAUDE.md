@@ -102,8 +102,8 @@ cd ../../docker && docker compose run --rm superset-init   # re-import (idempote
 `cloudtrail_rare.zip` is derived from `cloudtrail_default/` (ascending/bottom-N ordering), and
 `dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
 
-Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 830 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 793 (`make test-dashboard`), root `tests/` ≈ 238
+Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 1059 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 961 (`make test-dashboard`), root `tests/` ≈ 238
 (`make test-repo`). A PR that changes a count updates this line **and** [AGENTS.md](AGENTS.md)
 together — stale counts cause false "regression" alarms later.
 
@@ -115,7 +115,8 @@ together — stale counts cause false "regression" alarms later.
 [AGENTS.md](AGENTS.md#duckdb-schema)). JSON blobs are `VARCHAR`, not DuckDB JSON — read them with
 `json_extract_string(col, '$.field')`. GeoIP and extended columns arrive via `ALTER TABLE ADD
 COLUMN IF NOT EXISTS`, so existing DBs migrate transparently. `ingested_files` drives SHA-256
-dedup. The LLM sees only the columns in `agent/schema.py` (17 core + 7 GeoIP) — anything absent
+dedup. The LLM sees only the columns in `agent/schema.py` (17 core + 6 extended + 7 GeoIP) —
+anything absent
 there never appears in generated SQL.
 
 **Adding or exposing a column** touches: (1) the Rust schema + migration, (2) `agent/schema.py`

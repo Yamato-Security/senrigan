@@ -208,6 +208,12 @@ class ReportEntry:
     # TC: Threat Technique Catalog for AWS mappings — list of dicts with
     # tid / name / summary / url keys.
     techniques: list[dict] = field(default_factory=list)
+    # Triage metadata sourced from the AWS incident response playbooks:
+    # severity is P1..P4, playbook is a name/url mapping, next_steps is the
+    # containment line shown with the results.
+    severity: str = ""
+    playbook: dict = field(default_factory=dict)
+    next_steps: str = ""
     # Prevent pandas DataFrame equality issues in dataclass comparisons
     _results_placeholder: None = field(default=None, init=False, repr=False)
 
@@ -329,6 +335,31 @@ def _render_techniques_md(techniques: list[dict]) -> str:
     return "### Techniques\n\n" + "\n".join(lines) + "\n\n"
 
 
+def _render_triage_md(entry: ReportEntry) -> str:
+    """Render the Triage block: severity, response playbook and next steps.
+
+    Args:
+        entry: The ReportEntry whose triage metadata to render.
+
+    Returns:
+        Markdown block string, or an empty string when the entry carries no
+        triage metadata at all.
+    """
+    lines = []
+    if entry.severity:
+        lines.append(f"- **Severity:** {_sanitize(str(entry.severity))}")
+    name = str((entry.playbook or {}).get("name", "")).strip()
+    if name:
+        url = str(entry.playbook.get("url", "")).strip()
+        target = f"[{_sanitize(name)}]({url})" if url else _sanitize(name)
+        lines.append(f"- **Response playbook:** {target}")
+    if entry.next_steps:
+        lines.append(f"- **Next steps:** {_sanitize(str(entry.next_steps))}")
+    if not lines:
+        return ""
+    return "### Triage\n\n" + "\n".join(lines) + "\n\n"
+
+
 def _render_entry(index: int, entry: ReportEntry) -> str:
     """Render one ReportEntry as a Markdown section.
 
@@ -373,6 +404,7 @@ def _render_entry(index: int, entry: ReportEntry) -> str:
 
     return (
         f"{heading}\n\n"
+        f"{_render_triage_md(entry)}"
         f"{techniques_section}"
         f"### SQL\n\n"
         f"```sql\n{sql_block}\n```\n\n"
@@ -515,8 +547,28 @@ def _render_entry_html(index: int, entry: ReportEntry) -> str:
             f'<h3>Techniques</h3><ul class="techniques">{"".join(items)}</ul>'
         )
 
+    triage_items = []
+    if entry.severity:
+        level = _html.escape(_sanitize(str(entry.severity)))
+        triage_items.append(f"<li><strong>Severity:</strong> {level}</li>")
+    playbook_name = str((entry.playbook or {}).get("name", "")).strip()
+    if playbook_name:
+        name = _html.escape(_sanitize(playbook_name))
+        url = _html.escape(str(entry.playbook.get("url", "")).strip(), quote=True)
+        target = f'<a href="{url}" target="_blank">{name}</a>' if url else name
+        triage_items.append(f"<li><strong>Response playbook:</strong> {target}</li>")
+    if entry.next_steps:
+        steps = _html.escape(_sanitize(str(entry.next_steps)))
+        triage_items.append(f"<li><strong>Next steps:</strong> {steps}</li>")
+    triage_section = ""
+    if triage_items:
+        triage_section = (
+            f'<h3>Triage</h3><ul class="triage">{"".join(triage_items)}</ul>'
+        )
+
     return f"""<section id="{anchor}">
   <h2>{heading_text}</h2>
+  {triage_section}
   {techniques_section}
   <h3>SQL</h3>
   <pre><code class="sql">{sql_highlighted}</code></pre>

@@ -35,6 +35,38 @@ Use DuckDB's JSON functions to access nested fields:
   -- Pattern matching on JSON content (when exact extraction is not possible)
   request_parameters LIKE '%"publiclyAccessible":true%'
 
+## Session & Identity Columns
+Four columns describe *how* the caller authenticated. Prefer them over digging the
+same values back out of `raw_event` — they are already extracted.
+
+1. `user_identity_access_key_id` identifies the credential. Keys beginning with
+   `ASIA` are temporary STS session credentials, `AKIA` are long-lived IAM user keys.
+   Grouping by this column traces everything a single session did.
+2. `session_issuer_arn` is the role that issued the session, set only when
+   `user_identity_type = 'AssumedRole'`. A row where that column is non-NULL *and*
+   `event_name = 'AssumeRole'` is one hop of a role chain.
+3. `session_mfa_authenticated` holds the strings `'true'` / `'false'`, not a BOOLEAN —
+   compare it as a string. It covers every API call; the `MFAUsed` field inside
+   `additional_event_data` exists only for `ConsoleLogin`.
+4. `additional_event_data` is a JSON string carrying service-specific fields:
+   `MFAUsed` and `federatedProvider` for `ConsoleLogin`, `SSEApplied` for S3.
+
+  -- Example: role chaining (a session assuming a further role)
+  SELECT event_time, session_issuer_arn AS from_role,
+         json_extract_string(request_parameters, '$.roleArn') AS to_role,
+         user_identity_arn, source_ip_address
+  FROM cloudtrail_events
+  WHERE event_name = 'AssumeRole'
+    AND user_identity_type = 'AssumedRole'
+    AND session_issuer_arn IS NOT NULL
+
+  -- Example: federated console logins
+  SELECT event_time, user_identity_arn,
+         json_extract_string(additional_event_data, '$.federatedProvider') AS idp
+  FROM cloudtrail_events
+  WHERE event_name = 'ConsoleLogin'
+    AND json_extract_string(additional_event_data, '$.federatedProvider') IS NOT NULL
+
 ## GeoIP Columns
 Every row carries pre-computed GeoIP attributes for `source_ip_address`
 (`geo_country_code`, `geo_country_name`, `geo_city`, `geo_latitude`, `geo_longitude`,

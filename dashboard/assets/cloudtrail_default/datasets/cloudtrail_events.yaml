@@ -171,6 +171,71 @@ columns:
     filterable: false
     description: Full original CloudTrail event as JSON
 
+  # Extended columns (6 of 24), promoted because each one carries a signal the
+  # AWS incident response playbooks depend on: role chaining, session tracing,
+  # MFA state on every call rather than only on ConsoleLogin.
+  - column_name: user_identity_access_key_id
+    verbose_name: Access Key ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >-
+      Access key used for the call. ASIA-prefixed keys are temporary STS session
+      credentials — group by this to trace one assumed-role session
+
+  - column_name: session_issuer_arn
+    verbose_name: Session Issuer ARN
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >-
+      ARN of the role that issued the session. With event_name = AssumeRole this
+      identifies role chaining
+
+  - column_name: session_mfa_authenticated
+    verbose_name: MFA Authenticated
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: >-
+      Whether the session was MFA-authenticated, as the string 'true'/'false'.
+      Applies to every API call, not just ConsoleLogin
+
+  - column_name: additional_event_data
+    verbose_name: Additional Event Data
+    is_dttm: false
+    is_active: true
+    type: JSON
+    groupby: false
+    filterable: false
+    description: >-
+      Service-specific extra fields (JSON) — carries MFAUsed and
+      federatedProvider for ConsoleLogin, SSEApplied for S3
+
+  - column_name: event_id
+    verbose_name: Event ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: Unique CloudTrail event ID
+
+  - column_name: vpc_endpoint_id
+    verbose_name: VPC Endpoint ID
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    groupby: true
+    filterable: true
+    description: VPC endpoint the request arrived through, when not via the internet
+
   # GeoIP enrichment columns (7 columns, NULL when ingested without GeoLite2 DB)
   - column_name: geo_country_code
     verbose_name: Country Code
