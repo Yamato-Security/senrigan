@@ -2,25 +2,25 @@
 
 > 💡 SQL이나 깊은 AWS 지식이 필요 없습니다 — 드롭다운에서 헌트를 선택하기만 하면 즉시 결과를 얻을 수 있습니다.
 
-## 🎯 내장 헌트 — 151 쿼리
+## 🎯 내장 헌트 — 136 쿼리
 
 카테고리는 DFIR 트리아지 우선순위 순으로 정렬되어 있습니다 — 먼저 탐지 도구 변조를 확인하고, 그다음 자격 증명 남용, 그다음 데이터 영향을 확인하세요.
 
 | 카테고리 | 쿼리 | 다루는 주요 위협 |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | 감사 서비스 변조 (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 삭제 · 알람 억제 · 로그 유출 · 랜섬웨어 킬체인 상관 분석 |
-| 🔑 Identity & Access | 44 | 루트 사용 · 콘솔 로그인/MFA · 권한 상승 · 신뢰 정책 백도어 · PassRole 남용 · 교차 계정 AssumeRole · SSO/SAML/OIDC · 자격 증명 열거 · IAM 엔티티 삭제 · AssumeRoot 탈취 · Cognito 사용자 풀/토큰 남용 · 지원 케이스 억제 · 역할 체이닝 · 세션 자격 증명 추적 · GetCallerIdentity 정찰 · 페더레이션 콘솔 로그인 · Identity Center 권한 세트 및 위임 관리자 · 역할 체이닝 · 세션 자격 증명 추적 · MFA 없는 API 호출 · 페더레이션 로그인 · Identity Center 권한 세트 |
+| 🔑 Identity & Access | 36 | 루트 사용 · 콘솔 로그인/MFA · 권한 상승 · 신뢰 정책 백도어 · PassRole 남용 · 교차 계정 AssumeRole · SSO/SAML/OIDC · 자격 증명 열거 · IAM 엔티티 삭제 · AssumeRoot 탈취 · Cognito 사용자 풀/토큰 남용 · 지원 케이스 억제 · 역할 체이닝 · 세션 자격 증명 추적 · GetCallerIdentity 정찰 · 페더레이션 콘솔 로그인 · Identity Center 권한 세트 및 위임 관리자 · MFA 없는 API 호출 |
 | 🪣 Data & Storage | 30 | S3 대량 삭제/다운로드 · 시크릿 대량 읽기 · 백업 변조 · KMS 작업 · 스냅샷 공유 · EBS Direct API 유출 · DynamoDB 내보내기 · S3 교차 계정 복제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS Data API 조작 · 영향을 위한 스토리지 재암호화 · 랜섬 노트 배치 · 침해 통지 범위 산정 · 계정 간 객체 복사 · 사전 서명 URL 생성 |
 | ⚡ Compute & Serverless | 17 | EC2 대량 중지/종료 · SSM 측면 이동 · Lambda/ECS/EKS/ECR 변조 · EventBridge 지속성 · 크립토마이닝 · Lightsail 남용 · IMDS/SSRF 약화 · AMI/스냅샷 삭제 · WorkSpaces 탈취 |
-| 🤖 AI & LLM Abuse | 11 | Bedrock 호출 급증 · 모델 액세스 활성화 · 호출 로깅 변조 · 리전 횡단 정찰 · 실패 호출 버스트 · 호출자/발신지 목록화 (LLMjacking) · AgentCore 토큰 볼트 · 게이트웨이 인가 우회 · 메모리 무결성 · 샌드박스 네트워크 모드 변경 · 관측성 변조 |
-| 🌐 Network & Infrastructure | 16 | SG 인터넷 개방 · VPC 흐름 로그 삭제 · CloudFront 하이재킹 · 은밀한 VPN/TGW 터널 · Elastic IP C2 · API Gateway 키 · Route 53/도메인 탈취 · DDoS 보호 약화 |
+| 🤖 AI & LLM Abuse | 10 | Bedrock 호출 급증 · 모델 액세스 활성화 · 호출 로깅 변조 · 리전 횡단 정찰 · 실패 호출 버스트 · AgentCore 토큰 볼트 · 게이트웨이 인가 우회 · 메모리 무결성 · 샌드박스 네트워크 모드 변경 · 관측성 변조 |
+| 🌐 Network & Infrastructure | 13 | SG 인터넷 개방 · VPC 흐름 로그 삭제 · CloudFront 하이재킹 · 은밀한 VPN/TGW 터널 · Elastic IP C2 · API Gateway 키 · Route 53/도메인 탈취 · DDoS 보호 약화 |
 | 🕵 Threat Patterns | 10 | 정찰 버스트 · 비정상 사용자 에이전트 · 다중 리전 확산 · 최초 API 호출 · 최초 관찰 리전 활동 · 업무 시간 외 활동 · 자기 권한 상승 · 일별 볼륨 편차 · 미사용 리전에서의 리소스 생성 · 대량 API 호출 |
 | 📊 Activity & Baseline | 3 | 콘솔 쓰기 이벤트 · 오류 급증 · 최근 오류 |
-| 🌍 GeoIP Analysis | 10 | 국가별 콘솔 로그인/거부/쓰기 · 드문 국가에서의 접근 · 국가/ASN/도시 분석 · event_name × country · identity × country · 프라이빗 IP 베이스라인 |
+| 🌍 GeoIP Analysis | 2 | 국가별 콘솔 로그인/거부/쓰기 · 드문 국가에서의 접근 |
 | ☁ IaC & Platform | 2 | CI/CD 공급망 · CloudFormation 남용 |
 
 <details markdown="1">
-<summary>📋 전체 목록 — 전체 151 쿼리 (클릭하여 확장)</summary>
+<summary>📋 전체 목록 — 전체 136 쿼리 (클릭하여 확장)</summary>
 
 ## 내장 헌트
 
@@ -57,34 +57,31 @@
 | 9 | 👥 IAM Group Membership Changes | timeseries | 그룹 이름과 관계없이 모든 AddUserToGroup 및 RemoveUserFromGroup 이벤트를 탐지합니다. 그룹 추가는 그룹 상속 정책을 통한 권한 상승을 나타낼 수 있습니다. |
 | 10 | 👤 New IAM Users / Keys | timeseries | IAM 사용자 및 액세스 키 생성 이벤트를 식별합니다. 예기치 않은 생성은 지속성을 나타낼 수 있습니다. |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | iam:PassRole 호출을 탐지합니다. 특권 역할을 EC2/Lambda/Glue/ECS/SageMaker에 전달하는 것은 가장 일반적인 측면 권한 상승 경로입니다. |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | 호출자와 대상이 서로 다른 AWS 계정에 있는 AssumeRole 이벤트를 보여줍니다. 측면 이동을 나타냅니다. |
-| 13 | 🏢 Cross-Account Access | timeseries | 호출자 계정이 수신자 계정과 다른 이벤트를 찾습니다. 측면 이동 신호입니다. |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | GetFederationToken 및 GetSessionToken 호출을 탐지합니다. 공격자는 이를 사용해 수명이 긴 키를 지속적인 임시 자격 증명으로 변환합니다. |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | AssumeRoleWithWebIdentity 호출을 탐지합니다. 잘못 구성된 OIDC 신뢰 (예: 지나치게 넓은 sub 클레임)를 악용하면 공격자가 제어하는 토큰을 사용해 역할을 하이재킹할 수 있습니다. |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center 관리 작업을 탐지합니다. 공격자는 SSO를 악용해 백도어 권한 세트를 만들거나 공격자가 제어하는 사용자에게 계정을 할당합니다. |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC 자격 증명 공급자 변경을 탐지합니다. 공격자가 제어하는 메타데이터로 SAML 공급자를 업데이트하면 지속적인 인증 백도어가 생성됩니다. |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer의 모든 사용을 탐지합니다. 공격자는 사용자 지정 정찰 스크립트를 작성하지 않고도 외부에서 접근 가능한 리소스를 열거하기 위해 네이티브 AWS 분석기를 활용합니다. |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | 전체 IAM 환경을 매핑하는 IAM 열거 활동을 탐지합니다. 공격 초기 단계에서 흔히 발견됩니다. |
-| 20 | 🗝 Access Key Abuse | bar | 7일 내 3개 이상의 서로 다른 소스 IP에서 사용된 액세스 키를 탐지합니다. 키 유출의 강력한 지표입니다. |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | Organizations 계정 생성 및 위임 관리자 변경을 탐지합니다. 공격자는 메인 계정 밖에 지속적인 거점을 마련하기 위해 섀도 계정을 생성합니다. |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | 미인증 액세스가 활성화된 Cognito 자격 증명 풀을 탐지합니다. 익명 사용자가 미인증 IAM 역할의 권한으로 AWS API를 호출할 수 있게 합니다. |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Glue 개발 엔드포인트 생성과 자격 증명 수집을 위한 연결 열거를 탐지합니다. iam:PassRole + glue:CreateDevEndpoint는 전달된 역할의 전체 권한으로 SSH를 통한 접근을 부여합니다 — 가장 간과되기 쉬운 IAM 권한 상승 기법 중 하나입니다. |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker 노트북 인스턴스 생성 및 사전 서명 URL 생성을 탐지합니다. iam:PassRole + sagemaker:CreateNotebookInstance는 전달된 역할의 전체 AWS 권한을 가진 Jupyter 환경을 제공합니다. CreatePresignedNotebookInstanceUrl 단독으로도 기존 노트북에 대한 접근을 허용할 수 있습니다. |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Data Pipeline 및 CodeStar 리소스 생성을 탐지합니다. 둘 다 iam:PassRole을 받아들이며 전달된 역할의 권한으로 임의의 코드를 실행할 수 있습니다. CodeStar:CreateProjectFromTemplate은 관리자 IAM 역할을 생성하는 문서화되지 않은 API입니다. |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Step Functions 상태 머신 생성 및 실행을 탐지합니다. iam:PassRole + states:CreateStateMachine + states:StartExecution을 통해 전달된 역할의 권한으로 임의의 Lambda / ECS 작업을 실행할 수 있습니다. |
-| 27 | 🪓 IAM Entity Deletion | timeseries | IAM 사용자, 역할, 정책, MFA 디바이스의 삭제를 탐지합니다. 공격자는 자신의 활동 흔적을 지우거나 방어자를 잠그기 위해 IAM 엔티티를 삭제합니다. |
-| 28 | 👑 AssumeRoot Usage | timeseries | 관리 계정에서 회원 계정의 루트로 향하는 sts:AssumeRoot 호출을 탐지합니다. 관리 계정이 침해되면 이 방법으로 모든 회원 계정을 장악할 수 있습니다. |
-| 29 | 🎫 Support Case Manipulation | timeseries | AWS Support 케이스 종료 및 댓글 활동을 탐지합니다. 공격자는 침해에 대한 AWS 알림을 억제하기 위해 남용/지원 케이스를 해결 처리합니다. |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito 사용자 풀 및 앱 클라이언트 변경(토큰 유효 기간 연장, 새 클라이언트, 관리자 사용자 생성)을 탐지합니다. 공격자는 이를 악용해 수명이 긴 토큰을 발급하거나 백도어 사용자를 심습니다. |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | 이미 수임한 역할 세션이 또 다른 역할을 수임하는 동작을 탐지합니다. 개별 AssumeRole 호출은 평범해 보이지만, 체인이야말로 공격자가 침해된 인스턴스 역할에서 실제로 원하는 권한까지 이동하는 경로입니다. |
-| 32 | 🎫 Session Credential Trace | bar | 각 임시 STS 세션(ASIA… 액세스 키)이 무엇을 했는지 요약합니다: 호출 수, 서비스, 소스 IP, 시간 범위. 자격 증명 침해 조사가 가장 먼저 던지는 범위 질문입니다. |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | 요청된 roleArn에서 대상 계정을 읽어 계정 경계 통과를 탐지합니다. 호출한 계정의 로그만 수집한 경우에도 동작합니다. |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | 누가 어디에서 역할을 수임했는지 기준으로 역할의 순위를 매깁니다. 평소 한 계정에서만 수임되던 역할에 두 번째 호출자가 생기면 여기서 드러나지만, 원시 이벤트 목록에서는 묻힙니다. |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | 프린시펄과 소스 IP별 GetCallerIdentity 호출을 보여줍니다. 탈취한 자격 증명으로 가장 먼저 실행하는 명령이며, 단 한 번의 호출이라 볼륨 임계값 기반 정찰 헌트로는 결코 잡히지 않습니다. |
-| 36 | 🪪 Federated Console Logins | timeseries | 외부 자격 증명 공급자를 통해 들어온 콘솔 로그인을 공급자 이름 및 출처와 함께 나열합니다. IdP가 침해된 구성 요소일 때 AWS에는 정상 로그인으로만 보입니다. |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center의 권한 세트 생성, 정책 연결, 계정 할당을 탐지합니다. 조직의 모든 계정에 상시 관리자 액세스를 부여하는 경로입니다. |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center의 자격 증명 저장소에 직접 생성된 사용자, 그룹, 멤버십을 탐지합니다. IAM에는 전혀 나타나지 않는 지속성이라 IAM만 모니터링하면 놓칩니다. |
-| 39 | 👑 Delegated Administrator Registration | timeseries | 조직 서비스의 위임 관리자 등록을 탐지합니다. 상위 Identity Center 플레이북이 CRITICAL로 분류하는 유일한 이벤트로, 조직 전체의 통제권을 다른 계정에 넘깁니다. |
+| 12 | 🏢 Cross-Account Access | timeseries | 호출자 계정이 수신자 계정과 다른 이벤트를 찾습니다. 측면 이동 신호입니다. |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | GetFederationToken 및 GetSessionToken 호출을 탐지합니다. 공격자는 이를 사용해 수명이 긴 키를 지속적인 임시 자격 증명으로 변환합니다. |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | AssumeRoleWithWebIdentity 호출을 탐지합니다. 잘못 구성된 OIDC 신뢰 (예: 지나치게 넓은 sub 클레임)를 악용하면 공격자가 제어하는 토큰을 사용해 역할을 하이재킹할 수 있습니다. |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center 관리 작업을 탐지합니다. 공격자는 SSO를 악용해 백도어 권한 세트를 만들거나 공격자가 제어하는 사용자에게 계정을 할당합니다. |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC 자격 증명 공급자 변경을 탐지합니다. 공격자가 제어하는 메타데이터로 SAML 공급자를 업데이트하면 지속적인 인증 백도어가 생성됩니다. |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer의 모든 사용을 탐지합니다. 공격자는 사용자 지정 정찰 스크립트를 작성하지 않고도 외부에서 접근 가능한 리소스를 열거하기 위해 네이티브 AWS 분석기를 활용합니다. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | 전체 IAM 환경을 매핑하는 IAM 열거 활동을 탐지합니다. 공격 초기 단계에서 흔히 발견됩니다. |
+| 19 | 🗝 Access Key Abuse | bar | 7일 내 3개 이상의 서로 다른 소스 IP에서 사용된 액세스 키를 탐지합니다. 키 유출의 강력한 지표입니다. |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations 계정 생성 및 위임 관리자 변경을 탐지합니다. 공격자는 메인 계정 밖에 지속적인 거점을 마련하기 위해 섀도 계정을 생성합니다. |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | 미인증 액세스가 활성화된 Cognito 자격 증명 풀을 탐지합니다. 익명 사용자가 미인증 IAM 역할의 권한으로 AWS API를 호출할 수 있게 합니다. |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Glue 개발 엔드포인트 생성과 자격 증명 수집을 위한 연결 열거를 탐지합니다. iam:PassRole + glue:CreateDevEndpoint는 전달된 역할의 전체 권한으로 SSH를 통한 접근을 부여합니다 — 가장 간과되기 쉬운 IAM 권한 상승 기법 중 하나입니다. |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker 노트북 인스턴스 생성 및 사전 서명 URL 생성을 탐지합니다. iam:PassRole + sagemaker:CreateNotebookInstance는 전달된 역할의 전체 AWS 권한을 가진 Jupyter 환경을 제공합니다. CreatePresignedNotebookInstanceUrl 단독으로도 기존 노트북에 대한 접근을 허용할 수 있습니다. |
+| 24 | 🪓 IAM Entity Deletion | timeseries | IAM 사용자, 역할, 정책, MFA 디바이스의 삭제를 탐지합니다. 공격자는 자신의 활동 흔적을 지우거나 방어자를 잠그기 위해 IAM 엔티티를 삭제합니다. |
+| 25 | 👑 AssumeRoot Usage | timeseries | 관리 계정에서 회원 계정의 루트로 향하는 sts:AssumeRoot 호출을 탐지합니다. 관리 계정이 침해되면 이 방법으로 모든 회원 계정을 장악할 수 있습니다. |
+| 26 | 🎫 Support Case Manipulation | timeseries | AWS Support 케이스 종료 및 댓글 활동을 탐지합니다. 공격자는 침해에 대한 AWS 알림을 억제하기 위해 남용/지원 케이스를 해결 처리합니다. |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito 사용자 풀 및 앱 클라이언트 변경(토큰 유효 기간 연장, 새 클라이언트, 관리자 사용자 생성)을 탐지합니다. 공격자는 이를 악용해 수명이 긴 토큰을 발급하거나 백도어 사용자를 심습니다. |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | 이미 수임한 역할 세션이 또 다른 역할을 수임하는 동작을 탐지합니다. 개별 AssumeRole 호출은 평범해 보이지만, 체인이야말로 공격자가 침해된 인스턴스 역할에서 실제로 원하는 권한까지 이동하는 경로입니다. |
+| 29 | 🎫 Session Credential Trace | bar | 각 임시 STS 세션(ASIA… 액세스 키)이 무엇을 했는지 요약합니다: 호출 수, 서비스, 소스 IP, 시간 범위. 자격 증명 침해 조사가 가장 먼저 던지는 범위 질문입니다. |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | 요청된 roleArn에서 대상 계정을 읽어 계정 경계 통과를 탐지합니다. 호출한 계정의 로그만 수집한 경우에도 동작합니다. |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | 누가 어디에서 역할을 수임했는지 기준으로 역할의 순위를 매깁니다. 평소 한 계정에서만 수임되던 역할에 두 번째 호출자가 생기면 여기서 드러나지만, 원시 이벤트 목록에서는 묻힙니다. |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | 프린시펄과 소스 IP별 GetCallerIdentity 호출을 보여줍니다. 탈취한 자격 증명으로 가장 먼저 실행하는 명령이며, 단 한 번의 호출이라 볼륨 임계값 기반 정찰 헌트로는 결코 잡히지 않습니다. |
+| 33 | 🪪 Federated Console Logins | timeseries | 외부 자격 증명 공급자를 통해 들어온 콘솔 로그인을 공급자 이름 및 출처와 함께 나열합니다. IdP가 침해된 구성 요소일 때 AWS에는 정상 로그인으로만 보입니다. |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center의 권한 세트 생성, 정책 연결, 계정 할당을 탐지합니다. 조직의 모든 계정에 상시 관리자 액세스를 부여하는 경로입니다. |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center의 자격 증명 저장소에 직접 생성된 사용자, 그룹, 멤버십을 탐지합니다. IAM에는 전혀 나타나지 않는 지속성이라 IAM만 모니터링하면 놓칩니다. |
+| 36 | 👑 Delegated Administrator Registration | timeseries | 조직 서비스의 위임 관리자 등록을 탐지합니다. 상위 Identity Center 플레이북이 CRITICAL로 분류하는 유일한 이벤트로, 조직 전체의 통제권을 다른 계정에 넘깁니다. |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | Bedrock 모델 호출 로깅의 삭제나 수정, 그리고 공격자가 계정을 악용하기 전에 로깅이 활성화되어 있는지 확인하는 행위를 탐지합니다(문서화된 LLMjacking IOC입니다). |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | 2개 이상의 리전에 걸쳐 Bedrock 모델을 열거하거나 한 시간에 10회 이상 열거 호출을 수행하는 호출자를 식별합니다. 도난당한 키의 소유자는 모델을 사용할 수 있는 위치를 찾기 위해 리전을 훑습니다. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | 실패한 Bedrock 호출(AccessDenied / ValidationException)의 버스트를 발견합니다. 도난당한 키 테스트는 유효한 조합을 찾을 때까지 여러 모델과 리전에 걸쳐 실패의 폭풍을 만들어냅니다. |
-| 6 | 🌍 Bedrock Callers & Origins | — | Bedrock을 사용한 적이 있는 모든 주체를 소스 IP, GeoIP 발신지, 사용자 에이전트, 모델 다양성과 함께 목록화합니다. Bedrock을 사용할 이유가 전혀 없는 호출자나 발신지를 찾아냅니다. |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore 토큰 볼트 발급을 프린시펄과 출처별로 집계합니다. 이 호출들은 서드파티 OAuth 토큰과 API 키를 내주므로, 악용은 AWS 외부 서비스까지 미칩니다. |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar 정책 엔진이 LOG_ONLY로 낮아진 경우를 포함해 AgentCore 게이트웨이 및 정책 변경을 탐지합니다. 기록만 하는 인가도 여전히 성공을 반환하므로 하위에서는 아무 문제도 보이지 않습니다. |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | 메모리 스트림이 외부 계정의 Kinesis ARN으로 전환된 경우를 포함해 AgentCore Memory 및 Registry 변경을 탐지합니다. 오염된 장기 메모리는 에이전트의 이후 모든 세션에 남습니다. |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore 코드 인터프리터와 브라우저의 수명 주기 이벤트를 네트워크 모드와 함께 나열합니다. 모드는 수정할 수 없으므로 삭제 후 재생성이 샌드박스의 네트워크 접근을 넓히는 유일한 방법입니다. |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore 평가자 변경과 X-Ray 샘플링·추적 대상 변경을 탐지합니다. 공격자가 만든 평가자는 채점하는 모든 응답을 읽어, 정당한 채널로 모델 출력을 유출합니다. |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore 토큰 볼트 발급을 프린시펄과 출처별로 집계합니다. 이 호출들은 서드파티 OAuth 토큰과 API 키를 내주므로, 악용은 AWS 외부 서비스까지 미칩니다. |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar 정책 엔진이 LOG_ONLY로 낮아진 경우를 포함해 AgentCore 게이트웨이 및 정책 변경을 탐지합니다. 기록만 하는 인가도 여전히 성공을 반환하므로 하위에서는 아무 문제도 보이지 않습니다. |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | 메모리 스트림이 외부 계정의 Kinesis ARN으로 전환된 경우를 포함해 AgentCore Memory 및 Registry 변경을 탐지합니다. 오염된 장기 메모리는 에이전트의 이후 모든 세션에 남습니다. |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore 코드 인터프리터와 브라우저의 수명 주기 이벤트를 네트워크 모드와 함께 나열합니다. 모드는 수정할 수 없으므로 삭제 후 재생성이 샌드박스의 네트워크 접근을 넓히는 유일한 방법입니다. |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore 평가자 변경과 X-Ray 샘플링·추적 대상 변경을 탐지합니다. 공격자가 만든 평가자는 채점하는 모든 응답을 읽어, 정당한 채널로 모델 출력을 유출합니다. |
 
 ### 🌐 Network & Infrastructure
 
 | # | 레이블 | 차트 | 설명 |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | 0.0.0.0/0에서 오는 트래픽을 허용하는 보안 그룹 규칙을 찾습니다. 직접적인 공개 노출 위험입니다. |
-| 2 | 🔥 Security Group Modifications | timeseries | 보안 그룹 규칙 변경, 특히 임의의 포트에서 0.0.0.0/0을 허용하는 규칙을 탐지합니다. |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | VPC 흐름 로그의 삭제를 탐지합니다. 흐름 로그를 삭제하면 네트워크 수준의 증거가 사라지며, 이는 중요한 방어 회피 지표입니다. |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | CloudFront 배포 생성과 오리진 변경을 탐지합니다. 오리진 변경은 CDN 트래픽을 공격자가 제어하는 서버로 리디렉션하여 MitM 가로채기나 데이터 수집을 가능하게 합니다. |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Network Firewall 및 Shield 보호 제거를 탐지합니다. 네트워크 계층 방어를 삭제하면 VPC가 직접적인 공격 트래픽에 노출됩니다. |
-| 6 | 🧱 Network ACL Changes | timeseries | 네트워크 ACL 항목 생성, 삭제, 교체를 탐지합니다. NACL은 보안 그룹을 재정의하며 서브넷 전체를 공격자에게 노출시킬 수 있습니다. |
-| 7 | 🛣️ Route Table Changes | timeseries | 라우트 테이블 변경을 탐지합니다. 라우트 추가나 교체를 통해 트래픽을 공격자가 제어하는 호스트로 리디렉션할 수 있습니다(MitM, 트래픽 하이재킹). |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | 새로운 VPN 연결, Direct Connect, Transit Gateway 연결을 탐지합니다. 공격자는 지속적인 C2 또는 유출 채널을 위해 은밀한 네트워크 터널을 생성합니다. |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | Elastic IP 할당 및 연결을 탐지합니다. 공격자는 안정적인 C2 인프라를 구축하기 위해 침해된 인스턴스에 고정 퍼블릭 IP를 할당합니다. |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | CreateKeyPair 및 ImportKeyPair 이벤트를 탐지합니다. 공격자는 인스턴스 접근을 유지하기 위한 지속성 메커니즘으로 SSH 키를 생성하거나 가져옵니다. |
-| 11 | 📡 Network Infrastructure Changes | timeseries | 공격자가 제어하는 인프라를 구축할 수 있는 VPC 및 네트워크 수준의 변경을 탐지합니다. |
-| 12 | 🏷 ACM Certificate Operations | timeseries | ACM 인증서 요청 및 삭제를 탐지합니다. 공격자는 침해된 계정을 사용해 피싱 인프라를 구축하기 위한 공격자 제어 도메인용 TLS 인증서를 발급합니다. |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway 키 생성 및 REST API 관리를 탐지합니다. Pacu의 api_gateway__create_api_keys는 IAM 키 교체에도 살아남는 지속적인 API 자격 증명을 생성합니다. 공격자는 접근 제어를 약화시키기 위해 API 권한 부여자도 수정합니다. |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC 엔드포인트를 통한 액세스 거부 오류를 탐지합니다. 잘못 구성된 엔드포인트 정책을 나타낼 수 있습니다. |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS 레코드 편집, 호스팅 영역 변경, 도메인 등록/이전을 탐지합니다. 공격자는 트래픽을 리디렉션하거나, 방치된 서브도메인을 탈취하거나, 피싱을 위한 유사 도메인을 등록합니다. |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | 엣지 보호가 제거가 아니라 완화되는 것을 탐지합니다: WebACL 기본 작업이 허용으로 전환, 규칙 그룹 완화, Shield 보호 삭제, CloudFront 오리진 재지정. |
+| 1 | 🔥 Security Group Modifications | timeseries | 보안 그룹 규칙 변경, 특히 임의의 포트에서 0.0.0.0/0을 허용하는 규칙을 탐지합니다. |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | VPC 흐름 로그의 삭제를 탐지합니다. 흐름 로그를 삭제하면 네트워크 수준의 증거가 사라지며, 이는 중요한 방어 회피 지표입니다. |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | CloudFront 배포 생성과 오리진 변경을 탐지합니다. 오리진 변경은 CDN 트래픽을 공격자가 제어하는 서버로 리디렉션하여 MitM 가로채기나 데이터 수집을 가능하게 합니다. |
+| 4 | 🧱 Network ACL Changes | timeseries | 네트워크 ACL 항목 생성, 삭제, 교체를 탐지합니다. NACL은 보안 그룹을 재정의하며 서브넷 전체를 공격자에게 노출시킬 수 있습니다. |
+| 5 | 🛣️ Route Table Changes | timeseries | 라우트 테이블 변경을 탐지합니다. 라우트 추가나 교체를 통해 트래픽을 공격자가 제어하는 호스트로 리디렉션할 수 있습니다(MitM, 트래픽 하이재킹). |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | 새로운 VPN 연결, Direct Connect, Transit Gateway 연결을 탐지합니다. 공격자는 지속적인 C2 또는 유출 채널을 위해 은밀한 네트워크 터널을 생성합니다. |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | Elastic IP 할당 및 연결을 탐지합니다. 공격자는 안정적인 C2 인프라를 구축하기 위해 침해된 인스턴스에 고정 퍼블릭 IP를 할당합니다. |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | CreateKeyPair 및 ImportKeyPair 이벤트를 탐지합니다. 공격자는 인스턴스 접근을 유지하기 위한 지속성 메커니즘으로 SSH 키를 생성하거나 가져옵니다. |
+| 9 | 📡 Network Infrastructure Changes | timeseries | 공격자가 제어하는 인프라를 구축할 수 있는 VPC 및 네트워크 수준의 변경을 탐지합니다. |
+| 10 | 🏷 ACM Certificate Operations | timeseries | ACM 인증서 요청 및 삭제를 탐지합니다. 공격자는 침해된 계정을 사용해 피싱 인프라를 구축하기 위한 공격자 제어 도메인용 TLS 인증서를 발급합니다. |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway 키 생성 및 REST API 관리를 탐지합니다. Pacu의 api_gateway__create_api_keys는 IAM 키 교체에도 살아남는 지속적인 API 자격 증명을 생성합니다. 공격자는 접근 제어를 약화시키기 위해 API 권한 부여자도 수정합니다. |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | DNS 레코드 편집, 호스팅 영역 변경, 도메인 등록/이전을 탐지합니다. 공격자는 트래픽을 리디렉션하거나, 방치된 서브도메인을 탈취하거나, 피싱을 위한 유사 도메인을 등록합니다. |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | 엣지 보호가 제거가 아니라 완화되는 것을 탐지합니다: WebACL 기본 작업이 허용으로 전환, 규칙 그룹 완화, Shield 보호 삭제, CloudFront 오리진 재지정. |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@
 
 | # | 레이블 | 차트 | 설명 |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | 콘솔 로그인 이벤트를 지리적 출처에 매핑합니다. 예기치 않은 국가에서의 로그인은 고위험입니다. |
-| 2 | 🚨 Unusual Country Access | bar | 드문 국가/자격 증명 조합을 보여줌으로써 예기치 않은 국가에서의 API 호출을 탐지합니다. |
-| 3 | 🚫 Access Denied by Country | bar | 액세스 거부 오류를 소스 국가별로 그룹화합니다. 한 국가에서 집중된 거부는 공격을 시사할 수 있습니다. |
-| 4 | 🔍 Write Events by Country | bar | 국가별로 그룹화된 변경(쓰기) API 호출을 보여줍니다. 예기치 않은 국가에서의 쓰기는 우선순위가 높습니다. |
-| 5 | 🌍 Top Source Countries | bar | API 호출량으로 소스 국가의 순위를 매깁니다. 모든 활동의 지리적 분포를 식별합니다. |
-| 6 | 🏢 Top ASN / Organizations | bar | API 호출량으로 자율 시스템(ISP/클라우드 공급자)을 나열합니다. VPN/호스팅 공급자를 찾아냅니다. |
-| 7 | 📍 Top Source Cities | bar | 이벤트량으로 소스 도시의 순위를 매깁니다. 가장 활발한 지리적 출처를 정확히 찾아냅니다. |
-| 8 | 📋 API Calls by Country (Event Name) | bar | 각 국가에서 호출되는 API 작업을 보여줍니다. 예기치 않은 국가에서의 쓰기 이벤트는 자격 증명 침해를 나타냅니다. |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | 각 국가에서 활동하는 IAM 자격 증명을 보여줍니다. 새로운 국가에서 나타나는 자격 증명은 높은 신뢰도의 침해 지표입니다. |
-| 10 | 🌐 Private / Internal IP Summary | bar | 프라이빗, 루프백, AWS 내부 IP에서 발생한 이벤트를 요약합니다. 예상되는 내부 트래픽의 베이스라인입니다. |
+| 1 | 🚨 Unusual Country Access | bar | 드문 국가/자격 증명 조합을 보여줌으로써 예기치 않은 국가에서의 API 호출을 탐지합니다. |
+| 2 | 🚫 Access Denied by Country | bar | 액세스 거부 오류를 소스 국가별로 그룹화합니다. 한 국가에서 집중된 거부는 공격을 시사할 수 있습니다. |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9개의 트리아지 KPI 카드(이벤트, 주체, IP, 루트, MFA 없는 로그인, 액세스 거부, 방어 회피, 국가, 리전) + 전역 이벤트량 추세 |
 | 🎯 Threat Detection | 14 | 방어 회피 종합 · 로깅 공백 · VPC 흐름 로그/Config/EventBridge/WAF 변조 · SCP/조직 멤버십 변경 · 오류 및 스로틀링 추세 · 쓰기/읽기 비율 · P1/P2 에스컬레이션 조건 KPI 카드 |
-| 🔑 Identity & Access | 16 | 콘솔 로그인 · MFA 추세 · 로그인 히트맵 · 실패→성공 인증 시퀀스 · 루트 사용 · IAM 엔티티 활동/삭제 · 권한 상승 타임라인 · 새 주체 · SSO · 교차 계정 AssumeRole · AssumeRoot 사용 |
+| 🔑 Identity & Access | 36 | 콘솔 로그인 · MFA 추세 · 로그인 히트맵 · 실패→성공 인증 시퀀스 · 루트 사용 · IAM 엔티티 활동/삭제 · 권한 상승 타임라인 · 새 주체 · SSO · 교차 계정 AssumeRole · AssumeRoot 사용 |
 | 🚨 High-Risk API Monitor | 5 | 보안 서비스 변조 & 자격 증명 검색 API 로그 · 상위 고위험 호출 · 상위 행위자 · 시계열 고위험 호출량 |
 | 📊 API Activity | 6 | 상위 API · 액세스 거부 작업 · 리전 분포 · 오류 코드 구성 · 소스 IP · 사용자 에이전트 |
 | 🪣 S3 & RDS | 18 | S3 대량 다운로드/삭제 · 버전 관리/로깅 비활성화 · 교차 계정 복제 · 버킷 정책/ACL · 열거 · 보호 설정 · Backup vault 삭제 · KMS 키 삭제 · RDS 스냅샷 공유 / 스냅샷 없는 삭제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS 쿼리/인스턴스 조작 · 영향을 위한 스토리지 재암호화 · 침해 통지용 접근 범위 · 계정 간 객체 복사 · 랜섬 노트 배치 |

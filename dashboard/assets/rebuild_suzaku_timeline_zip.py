@@ -2,7 +2,7 @@
 """Rebuild suzaku_timeline.zip — the Suzaku detection timeline dashboard.
 
 Database, three virtual datasets (detections, unnested ATT&CK tags, the file's
-own suzaku_meta provenance row) and 46 charts across six tabs.
+own suzaku_meta provenance row) and 44 charts across six tabs.
 
 Run after editing anything under ``suzaku_timeline/``, then re-import:
 
@@ -37,11 +37,9 @@ FILE_MAP = {
     # charts/
     "charts/access_key_activity.yaml": "charts/Access_Keys_Involved_in_Detections.yaml",
     "charts/account_activity.yaml": "charts/Detections_by_Account.yaml",
-    "charts/daily_severity_trend.yaml": "charts/Daily_Severity_Trend.yaml",
     "charts/detection_bursts.yaml": "charts/Detection_Bursts_5-minute_buckets.yaml",
     "charts/detection_detail.yaml": "charts/Detection_Detail_all_fields.yaml",
     "charts/detection_heatmap.yaml": "charts/Detection_Heatmap_Hour_x_Day.yaml",
-    "charts/detection_timeline.yaml": "charts/Detection_Timeline.yaml",
     "charts/detections_over_time.yaml": "charts/Detections_Over_Time_by_Severity.yaml",
     "charts/error_code_breakdown.yaml": "charts/Error_Codes_on_Detections.yaml",
     "charts/event_rule_matrix.yaml": "charts/Action_x_Rule_Matrix.yaml",

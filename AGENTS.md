@@ -81,12 +81,12 @@ cd ../../docker && docker compose run --rm superset-init   # re-import into Supe
 ```
 
 Per-module loops — Rust (`ingester/`): `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt`.
-Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (961 dashboard tests)): `pytest`,
+Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (1199 dashboard tests)): `pytest`,
 `ruff check .`, `black .`. TypeScript (`config_viz/frontend/`): `npm test -- --run`
 (114 frontend tests), `npm run build` (Vite → `../static/`).
 
-Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 1059 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 961, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
+Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 1681 (pytest), config_viz ≈ 67 backend +
+114 frontend, dashboard ≈ 1199, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
 and lifecycle). Test count must not decrease in a PR, and a PR that changes one updates this line
 and [CLAUDE.md](CLAUDE.md) together.
 

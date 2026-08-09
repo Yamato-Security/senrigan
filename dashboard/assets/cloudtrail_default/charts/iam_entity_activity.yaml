@@ -21,7 +21,7 @@ params:
       hasCustomLabel: true
       optionName: metric_total_events
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_events
       hasCustomLabel: true
       optionName: metric_write_events
@@ -33,7 +33,7 @@ params:
     - expressionType: SQL
       sqlExpression: >-
         ROUND(
-          COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+          COUNT(*) FILTER (WHERE read_only IS NOT TRUE) * 100.0
           / NULLIF(COUNT(*), 0), 1
         )
       label: write_ratio_pct
@@ -59,10 +59,10 @@ cache_timeout: null
 #     user_identity_arn,
 #     user_identity_type,
 #     COUNT(*)                                                       AS total_events,
-#     COUNT(CASE WHEN read_only = false THEN 1 END)                  AS write_events,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)                  AS write_events,
 #     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)             AS error_events,
 #     ROUND(
-#         COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+#         COUNT(*) FILTER (WHERE read_only IS NOT TRUE) * 100.0
 #         / NULLIF(COUNT(*), 0), 1
 #     )                                                              AS write_ratio_pct,
 #     MAX(event_time)                                                AS last_seen

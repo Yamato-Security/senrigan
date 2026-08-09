@@ -137,7 +137,10 @@ def test_q1_defense_evasion_hunts_are_p1() -> None:
 
 def test_q1_baseline_hunts_are_not_p1() -> None:
     """Volume/baseline views are context, not alerts."""
-    for label in ("🌍 Top Source Countries", "📍 Top Source Cities"):
+    for label in (
+        "🖥 Write Events from Management Console",
+        "🔍 Events with Errors (24h)",
+    ):
         assert get_hunt(label)["severity"] in {"P3", "P4"}
 
 
@@ -182,7 +185,7 @@ def test_q2_playbook_urls_point_at_the_upstream_repo() -> None:
 def test_q2_signature_hunts_name_their_playbook() -> None:
     expected = {
         "📝 Ransom Note Placement": "IRP-Ransomware",
-        "🔐 AssumeRole Cross-Account": "IRP-STSTokenAbuse",
+        "🌐 AssumeRole Target Account (roleArn)": "IRP-STSTokenAbuse",
         "🔗 SAML / OIDC Provider Updates": "IRP-FederatedAccessAbuse",
         "🆔 IAM Identity Center (SSO) Events": "IRP-IdentityCenterCompromise",
         "👤 New IAM Users / Keys": "IRP-CredCompromise",

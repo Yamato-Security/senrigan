@@ -99,11 +99,13 @@ cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   #
 cd ../../docker && docker compose run --rm superset-init   # re-import (idempotent)
 ```
 
-`cloudtrail_rare.zip` is derived from `cloudtrail_default/` (ascending/bottom-N ordering), and
-`dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
+`cloudtrail_rare.zip` is derived from `cloudtrail_default/` (ascending/bottom-N ordering) and is a
+**subset**: only charts declaring `params.order_desc` have an ordering to invert, so KPI cards,
+time series, the world map and the heatmaps are not mirrored and a tab left with no chart is
+dropped. `dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
 
-Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 1059 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 961 (`make test-dashboard`), root `tests/` ≈ 238
+Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 1681 (pytest),
+config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 1199 (`make test-dashboard`), root `tests/` ≈ 238
 (`make test-repo`). A PR that changes a count updates this line **and** [AGENTS.md](AGENTS.md)
 together — stale counts cause false "regression" alarms later.
 

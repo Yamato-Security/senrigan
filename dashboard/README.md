@@ -339,7 +339,7 @@ dashboard/
 ├── assets/
 │   ├── cloudtrail_default.zip          # Superset import ZIP (charts + dashboard + dataset)
 │   ├── cloudtrail_rare.zip             # Rare Events dashboard ZIP (generated, ascending order)
-│   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (46 charts)
+│   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (44 charts)
 │   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (19 charts)
 │   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (15 charts)
 │   ├── zip_builder.py                  # Shared deterministic ZIP packaging

@@ -1,12 +1,15 @@
 """Phase 4 — LLMjacking detection tests for builtin_hunts.yaml.
 
-Tests LJ-1 through LJ-6 in the Red-Green-Refactor cycle:
+Tests LJ-1 through LJ-5 in the Red-Green-Refactor cycle:
   LJ-1: Bedrock Model Invocation Spike
   LJ-2: Bedrock Model Access Enablement
   LJ-3: Bedrock Invocation Logging Tampering
   LJ-4: Bedrock Reconnaissance Sweep
   LJ-5: Failed Bedrock Invocations
-  LJ-6: Bedrock Callers & Origins
+
+LJ-6 (Bedrock Callers & Origins) was retired: a P4 inventory of every caller
+that ever touched Bedrock, which LJ-4's recon sweep and LJ-1's spike already
+surface with a threshold attached.
 
 LLMjacking = attackers using stolen AWS credentials to run LLM inference
 on Amazon Bedrock at the victim's expense, typically resold through
@@ -34,15 +37,12 @@ LJ2_LABEL = "\U0001f513 Bedrock Model Access Enablement"
 LJ3_LABEL = "\U0001f648 Bedrock Invocation Logging Tampering"
 LJ4_LABEL = "\U0001f9ed Bedrock Reconnaissance Sweep"
 LJ5_LABEL = "⛔ Failed Bedrock Invocations"
-LJ6_LABEL = "\U0001f30d Bedrock Callers & Origins"
-
 PHASE4_LABELS = [
     LJ1_LABEL,
     LJ2_LABEL,
     LJ3_LABEL,
     LJ4_LABEL,
     LJ5_LABEL,
-    LJ6_LABEL,
 ]
 
 AI_CATEGORY = "\U0001f916 AI & LLM Abuse"
@@ -417,33 +417,6 @@ def test_lj5_excludes_successful_invocations(phase4_db: str):
     rows = _run_sql(phase4_db, sql)
     arns = [r["user_identity_arn"] for r in rows]
     assert "arn:aws:iam::111111111111:user/llmjacker" not in arns
-
-
-# ---------------------------------------------------------------------------
-# LJ-6: Bedrock Callers & Origins
-# ---------------------------------------------------------------------------
-
-
-def test_lj6_inventories_callers_with_geo(phase4_db: str):
-    """LJ-6: every Bedrock caller appears with origin and model diversity."""
-    sql = get_builtin_sql(LJ6_LABEL)
-    rows = _run_sql(phase4_db, sql)
-    arns = {r["user_identity_arn"] for r in rows}
-    assert "arn:aws:iam::111111111111:user/llmjacker" in arns
-    assert "arn:aws:iam::111111111111:user/data-scientist" in arns
-    jacker = next(r for r in rows if r["user_identity_arn"].endswith("user/llmjacker"))
-    assert jacker["geo_country_code"] == "RU"
-    assert jacker["first_seen"] is not None
-    assert jacker["last_seen"] is not None
-    assert jacker["distinct_models"] >= 1
-
-
-def test_lj6_excludes_non_bedrock_callers(phase4_db: str):
-    """LJ-6: callers who never touched Bedrock must not appear."""
-    sql = get_builtin_sql(LJ6_LABEL)
-    rows = _run_sql(phase4_db, sql)
-    arns = {r["user_identity_arn"] for r in rows}
-    assert "arn:aws:iam::111111111111:user/jenkins" not in arns
 
 
 # ---------------------------------------------------------------------------

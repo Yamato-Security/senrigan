@@ -2,25 +2,25 @@
 
 > 💡 Não é necessário SQL nem conhecimento avançado de AWS — basta selecionar uma caça no menu suspenso e obter resultados instantaneamente.
 
-## 🎯 Caças Integradas — 151 consultas
+## 🎯 Caças Integradas — 136 consultas
 
 As categorias são ordenadas por prioridade de triagem DFIR — verifique primeiro a adulteração de ferramentas de detecção, depois o abuso de identidade e, em seguida, o impacto sobre os dados.
 
 | Categoria | Consultas | Principais Ameaças Cobertas |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | Adulteração de serviços de auditoria (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · exclusão de SCP · supressão de alarmes · exfiltração de logs · correlação da cadeia de ataque de ransomware |
-| 🔑 Identity & Access | 44 | Uso de root · login no console/MFA · escalonamento de privilégios · backdoor em política de confiança · abuso de PassRole · AssumeRole entre contas · SSO/SAML/OIDC · enumeração de credenciais · exclusão de entidades IAM · tomada de controle via AssumeRoot · abuso de user-pool/token do Cognito · supressão de casos de suporte · encadeamento de funções · rastreamento de credenciais de sessão · reconhecimento com GetCallerIdentity · logins federados no console · conjuntos de permissões do Identity Center e administrador delegado · encadeamento de funções · rastreamento de credenciais de sessão · chamadas de API sem MFA · logins federados · conjuntos de permissões do Identity Center |
+| 🔑 Identity & Access | 36 | Uso de root · login no console/MFA · escalonamento de privilégios · backdoor em política de confiança · abuso de PassRole · AssumeRole entre contas · SSO/SAML/OIDC · enumeração de credenciais · exclusão de entidades IAM · tomada de controle via AssumeRoot · abuso de user-pool/token do Cognito · supressão de casos de suporte · encadeamento de funções · rastreamento de credenciais de sessão · reconhecimento com GetCallerIdentity · logins federados no console · conjuntos de permissões do Identity Center e administrador delegado · chamadas de API sem MFA |
 | 🪣 Data & Storage | 30 | Exclusão/download em massa no S3 · leitura em massa de segredos · adulteração de backup · operações de KMS · compartilhamento de snapshots · exfiltração via EBS Direct API · exportação do DynamoDB · replicação entre contas no S3 · criptografia ransomware SSE-C · exclusão disparada por lifecycle · manipulação da RDS Data API · recriptografia de armazenamento para impacto · colocação de nota de resgate · dimensionamento para notificação de violação · cópia de objetos entre contas · geração de URLs pré-assinadas |
 | ⚡ Compute & Serverless | 17 | Parada/encerramento em massa de EC2 · movimentação lateral via SSM · adulteração de Lambda/ECS/EKS/ECR · persistência via EventBridge · cryptomining · abuso do Lightsail · enfraquecimento de IMDS/SSRF · exclusão de AMI/snapshot · sequestro do WorkSpaces |
-| 🤖 AI & LLM Abuse | 11 | Picos de invocação do Bedrock · habilitação de acesso a modelos · adulteração do logging de invocação · reconhecimento por varredura de regiões · rajadas de invocações falhadas · inventário de chamadores/origens (LLMjacking) · cofre de tokens do AgentCore · desvio da autorização do gateway · integridade da memória · mudança de modo de rede do sandbox · adulteração da observabilidade |
-| 🌐 Network & Infrastructure | 16 | SG aberto à internet · exclusão de logs de fluxo da VPC · sequestro de CloudFront · túneis VPN/TGW ocultos · Elastic IP para C2 · chaves do API Gateway · sequestro de Route 53/domínio · enfraquecimento da proteção contra DDoS |
+| 🤖 AI & LLM Abuse | 10 | Picos de invocação do Bedrock · habilitação de acesso a modelos · adulteração do logging de invocação · reconhecimento por varredura de regiões · rajadas de invocações falhadas · cofre de tokens do AgentCore · desvio da autorização do gateway · integridade da memória · mudança de modo de rede do sandbox · adulteração da observabilidade |
+| 🌐 Network & Infrastructure | 13 | SG aberto à internet · exclusão de logs de fluxo da VPC · sequestro de CloudFront · túneis VPN/TGW ocultos · Elastic IP para C2 · chaves do API Gateway · sequestro de Route 53/domínio · enfraquecimento da proteção contra DDoS |
 | 🕵 Threat Patterns | 10 | Rajada de reconhecimento · user agents incomuns · disseminação em várias regiões · primeiras chamadas de API · atividade em região vista pela primeira vez · atividade fora do horário comercial · autoescalonamento de privilégios · desvio de volume diário · criação de recursos em regiões não usadas · uso intenso de API |
 | 📊 Activity & Baseline | 3 | Eventos de escrita no console · picos de erros · erros recentes |
-| 🌍 GeoIP Analysis | 10 | Logins/negações/escritas no console por país · acesso a partir de país raro · detalhamento por país/ASN/cidade · event_name × país · identidade × país · linha de base de IP privado |
+| 🌍 GeoIP Analysis | 2 | Logins/negações/escritas no console por país · acesso a partir de país raro |
 | ☁ IaC & Platform | 2 | Cadeia de suprimentos de CI/CD · abuso de CloudFormation |
 
 <details markdown="1">
-<summary>📋 Lista completa — todas as 151 consultas (clique para expandir)</summary>
+<summary>📋 Lista completa — todas as 136 consultas (clique para expandir)</summary>
 
 ## Caças Integradas
 
@@ -57,34 +57,31 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 9 | 👥 IAM Group Membership Changes | timeseries | Detecta todos os eventos AddUserToGroup e RemoveUserFromGroup, independentemente do nome do grupo. Qualquer adição a grupo pode indicar escalonamento de privilégios por meio de políticas herdadas do grupo. |
 | 10 | 👤 New IAM Users / Keys | timeseries | Identifica eventos de criação de usuário IAM e chave de acesso. Criação inesperada pode indicar persistência. |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | Detecta chamadas iam:PassRole. Passar uma função privilegiada para EC2/Lambda/Glue/ECS/SageMaker é o caminho mais comum de escalonamento lateral de privilégios. |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | Mostra eventos AssumeRole em que o chamador e o destino estão em contas AWS diferentes. Indica movimentação lateral. |
-| 13 | 🏢 Cross-Account Access | timeseries | Encontra eventos em que a conta do chamador difere da conta destinatária. Sinal de movimentação lateral. |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | Detecta chamadas GetFederationToken e GetSessionToken. Atacantes usam isso para converter chaves de longa duração em credenciais temporárias persistentes. |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Detecta chamadas AssumeRoleWithWebIdentity. Abusar de uma confiança OIDC mal configurada (por exemplo, uma claim sub excessivamente ampla) permite que atacantes sequestrem uma função usando tokens controlados pelo atacante. |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detecta ações de gerenciamento do AWS IAM Identity Center. Atacantes abusam do SSO para criar permission sets backdoor ou atribuir contas a usuários controlados pelo atacante. |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | Detecta alterações de provedor de identidade SAML/OIDC. Atualizar um provedor SAML com metadados controlados pelo atacante cria um backdoor de autenticação persistente. |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | Detecta qualquer uso do IAM Access Analyzer. Atacantes usam o analisador nativo da AWS para enumerar recursos acessíveis externamente sem escrever scripts de reconhecimento personalizados. |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | Detecta atividade de enumeração de IAM que mapeia todo o cenário de IAM. Comum nos estágios iniciais de um ataque. |
-| 20 | 🗝 Access Key Abuse | bar | Detecta chaves de acesso usadas a partir de 3 ou mais IPs de origem distintos em 7 dias. Forte indicador de vazamento de chave. |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | Detecta criação de conta no Organizations e alterações de administrador delegado. Atacantes criam contas sombra para estabelecer pontos de apoio persistentes fora da conta principal. |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | Detecta Cognito Identity Pools com acesso não autenticado habilitado. Permite que usuários anônimos chamem APIs da AWS com as permissões da função IAM não autenticada. |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Detecta criação de endpoint de desenvolvimento do Glue e enumeração de conexões. iam:PassRole + glue:CreateDevEndpoint concede permissões completas da função via SSH — uma das técnicas de escalonamento de privilégios IAM mais negligenciadas. |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detecta criação de instância de notebook do SageMaker e geração de URL pré-assinada. iam:PassRole + sagemaker:CreateNotebookInstance fornece um ambiente Jupyter com as permissões AWS completas da função passada. CreatePresignedNotebookInstanceUrl sozinho pode conceder acesso a um notebook existente. |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Detecta criação de recursos do Data Pipeline e CodeStar. Ambos aceitam iam:PassRole e podem executar código arbitrário com as permissões da função passada. CodeStar:CreateProjectFromTemplate é uma API não documentada que cria uma função IAM administradora. |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Detecta criação e execução de máquina de estado do Step Functions. iam:PassRole + states:CreateStateMachine + states:StartExecution permite executar tarefas arbitrárias do Lambda/ECS sob as permissões da função passada. |
-| 27 | 🪓 IAM Entity Deletion | timeseries | Detecta exclusão de usuários, funções, políticas e dispositivos MFA do IAM. Atacantes excluem entidades IAM para remover rastros de sua atividade ou bloquear o acesso dos defensores. |
-| 28 | 👑 AssumeRoot Usage | timeseries | Detecta chamadas sts:AssumeRoot da conta de gerenciamento para o root de uma conta membro. Uma conta de gerenciamento comprometida pode assumir o controle de todas as contas membro dessa forma. |
-| 29 | 🎫 Support Case Manipulation | timeseries | Detecta encerramento de casos do AWS Support e atividade de comentários. Atacantes resolvem casos de abuso/suporte para suprimir notificações da AWS sobre um comprometimento. |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Detecta alterações em user pool e app client do Cognito: validade estendida de token, novos clients e criação de usuário administrador. Atacantes abusam disso para emitir tokens de longa duração ou plantar usuários backdoor. |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Detecta uma sessão de função assumida assumindo outra função. Chamadas AssumeRole isoladas parecem comuns; a cadeia é como um invasor caminha de uma função de instância comprometida até as permissões que realmente quer. |
-| 32 | 🎫 Session Credential Trace | bar | Resume o que cada sessão temporária do STS (chave de acesso ASIA…) fez: número de chamadas, serviços, IPs de origem e janela de tempo. A pergunta de escopo com que toda investigação de credencial comprometida começa. |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Detecta cruzamentos de fronteira de conta lendo a conta de destino no roleArn solicitado, o que funciona mesmo quando apenas os logs da conta chamadora foram ingeridos. |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Classifica funções por quem as assume e de onde. Uma função normalmente assumida por uma conta que de repente ganha um segundo chamador se destaca aqui, enquanto a lista bruta de eventos a enterra. |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | Mostra chamadas GetCallerIdentity por principal e IP de origem. É o primeiro comando executado com credenciais roubadas — e uma única chamada, que caças de reconhecimento por limiar de volume nunca alcançam. |
-| 36 | 🪪 Federated Console Logins | timeseries | Lista logins no console que chegaram por um provedor de identidade externo, com o nome do provedor e a origem. Quando o IdP é o componente comprometido, a AWS vê apenas um login válido. |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | Detecta a criação de conjuntos de permissões, anexação de políticas e atribuições de conta no IAM Identity Center — o caminho para acesso administrativo permanente em todas as contas da organização. |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | Detecta usuários, grupos e associações criados diretamente no repositório de identidades do Identity Center — persistência que nunca aparece no IAM e escapa ao monitoramento restrito ao IAM. |
-| 39 | 👑 Delegated Administrator Registration | timeseries | Detecta o registro de um administrador delegado para um serviço da organização. O único evento que o playbook do Identity Center classifica como CRITICAL: entrega o controle de toda a organização a outra conta. |
+| 12 | 🏢 Cross-Account Access | timeseries | Encontra eventos em que a conta do chamador difere da conta destinatária. Sinal de movimentação lateral. |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | Detecta chamadas GetFederationToken e GetSessionToken. Atacantes usam isso para converter chaves de longa duração em credenciais temporárias persistentes. |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Detecta chamadas AssumeRoleWithWebIdentity. Abusar de uma confiança OIDC mal configurada (por exemplo, uma claim sub excessivamente ampla) permite que atacantes sequestrem uma função usando tokens controlados pelo atacante. |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detecta ações de gerenciamento do AWS IAM Identity Center. Atacantes abusam do SSO para criar permission sets backdoor ou atribuir contas a usuários controlados pelo atacante. |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | Detecta alterações de provedor de identidade SAML/OIDC. Atualizar um provedor SAML com metadados controlados pelo atacante cria um backdoor de autenticação persistente. |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | Detecta qualquer uso do IAM Access Analyzer. Atacantes usam o analisador nativo da AWS para enumerar recursos acessíveis externamente sem escrever scripts de reconhecimento personalizados. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Detecta atividade de enumeração de IAM que mapeia todo o cenário de IAM. Comum nos estágios iniciais de um ataque. |
+| 19 | 🗝 Access Key Abuse | bar | Detecta chaves de acesso usadas a partir de 3 ou mais IPs de origem distintos em 7 dias. Forte indicador de vazamento de chave. |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | Detecta criação de conta no Organizations e alterações de administrador delegado. Atacantes criam contas sombra para estabelecer pontos de apoio persistentes fora da conta principal. |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | Detecta Cognito Identity Pools com acesso não autenticado habilitado. Permite que usuários anônimos chamem APIs da AWS com as permissões da função IAM não autenticada. |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Detecta criação de endpoint de desenvolvimento do Glue e enumeração de conexões. iam:PassRole + glue:CreateDevEndpoint concede permissões completas da função via SSH — uma das técnicas de escalonamento de privilégios IAM mais negligenciadas. |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detecta criação de instância de notebook do SageMaker e geração de URL pré-assinada. iam:PassRole + sagemaker:CreateNotebookInstance fornece um ambiente Jupyter com as permissões AWS completas da função passada. CreatePresignedNotebookInstanceUrl sozinho pode conceder acesso a um notebook existente. |
+| 24 | 🪓 IAM Entity Deletion | timeseries | Detecta exclusão de usuários, funções, políticas e dispositivos MFA do IAM. Atacantes excluem entidades IAM para remover rastros de sua atividade ou bloquear o acesso dos defensores. |
+| 25 | 👑 AssumeRoot Usage | timeseries | Detecta chamadas sts:AssumeRoot da conta de gerenciamento para o root de uma conta membro. Uma conta de gerenciamento comprometida pode assumir o controle de todas as contas membro dessa forma. |
+| 26 | 🎫 Support Case Manipulation | timeseries | Detecta encerramento de casos do AWS Support e atividade de comentários. Atacantes resolvem casos de abuso/suporte para suprimir notificações da AWS sobre um comprometimento. |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | Detecta alterações em user pool e app client do Cognito: validade estendida de token, novos clients e criação de usuário administrador. Atacantes abusam disso para emitir tokens de longa duração ou plantar usuários backdoor. |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | Detecta uma sessão de função assumida assumindo outra função. Chamadas AssumeRole isoladas parecem comuns; a cadeia é como um invasor caminha de uma função de instância comprometida até as permissões que realmente quer. |
+| 29 | 🎫 Session Credential Trace | bar | Resume o que cada sessão temporária do STS (chave de acesso ASIA…) fez: número de chamadas, serviços, IPs de origem e janela de tempo. A pergunta de escopo com que toda investigação de credencial comprometida começa. |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Detecta cruzamentos de fronteira de conta lendo a conta de destino no roleArn solicitado, o que funciona mesmo quando apenas os logs da conta chamadora foram ingeridos. |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | Classifica funções por quem as assume e de onde. Uma função normalmente assumida por uma conta que de repente ganha um segundo chamador se destaca aqui, enquanto a lista bruta de eventos a enterra. |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | Mostra chamadas GetCallerIdentity por principal e IP de origem. É o primeiro comando executado com credenciais roubadas — e uma única chamada, que caças de reconhecimento por limiar de volume nunca alcançam. |
+| 33 | 🪪 Federated Console Logins | timeseries | Lista logins no console que chegaram por um provedor de identidade externo, com o nome do provedor e a origem. Quando o IdP é o componente comprometido, a AWS vê apenas um login válido. |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | Detecta a criação de conjuntos de permissões, anexação de políticas e atribuições de conta no IAM Identity Center — o caminho para acesso administrativo permanente em todas as contas da organização. |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | Detecta usuários, grupos e associações criados diretamente no repositório de identidades do Identity Center — persistência que nunca aparece no IAM e escapa ao monitoramento restrito ao IAM. |
+| 36 | 👑 Delegated Administrator Registration | timeseries | Detecta o registro de um administrador delegado para um serviço da organização. O único evento que o playbook do Identity Center classifica como CRITICAL: entrega o controle de toda a organização a outra conta. |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | Detecta exclusão ou modificação do logging de invocação de modelos do Bedrock, além de atacantes verificando se o logging está habilitado antes de abusar da conta (um IOC de LLMjacking documentado). |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | Identifica chamadores enumerando modelos do Bedrock em 2 ou mais regiões, ou com 10 ou mais chamadas de enumeração em uma hora. Portadores de chaves roubadas varrem regiões para encontrar onde os modelos estão utilizáveis. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Encontra rajadas de invocações falhadas do Bedrock (AccessDenied / ValidationException). O teste de chaves roubadas produz tempestades de falhas em vários modelos e regiões antes que uma combinação funcional seja encontrada. |
-| 6 | 🌍 Bedrock Callers & Origins | — | Inventaria todo chamador que já tocou no Bedrock, com IP de origem, origem por GeoIP, user agent e diversidade de modelos. Identifique o chamador ou origem que não deveria usar o Bedrock de forma alguma. |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | Agrega a emissão do cofre de tokens do AgentCore por principal e origem. Essas chamadas distribuem tokens OAuth e chaves de API de terceiros, então o abuso alcança serviços fora da AWS. |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Detecta mudanças de Gateway e políticas do AgentCore, incluindo um mecanismo de políticas Cedar rebaixado para LOG_ONLY. Uma autorização que apenas registra continua retornando sucesso, então nada a jusante parece errado. |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | Detecta mudanças em Memory e Registry do AgentCore, incluindo um fluxo de memória redirecionado para um ARN do Kinesis de outra conta. Memória de longo prazo envenenada persiste em todas as sessões futuras do agente. |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Lista eventos de ciclo de vida do interpretador de código e do navegador do AgentCore com seu modo de rede. O modo não pode ser editado, então excluir e recriar é a única forma de ampliar o acesso de rede de um sandbox. |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | Detecta mudanças em avaliadores do AgentCore e na amostragem ou nos destinos de rastreamento do X-Ray. Um avaliador criado pelo invasor lê cada resposta que avalia, exportando a saída do modelo por um canal legítimo. |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | Agrega a emissão do cofre de tokens do AgentCore por principal e origem. Essas chamadas distribuem tokens OAuth e chaves de API de terceiros, então o abuso alcança serviços fora da AWS. |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Detecta mudanças de Gateway e políticas do AgentCore, incluindo um mecanismo de políticas Cedar rebaixado para LOG_ONLY. Uma autorização que apenas registra continua retornando sucesso, então nada a jusante parece errado. |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | Detecta mudanças em Memory e Registry do AgentCore, incluindo um fluxo de memória redirecionado para um ARN do Kinesis de outra conta. Memória de longo prazo envenenada persiste em todas as sessões futuras do agente. |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Lista eventos de ciclo de vida do interpretador de código e do navegador do AgentCore com seu modo de rede. O modo não pode ser editado, então excluir e recriar é a única forma de ampliar o acesso de rede de um sandbox. |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | Detecta mudanças em avaliadores do AgentCore e na amostragem ou nos destinos de rastreamento do X-Ray. Um avaliador criado pelo invasor lê cada resposta que avalia, exportando a saída do modelo por um canal legítimo. |
 
 ### 🌐 Network & Infrastructure
 
 | # | Rótulo | Gráfico | Descrição |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | Encontra regras de grupo de segurança que permitem tráfego de 0.0.0.0/0. Risco de exposição pública direta. |
-| 2 | 🔥 Security Group Modifications | timeseries | Detecta alterações de regra de grupo de segurança, especialmente regras que permitem 0.0.0.0/0 em qualquer porta. |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | Detecta exclusão de VPC Flow Logs. Remover logs de fluxo elimina evidências no nível de rede — um indicador crítico de evasão de defesa. |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | Detecta criação de distribuição CloudFront e alterações de origem. Modificar origens redireciona o tráfego de CDN para servidores controlados pelo atacante, para interceptação MitM ou coleta de dados. |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Detecta remoção de proteção do Network Firewall e do Shield. Excluir defesas na camada de rede expõe as VPCs a tráfego de ataque direto. |
-| 6 | 🧱 Network ACL Changes | timeseries | Detecta criação, exclusão e substituição de entrada de Network ACL. NACLs sobrepõem-se a grupos de segurança e podem abrir sub-redes inteiras a atacantes. |
-| 7 | 🛣️ Route Table Changes | timeseries | Detecta modificações de tabela de rotas. Adicionar ou substituir rotas pode redirecionar o tráfego para hosts controlados pelo atacante (MitM, sequestro de tráfego). |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Detecta novas conexões VPN, Direct Connect e anexações de Transit Gateway. Atacantes criam túneis de rede ocultos para canais persistentes de C2 ou exfiltração de dados. |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | Detecta alocação e associação de Elastic IP. Atacantes atribuem um IP público fixo a uma instância comprometida para criar uma infraestrutura de C2 estável. |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | Detecta eventos CreateKeyPair e ImportKeyPair. Atacantes criam ou importam chaves SSH como um mecanismo de persistência para manter o acesso à instância. |
-| 11 | 📡 Network Infrastructure Changes | timeseries | Detecta alterações de VPC e de nível de rede que podem estabelecer infraestrutura controlada pelo atacante. |
-| 12 | 🏷 ACM Certificate Operations | timeseries | Detecta solicitações e exclusões de certificado ACM. Atacantes usam contas comprometidas para emitir certificados TLS para domínios controlados pelo atacante, a fim de construir infraestrutura de phishing. |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | Detecta criação de chave do API Gateway e gerenciamento de REST API. O api_gateway__create_api_keys do Pacu cria credenciais de API persistentes que sobrevivem à rotação de chaves IAM. Atacantes também modificam authorizers de API para enfraquecer os controles de acesso. |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | Detecta erros de acesso negado via endpoints da VPC. Pode indicar política de endpoint mal configurada. |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | Detecta edições de registro DNS, alterações de hosted zone e registro/transferência de domínio. Atacantes redirecionam tráfego, assumem subdomínios órfãos ou registram domínios semelhantes para phishing. |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | Detecta proteções de borda afrouxadas em vez de removidas: ação padrão de um WebACL alterada para permitir, grupos de regras relaxados, proteções do Shield excluídas, origens do CloudFront redirecionadas. |
+| 1 | 🔥 Security Group Modifications | timeseries | Detecta alterações de regra de grupo de segurança, especialmente regras que permitem 0.0.0.0/0 em qualquer porta. |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | Detecta exclusão de VPC Flow Logs. Remover logs de fluxo elimina evidências no nível de rede — um indicador crítico de evasão de defesa. |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | Detecta criação de distribuição CloudFront e alterações de origem. Modificar origens redireciona o tráfego de CDN para servidores controlados pelo atacante, para interceptação MitM ou coleta de dados. |
+| 4 | 🧱 Network ACL Changes | timeseries | Detecta criação, exclusão e substituição de entrada de Network ACL. NACLs sobrepõem-se a grupos de segurança e podem abrir sub-redes inteiras a atacantes. |
+| 5 | 🛣️ Route Table Changes | timeseries | Detecta modificações de tabela de rotas. Adicionar ou substituir rotas pode redirecionar o tráfego para hosts controlados pelo atacante (MitM, sequestro de tráfego). |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Detecta novas conexões VPN, Direct Connect e anexações de Transit Gateway. Atacantes criam túneis de rede ocultos para canais persistentes de C2 ou exfiltração de dados. |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | Detecta alocação e associação de Elastic IP. Atacantes atribuem um IP público fixo a uma instância comprometida para criar uma infraestrutura de C2 estável. |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | Detecta eventos CreateKeyPair e ImportKeyPair. Atacantes criam ou importam chaves SSH como um mecanismo de persistência para manter o acesso à instância. |
+| 9 | 📡 Network Infrastructure Changes | timeseries | Detecta alterações de VPC e de nível de rede que podem estabelecer infraestrutura controlada pelo atacante. |
+| 10 | 🏷 ACM Certificate Operations | timeseries | Detecta solicitações e exclusões de certificado ACM. Atacantes usam contas comprometidas para emitir certificados TLS para domínios controlados pelo atacante, a fim de construir infraestrutura de phishing. |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | Detecta criação de chave do API Gateway e gerenciamento de REST API. O api_gateway__create_api_keys do Pacu cria credenciais de API persistentes que sobrevivem à rotação de chaves IAM. Atacantes também modificam authorizers de API para enfraquecer os controles de acesso. |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | Detecta edições de registro DNS, alterações de hosted zone e registro/transferência de domínio. Atacantes redirecionam tráfego, assumem subdomínios órfãos ou registram domínios semelhantes para phishing. |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | Detecta proteções de borda afrouxadas em vez de removidas: ação padrão de um WebACL alterada para permitir, grupos de regras relaxados, proteções do Shield excluídas, origens do CloudFront redirecionadas. |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 
 | # | Rótulo | Gráfico | Descrição |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | Mapeia eventos de login no console à sua origem geográfica. Logins de países inesperados são de alto risco. |
-| 2 | 🚨 Unusual Country Access | bar | Detecta chamadas de API de países inesperados exibindo combinações raras de país/identidade. |
-| 3 | 🚫 Access Denied by Country | bar | Agrupa erros de acesso negado por país de origem. Negações concentradas de um único país podem sinalizar um ataque. |
-| 4 | 🔍 Write Events by Country | bar | Mostra chamadas de API que alteram estado (escrita) agrupadas por país. Escritas de países inesperados são de alta prioridade. |
-| 5 | 🌍 Top Source Countries | bar | Classifica os países de origem por volume de chamadas de API. Identifica a distribuição geográfica de toda a atividade. |
-| 6 | 🏢 Top ASN / Organizations | bar | Lista sistemas autônomos (ISPs/provedores de nuvem) por volume de chamadas de API. Identifique provedores de VPN/hospedagem. |
-| 7 | 📍 Top Source Cities | bar | Classifica as cidades de origem por volume de eventos. Aponta com precisão as origens geográficas mais ativas. |
-| 8 | 📋 API Calls by Country (Event Name) | bar | Mostra quais operações de API são chamadas a partir de cada país. Eventos de escrita de países inesperados indicam comprometimento de credenciais. |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | Mostra quais identidades IAM estão ativas em cada país. Uma identidade que surge a partir de um novo país é um indicador de comprometimento de alta confiança. |
-| 10 | 🌐 Private / Internal IP Summary | bar | Resume eventos de IPs privados, loopback e internos da AWS. Linha de base para o tráfego interno esperado. |
+| 1 | 🚨 Unusual Country Access | bar | Detecta chamadas de API de países inesperados exibindo combinações raras de país/identidade. |
+| 2 | 🚫 Access Denied by Country | bar | Agrupa erros de acesso negado por país de origem. Negações concentradas de um único país podem sinalizar um ataque. |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 cartões de KPI de triagem (eventos, entidades, IPs, root, logins sem MFA, acesso negado, evasão de defesa, países, regiões) + tendência global de volume de eventos |
 | 🎯 Threat Detection | 14 | Catch-all de evasão de defesa · lacunas de logging · adulteração de VPC flow log/Config/EventBridge/WAF · alterações de SCP/associação à organização · tendências de erro e throttling · proporção escrita/leitura · cartões KPI de gatilhos de escalonamento P1/P2 |
-| 🔑 Identity & Access | 16 | Logins no console · tendência de MFA · mapa de calor de login · sequência de autenticação falha→sucesso · uso de root · atividade/exclusão de entidades IAM · linha do tempo de escalonamento de privilégios · novas entidades · SSO · AssumeRole entre contas · uso de AssumeRoot |
+| 🔑 Identity & Access | 36 | Logins no console · tendência de MFA · mapa de calor de login · sequência de autenticação falha→sucesso · uso de root · atividade/exclusão de entidades IAM · linha do tempo de escalonamento de privilégios · novas entidades · SSO · AssumeRole entre contas · uso de AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | Logs de API de adulteração de security-service e recuperação de credenciais · principais chamadas de alto risco · principais atores · volume de chamadas de alto risco ao longo do tempo |
 | 📊 API Activity | 6 | Principais APIs · ações de acesso negado · distribuição por região · composição de códigos de erro · IPs de origem · user agents |
 | 🪣 S3 & RDS | 18 | Download/exclusão em massa no S3 · versionamento/log desativado · replicação entre contas · política/ACL de bucket · enumeração · configuração de proteção · exclusão de Backup vault · exclusão de chave KMS · compartilhamento de snapshot RDS / exclusão sem snapshot · criptografia ransomware SSE-C · exclusão disparada por lifecycle · manipulação de consulta/instância RDS · recriptografia de armazenamento para impacto · escopo de acesso para notificação de violação · cópia de objetos entre contas · notas de resgate |

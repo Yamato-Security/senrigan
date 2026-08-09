@@ -1,6 +1,6 @@
-# DSH-19: Console Login Activity Heatmap (Hour-of-Day × Day-of-Week, JST)
-# ECharts heatmap of console login counts: hour-of-day (X) × day-of-week (Y), JST.
-# Bright cells in off-hours columns (22:00-06:00 JST) or weekend rows surface
+# DSH-19: Console Login Activity Heatmap (Hour-of-Day × Day-of-Week, UTC)
+# ECharts heatmap of console login counts: hour-of-day (X) × day-of-week (Y), UTC.
+# Bright cells in off-hours columns (22:00-06:00 UTC) or weekend rows surface
 # anomalous login time slots pre-attention — far faster than scanning a table.
 # MITRE ATT&CK: TA0001 Initial Access
 uuid: 19a1b2c3-d4e5-6789-abcd-ef0123456789
@@ -9,8 +9,8 @@ dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
 slice_name: Login Activity Heatmap (Hour x Day)
 viz_type: heatmap
 description: >
-  Console login counts as a heatmap of hour-of-day (X) by day-of-week (Y) in JST
-  (DSH-19).  Bright cells in late-night (22:00-06:00 JST) columns or weekend rows
+  Console login counts as a heatmap of hour-of-day (X) by day-of-week (Y) in UTC
+  (DSH-19).  Bright cells in late-night (22:00-06:00 UTC) columns or weekend rows
   are a strong indicator of account compromise or credential misuse.
   MITRE ATT&CK: TA0001 Initial Access.
 query_context: ""
@@ -19,15 +19,15 @@ params:
     expressionType: SQL
     sqlExpression: >-
       LPAD(
-        CAST(EXTRACT(HOUR FROM event_time AT TIME ZONE 'Asia/Tokyo') AS VARCHAR),
+        CAST(EXTRACT(HOUR FROM event_time) AS VARCHAR),
         2, '0'
       )
-    label: hour_jst
+    label: hour_utc
     hasCustomLabel: true
   groupby:
     - expressionType: SQL
       sqlExpression: >-
-        CASE EXTRACT(DOW FROM (event_time AT TIME ZONE 'Asia/Tokyo'))
+        CASE EXTRACT(DOW FROM (event_time))
           WHEN 0 THEN '0_Sun'
           WHEN 1 THEN '1_Mon'
           WHEN 2 THEN '2_Tue'
@@ -71,9 +71,9 @@ cache_timeout: null
 # SQL used to power this chart:
 # SELECT
 #     LPAD(CAST(
-#       EXTRACT(HOUR FROM event_time AT TIME ZONE 'Asia/Tokyo') AS VARCHAR
-#     ), 2, '0')                                                  AS hour_jst,
-#     CASE EXTRACT(DOW FROM (event_time AT TIME ZONE 'Asia/Tokyo'))
+#       EXTRACT(HOUR FROM event_time) AS VARCHAR
+#     ), 2, '0')                                                  AS hour_utc,
+#     CASE EXTRACT(DOW FROM (event_time))
 #       WHEN 0 THEN '0_Sun' WHEN 1 THEN '1_Mon' WHEN 2 THEN '2_Tue'
 #       WHEN 3 THEN '3_Wed' WHEN 4 THEN '4_Thu' WHEN 5 THEN '5_Fri'
 #       WHEN 6 THEN '6_Sat'

@@ -21,14 +21,14 @@ params:
       hasCustomLabel: true
       optionName: metric_event_count_region
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_count
       hasCustomLabel: true
       optionName: metric_write_count_region
     - expressionType: SQL
       sqlExpression: >-
         ROUND(
-          COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+          COUNT(*) FILTER (WHERE read_only IS NOT TRUE) * 100.0
           / NULLIF(COUNT(*), 0), 1
         )
       label: write_ratio_pct
@@ -61,9 +61,9 @@ cache_timeout: null
 # SELECT
 #     aws_region,
 #     COUNT(*)                                             AS event_count,
-#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_count,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)        AS write_count,
 #     ROUND(
-#         COUNT(CASE WHEN read_only = false THEN 1 END) * 100.0
+#         COUNT(*) FILTER (WHERE read_only IS NOT TRUE) * 100.0
 #         / NULLIF(COUNT(*), 0), 1
 #     )                                                    AS write_ratio_pct,
 #     COUNT(DISTINCT user_identity_arn)                    AS unique_callers

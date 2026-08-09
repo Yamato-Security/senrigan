@@ -42,7 +42,7 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 19 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (46 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 19 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (44 charts) |
 | `aws-ct-summary` | 👤 **Suzaku Summary** — identity triage and drill-down | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
 | `aws-ct-metrics` | 📊 **Suzaku Metrics** — field explorer with live filters | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
 

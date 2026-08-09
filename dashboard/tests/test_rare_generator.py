@@ -18,6 +18,9 @@ import yaml
 ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets"))
 if ASSETS_DIR not in sys.path:
     sys.path.insert(0, ASSETS_DIR)
+INIT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "init"))
+if INIT_DIR not in sys.path:
+    sys.path.insert(0, INIT_DIR)
 
 import rebuild_rare_zip  # noqa: E402
 from rebuild_zip import FILE_MAP, SOURCE_DIR  # noqa: E402
@@ -165,24 +168,33 @@ def test_transform_dashboard_identity_fields() -> None:
 
 
 def test_transform_dashboard_position_structure_preserved() -> None:
-    """Same node ids, types, and children; CHART meta remapped only."""
+    """Surviving node ids, types and children are untouched; CHART meta remapped.
+
+    Charts with no rare reading are dropped along with any row they emptied,
+    so the rare layout is a subset of the source layout — never a reordering
+    or a renaming of what remains.
+    """
     src = _load_yaml("dashboard.yaml")
     src_snapshot = copy.deepcopy(src)
     out = rebuild_rare_zip.transform_dashboard(src)
     assert src == src_snapshot, "transform_dashboard must not mutate its input"
 
-    assert set(out["position"].keys()) == set(src["position"].keys())
+    assert set(out["position"].keys()) <= set(src["position"].keys())
     tabs = 0
     for key, src_node in src["position"].items():
+        if key not in out["position"]:
+            continue  # dropped: an excluded chart, or a row it left empty
         out_node = out["position"][key]
         if not isinstance(src_node, dict):
             assert out_node == src_node
             continue
         assert out_node.get("type") == src_node.get("type")
-        assert out_node.get("children") == src_node.get("children")
+        assert set(out_node.get("children") or []) <= set(
+            src_node.get("children") or []
+        )
         if src_node.get("type") == "TAB":
             tabs += 1
-            assert out_node == src_node
+            assert out_node["meta"] == src_node["meta"]
         elif src_node.get("type") == "CHART":
             assert out_node["meta"]["uuid"] == rebuild_rare_zip.derive_uuid(
                 src_node["meta"]["uuid"]
@@ -192,8 +204,43 @@ def test_transform_dashboard_position_structure_preserved() -> None:
                 == src_node["meta"]["sliceName"] + rebuild_rare_zip.RARE_SUFFIX
             )
         else:
-            assert out_node == src_node
-    assert tabs == 11
+            # ROW / GRID / MARKDOWN: identical apart from children a dropped
+            # chart removed, already asserted to be a subset above.
+            assert {k: v for k, v in out_node.items() if k != "children"} == {
+                k: v for k, v in src_node.items() if k != "children"
+            }
+    # 10 of the source dashboard's 11 tabs survive: Overview held nothing but
+    # KPI cards, none of which has a bottom-N reading.
+    assert tabs == 10
+
+
+def test_rare_dashboard_drops_a_tab_left_with_no_charts() -> None:
+    """A tab whose every chart was excluded is removed, markdown included.
+
+    Keeping it ships a page of prose introducing charts that are not there.
+    """
+    src = _load_yaml("dashboard.yaml")
+    out = rebuild_rare_zip.transform_dashboard(src)
+
+    def tab_titles(doc: dict) -> set[str]:
+        return {
+            node["meta"]["text"]
+            for node in doc["position"].values()
+            if isinstance(node, dict) and node.get("type") == "TAB"
+        }
+
+    assert tab_titles(src) - tab_titles(out) == {"🚦 Overview"}
+
+    # Nothing is left stranded: every surviving node is reachable from ROOT_ID.
+    reachable, stack = {"ROOT_ID"}, ["ROOT_ID"]
+    while stack:
+        node = out["position"].get(stack.pop())
+        for child in (node or {}).get("children", []):
+            if child not in reachable:
+                reachable.add(child)
+                stack.append(child)
+    stranded = set(out["position"]) - reachable - {"DASHBOARD_VERSION_KEY"}
+    assert not stranded, f"orphaned layout nodes: {sorted(stranded)}"
 
 
 def test_transform_dashboard_native_filters_verbatim() -> None:
@@ -209,13 +256,17 @@ def test_transform_dashboard_native_filters_verbatim() -> None:
 
 
 def test_transform_dashboard_metadata_charts_suffixed() -> None:
+    """Surviving inventory entries get the suffix; dropped charts leave it."""
     src = _load_yaml("dashboard.yaml")
     out = rebuild_rare_zip.transform_dashboard(src)
-    src_charts = src["metadata"]["charts"]
     out_charts = out["metadata"]["charts"]
-    assert len(out_charts) == len(src_charts)
-    for src_c, out_c in zip(src_charts, out_charts):
-        assert out_c["slice_name"] == src_c["slice_name"] + rebuild_rare_zip.RARE_SUFFIX
+    src_by_name = {c["slice_name"]: c for c in src["metadata"]["charts"]}
+
+    assert out_charts, "the rare inventory must not be emptied"
+    assert len(out_charts) <= len(src_by_name)
+    for out_c in out_charts:
+        assert out_c["slice_name"].endswith(rebuild_rare_zip.RARE_SUFFIX)
+        src_c = src_by_name[out_c["slice_name"][: -len(rebuild_rare_zip.RARE_SUFFIX)]]
         assert {k: v for k, v in out_c.items() if k != "slice_name"} == {
             k: v for k, v in src_c.items() if k != "slice_name"
         }
@@ -235,7 +286,9 @@ def test_build_rare_files_structure() -> None:
     assert "databases/CloudTrail_DuckDB.yaml" in files
     assert "datasets/CloudTrail_DuckDB/cloudtrail_events.yaml" in files
     chart_arcs = [n for n in files if n.startswith("charts/")]
-    assert len(chart_arcs) == 115
+    # 93 of the 115 source charts declare order_desc; the rest have no rare
+    # reading and are not mirrored (see has_rare_variant).
+    assert len(chart_arcs) == 93
 
 
 def test_build_rare_files_shared_objects_verbatim() -> None:
@@ -266,3 +319,90 @@ def test_build_rare_files_no_dangling_chart_refs() -> None:
         and node["meta"]["uuid"] not in chart_uuids
     }
     assert not dangling
+
+
+# ---------------------------------------------------------------------------
+# Rare-variant eligibility
+# ---------------------------------------------------------------------------
+
+
+def test_only_ordered_charts_have_a_rare_variant() -> None:
+    """``has_rare_variant`` accepts exactly the charts ordering can invert.
+
+    "Rare" is defined by flipping ``order_desc``, so a chart that does not
+    declare it has no rare reading — a KPI total, a time series, a world map
+    and a heatmap all render identically in both dashboards.
+    """
+    charts = _load_all_charts()
+    eligible = {
+        f for f, doc in charts.items() if rebuild_rare_zip.has_rare_variant(doc)
+    }
+    declares = {f for f, doc in charts.items() if "order_desc" in doc["params"]}
+    assert eligible == declares
+    assert len(eligible) == 93
+
+
+def test_rare_bundle_omits_charts_with_no_rare_reading() -> None:
+    """The 22 unorderable charts must not be mirrored into the rare ZIP.
+
+    Shipping them appends " (Rare)" to a chart whose numbers are byte-identical
+    to the default dashboard's, which tells a reader the two differ when they
+    do not.
+    """
+    files = rebuild_rare_zip.build_rare_files()
+    chart_files = [arc for arc in files if arc.startswith("charts/")]
+    assert len(chart_files) == 93
+
+    names = {yaml.safe_load(files[arc])["slice_name"] for arc in chart_files}
+    assert not [
+        n for n in names if "Total Events" in n
+    ], "a KPI total has no rare variant"
+
+
+def test_rare_dashboard_positions_only_the_charts_it_ships() -> None:
+    """Excluded charts leave neither a position node nor a parent reference.
+
+    A CHART node whose uuid has no chart file makes Superset render an empty
+    slot, and a children list that still names the removed node breaks the
+    layout outright.
+    """
+    files = rebuild_rare_zip.build_rare_files()
+    dashboard = yaml.safe_load(files[rebuild_rare_zip.DASHBOARD_ARC])
+    position = dashboard["position"]
+
+    shipped = {
+        yaml.safe_load(data)["uuid"]
+        for arc, data in files.items()
+        if arc.startswith("charts/")
+    }
+    chart_nodes = {
+        key: node
+        for key, node in position.items()
+        if isinstance(node, dict) and node.get("type") == "CHART"
+    }
+    assert len(chart_nodes) == 93
+    assert all(node["meta"]["uuid"] in shipped for node in chart_nodes.values())
+
+    for key, node in position.items():
+        if isinstance(node, dict):
+            for child in node.get("children", []):
+                assert child in position, f"{key} references removed node {child}"
+
+
+def test_retired_uuids_cover_every_dropped_rare_chart() -> None:
+    """Superset keeps an imported chart until something deletes it.
+
+    The 22 rare copies already exist in any instance imported before this
+    change, so their *derived* uuids have to be in RETIRED_UUIDS or they stay
+    on the dashboard forever.
+    """
+    import import_dashboard
+
+    charts = _load_all_charts()
+    dropped = {
+        rebuild_rare_zip.derive_uuid(doc["uuid"])
+        for doc in charts.values()
+        if not rebuild_rare_zip.has_rare_variant(doc)
+    }
+    assert len(dropped) == 22
+    assert dropped <= import_dashboard.RETIRED_UUIDS

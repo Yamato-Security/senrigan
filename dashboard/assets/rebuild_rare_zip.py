@@ -2,11 +2,16 @@
 """Rebuild cloudtrail_rare.zip — the "Rare Events" variant dashboard.
 
 Derives a second Superset dashboard from cloudtrail_default/ (the single
-source of truth): identical 11-tab / 91-chart layout, but every chart that
-declares params.order_desc is flipped to ascending (bottom-N) so the
-dashboard surfaces the LEAST frequent — and therefore potentially most
-anomalous — values.  Charts without order_desc (KPI cards, timeseries,
-world map, heatmap) are mirrored unchanged apart from uuid and slice_name.
+source of truth): the same tab layout, but every chart that declares
+params.order_desc is flipped to ascending (bottom-N) so the dashboard
+surfaces the LEAST frequent — and therefore potentially most anomalous —
+values.
+
+Charts without order_desc have no rare variant: a KPI card, a time series,
+a world map or a heatmap reads identically in both dashboards, so mirroring
+them would ship a second copy under a "(Rare)" name that means nothing.
+They are skipped, and the tabs that positioned them lose those slots.
+See RARE_EXCLUDED_VIZ_TYPES.
 
 Transformation rules:
   - Dashboard and chart uuids are derived deterministically via
@@ -53,6 +58,32 @@ ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
 def derive_uuid(source_uuid: str) -> str:
     """Derive the rare-dashboard uuid for a source uuid (deterministic)."""
     return str(uuid.uuid5(RARE_NAMESPACE, source_uuid))
+
+
+def has_rare_variant(doc: dict) -> bool:
+    """Return whether a chart has a meaningful rare (bottom-N) reading.
+
+    "Rare" here means one thing only: invert the ordering and read the tail
+    instead of the head. A chart that does not declare ``params.order_desc``
+    has no ordering to invert — a KPI total, a time series, a world map and a
+    heatmap all produce byte-identical numbers in both dashboards — so it is
+    not mirrored at all rather than shipped under a name implying it differs.
+    """
+    return "order_desc" in (doc.get("params") or {})
+
+
+def excluded_source_uuids() -> set[str]:
+    """Return the source uuids of every chart with no rare variant."""
+    charts_dir = os.path.join(SOURCE_DIR, "charts")
+    excluded = set()
+    for fname in sorted(os.listdir(charts_dir)):
+        if not fname.endswith(".yaml"):
+            continue
+        with open(os.path.join(charts_dir, fname), encoding="utf-8") as fh:
+            doc = yaml.safe_load(fh)
+        if not has_rare_variant(doc):
+            excluded.add(doc["uuid"])
+    return excluded
 
 
 def _dump_yaml(doc: dict) -> bytes:
@@ -105,15 +136,95 @@ def transform_dashboard(doc: dict) -> dict:
     out["slug"] = RARE_SLUG
     out["description"] = RARE_DESCRIPTION_PREFIX + (doc.get("description") or "")
 
-    for node in out["position"].values():
-        if isinstance(node, dict) and node.get("type") == "CHART":
-            node["meta"]["uuid"] = derive_uuid(node["meta"]["uuid"])
-            node["meta"]["sliceName"] = node["meta"]["sliceName"] + RARE_SUFFIX
+    excluded = excluded_source_uuids()
+    dropped_names = set()
 
-    for chart in out.get("metadata", {}).get("charts", []):
-        chart["slice_name"] = chart["slice_name"] + RARE_SUFFIX
+    for key, node in list(out["position"].items()):
+        if not (isinstance(node, dict) and node.get("type") == "CHART"):
+            continue
+        if node["meta"]["uuid"] in excluded:
+            dropped_names.add(node["meta"]["sliceName"])
+            del out["position"][key]
+            continue
+        node["meta"]["uuid"] = derive_uuid(node["meta"]["uuid"])
+        node["meta"]["sliceName"] = node["meta"]["sliceName"] + RARE_SUFFIX
+
+    _prune_dangling_children(out["position"])
+
+    out["metadata"]["charts"] = [
+        {**chart, "slice_name": chart["slice_name"] + RARE_SUFFIX}
+        for chart in out.get("metadata", {}).get("charts", [])
+        if chart["slice_name"] not in dropped_names
+    ]
 
     return out
+
+
+def _has_chart_descendant(position: dict, key: str) -> bool:
+    """Return whether the subtree rooted at *key* still positions any chart."""
+    node = position.get(key)
+    if not isinstance(node, dict):
+        return False
+    if node.get("type") == "CHART":
+        return True
+    return any(_has_chart_descendant(position, c) for c in node.get("children", []))
+
+
+def _prune_dangling_children(position: dict) -> None:
+    """Drop references to removed nodes, then everything left with no chart.
+
+    Removing a CHART node leaves its id in the parent ROW's ``children``, which
+    Superset treats as a fatal layout error rather than a missing chart. A ROW
+    that held nothing but excluded charts is then empty, and an empty ROW
+    renders as a gap.
+
+    A TAB can empty too: the rare dashboard's Overview held nothing but KPI
+    cards, none of which has a bottom-N reading, so what survived was a tab of
+    prose introducing no data. A tab whose whole subtree lost its charts is
+    dropped along with its markdown, rather than shipped as an empty page.
+
+    The pass repeats until the layout is stable, since removing a row can
+    empty the tab above it.
+    """
+    while True:
+        for node in position.values():
+            if isinstance(node, dict) and "children" in node:
+                node["children"] = [c for c in node["children"] if c in position]
+
+        dead = {
+            key
+            for key, node in position.items()
+            if isinstance(node, dict)
+            and node.get("type") in ("ROW", "COLUMN", "TAB")
+            and not _has_chart_descendant(position, key)
+        }
+        if not dead:
+            _drop_unreachable(position)
+            return
+        for key in dead:
+            del position[key]
+
+
+def _drop_unreachable(position: dict) -> None:
+    """Remove nodes no longer reachable from ROOT_ID.
+
+    Deleting a TAB orphans the markdown headers inside it: they are gone from
+    every ``children`` list but still occupy a key, so they would travel into
+    the ZIP as layout nodes belonging to nothing.
+    """
+    reachable = {"DASHBOARD_VERSION_KEY", "ROOT_ID"}
+    stack = ["ROOT_ID"]
+    while stack:
+        node = position.get(stack.pop())
+        if not isinstance(node, dict):
+            continue
+        for child in node.get("children", []):
+            if child not in reachable:
+                reachable.add(child)
+                stack.append(child)
+
+    for key in [k for k in position if k not in reachable]:
+        del position[key]
 
 
 def build_rare_files() -> dict[str, bytes]:
@@ -132,6 +243,8 @@ def build_rare_files() -> dict[str, bytes]:
         elif src_rel.startswith("charts/"):
             with open(abs_path, encoding="utf-8") as fh:
                 doc = yaml.safe_load(fh)
+            if not has_rare_variant(doc):
+                continue
             files[arc_name] = _dump_yaml(transform_chart(doc))
         else:
             # metadata.yaml, databases/, datasets/ — shared objects,

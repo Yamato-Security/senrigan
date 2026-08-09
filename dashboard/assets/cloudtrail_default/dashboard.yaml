@@ -1193,7 +1193,7 @@ position:
       uuid: 19a1b2c3-d4e5-6789-abcd-ef0123456789
       width: 12
       height: 50
-      sliceName: Login Activity Heatmap
+      sliceName: Login Activity Heatmap (Hour x Day)
   CHART-sensitive-api:
     type: CHART
     id: CHART-sensitive-api
@@ -3032,7 +3032,7 @@ metadata:
     viz_type: echarts_timeseries_bar
     description: DSH-01 - Hourly Read/Write event volume (stacked bar).
   - slice_name: Top 20 API Calls
-    viz_type: bar
+    viz_type: dist_bar
     description: DSH-02 - Most frequently called AWS API actions.
   - slice_name: IAM Entity Activity
     viz_type: table
@@ -3047,7 +3047,7 @@ metadata:
     viz_type: table
     description: DSH-08 - Console sign-in attempts with MFA-less count.
   - slice_name: Top Access Denied Actions
-    viz_type: bar
+    viz_type: dist_bar
     description: DSH-09 - API actions most frequently denied access.
   - slice_name: User Agent Analysis
     viz_type: table
@@ -3059,7 +3059,7 @@ metadata:
     viz_type: table
     description: DSH-13 - All API calls made by the Root account.
   - slice_name: Region Activity
-    viz_type: bar
+    viz_type: dist_bar
     description: DSH-14 - Event distribution across AWS regions with write ratio.
   - slice_name: Top Countries by Request Volume
     viz_type: dist_bar
@@ -3073,8 +3073,8 @@ metadata:
   - slice_name: Top ASN Organizations by Request Volume
     viz_type: table
     description: DSH-18 - Top 25 ASN organizations (GeoIP enrichment required).
-  - slice_name: Login Activity Heatmap
-    viz_type: table
+  - slice_name: Login Activity Heatmap (Hour x Day)
+    viz_type: heatmap
     description: DSH-19 - Console login counts by hour-of-day and day-of-week.
   - slice_name: Throttling Exception Spikes
     viz_type: echarts_timeseries_bar
@@ -3115,9 +3115,6 @@ metadata:
   - slice_name: First / Last Seen per API Call
     viz_type: table
     description: DSH-33 - API actions ordered by first appearance for new activity detection.
-  - slice_name: First / Last Seen per User Agent
-    viz_type: table
-    description: DSH-34 - User agents ordered by first appearance for tool introduction detection.
   - slice_name: Dormant Accounts Reactivated
     viz_type: table
     description: DSH-37 - Identities with long inactivity gaps that resumed activity.
@@ -3133,18 +3130,12 @@ metadata:
   - slice_name: Top Actors — High-Risk APIs
     viz_type: bar
     description: HRM-42 - IAM principals ranked by calls to high-risk watchlist APIs.
-  - slice_name: Top Source IPs — High-Risk APIs
-    viz_type: bar
-    description: HRM-43 - Source IPs ranked by calls to high-risk watchlist APIs.
   - slice_name: Security Service Modification API Events
     viz_type: table
     description: HRM-44 - Detailed log of DeleteTrail / StopLogging / UpdateTrail / PutEventSelectors / DeletePolicy / DetachPolicy calls.
   - slice_name: Credential Retrieval API Events
     viz_type: table
     description: HRM-45 - Detailed log of GetSecretValue / GetParameter / GetParameterHistory calls.
-  - slice_name: High-Risk API Calls by Region
-    viz_type: bar
-    description: HRM-46 - High-risk watchlist API calls distributed by AWS region.
   - slice_name: Glue & SageMaker IAM Role Pass Events
     viz_type: table
     description: DSH-50 - Glue DevEndpoint and SageMaker Notebook events involving iam:PassRole.

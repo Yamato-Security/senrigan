@@ -26,7 +26,7 @@ params:
       hasCustomLabel: true
       optionName: metric_request_count_asn
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_requests
       hasCustomLabel: true
       optionName: metric_write_requests_asn
@@ -53,7 +53,7 @@ cache_timeout: null
 # SELECT
 #     geo_org,
 #     COUNT(*)                                             AS request_count,
-#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_requests,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)        AS write_requests,
 #     COUNT(DISTINCT user_identity_arn)                    AS unique_identities
 # FROM cloudtrail_events
 # WHERE geo_org IS NOT NULL

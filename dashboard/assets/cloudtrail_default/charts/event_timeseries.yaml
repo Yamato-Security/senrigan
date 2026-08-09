@@ -19,12 +19,12 @@ params:
   time_range: "No filter"
   metrics:
     - expressionType: SQL
-      sqlExpression: "COUNT(*) FILTER (WHERE read_only = true)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS TRUE)"
       label: read_events
       hasCustomLabel: true
       optionName: metric_ts_read
     - expressionType: SQL
-      sqlExpression: "COUNT(*) FILTER (WHERE read_only = false)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_events
       hasCustomLabel: true
       optionName: metric_ts_write
@@ -41,8 +41,8 @@ cache_timeout: null
 # SQL used to power this chart:
 # SELECT
 #     DATE_TRUNC('hour', event_time)                           AS hour_bucket,
-#     COUNT(*) FILTER (WHERE read_only = true)                 AS read_events,
-#     COUNT(*) FILTER (WHERE read_only = false)                AS write_events
+#     COUNT(*) FILTER (WHERE read_only IS TRUE)                 AS read_events,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)                AS write_events
 # FROM cloudtrail_events
 # GROUP BY 1
 # ORDER BY event_time DESC
