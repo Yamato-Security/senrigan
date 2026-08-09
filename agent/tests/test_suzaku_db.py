@@ -8,6 +8,7 @@ inferred from a table signature.
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import duckdb
@@ -21,6 +22,7 @@ from suzaku_db import (
     SUZAKU_TABLES,
     DbInfo,
     SuzakuKind,
+    _as_utc,
     detect_kind,
     discover,
     find_db,
@@ -357,6 +359,21 @@ def test_inspect_db_reads_generated_at(tmp_path: Path) -> None:
     assert info.generated_at is not None
     assert info.generated_at.year == 2026
     assert info.suzaku_version == "2.0.0"
+
+
+def test_generated_at_is_normalised_to_utc() -> None:
+    """A read timestamp is UTC, whatever offset the file rendered it with.
+
+    DuckDB renders ``TIMESTAMP WITH TIME ZONE`` in the session's timezone, so
+    the same file yields ``+09`` in Tokyo and ``-07`` in California. Reports
+    print the value verbatim, so without normalisation the same run appears to
+    have happened on different days depending on who looks.
+    """
+    normalised = _as_utc("2026-07-28 07:32:13+09:00")
+
+    assert normalised is not None
+    assert f"{normalised:%Y-%m-%d %H:%M}" == "2026-07-27 22:32"
+    assert normalised.utcoffset() == timedelta(0)
 
 
 def test_inspect_db_without_generated_at_is_not_an_error(tmp_path: Path) -> None:
@@ -758,19 +775,22 @@ def test_meta_read_gives_up_only_when_the_command_is_unreadable() -> None:
 
 
 @pytest.mark.parametrize(
-    ("value", "expected_offset_hours"),
-    [("2026-07-28 00:05:10.058718+00", 0), ("2026-07-28 09:05:10+09", 9)],
+    ("value", "expected_utc"),
+    [
+        ("2026-07-28 00:05:10.058718+00", "2026-07-28 00:05"),
+        ("2026-07-28 09:05:10+09", "2026-07-28 00:05"),
+    ],
 )
 def test_generated_at_is_parsed_from_duckdbs_string_form(
-    value: str, expected_offset_hours: int
+    value: str, expected_utc: str
 ) -> None:
-    """DuckDB renders the offset as `+09`, not `+09:00`."""
+    """DuckDB renders the offset as `+09`, not `+09:00` — and it is applied."""
     from suzaku_db import _as_utc
 
     parsed = _as_utc(value)
 
     assert parsed is not None
-    assert parsed.utcoffset().total_seconds() == expected_offset_hours * 3600
+    assert f"{parsed:%Y-%m-%d %H:%M}" == expected_utc
 
 
 def test_a_naive_timestamp_string_is_read_as_utc() -> None:
