@@ -1,0 +1,62 @@
+# PB-02: Session Credential Trace
+# Groups every call by the temporary session credential that made it, which is
+# the scoping question a credential-compromise investigation starts with.
+# Playbook: IRP-STSTokenAbuse
+uuid: c1a10002-0000-4000-8000-0000000c1a02
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Session Credential Trace (ASIA keys)
+viz_type: table
+description: >
+  What each temporary STS session did, keyed by its ASIA access key
+  (IRP-STSTokenAbuse). Requires the promoted user_identity_access_key_id column.
+  A session spanning several source IPs or unusually many services is the one
+  to pull apart first. MITRE ATT&CK: TA0006 Credential Access / T1550.001.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: api_calls
+      hasCustomLabel: true
+      optionName: metric_sesstrace_calls
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT event_name)"
+      label: distinct_apis
+      hasCustomLabel: true
+      optionName: metric_sesstrace_apis
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_source_ips
+      hasCustomLabel: true
+      optionName: metric_sesstrace_ips
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT aws_region)"
+      label: distinct_regions
+      hasCustomLabel: true
+      optionName: metric_sesstrace_regions
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_sesstrace_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_sesstrace_last
+  groupby:
+    - user_identity_access_key_id
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_access_key_id LIKE 'ASIA%'"
+      filterOptionName: filter_sesstrace_asia
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

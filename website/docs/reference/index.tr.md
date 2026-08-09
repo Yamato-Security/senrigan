@@ -2,25 +2,25 @@
 
 > 💡 SQL veya derin AWS bilgisi gerekmez — açılır menüden bir av seçin ve sonuçları anında alın.
 
-## 🎯 Yerleşik Avlar — 126 sorgu
+## 🎯 Yerleşik Avlar — 151 sorgu
 
 Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit aracı kurcalamasını, ardından kimlik istismarını, sonra veri etkisini kontrol edin.
 
 | Kategori | Sorgu Sayısı | Kapsanan Başlıca Tehditler |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma |
-| 🔑 Identity & Access | 30 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma |
-| 🪣 Data & Storage | 26 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme |
+| 🛡 Detection & Response | 13 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma · fidye yazılımı saldırı zinciri korelasyonu |
+| 🔑 Identity & Access | 44 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma · rol zincirleme · oturum kimlik bilgisi izleme · GetCallerIdentity keşfi · federe konsol oturum açmaları · Identity Center izin kümeleri ve yetkilendirilmiş yönetici · rol zincirleme · oturum kimlik bilgisi izleme · MFA'sız API çağrıları · federe oturum açmalar · Identity Center izin kümeleri |
+| 🪣 Data & Storage | 30 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme · fidye notu yerleştirme · ihlal bildirimi kapsam belirleme · hesaplar arası nesne kopyalama · önceden imzalanmış URL üretimi |
 | ⚡ Compute & Serverless | 17 | EC2 toplu durdurma/sonlandırma · SSM yanal hareket · Lambda/ECS/EKS/ECR kurcalama · EventBridge kalıcılığı · kripto madenciliği · Lightsail istismarı · IMDS/SSRF zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
-| 🤖 AI & LLM Abuse | 6 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · çağıran/köken envanteri (LLMjacking) |
-| 🌐 Network & Infrastructure | 15 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme |
-| 🕵 Threat Patterns | 5 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği |
+| 🤖 AI & LLM Abuse | 11 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · çağıran/köken envanteri (LLMjacking) · AgentCore token kasası · ağ geçidi yetkilendirme atlatma · bellek bütünlüğü · korumalı alan ağ modu değişikliği · gözlemlenebilirlik kurcalama |
+| 🌐 Network & Infrastructure | 16 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme · DDoS korumasının zayıflatılması |
+| 🕵 Threat Patterns | 10 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği · mesai dışı etkinlik · kendi kendine yetki yükseltme · günlük hacim sapması · kullanılmayan bölgelerde kaynak oluşturma · yüksek hacimli API kullanımı |
 | 📊 Activity & Baseline | 3 | Konsol yazma olayları · hata sıçramaları · son hatalar |
 | 🌍 GeoIP Analysis | 10 | Ülkeye göre konsol oturum açma/red/yazma · nadir ülke erişimi · ülke/ASN/şehir dökümü · event_name × country · identity × country · özel-IP temel çizgisi |
 | ☁ IaC & Platform | 2 | CI/CD tedarik zinciri · CloudFormation istismarı |
 
 <details markdown="1">
-<summary>📋 Tam liste — 126 sorgunun tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 151 sorgunun tamamı (genişletmek için tıklayın)</summary>
 
 ## Yerleşik Avlar
 
@@ -40,6 +40,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Salt okunur GuardDuty API çağrılarını tespit eder. Pacu'nun guardduty__list_findings modülü, savunmacının zaten neyi tespit ettiğini anlamak için etkin bulguları okur; bu, saldırganın taktiklerini uyarlamasına ve yeni uyarıları tetiklemekten kaçınmasına olanak tanır. |
 | 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets ve Cost Anomaly monitörlerinin silinmesini veya değiştirilmesini tespit eder. Saldırganlar, kripto madenciliğini veya kaynak yoğun işlemleri gizlemek için bütçe uyarılarını kaldırır. |
 | 12 | 🚫 Access Denied Errors | bar | AccessDenied hatalarını kimliğe ve API'ye göre gruplar. En çok ihlal yapanlar kimlik bilgisi kötüye kullanımına işaret edebilir. |
+| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Fidye yazılımının üç aşamasını — kurtarma kaldırıldı, koruma devre dışı bırakıldı, veri yok edildi ya da şifrelendi — principal ve gün bazında ilişkilendirir. Her aşama tek başına operasyonel gürültüdür; üçü birlikte değildir. |
 
 ### 🔑 Identity & Access
 
@@ -75,6 +76,15 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 28 | 👑 AssumeRoot Usage | timeseries | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrılarını tespit eder. Ele geçirilmiş bir yönetim hesabı, bu yolla her üye hesabı ele geçirebilir. |
 | 29 | 🎫 Support Case Manipulation | timeseries | AWS Support vaka kapatma ve yorum etkinliğini tespit eder. Saldırganlar, bir ele geçirilme hakkındaki AWS bildirimlerini bastırmak için istismar/destek vakalarını çözer. |
 | 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito user pool ve app client değişikliklerini tespit eder: uzatılmış token geçerliliği, yeni client'lar ve admin kullanıcı oluşturma. Saldırganlar bunları uzun ömürlü token'lar üretmek veya arka kapı kullanıcıları oluşturmak için istismar eder. |
+| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Halihazırda üstlenilmiş bir rol oturumunun bir rol daha üstlenmesini tespit eder. Tek tek AssumeRole çağrıları sıradan görünür; zincir ise saldırganın ele geçirilmiş bir örnek rolünden gerçekten istediği izinlere yürüdüğü yoldur. |
+| 32 | 🎫 Session Credential Trace | bar | Her geçici STS oturumunun (ASIA… erişim anahtarı) ne yaptığını özetler: çağrı sayısı, hizmetler, kaynak IP'ler ve zaman aralığı. Her kimlik bilgisi ihlali soruşturmasının başladığı kapsam sorusu. |
+| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | İstenen roleArn içinden hedef hesabı okuyarak hesap sınırı geçişlerini tespit eder; yalnızca çağıran hesabın günlükleri alınmış olsa bile çalışır. |
+| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Rolleri, kimin nereden üstlendiğine göre sıralar. Normalde tek bir hesap tarafından üstlenilen bir rolün aniden ikinci bir çağıran kazanması burada öne çıkar, ham olay listesinde ise kaybolur. |
+| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | GetCallerIdentity çağrılarını principal ve kaynak IP bazında gösterir. Çalınmış kimlik bilgileriyle çalıştırılan ilk komuttur — ve hacim eşiğine dayalı keşif avlarının asla ulaşamadığı tek bir çağrıdır. |
+| 36 | 🪪 Federated Console Logins | timeseries | Harici bir kimlik sağlayıcı üzerinden gelen konsol oturum açmalarını, sağlayıcı adı ve kaynağıyla birlikte listeler. Ele geçirilen bileşen IdP olduğunda AWS yalnızca geçerli bir oturum açma görür. |
+| 37 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center'da izin kümesi oluşturma, politika ekleme ve hesap atamalarını tespit eder — kuruluştaki her hesapta kalıcı yönetici erişimine giden yol. |
+| 38 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center kimlik deposunda doğrudan oluşturulan kullanıcı, grup ve üyelikleri tespit eder — IAM'de hiç görünmeyen, dolayısıyla yalnızca IAM izleyen bir kurulumun kaçırdığı kalıcılık. |
+| 39 | 👑 Delegated Administrator Registration | timeseries | Bir kuruluş hizmeti için yetkilendirilmiş yönetici kaydını tespit eder. Identity Center kılavuzunun CRITICAL olarak derecelendirdiği tek olay: kuruluş genelindeki denetimi başka bir hesaba devreder. |
 
 ### 🪣 Data & Storage
 
@@ -106,6 +116,10 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API sorgularını, master parola sıfırlamalarını ve anlık görüntü geri yüklemelerini tespit eder. Saldırganlar veriyi doğrudan okur, erişim kazanmak için kimlik bilgilerini sıfırlar veya anlık görüntüleri kontrol ettikleri örneklere geri yükler. |
 | 25 | 🔎 S3 Bucket Enumeration | bar | Bucket ve nesne meta verilerini tarayan çağıranları tespit eder (bir saatte ≥10 List/GetBucket* okuması). Sızdırmadan önce değerli veriyi bulmak için yaygın bir erken adım. |
 | 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Açık bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntülerini ve volume'lerini, ayrıca varsayılan EBS şifrelemesinin devre dışı bırakılmasını tespit eder. Saldırganın elinde tuttuğu bir anahtarla yeniden şifreleme veriyi fidye için rehin tutar. |
+| 27 | 📝 Ransom Note Placement | timeseries | Nesne anahtarı fidye notuna benzeyen PutObject çağrılarını tespit eder. Diğer fidye yazılımı avlarının aksine bu, etkiyi ima etmek yerine doğrular — bir not, ödemenin çoktan talep edildiği anlamına gelir. |
+| 28 | 📐 Data Access Scope (Breach Notification) | bar | Her principal'ın günde ne okuduğunu ölçer: dokunulan kovalar ve yaklaşık farklı nesne sayısı. GDPR 33. maddesinin istediği «yaklaşık kayıt sayısı» rakamını üretir. |
+| 29 | 📤 Cross-Account Object Copy | timeseries | Kovalar arasında kopyalanan nesneleri, x-amz-copy-source başlığı taşıyan PutObject çağrıları dahil tespit eder. Kontrol etmediğiniz bir hesaba veri hazırlamak yalnızca bu izi bırakır. |
+| 30 | 🔗 Presigned URL Generation | bar | Principal başına önceden imzalanmış URL üretimini sayar. Önceden imzalanmış bir URL, bağlantıyı elinde tutan herkese veriyi teslim eder; ek kimlik doğrulama da ek CloudTrail kaydı da yoktur. |
 
 ### ⚡ Compute & Serverless
 
@@ -139,6 +153,11 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | 2 veya daha fazla bölgede veya bir saatte 10 veya daha fazla numaralandırma çağrısıyla Bedrock modellerini numaralandıran çağıranları tanımlar. Çalınmış anahtar sahipleri, modellerin nerede kullanılabilir olduğunu bulmak için bölgeleri tarar. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Başarısız Bedrock çağrılarının (AccessDenied / ValidationException) patlamalarını bulur. Çalınan anahtar testi, çalışan bir kombinasyon bulunmadan önce modeller ve bölgeler genelinde başarısızlık fırtınaları üretir. |
 | 6 | 🌍 Bedrock Callers & Origins | — | Bedrock'a dokunan her principal'ı, kaynak IP, GeoIP kökeni, kullanıcı aracısı ve model çeşitliliğiyle birlikte envanterler. Bedrock kullanmasının hiçbir mantığı olmayan çağıranı veya kökeni tespit edin. |
+| 7 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore token kasası dağıtımını principal ve kaynak bazında toplar. Bu çağrılar üçüncü taraf OAuth token'ları ve API anahtarları dağıttığı için kötüye kullanım AWS dışındaki hizmetlere kadar uzanır. |
+| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar politika motorunun LOG_ONLY'ye düşürülmesi dahil AgentCore ağ geçidi ve politika değişikliklerini tespit eder. Yalnızca günlüğe yazan bir yetkilendirme yine de başarı döndürür; aşağı akışta hiçbir şey yanlış görünmez. |
+| 9 | 🧠 AgentCore Memory Integrity | timeseries | Bellek akışının başka bir hesabın Kinesis ARN'sine yönlendirilmesi dahil AgentCore Memory ve Registry değişikliklerini tespit eder. Zehirlenmiş uzun süreli bellek, ajanın sonraki her oturumunda kalır. |
+| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore kod yorumlayıcı ve tarayıcı yaşam döngüsü olaylarını ağ moduyla birlikte listeler. Mod düzenlenemez, dolayısıyla silip yeniden oluşturmak bir korumalı alanın ağ erişimini genişletmenin tek yoludur. |
+| 11 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore değerlendirici değişikliklerini ve X-Ray örnekleme veya iz hedefi değişikliklerini tespit eder. Saldırganın oluşturduğu bir değerlendirici, puanladığı her yanıtı okuyarak model çıktısını meşru bir kanaldan dışarı taşır. |
 
 ### 🌐 Network & Infrastructure
 
@@ -159,6 +178,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway anahtar oluşturma ve REST API yönetimini tespit eder. Pacu'nun api_gateway__create_api_keys'i, IAM anahtar rotasyonundan sağ çıkan kalıcı API kimlik bilgileri oluşturur. Saldırganlar ayrıca erişim kontrollerini zayıflatmak için API yetkilendiricilerini değiştirir. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC endpoint'leri üzerinden erişim reddedildi hatalarını tespit eder. Yanlış yapılandırılmış bir endpoint politikasına işaret edebilir. |
 | 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS kaydı düzenlemelerini, barındırılan bölge değişikliklerini ve alan adı kaydını/transferini tespit eder. Saldırganlar trafiği yönlendirir, sarkan alt alan adlarını ele geçirir veya kimlik avı için benzer görünümlü alan adları kaydeder. |
+| 16 | 🛡 DDoS Protection Weakening | timeseries | Uç koruma önlemlerinin kaldırılmak yerine gevşetilmesini tespit eder: bir WebACL varsayılan eyleminin izin vermeye çevrilmesi, kural gruplarının gevşetilmesi, Shield korumalarının silinmesi, CloudFront kaynaklarının yeniden yönlendirilmesi. |
 
 ### 🕵 Threat Patterns
 
@@ -169,6 +189,11 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 3 | 🌍 Multi-Region Activity | bar | Bir günde 3 veya daha fazla bölgede yazma işlemi yapan kimlikleri tespit eder. Coğrafi yayılma ele geçirilmeye işaret edebilir. |
 | 4 | 🕵 First-Time API Calls (24h) | — | Son 24 saatte görülen ancak daha önce hiç görülmeyen API çağrılarını bulur. Yeni işlemler saldırgan araçlarına işaret edebilir. |
 | 5 | 🗺 First-Seen Region Activity | bar | İlk etkinliği veri kümesinin son 24 saatine düşen AWS bölgelerini bulur. Daha önce hiç kullanılmamış bir bölgede faaliyet göstermek, kripto madenciliğini veya hazırlığı bölgeye özgü izlemeden gizlemenin klasik bir yoludur. |
+| 6 | 🌙 Off-Hours Activity | bar | Yapılandırılabilir bir mesai dışı pencerede etkinliği principal ve günün saatine göre gruplar. İçeriden tehdit kılavuzunun ilk sıraladığı ve başka hiçbir avın kapsamadığı gösterge. |
+| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Bir principal'ın kendi izinlerini değiştirmesini tespit eder — çağıran ARN ile hedef kullanıcı veya rol adı aynıdır. Mevcut yükseltme avları verilen izni görür ama bunun kendine uygulandığı gerçeğini kaçırır. |
+| 8 | 📈 Principal Daily Volume Deviation | bar | Her principal'ın günlük çağrı hacmini kendi ortalamasıyla karşılaştırır, okumaları yazmalardan ayırır. Yalnızca izin verilen API'leri kullanan sızdırmayı yakalar; burada anomali eylem değil miktardır. |
+| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Hesabın neredeyse hiç kullanmadığı bölgelerde kaynak oluşturulmasını işaretler; temel değer sabit kodlanmak yerine verilerden türetilir. Kripto madenciliği de kişisel projeler de burada belirir. |
+| 10 | 📞 High-Volume API Calls per Principal | bar | 50 başarılı çağrıyı aşan principal-API eşleşmelerini ilk ve son çağrılarıyla listeler. Numaralandırma, toplu çıkarma ve toplu silme aynı şekle sahiptir. |
 
 ### 📊 Activity & Baseline
 
@@ -204,24 +229,24 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 
 ---
 
-## 📊 Dashboard Charts — 101 grafik
+## 📊 Dashboard Charts — 115 grafik
 
 | Sekme | Grafik Sayısı | Ne Gösterir |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triyaj KPI kartı (olaylar, principal'lar, IP'ler, root, MFA'sız oturum açmalar, erişim reddedildi, savunma atlatma, ülkeler, bölgeler) + küresel olay hacmi trendi |
-| 🎯 Threat Detection | 12 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı |
+| 🎯 Threat Detection | 14 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
 | 🔑 Identity & Access | 16 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
 | 🚨 High-Risk API Monitor | 5 | Güvenlik hizmeti kurcalaması & kimlik bilgisi alma API logları · en çok yüksek riskli çağrılar · en çok aktörler · zaman içinde yüksek riskli çağrı hacmi |
 | 📊 API Activity | 6 | En çok API'ler · erişim reddedilen eylemler · bölge dağılımı · hata kodu bileşimi · kaynak IP'ler · kullanıcı aracıları |
-| 🪣 S3 & RDS | 15 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme |
+| 🪣 S3 & RDS | 18 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |
 | 🖥️ Computing | 17 | EC2 lansmanları/toplu durdurma/anahtar çiftleri/örnek profili/kullanıcı verisi/anlık görüntü paylaşımı/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
-| 🤖 AI / LLM | 4 | Bedrock çağrı trendi · model erişimi & loglama değişiklikleri · başarısız çağrılar · kökene göre çağıranlar (LLMjacking triyajı) |
+| 🤖 AI / LLM | 6 | Bedrock çağrı trendi · model erişimi & loglama değişiklikleri · başarısız çağrılar · kökene göre çağıranlar (LLMjacking triyajı) · AgentCore token verme · ağ geçidi ve politika değişiklikleri |
 | 🌐 Network | 5 | Security group değişiklikleri · NACL/route table değişiklikleri · VPC altyapısı · VPC peering/Transit Gateway · Route53 DNS değişiklikleri |
-| 🕒 Temporal Analysis | 6 | Olay hızı sıçramaları · yeniden etkinleşen uykudaki hesaplar · kimlik/IP/API/hizmet kaynağına göre ilk/son görülme |
+| 🕒 Temporal Analysis | 8 | Olay hızı sıçramaları · yeniden etkinleşen uykudaki hesaplar · kimlik/IP/API/hizmet kaynağına göre ilk/son görülme · mesai dışı yazma ısı haritası · principal başına günlük okuma/yazma hacmi |
 | 🌍 GeoIP Intelligence | 6 | İmkânsız seyahat (çok ülkeli principal'lar) · en çok ülkeler/şehirler/ASN'ler · dünya haritası · event_name × country |
 
 <details markdown="1">
-<summary>📋 Tam liste — 101 grafiğin tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 115 grafiğin tamamı (genişletmek için tıklayın)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -256,6 +281,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 10 | Write/Read Ratio Trend | Okuma ve yazma API çağrılarının saatlik dökümü (DSH-20). write_events'in read_events'e göre sürekli artışı, bir saldırganın keşiften aktif istismara geçtiğini gösterir. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | Zaman içinde saatlik Okuma ve Yazma olay hacmi (DSH-01). Yığın çubuklar Okuma/Yazma ayrımını gösterir: write_events'teki ani bir artış, bir saldırganın keşiften aktif istismara geçtiğinin sinyalidir. Etkinlik sıçramalarını ve mesai dışı işlemleri belirlemek için kullanışlıdır. |
 | 12 | Organization Membership Changes | Hesapları korkuluklardan ayıran veya saldırgan kontrolündeki bir organizasyon altına taşıyan Organizations üyelik değişiklikleri. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
+| 13 | P1 Escalation Triggers | TRIAGE_GUIDE'ın 15 dakika içinde yanıt gerektiren yükseltme tetikleyicileriyle eşleşen olaylar: root kullanımı, günlükleme veya tespit kurcalama, fidye notları, yetkilendirilmiş yönetici kaydı. Sıfırdan farklıysa saat işlemeye başlar. |
+| 14 | P2 Escalation Triggers | TRIAGE_GUIDE'ın bir saat içinde yanıt koşullarıyla eşleşen olaylar: kimlik bilgisi oluşturma, yetki verme, güven politikası düzenlemeleri ve hesaplar arası rol üstlenme. Tek başına değil, P1 kartıyla birlikte okuyun. |
 
 ### 🔑 Identity & Access
 
@@ -277,6 +304,11 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 14 | IAM Identity Center (SSO) Events | sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com ve identitystore.amazonaws.com'dan AWS IAM Identity Center yönetim olayları (DSH-44). Identity Center, çok hesaplı organizasyonlarda birincil kimlik doğrulama yoludur. Temel tehditler: CreatePermissionSet (arka kapı admin erişimi), CreateAccountAssignment (hesapları saldırgan kontrolündeki kullanıcılara atama) ve AttachManagedPolicyToPermissionSet (ayrıcalık yükseltme). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
 | 15 | IAM Entity Deletion | Saldırgan tarafından oluşturulan kimliklerin izlerini silmek veya savunmacıları dışarıda bırakmak için kullanılan IAM kullanıcılarının, rollerinin, politikalarının ve MFA cihazlarının silinmesi. Threat Technique Catalog for AWS: T1070.A001. |
 | 16 | AssumeRoot Usage | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrıları — tam bir üye hesap ele geçirme yolu. Threat Technique Catalog for AWS: AT1669. |
+| 17 | Role Chaining (Session → Role) | Rol zinciri sıçramaları — üstlenilmiş bir rol oturumunun başka bir rolü üstlenmesi. Sinyal derinliktedir. Yükseltilmiş session_issuer_arn sütununu gerektirir. |
+| 18 | Session Credential Trace (ASIA keys) | Her geçici STS oturumunun ne yaptığı, ASIA erişim anahtarına göre: çağrı sayısı, farklı API'ler, kaynak IP'ler, bölgeler ve zaman aralığı. Birden çok kaynak IP'ye yayılan oturumdan başlayın. |
+| 19 | API Calls Without MFA | MFA ile doğrulanmamış oturumların yaptığı yazma çağrıları. MFA'sız konsol oturum açma kartının aksine bu, yalnızca ConsoleLogin'i değil her API çağrısını kapsar. |
+| 20 | Federated Console Logins by Provider & Origin | Harici bir kimlik sağlayıcı üzerinden gelen konsol oturum açmaları; sağlayıcı adı, ülke ve ASN ile. IdP ele geçirildiğinde AWS yalnızca geçerli bir oturum açma görür. |
+| 21 | Identity Center Permission Set Grants | Olay adına göre günlük IAM Identity Center yetki verme işlemleri. İzin kümesi kuruluş genelindedir: tek bir atama, hiç dokunulmamış bir hesapta yönetici yetkisi verebilir. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -318,6 +350,9 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 13 | S3 Lifecycle-Triggered Deletion | DeleteObject patlamaları olmadan verileri sessizce temizlemek için kullanılan, nesnelerin süresini dolduran S3 lifecycle kuralları (ve lifecycle yapılandırma silme). Threat Technique Catalog for AWS: T1485.001. |
 | 14 | RDS Query & Instance Manipulation | Veriyi doğrudan okumak veya saldırgan kontrolündeki bir örneğe geri yüklemek için kullanılan RDS Data API sorguları ve anlık görüntü geri yüklemeleri. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
 | 15 | Storage Re-Encryption for Impact | Açıkça saldırgan kontrolündeki bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntüleri ve volume'leri, ayrıca varsayılan şifreleme devre dışı bırakma. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
+| 16 | Data Access Scope (Breach Notification) | Principal başına: S3 okuma çağrıları, farklı kovalar ve yaklaşık farklı nesneler. GDPR 33. maddesinin istediği rakamı üretir. Kovalarda CloudTrail veri olayları gerekir. |
+| 17 | Cross-Account Object Copy | S3 CopyObject çağrıları ve x-amz-copy-source başlığı taşıyan PutObject çağrıları, kaynak ve hedefiyle. Çoğaltma grafikleri yapılandırmayı kapsar; bu, tek tek kopyaları. |
+| 18 | Ransom Note Placement | Nesne anahtarı fidye notuna benzeyen PutObject çağrıları. Diğer fidye yazılımı panellerinin aksine bu, etkiyi doğrular — buradaki her satır bir P1'dir. |
 
 ### 🖥️ Computing
 
@@ -349,6 +384,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 2 | Bedrock Model Access & Logging Changes | Foundation model erişim etkinleştirmesi ve çağrı loglama kurcalaması (DSH-99). Çalınan kimlik bilgilerine sahip saldırganlar, Bedrock'u istismar etmeden önce model erişimini kendileri etkinleştirir ve prompt'larının kaydedilmemesi için model çağrı loglama yapılandırmasını kontrol eder veya siler — her ikisi de belgelenmiş LLMjacking göstergeleridir. Bedrock'u hiç benimsememiş bir organizasyondaki herhangi bir satır acil incelemeyi gerektirir. MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496). |
 | 3 | Bedrock Failed Invocations | Çağırana ve hata koduna göre gruplandırılmış başarısız Amazon Bedrock çağrı girişimleri (DSH-100). Birden çok model ve bölgede AccessDenied / ValidationException hatalarının patlamaları, bir saldırganın çalınan bir anahtarın hangi modelleri çağırabildiğini araştırdığını gösterir — LLMjacking'in keşif aşaması. MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery. |
 | 4 | Bedrock Callers by Origin | Köken ve model çeşitliliğiyle tüm Amazon Bedrock çağıranlarının envanteri (DSH-101). LLMjacking triyajı için temel çizgi görünümü: beklenmedik ülkelerden, hosting/VPN ASN'lerinden veya yüksek çağrı hacmine sahip genel betik kullanıcı aracılarından (python-requests, curl) çağıran principal'lar önde gelen şüphelilerdir. MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking). |
+| 5 | AgentCore Token Issuance (Daily) | İşleme göre günlük AgentCore token kasası dağıtımı. Bu çağrılar üçüncü taraf OAuth token'ları ve API anahtarları dağıtır, dolayısıyla kötüye kullanım AWS dışındaki hizmetlere ulaşır. |
+| 6 | AgentCore Gateway & Policy Changes | AgentCore ağ geçidi, hedef ve politika değişiklikleri; Cedar politika motoru modunu gösterir. ENFORCE'tan LOG_ONLY'ye geçse de başarı döndürür, aşağı akışta hiçbir şey yanlış görünmez. |
 
 ### 🌐 Network
 
@@ -370,6 +407,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 4 | First / Last Seen per Source IP | İlk/son görülme, farklı kimlikler, farklı API'ler ve GeoIP bağlamı ile kaynak IP'ler (DSH-32). Veri kümesinde geç görünen yeni IP'ler yanal harekete veya yeni saldırgan altyapısına işaret eder. MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement. |
 | 5 | First / Last Seen per API Call | İlk görünüşe göre sıralanan API eylemleri (DSH-33). İlk kez ortaya çıkan yeni API çağrıları keşif veya ayrıcalık yükseltme girişimlerine işaret edebilir. MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation. |
 | 6 | First / Last Seen per Service Source | Her farklı AWS hizmet kaynağı için ilk ve son görülme zaman damgaları (DSH-26). Yeni tanıtılan hizmetleri (potansiyel saldırgan altyapısı) ortaya çıkarmak için first_seen'e göre azalan sırada sıralayın. Sessizleşen hizmetleri (ele geçirme sonrası olası temizlik) bulmak için last_seen'e göre artan sırada sıralayın. MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery. |
+| 7 | Off-Hours Write Activity (Hour x Day) | Yazma olaylarının JST'ye göre günün saati × haftanın günü ısı haritası. Oturum açma ısı haritası yalnızca ConsoleLogin'i kapsar; bu, her değiştirici çağrıyı kapsar. |
+| 8 | Principal Daily Volume (Read vs Write) | Principal başına günlük çağrı hacmi, okuma ve yazma olarak ayrılmış. Her principal'ı kendisiyle kıyaslayın: bir derleme rolünün on bin çağrısı normaldir, bir insanın iki yüzü değildir. |
 
 ### 🌍 GeoIP Intelligence
 

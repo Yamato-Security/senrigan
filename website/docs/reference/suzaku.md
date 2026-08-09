@@ -42,7 +42,7 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 16 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (46 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 19 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (46 charts) |
 | `aws-ct-summary` | 👤 **Suzaku Summary** — identity triage and drill-down | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
 | `aws-ct-metrics` | 📊 **Suzaku Metrics** — field explorer with live filters | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
 
@@ -92,6 +92,7 @@ Two things are specific to Suzaku data:
 | 🌍 Origin | Top source IPs by distinct rules · top user agents · multi-region activity per principal |
 | ⚠ Failures | Failed API calls in detections |
 | 🧬 ATT&CK | Technique coverage · tactic breakdown · rule × technique matrix |
+| 📕 Response | Impact detections → ransomware playbook · credential access → credential-compromise playbook · tactic coverage by playbook |
 
 Every hunt runs without an API key, carries an explicit `ORDER BY` and `LIMIT`, and
 is executed against a real Suzaku fixture in CI.

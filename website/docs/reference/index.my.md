@@ -2,25 +2,25 @@
 
 > 💡 SQL သို့မဟုတ် AWS အသိပညာ နက်နက်ရှိုင်းရှိုင်း မလိုအပ်ပါ — dropdown မှ hunt တစ်ခုကို ရွေးချယ်ပြီး ရလဒ်များကို ချက်ချင်းရယူလိုက်ပါ။
 
-## 🎯 Built-in Hunts — query 126 ခု
+## 🎯 Built-in Hunts — query 151 ခု
 
 အမျိုးအစားများကို DFIR triage ဦးစားပေးအလိုက် စီထားသည် — ဦးစွာ detection-tool tampering ကို စစ်ဆေးပါ၊ ထို့နောက် identity abuse၊ ထို့နောက် data impact ကို စစ်ဆေးပါ။
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP ဖျက်ခြင်း · alarm ဖိနှိပ်ခြင်း · log exfiltration |
-| 🔑 Identity & Access | 30 | Root အသုံးပြုခြင်း · console login/MFA · privilege escalation · trust policy backdoor · PassRole အလွဲသုံးစားလုပ်ခြင်း · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity ဖျက်ခြင်း · AssumeRoot ဖြင့် သိမ်းယူခြင်း · Cognito user-pool/token အလွဲသုံးစားလုပ်ခြင်း · Support case ဖိနှိပ်ခြင်း |
-| 🪣 Data & Storage | 26 | S3 အစုလိုက် ဖျက်ခြင်း/download · secrets အစုလိုက်ဖတ်ခြင်း · backup tampering · KMS ops · snapshot မျှဝေခြင်း · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-tigger ဖျက်ခြင်း · RDS Data API ကိုင်တွယ်ခြင်း · impact အတွက် storage ပြန်စာဝှက်ခြင်း |
+| 🛡 Detection & Response | 13 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP ဖျက်ခြင်း · alarm ဖိနှိပ်ခြင်း · log exfiltration · Ransomware kill-chain ဆက်စပ်ဆန်းစစ်ခြင်း |
+| 🔑 Identity & Access | 44 | Root အသုံးပြုခြင်း · console login/MFA · privilege escalation · trust policy backdoor · PassRole အလွဲသုံးစားလုပ်ခြင်း · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity ဖျက်ခြင်း · AssumeRoot ဖြင့် သိမ်းယူခြင်း · Cognito user-pool/token အလွဲသုံးစားလုပ်ခြင်း · Support case ဖိနှိပ်ခြင်း · role chaining · session credential ခြေရာခံခြင်း · GetCallerIdentity ထောက်လှမ်းခြင်း · federated console login များ · Identity Center permission set နှင့် လွှဲအပ်ထားသော စီမံခန့်ခွဲသူ · role chaining · session credential ခြေရာခံခြင်း · MFA မပါသော API ခေါ်ဆိုမှုများ · federated login များ · Identity Center permission set များ |
+| 🪣 Data & Storage | 30 | S3 အစုလိုက် ဖျက်ခြင်း/download · secrets အစုလိုက်ဖတ်ခြင်း · backup tampering · KMS ops · snapshot မျှဝေခြင်း · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-tigger ဖျက်ခြင်း · RDS Data API ကိုင်တွယ်ခြင်း · impact အတွက် storage ပြန်စာဝှက်ခြင်း · ငွေညှစ်စာ ချထားခြင်း · ဖောက်ဖျက်မှု အသိပေးရန် အတိုင်းအတာ သတ်မှတ်ခြင်း · account ဖြတ်ကျော် object ကူးယူခြင်း · presigned URL ထုတ်လုပ်ခြင်း |
 | ⚡ Compute & Serverless | 17 | EC2 အစုလိုက် stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail အလွဲသုံးစားလုပ်ခြင်း · IMDS/SSRF အားနည်းစေခြင်း · AMI/snapshot ဖျက်ခြင်း · WorkSpaces hijacking |
-| 🤖 AI & LLM Abuse | 6 | Bedrock invocation ရုတ်တရက်များပြားလာခြင်း · model access ဖွင့်ခြင်း · invocation-logging tampering · region-sweep reconnaissance · invocation မအောင်မြင်မှု burst · caller/origin inventory (LLMjacking) |
-| 🌐 Network & Infrastructure | 15 | SG ကို အင်တာနက်သို့ ဖွင့်ခြင်း · VPC flow log ဖျက်ခြင်း · CloudFront hijack · ဖုံးကွယ်ထားသော VPN/TGW tunnel · Elastic IP C2 · API Gateway keys · Route 53/domain hijack |
-| 🕵 Threat Patterns | 5 | Reconnaissance burst · ပုံမှန်မဟုတ်သော user agents · multi-region ပျံ့နှံ့ခြင်း · ပထမဆုံးအကြိမ် API calls · ပထမဆုံးတွေ့ရသော region လှုပ်ရှားမှု |
+| 🤖 AI & LLM Abuse | 11 | Bedrock invocation ရုတ်တရက်များပြားလာခြင်း · model access ဖွင့်ခြင်း · invocation-logging tampering · region-sweep reconnaissance · invocation မအောင်မြင်မှု burst · caller/origin inventory (LLMjacking) · AgentCore token vault · gateway ခွင့်ပြုချက် ကျော်လွှားခြင်း · memory ခိုင်မာမှု · sandbox ကွန်ရက်မုဒ် ပြောင်းလဲခြင်း · observability ဖျက်လိုဖျက်ဆီးလုပ်ခြင်း |
+| 🌐 Network & Infrastructure | 16 | SG ကို အင်တာနက်သို့ ဖွင့်ခြင်း · VPC flow log ဖျက်ခြင်း · CloudFront hijack · ဖုံးကွယ်ထားသော VPN/TGW tunnel · Elastic IP C2 · API Gateway keys · Route 53/domain hijack · DDoS ကာကွယ်မှု အားနည်းစေခြင်း |
+| 🕵 Threat Patterns | 10 | Reconnaissance burst · ပုံမှန်မဟုတ်သော user agents · multi-region ပျံ့နှံ့ခြင်း · ပထမဆုံးအကြိမ် API calls · ပထမဆုံးတွေ့ရသော region လှုပ်ရှားမှု · ရုံးချိန်ပြင်ပ လှုပ်ရှားမှု · ကိုယ်တိုင် အခွင့်အရေး မြှင့်တင်ခြင်း · နေ့စဉ် ပမာဏ သွေဖည်မှု · မသုံးသော region များတွင် အရင်းအမြစ် ဖန်တီးခြင်း · API ခေါ်ဆိုမှု များပြားခြင်း |
 | 📊 Activity & Baseline | 3 | Console write events · error spikes · မကြာသေးမီက errors |
 | 🌍 GeoIP Analysis | 10 | နိုင်ငံအလိုက် console login/denial/write · ရှားပါးသော-နိုင်ငံ access · country/ASN/city ခွဲခြမ်းစိတ်ဖြာမှု · event_name × country · identity × country · private-IP baseline |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation အလွဲသုံးစားလုပ်ခြင်း |
 
 <details markdown="1">
-<summary>📋 Full list — all 126 queries (click to expand)</summary>
+<summary>📋 Full list — all 151 queries (click to expand)</summary>
 
 ## Built-in Hunts
 
@@ -40,6 +40,7 @@
 | 10 | 🔍 GuardDuty Findings Read | timeseries | ဖတ်ရုံသက်သက်သာဖြစ်သော GuardDuty API call များကို ထောက်လှမ်းသည်။ Pacu ၏ guardduty__list_findings module သည် defender က ဘာတွေကို ထောက်လှမ်းပြီးပြီဆိုသည်ကို နားလည်ရန် active finding များကို ဖတ်ပြီး၊ တိုက်ခိုက်သူအား ၎င်း၏ tactic များကို ပြင်ဆင်ကာ alert အသစ်များကို ရှောင်ရှားခွင့်ပေးသည်။ |
 | 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets နှင့် Cost Anomaly monitor များ ဖျက်ခြင်း သို့မဟုတ် ပြင်ဆင်ခြင်းကို ထောက်လှမ်းသည်။ တိုက်ခိုက်သူများသည် cryptomining သို့မဟုတ် resource-intensive operation များကို ဖုံးကွယ်ရန် budget alert များကို ဖယ်ရှားသည်။ |
 | 12 | 🚫 Access Denied Errors | bar | AccessDenied error များကို identity နှင့် API အလိုက် အုပ်စုဖွဲ့သည်။ အများဆုံး ကျူးလွန်သူများသည် credential အလွဲသုံးစားကို ညွှန်ပြနိုင်သည်။ |
+| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | ransomware ၏ အဆင့်သုံးဆင့် — ပြန်လည်ရယူရေး ဖယ်ရှားခြင်း၊ ကာကွယ်မှု ပိတ်ခြင်း၊ ဒေတာ ဖျက်ဆီး သို့မဟုတ် စာဝှက်ခြင်း — ကို principal နှင့် ရက်စွဲအလိုက် ဆက်စပ်ပြသည်။ တစ်ခုချင်းစီမှာ လုပ်ငန်းဆိုင်ရာ ဆူညံသံသာဖြစ်သော်လည်း သုံးခုစလုံး ပေါင်းလာလျှင် မဟုတ်တော့ပါ။ |
 
 ### 🔑 Identity & Access
 
@@ -75,6 +76,15 @@
 | 28 | 👑 AssumeRoot Usage | timeseries | management account မှ member-account root သို့ sts:AssumeRoot call များကို ထောက်လှမ်းသည်။ သိမ်းယူခံရသော management account တစ်ခုသည် ဤနည်းလမ်းဖြင့် member account တိုင်းကို သိမ်းယူနိုင်သည်။ |
 | 29 | 🎫 Support Case Manipulation | timeseries | AWS Support case ပိတ်ခြင်း နှင့် comment လုပ်ဆောင်ချက်ကို ထောက်လှမ်းသည်။ တိုက်ခိုက်သူများသည် compromise တစ်ခုအကြောင်း AWS notification များကို ဖိနှိပ်ရန် abuse/support case များကို ဖြေရှင်းသည်။ |
 | 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito user-pool နှင့် app-client ပြောင်းလဲမှုများကို ထောက်လှမ်းသည်: တိုးမြှင့်ထားသော token validity၊ client အသစ်များ နှင့် admin user ဖန်တီးခြင်း။ တိုက်ခိုက်သူများသည် သက်တမ်းရှည် token များ ထုတ်ပေးရန် သို့မဟုတ် backdoor user များ စိုက်ပျိုးရန် ၎င်းကို အလွဲသုံးစားလုပ်သည်။ |
+| 31 | 🔗 Role Chaining (Session → Role) | timeseries | ရယူပြီးသား role session တစ်ခုက နောက်ထပ် role တစ်ခုကို ထပ်ရယူသည်ကို ရှာဖွေသည်။ AssumeRole ခေါ်ဆိုမှု တစ်ခုတည်းက ပုံမှန်ဖြစ်သော်လည်း၊ ကွင်းဆက်သည် တိုက်ခိုက်သူက အလုပ်ခံရသော instance role မှ အမှန်တကယ် လိုချင်သည့် ခွင့်ပြုချက်များဆီ လျှောက်လှမ်းသည့် လမ်းကြောင်းဖြစ်သည်။ |
+| 32 | 🎫 Session Credential Trace | bar | ယာယီ STS session (ASIA… access key) တစ်ခုချင်းစီ ဘာလုပ်ခဲ့သည်ကို အကျဉ်းချုပ်ပြသည် — ခေါ်ဆိုမှုအရေအတွက်၊ ဝန်ဆောင်မှုများ၊ source IP များနှင့် အချိန်ကာလ။ credential ပေါက်ကြားမှု စုံစမ်းစစ်ဆေးရေးတိုင်း စတင်မေးသည့် နယ်ပယ်သတ်မှတ်ချက်ဖြစ်သည်။ |
+| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | တောင်းဆိုထားသော roleArn မှ ပစ်မှတ် account ကို ဖတ်ခြင်းဖြင့် account နယ်နိမိတ် ကျော်ဖြတ်မှုကို ရှာဖွေသည်။ ခေါ်ဆိုသည့် account ၏ log များသာ ထည့်သွင်းထားသည့်အခါတွင်ပင် အလုပ်လုပ်သည်။ |
+| 34 | 📊 AssumeRole Fan-In by Target Role | bar | မည်သူက မည်သည့်နေရာမှ role ကို ရယူသည်ဆိုသည်အပေါ် role များကို အဆင့်သတ်မှတ်သည်။ ပုံမှန်အားဖြင့် account တစ်ခုတည်းက ရယူသော role တွင် ရုတ်တရက် ဒုတိယခေါ်ဆိုသူ ပေါ်လာလျှင် ဤနေရာတွင် ထင်ရှားပြီး၊ အကြမ်းထည် event စာရင်းတွင်မူ မြှုပ်နှံသွားသည်။ |
+| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | principal နှင့် source IP အလိုက် GetCallerIdentity ခေါ်ဆိုမှုများကို ပြသည်။ ခိုးယူထားသော credential ဖြင့် ပထမဆုံး အသုံးပြုသည့် command ဖြစ်ပြီး၊ ခေါ်ဆိုမှု တစ်ကြိမ်တည်းသာဖြစ်၍ ပမာဏ အတိုင်းအတာအခြေခံ ထောက်လှမ်းရေး hunt များ ဘယ်တော့မှ မမီပါ။ |
+| 36 | 🪪 Federated Console Logins | timeseries | ပြင်ပ identity provider မှတစ်ဆင့် ရောက်ရှိလာသော console login များကို provider အမည်နှင့် မူလအရင်းအမြစ်နှင့်အတူ စာရင်းပြုစုသည်။ အလုပ်ခံရသည့် အစိတ်အပိုင်းမှာ IdP ကိုယ်တိုင်ဖြစ်လျှင် AWS သည် တရားဝင် login တစ်ခုသာ မြင်ရသည်။ |
+| 37 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center ရှိ permission set ဖန်တီးမှု၊ policy တွဲချိတ်မှုနှင့် account သတ်မှတ်ပေးမှုများကို ရှာဖွေသည် — အဖွဲ့အစည်းရှိ account တိုင်းတွင် အမြဲတမ်း administrator ဝင်ရောက်ခွင့်ဆီသို့ ဦးတည်သည့် လမ်းကြောင်းဖြစ်သည်။ |
+| 38 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center ၏ identity store တွင် တိုက်ရိုက် ဖန်တီးထားသော user၊ group နှင့် အဖွဲ့ဝင်မှုများကို ရှာဖွေသည် — IAM တွင် လုံးဝမပေါ်သည့် တည်မြဲမှုဖြစ်၍ IAM သာ စောင့်ကြည့်ခြင်းက လွတ်သွားသည်။ |
+| 39 | 👑 Delegated Administrator Registration | timeseries | အဖွဲ့အစည်း ဝန်ဆောင်မှုအတွက် လွှဲအပ်ထားသော စီမံခန့်ခွဲသူ မှတ်ပုံတင်ခြင်းကို ရှာဖွေသည်။ Identity Center playbook က CRITICAL အဆင့်သတ်မှတ်သည့် တစ်ခုတည်းသော event ဖြစ်ပြီး၊ အဖွဲ့အစည်းတစ်ခုလုံး၏ ထိန်းချုပ်မှုကို အခြား account သို့ လွှဲပြောင်းပေးသည်။ |
 
 ### 🪣 Data & Storage
 
@@ -106,6 +116,10 @@
 | 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API query များ၊ master-password reset များ နှင့် snapshot restore များကို ထောက်လှမ်းသည်။ တိုက်ခိုက်သူများသည် data ကို တိုက်ရိုက်ဖတ်သည်၊ access ရရှိရန် credential များကို reset လုပ်သည် သို့မဟုတ် ၎င်းတို့ ထိန်းချုပ်ထားသော instance များထဲသို့ snapshot များကို restore လုပ်သည်။ |
 | 25 | 🔎 S3 Bucket Enumeration | bar | bucket နှင့် object metadata များကို လှည့်ပတ်စစ်ဆေးနေသော caller များကို ထောက်လှမ်းသည် (တစ်နာရီအတွင်း List/GetBucket* ဖတ်ခြင်း ≥10)။ exfiltration မပြုလုပ်မီ တန်ဖိုးရှိသော data ကို ရှာဖွေရန် အသုံးများသော အစောပိုင်း ခြေလှမ်း။ |
 | 26 | 🔑 Storage Re-Encryption for Impact | timeseries | ရှင်းလင်းသော KMS key တစ်ခုဖြင့် ပြန်လည် encrypt လုပ်ထားသော EBS/RDS snapshot များ နှင့် volume များ ထပ်ဆင့် default EBS encryption ပိတ်ခြင်းကို ထောက်လှမ်းသည်။ တိုက်ခိုက်သူ ကိုင်ထားသော key ဖြင့် ပြန်လည် encrypt လုပ်ခြင်းသည် data ကို ရွေးနှုတ်ရေးအတွက် ချုပ်နှောင်ထားခြင်းဖြစ်သည်။ |
+| 27 | 📝 Ransom Note Placement | timeseries | object key က ငွေညှစ်စာနှင့် တူသော PutObject ခေါ်ဆိုမှုများကို ရှာဖွေသည်။ အခြား ransomware hunt များနှင့် မတူဘဲ ဤအရာက အကျိုးသက်ရောက်မှုကို အရိပ်အမြွက်ပြခြင်းမဟုတ်ဘဲ အတည်ပြုသည် — စာရှိသည်ဆိုသည်မှာ ငွေတောင်းခံနေပြီဖြစ်သည်။ |
+| 28 | 📐 Data Access Scope (Breach Notification) | bar | principal တစ်ဦးချင်းစီ တစ်ရက်လျှင် ဘာဖတ်ခဲ့သည်ကို တိုင်းတာသည် — ထိတွေ့ခဲ့သော bucket အရေအတွက်နှင့် ခန့်မှန်း object အရေအတွက်။ GDPR အပိုဒ် ၃၃ က တောင်းဆိုသည့် «ခန့်မှန်း မှတ်တမ်းအရေအတွက်» ကို ထုတ်ပေးသည်။ |
+| 29 | 📤 Cross-Account Object Copy | timeseries | x-amz-copy-source header ပါသော PutObject ခေါ်ဆိုမှုများအပါအဝင် bucket များအကြား ကူးယူထားသော object များကို ရှာဖွေသည်။ သင်မထိန်းချုပ်နိုင်သော account သို့ ဒေတာ ရွှေ့ပြောင်းခြင်းသည် ဤခြေရာကိုသာ ချန်ထားခဲ့သည်။ |
+| 30 | 🔗 Presigned URL Generation | bar | principal အလိုက် presigned URL ထုတ်လုပ်မှုကို ရေတွက်သည်။ presigned URL သည် link ကိုင်ဆောင်သူ မည်သူ့ကိုမဆို ဒေတာ ပေးအပ်ပြီး၊ နောက်ထပ် အထောက်အထားစိစစ်မှုလည်း မလို၊ နောက်ထပ် CloudTrail မှတ်တမ်းလည်း မကျန်ပါ။ |
 
 ### ⚡ Compute & Serverless
 
@@ -139,6 +153,11 @@
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | region 2 ခု သို့မဟုတ် ထို့ထက်ပိုသော နေရာများတွင် Bedrock model များကို enumerate လုပ်နေသော သို့မဟုတ် တစ်နာရီအတွင်း enumeration call 10 ခုနှင့်အထက် ပြုလုပ်နေသော caller များကို ဖော်ထုတ်သည်။ ခိုးယူထားသော key ကိုင်ဆောင်သူများသည် model များ အသုံးပြု၍ရနိုင်သည့်နေရာကို ရှာဖွေရန် region များကို လှည့်ပတ်စစ်ဆေးသည်။ |
 | 5 | ⛔ Failed Bedrock Invocations | bar | မအောင်မြင်သော Bedrock invocation ရုတ်တရက်များပြားလာမှု (AccessDenied / ValidationException) ကို ရှာဖွေသည်။ ခိုးယူထားသော key စမ်းသပ်ခြင်းသည် အလုပ်ဖြစ်သော ပေါင်းစပ်မှုတစ်ခု တွေ့ရှိမီ model များနှင့် region များတစ်လျှောက် ကျရှုံးမှု မုန်တိုင်းများကို ဖြစ်ပေါ်စေသည်။ |
 | 6 | 🌍 Bedrock Callers & Origins | — | Bedrock ကို တစ်ခါမျှ ထိတွေ့ခဲ့သော principal တိုင်းကို source IP၊ GeoIP origin၊ user agent နှင့် model ကွဲပြားမှုတို့ဖြင့် စာရင်းပြုစုသည်။ Bedrock ကို လုံးဝ အသုံးမပြုသင့်သော caller သို့မဟုတ် origin ကို ရှာဖွေပါ။ |
+| 7 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore token vault ထုတ်ပေးမှုကို principal နှင့် အရင်းအမြစ်အလိုက် စုစည်းသည်။ ဤခေါ်ဆိုမှုများသည် တတိယအဖွဲ့အစည်း OAuth token များနှင့် API key များ ဝေငှသဖြင့်၊ အလွဲသုံးစားမှုသည် AWS ပြင်ပ ဝန်ဆောင်မှုများအထိ ရောက်ရှိသည်။ |
+| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar policy engine ကို LOG_ONLY သို့ လျှော့ချခြင်းအပါအဝင် AgentCore Gateway နှင့် policy ပြောင်းလဲမှုများကို ရှာဖွေသည်။ မှတ်တမ်းသာတင်သည့် ခွင့်ပြုချက်သည်လည်း အောင်မြင်ကြောင်း ပြန်ပေးသဖြင့် အောက်ပိုင်းတွင် မည်သည့်အမှားမျှ မမြင်ရပါ။ |
+| 9 | 🧠 AgentCore Memory Integrity | timeseries | memory stream ကို အခြား account ၏ Kinesis ARN သို့ ပြန်လည်ညွှန်းခြင်းအပါအဝင် AgentCore Memory နှင့် Registry ပြောင်းလဲမှုများကို ရှာဖွေသည်။ ညစ်ညမ်းသွားသော ရေရှည်မှတ်ဉာဏ်သည် agent ၏ နောင်လာမည့် session တိုင်းတွင် ကျန်ရှိနေသည်။ |
+| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore code interpreter နှင့် browser lifecycle event များကို network mode နှင့်အတူ စာရင်းပြုစုသည်။ mode ကို ပြင်၍မရသဖြင့် ဖျက်ပြီး ပြန်ဖန်တီးခြင်းသည် sandbox ၏ ကွန်ရက် ဝင်ရောက်ခွင့်ကို ချဲ့ထွင်ရန် တစ်ခုတည်းသော နည်းလမ်းဖြစ်သည်။ |
+| 11 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore evaluator ပြောင်းလဲမှုများနှင့် X-Ray sampling သို့မဟုတ် trace ဦးတည်ရာ ပြောင်းလဲမှုများကို ရှာဖွေသည်။ တိုက်ခိုက်သူ ဖန်တီးထားသော evaluator သည် အမှတ်ပေးသည့် တုံ့ပြန်ချက်တိုင်းကို ဖတ်ရှုပြီး၊ တရားဝင် လမ်းကြောင်းမှတစ်ဆင့် model output ကို ထုတ်ယူသည်။ |
 
 ### 🌐 Network & Infrastructure
 
@@ -159,6 +178,7 @@
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway key ဖန်တီးခြင်း နှင့် REST API management ကို ထောက်လှမ်းသည်။ Pacu ၏ api_gateway__create_api_keys သည် IAM key rotation ကို ရှင်သန်နိုင်သော တည်မြဲသော API credential များ ဖန်တီးသည်။ တိုက်ခိုက်သူများသည် access control များကို အားနည်းစေရန် API authorizer များကိုလည်း ပြင်ဆင်သည်။ |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC endpoint များမှတစ်ဆင့် access denied error များကို ထောက်လှမ်းသည်။ မှားယွင်းစွာ ပြင်ဆင်ထားသော endpoint policy ကို ညွှန်ပြနိုင်သည်။ |
 | 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS record ပြုပြင်မှုများ၊ hosted-zone ပြောင်းလဲမှုများ နှင့် domain registration/transfer ကို ထောက်လှမ်းသည်။ တိုက်ခိုက်သူများသည် traffic ကို redirect လုပ်သည်၊ dangling subdomain များကို သိမ်းယူသည် သို့မဟုတ် phishing အတွက် lookalike domain များကို register လုပ်သည်။ |
+| 16 | 🛡 DDoS Protection Weakening | timeseries | အနားသတ် ကာကွယ်မှုများကို ဖယ်ရှားခြင်းမဟုတ်ဘဲ လျှော့ပေါ့လိုက်သည်ကို ရှာဖွေသည် — WebACL ၏ မူလလုပ်ဆောင်ချက်ကို ခွင့်ပြုရန် ပြောင်းခြင်း၊ rule group များ လျှော့ပေါ့ခြင်း၊ Shield ကာကွယ်မှုများ ဖျက်ခြင်း၊ CloudFront origin များ ပြန်ညွှန်းခြင်း။ |
 
 ### 🕵 Threat Patterns
 
@@ -169,6 +189,11 @@
 | 3 | 🌍 Multi-Region Activity | bar | တစ်ရက်အတွင်း region ၃ ခုနှင့်အထက်တွင် ရေးသားမှု ပြုလုပ်နေသော identity များကို ထောက်လှမ်းသည်။ ပထဝီဝင် ပျံ့နှံ့မှုသည် အပေးယူခံရခြင်းကို ညွှန်ပြနိုင်သည်။ |
 | 4 | 🕵 First-Time API Calls (24h) | — | နောက်ဆုံး ၂၄ နာရီအတွင်း တွေ့ရှိသော်လည်း ယခင်က ဘယ်တုန်းကမှ မတွေ့ဖူးသော API call များကို ရှာဖွေသည်။ အသစ်အဆန်း operation များသည် တိုက်ခိုက်သူ tooling ကို ညွှန်ပြနိုင်သည်။ |
 | 5 | 🗺 First-Seen Region Activity | bar | dataset ၏ နောက်ဆုံး ၂၄ နာရီအတွင်း ပထမဆုံး activity ဖြစ်ပေါ်ခဲ့သော AWS region များကို ရှာဖွေသည်။ တစ်ခါမျှ အသုံးမပြုဖူးသော region တစ်ခုတွင် လုပ်ဆောင်ခြင်းသည် region-scoped monitoring မှ cryptomining သို့မဟုတ် staging ကို ဖုံးကွယ်ရန် ဂန္ထဝင် နည်းလမ်းတစ်ခုဖြစ်သည်။ |
+| 6 | 🌙 Off-Hours Activity | bar | ချိန်ညှိနိုင်သော ရုံးချိန်ပြင်ပ ကာလအတွင်း လှုပ်ရှားမှုကို principal နှင့် နေ့၏နာရီအလိုက် အုပ်စုဖွဲ့သည်။ အတွင်းလူ ခြိမ်းခြောက်မှု playbook က ပထမဆုံး ဖော်ပြသည့် ညွှန်ကိန်းဖြစ်ပြီး၊ အခြား hunt မည်သည့်ဟာမျှ လွှမ်းခြုံမထားပါ။ |
+| 7 | 🪞 Self-Service Privilege Escalation | timeseries | principal တစ်ဦးက မိမိကိုယ်ပိုင် ခွင့်ပြုချက်များကို ပြင်ဆင်သည်ကို ရှာဖွေသည် — ခေါ်ဆိုသူ ARN နှင့် ပစ်မှတ် user သို့မဟုတ် role အမည် တူညီသည်။ လက်ရှိ အဆင့်မြှင့်တင်မှု hunt များသည် ပေးအပ်မှုကို မြင်သော်လည်း ၎င်းသည် မိမိကိုယ်တိုင်အပေါ် အသုံးချခဲ့ကြောင်း လွတ်သွားသည်။ |
+| 8 | 📈 Principal Daily Volume Deviation | bar | principal တစ်ဦးချင်းစီ၏ နေ့စဉ် ခေါ်ဆိုမှုပမာဏကို ၎င်း၏ကိုယ်ပိုင် ပျမ်းမျှနှင့် နှိုင်းယှဉ်ပြီး၊ ဖတ်ခြင်းနှင့် ရေးခြင်းကို ခွဲခြားပြသည်။ ခွင့်ပြုထားသော API များသာ အသုံးပြုသည့် ဒေတာထုတ်ယူမှု — ပုံမှန်မဟုတ်မှုမှာ လုပ်ဆောင်ချက်မဟုတ်ဘဲ ပမာဏဖြစ်သည့်အခါ — ကို ဖမ်းမိသည်။ |
+| 9 | 🗺 Resource Creation Outside Normal Regions | bar | account က အသုံးနည်းသော region များတွင် အရင်းအမြစ် ဖန်တီးမှုကို အမှတ်အသားပြုသည်။ အခြေခံစံနှုန်းကို hardcode မလုပ်ဘဲ ဒေတာမှ ဆွဲထုတ်သည်။ cryptomining နှင့် ကိုယ်ပိုင်စီမံကိန်းများ နှစ်မျိုးစလုံး ဤနေရာတွင် ပေါ်လာသည်။ |
+| 10 | 📞 High-Volume API Calls per Principal | bar | အောင်မြင်သော ခေါ်ဆိုမှု ၅၀ ကျော်သည့် principal နှင့် API တွဲများကို ပထမဆုံးနှင့် နောက်ဆုံး ခေါ်ဆိုမှုနှင့်အတူ စာရင်းပြုစုသည်။ စာရင်းကောက်ခြင်း၊ အစုလိုက် ထုတ်ယူခြင်းနှင့် အစုလိုက် ဖျက်ခြင်း အားလုံးသည် ဤပုံသဏ္ဌာန်တူညီသည်။ |
 
 ### 📊 Activity & Baseline
 
@@ -204,24 +229,24 @@
 
 ---
 
-## 📊 Dashboard Charts — chart 101 ခု
+## 📊 Dashboard Charts — chart 115 ခု
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | triage KPI card ၉ ခု (event, principal, IP, root, MFA-less login, access denied, defense evasion, country, region) + global event-volume tren |
-| 🎯 Threat Detection | 12 | Defense-evasion catch-all · logging gap · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership ပြောင်းလဲမှု · error & throttling tren · write/read ratio |
+| 🎯 Threat Detection | 14 | Defense-evasion catch-all · logging gap · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership ပြောင်းလဲမှု · error & throttling tren · write/read ratio · P1/P2 အဆင့်မြှင့် အခြေအနေ KPI ကတ်များ |
 | 🔑 Identity & Access | 16 | Console login · MFA tren · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · principal အသစ်များ · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API log · high-risk call အထိပ်ဆုံးများ · actor အထိပ်ဆုံးများ · အချိန်နှင့်အမျှ high-risk call ပမာဏ |
 | 📊 API Activity | 6 | API အထိပ်ဆုံးများ · access-denied action များ · region distribution · error-code composition · source IP များ · user agent များ |
-| 🪣 S3 & RDS | 15 | S3 အစုလိုက် download/deletion · versioning/logging ပိတ်ခြင်း · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / snapshot မပါဘဲ ဖျက်ခြင်း · SSE-C ransomware encryption · lifecycle-trigger ဖျက်ခြင်း · RDS query/instance manipulation · impact အတွက် storage re-encryption |
+| 🪣 S3 & RDS | 18 | S3 အစုလိုက် download/deletion · versioning/logging ပိတ်ခြင်း · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / snapshot မပါဘဲ ဖျက်ခြင်း · SSE-C ransomware encryption · lifecycle-trigger ဖျက်ခြင်း · RDS query/instance manipulation · impact အတွက် storage re-encryption · ဖောက်ဖျက်မှု အသိပေးရန် ဝင်ရောက်မှု အတိုင်းအတာ · account ဖြတ်ကျော် object ကူးယူခြင်း · ငွေညှစ်စာ ချထားခြင်း |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pair/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS weakening · AMI/snapshot deletion · WorkSpaces hijacking |
-| 🤖 AI / LLM | 4 | Bedrock invocation tren · model access & logging ပြောင်းလဲမှု · failed invocation · origin အလိုက် caller (LLMjacking triage) |
+| 🤖 AI / LLM | 6 | Bedrock invocation tren · model access & logging ပြောင်းလဲမှု · failed invocation · origin အလိုက် caller (LLMjacking triage) · AgentCore token ထုတ်ပေးခြင်း · gateway နှင့် policy ပြောင်းလဲမှုများ |
 | 🌐 Network | 5 | Security group ပြောင်းလဲမှု · NACL/route table ပြောင်းလဲမှု · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS ပြောင်းလဲမှု |
-| 🕒 Temporal Analysis | 6 | Event velocity ရုတ်တရက်များပြားလာခြင်း · dormant account ပြန်လည် active ဖြစ်ခြင်း · identity/IP/API/service source အလိုက် first/last seen |
+| 🕒 Temporal Analysis | 8 | Event velocity ရုတ်တရက်များပြားလာခြင်း · dormant account ပြန်လည် active ဖြစ်ခြင်း · identity/IP/API/service source အလိုက် first/last seen · ရုံးချိန်ပြင်ပ ရေးသားမှု heatmap · principal အလိုက် နေ့စဉ် ဖတ်/ရေး ပမာဏ |
 | 🌍 GeoIP Intelligence | 6 | မဖြစ်နိုင်သော ခရီးသွားလာမှု (multi-country principal) · country/city/ASN အထိပ်ဆုံးများ · world map · event_name × country |
 
 <details markdown="1">
-<summary>📋 Full list — all 101 charts (click to expand)</summary>
+<summary>📋 Full list — all 115 charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -256,6 +281,8 @@
 | 10 | Write/Read Ratio Trend | read နှင့် write API call များ၏ နာရီအလိုက် ခွဲခြမ်းမှု (DSH-20)။ read_events နှင့် နှိုင်းယှဉ်လျှင် write_events ၏ ဆက်တိုက် တိုးလာခြင်းသည် တိုက်ခိုက်သူသည် reconnaissance မှ active exploitation သို့ ရွှေ့ပြောင်းနေကြောင်း ညွှန်ပြသည်။ MITRE ATT&CK: TA0040 Impact / TA0007 Discovery။ |
 | 11 | CloudTrail Events Over Time | အချိန်ကြာလာသည်နှင့်အမျှ နာရီအလိုက် Read vs Write event ပမာဏ (DSH-01)။ Stacked bar များက Read/Write ခွဲခြားမှုကို ပြသည်: write_events ရုတ်တရက် တက်လာခြင်းသည် တိုက်ခိုက်သူသည် reconnaissance မှ active exploitation သို့ ကူးပြောင်းနေကြောင်း အချက်ပြသည်။ activity ရုတ်တရက်များပြားလာခြင်း နှင့် off-hours operation များကို ဖော်ထုတ်ရန် အသုံးဝင်သည်။ |
 | 12 | Organization Membership Changes | account များကို guardrail များမှ ခွာထုတ်ခြင်း သို့မဟုတ် တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော organization တစ်ခုအောက်သို့ ရွှေ့ပြောင်းသော Organizations membership ပြောင်းလဲမှုများ။ Threat Technique Catalog for AWS: T1666.A002 / T1666.A003။ |
+| 13 | P1 Escalation Triggers | မိနစ် ၁၅ အတွင်း တုံ့ပြန်ရန် လိုအပ်သော TRIAGE_GUIDE ၏ အဆင့်မြှင့် အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — root အသုံးပြုမှု၊ logging သို့မဟုတ် detection ဖျက်လိုဖျက်ဆီးလုပ်ခြင်း၊ ငွေညှစ်စာများ၊ လွှဲအပ်ထားသော စီမံခန့်ခွဲသူ မှတ်ပုံတင်ခြင်း။ သုည မဟုတ်လျှင် နာရီ စတင်ပါ။ |
+| 14 | P2 Escalation Triggers | တစ်နာရီအတွင်း တုံ့ပြန်ရန် TRIAGE_GUIDE ၏ အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — credential ဖန်တီးခြင်း၊ အခွင့်အရေး ပေးအပ်ခြင်း၊ trust policy ပြင်ဆင်ခြင်းနှင့် account ဖြတ်ကျော် role ရယူခြင်း။ P1 ကတ်နှင့်တွဲဖတ်ပါ။ |
 
 ### 🔑 Identity & Access
 
@@ -277,6 +304,11 @@
 | 14 | IAM Identity Center (SSO) Events | sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com, နှင့် identitystore.amazonaws.com မှ AWS IAM Identity Center management event များ (DSH-44)။ Identity Center သည် multi-account organization များတွင် အဓိက authentication လမ်းကြောင်းဖြစ်သည်။ အဓိက ခြိမ်းခြောက်မှုများ: CreatePermissionSet (backdoor admin access)၊ CreateAccountAssignment (account များကို တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော user များထံ ချထားခြင်း) နှင့် AttachManagedPolicyToPermissionSet (privilege escalation)။ MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation။ |
 | 15 | IAM Entity Deletion | တိုက်ခိုက်သူ ဖန်တီးထားသော identity များ၏ ခြေရာများကို ဖျက်ရန် သို့မဟုတ် defender များအား ပိတ်ထားရန် အသုံးပြုသော IAM user၊ role၊ policy နှင့် MFA device ဖျက်ခြင်း။ Threat Technique Catalog for AWS: T1070.A001။ |
 | 16 | AssumeRoot Usage | management account မှ member-account root သို့ sts:AssumeRoot call များ — member account တစ်ခုလုံး သိမ်းယူနိုင်သော လမ်းကြောင်းတစ်ခု။ Threat Technique Catalog for AWS: AT1669။ |
+| 17 | Role Chaining (Session → Role) | role chain ခုန်ကူးမှုများ — ရယူပြီးသား role session တစ်ခုက နောက်ထပ် role တစ်ခု ထပ်ရယူခြင်း။ အနက်သည် signal ဖြစ်သည်။ မြှင့်တင်ထားသော session_issuer_arn ကော်လံ လိုအပ်သည်။ |
+| 18 | Session Credential Trace (ASIA keys) | ယာယီ STS session တစ်ခုချင်းစီ ဘာလုပ်ခဲ့သည်ကို ASIA access key အလိုက် ပြသည် — ခေါ်ဆိုမှုအရေအတွက်၊ ကွဲပြားသော API များ၊ source IP များ၊ region များနှင့် အချိန်ကာလ။ source IP အများအပြားရှိသော session မှ စတင်ပါ။ |
+| 19 | API Calls Without MFA | MFA အတည်ပြုမထားသော session များမှ ရေးသားမှု ခေါ်ဆိုမှုများ။ MFA မပါသော console login ကတ်နှင့် မတူဘဲ ConsoleLogin သာမက API ခေါ်ဆိုမှုတိုင်းကို လွှမ်းခြုံသည်။ |
+| 20 | Federated Console Logins by Provider & Origin | ပြင်ပ identity provider မှတစ်ဆင့် console login များကို provider အမည်၊ နိုင်ငံနှင့် ASN နှင့်အတူ ပြသည်။ IdP ကိုယ်တိုင် အလုပ်ခံရလျှင် AWS သည် တရားဝင် login တစ်ခုသာ မြင်ရသည်။ |
+| 21 | Identity Center Permission Set Grants | event အမည်အလိုက် နေ့စဉ် IAM Identity Center အခွင့်အရေး ပေးအပ်မှုများ။ permission set သည် အဖွဲ့အစည်းတစ်ခုလုံးအတွက်ဖြစ်၍ တစ်ကြိမ်သတ်မှတ်ရုံဖြင့် မထိတွေ့ဖူးသော account တွင် admin ခွင့် ရနိုင်သည်။ |
 
 ### 🚨 High-Risk API Monitor
 
@@ -318,6 +350,9 @@
 | 13 | S3 Lifecycle-Triggered Deletion | DeleteObject burst များ မထုတ်ဘဲ data ကို တိတ်ဆိတ်စွာ ရှင်းလင်းရန် အသုံးပြုသော object များကို expire လုပ်စေသော S3 lifecycle rule များ (နှင့် lifecycle-config ဖျက်ခြင်း)။ Threat Technique Catalog for AWS: T1485.001။ |
 | 14 | RDS Query & Instance Manipulation | data ကို တိုက်ရိုက်ဖတ်ရန် သို့မဟုတ် တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော instance တစ်ခုသို့ restore ပြန်လုပ်ရန် အသုံးပြုသော RDS Data API query များ နှင့် snapshot restore များ။ Threat Technique Catalog for AWS: AT1023.001 / T1213.A013။ |
 | 15 | Storage Re-Encryption for Impact | ရှင်းလင်းသော တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော KMS key တစ်ခုဖြင့် ပြန်လည် encrypt လုပ်ထားသော EBS/RDS snapshot များ နှင့် volume များ ထပ်ဆင့် default-encryption ပိတ်ခြင်း။ Threat Technique Catalog for AWS: T1486.A002 / T1486.A003။ |
+| 16 | Data Access Scope (Breach Notification) | principal အလိုက် — S3 ဖတ်ရှုမှုများ၊ ကွဲပြားသော bucket များနှင့် ခန့်မှန်း ကွဲပြားသော object များ။ GDPR အပိုဒ် ၃၃ တောင်းဆိုသည့် ကိန်းဂဏန်းကို ထုတ်ပေးသည်။ bucket များတွင် CloudTrail data event လိုအပ်သည်။ |
+| 17 | Cross-Account Object Copy | S3 CopyObject ခေါ်ဆိုမှုများနှင့် x-amz-copy-source header ပါသော PutObject ခေါ်ဆိုမှုများကို မူလနှင့် ဦးတည်ရာနှင့်အတူ ပြသည်။ replication ဇယားများက configuration ကို၊ ဤဟာက တစ်ခုချင်း ကူးယူမှုကို လွှမ်းခြုံသည်။ |
+| 18 | Ransom Note Placement | object key က ငွေညှစ်စာနှင့် တူသော PutObject ခေါ်ဆိုမှုများ။ အခြား ransomware panel များနှင့် မတူဘဲ အကျိုးသက်ရောက်မှုကို အတည်ပြုသည် — ဤနေရာတွင် စာကြောင်းတစ်ကြောင်းရှိလျှင် P1 ဖြစ်သည်။ |
 
 ### 🖥️ Computing
 
@@ -349,6 +384,8 @@
 | 2 | Bedrock Model Access & Logging Changes | foundation-model access ဖွင့်ခြင်း နှင့် invocation-logging tampering (DSH-99)။ ခိုးယူထားသော credential ရှိသော တိုက်ခိုက်သူများသည် အလွဲသုံးစားလုပ်မီ Bedrock model access ကို ကိုယ်တိုင် ဖွင့်ကြပြီး၊ ၎င်းတို့၏ prompt များ မမှတ်တမ်းတင်စေရန် model-invocation logging configuration ကို စစ်ဆေးသည် သို့မဟုတ် ဖျက်သည် — နှစ်ခုစလုံးသည် documented LLMjacking ညွှန်ပြချက်များဖြစ်သည်။ Bedrock ကို တစ်ခါမျှ အသုံးမပြုဖူးသော organization တစ်ခုတွင် row မည်သည်မဆို ချက်ချင်း investigation လိုအပ်သည်။ MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496)။ |
 | 3 | Bedrock Failed Invocations | caller နှင့် error code အလိုက် အုပ်စုဖွဲ့ထားသော မအောင်မြင်သော Amazon Bedrock invocation ကြိုးပမ်းမှုများ (DSH-100)။ model နှင့် region များစွာတစ်လျှောက် AccessDenied / ValidationException error များ ရုတ်တရက်များပြားလာခြင်းသည် ခိုးယူထားသော key တစ်ခုက invoke လုပ်နိုင်သည့် model များကို စမ်းသပ်နေသော တိုက်ခိုက်သူတစ်ဦးကို ညွှန်ပြသည် — LLMjacking ၏ reconnaissance အဆင့်။ MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery။ |
 | 4 | Bedrock Callers by Origin | origin နှင့် model ကွဲပြားမှုဖြင့် Amazon Bedrock caller အားလုံး၏ စာရင်း (DSH-101)။ LLMjacking triage အတွက် baseline view: မမျှော်လင့်သော နိုင်ငံများ၊ hosting/VPN ASN များမှ ခေါ်ဆိုနေသော သို့မဟုတ် call volume မြင့်မားသော generic scripting user agent (python-requests, curl) ရှိသော principal များသည် ပင်မ သံသယရှိသူများဖြစ်သည်။ MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking)။ |
+| 5 | AgentCore Token Issuance (Daily) | လုပ်ဆောင်ချက်အလိုက် နေ့စဉ် AgentCore token vault ထုတ်ပေးမှု။ ဤခေါ်ဆိုမှုများသည် တတိယအဖွဲ့အစည်း OAuth token များနှင့် API key များ ဝေငှသဖြင့် အလွဲသုံးစားမှုသည် AWS ပြင်ပသို့ ရောက်သည်။ |
+| 6 | AgentCore Gateway & Policy Changes | AgentCore gateway၊ target နှင့် policy ပြောင်းလဲမှုများကို Cedar policy engine မုဒ်နှင့်အတူ ပြသည်။ ENFORCE မှ LOG_ONLY သို့ ပြောင်းလည်း အောင်မြင်ကြောင်း ပြန်ပေးသဖြင့် အောက်ပိုင်းတွင် အမှား မမြင်ရပါ။ |
 
 ### 🌐 Network
 
@@ -370,6 +407,8 @@
 | 4 | First / Last Seen per Source IP | first/last seen၊ ကွဲပြားသော identity များ၊ ကွဲပြားသော API များ နှင့် GeoIP context ပါသော source IP များ (DSH-32)။ dataset တွင် နောက်ကျမှ ပေါ်လာသော IP အသစ်များသည် lateral movement သို့မဟုတ် တိုက်ခိုက်သူ infrastructure အသစ်ကို အကြံပြုသည်။ MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement။ |
 | 5 | First / Last Seen per API Call | ပထမဆုံး ပေါ်ထွန်းမှုအလိုက် စီထားသော API action များ (DSH-33)။ ပထမဆုံးအကြိမ် ပေါ်ထွက်လာသော API call အသစ်များသည် reconnaissance သို့မဟုတ် privilege escalation ကြိုးပမ်းမှုများကို အကြံပြုသည်။ MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation။ |
 | 6 | First / Last Seen per Service Source | ကွဲပြားသော AWS service source တစ်ခုစီအတွက် first နှင့် last seen timestamp များ (DSH-26)။ အသစ် မိတ်ဆက်ခံရသော service များ (တိုက်ခိုက်သူ infrastructure ဖြစ်နိုင်သော) ကို ဖော်ထုတ်ရန် first_seen DESC အလိုက် sort လုပ်ပါ။ တိတ်ဆိတ်သွားသော service များကို ရှာဖွေရန် (compromise ပြီးနောက် ဖြစ်နိုင်သော ရှင်းလင်းမှု) last_seen ASC အလိုက် sort လုပ်ပါ။ MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery။ |
+| 7 | Off-Hours Write Activity (Hour x Day) | ရေးသားမှု event အရေအတွက်ကို JST နာရီ × ရက်သတ္တပတ်နေ့ heatmap အဖြစ် ပြသည်။ login heatmap သည် ConsoleLogin သာ လွှမ်းခြုံပြီး၊ ဤဟာက ပြောင်းလဲမှုဆိုင်ရာ ခေါ်ဆိုမှုတိုင်းကို လွှမ်းခြုံသည်။ |
+| 8 | Principal Daily Volume (Read vs Write) | principal အလိုက် နေ့စဉ် ခေါ်ဆိုမှုပမာဏကို ဖတ်ခြင်းနှင့် ရေးခြင်း ခွဲပြသည်။ principal တစ်ခုချင်းစီကို ၎င်းကိုယ်တိုင်နှင့် နှိုင်းယှဉ်ပါ — build role ၏ တစ်သောင်းသည် ပုံမှန်ဖြစ်ပြီး၊ လူတစ်ဦး၏ နှစ်ရာမှာ မဟုတ်ပါ။ |
 
 ### 🌍 GeoIP Intelligence
 

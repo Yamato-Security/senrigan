@@ -2,25 +2,25 @@
 
 > 💡 SQL や AWS の深い知識は不要 — ドロップダウンからハントを選択するだけで即座に結果が得られます。
 
-## 🎯 組み込みハント — 126 クエリ
+## 🎯 組み込みハント — 151 クエリ
 
 カテゴリは DFIR トリアージの優先度順に並んでいます — まず検知ツールの改ざんを確認し、次に ID 悪用、その後にデータへの影響を確認します。
 
 | カテゴリ | クエリ数 | カバーする主な脅威 |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | 監査サービスの改ざん (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 削除 · アラーム抑制 · ログの持ち出し |
-| 🔑 Identity & Access | 30 | root の使用 · コンソールログイン/MFA · 権限昇格 · 信頼ポリシーのバックドア · PassRole 悪用 · クロスアカウント AssumeRole · SSO/SAML/OIDC · 認証情報の列挙 · IAM エンティティ削除 · AssumeRoot 乗っ取り · Cognito ユーザープール/トークン悪用 · サポートケース抑制 |
-| 🪣 Data & Storage | 26 | S3 一括削除/ダウンロード · シークレットの一括読み取り · バックアップ改ざん · KMS 操作 · スナップショット共有 · EBS Direct API 持ち出し · DynamoDB エクスポート · S3 クロスアカウントレプリケーション · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS Data API 操作 · 影響のためのストレージ再暗号化 |
+| 🛡 Detection & Response | 13 | 監査サービスの改ざん (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 削除 · アラーム抑制 · ログの持ち出し · ランサムウェアのキルチェーン相関 |
+| 🔑 Identity & Access | 44 | root の使用 · コンソールログイン/MFA · 権限昇格 · 信頼ポリシーのバックドア · PassRole 悪用 · クロスアカウント AssumeRole · SSO/SAML/OIDC · 認証情報の列挙 · IAM エンティティ削除 · AssumeRoot 乗っ取り · Cognito ユーザープール/トークン悪用 · サポートケース抑制 · ロールチェーン · セッション認証情報の追跡 · GetCallerIdentity 偵察 · フェデレーテッドコンソールログイン · Identity Center の権限セットと委任管理者 · ロールチェーン · セッション認証情報の追跡 · MFA なしの API 呼び出し · フェデレーテッドログイン · Identity Center 権限セット |
+| 🪣 Data & Storage | 30 | S3 一括削除/ダウンロード · シークレットの一括読み取り · バックアップ改ざん · KMS 操作 · スナップショット共有 · EBS Direct API 持ち出し · DynamoDB エクスポート · S3 クロスアカウントレプリケーション · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS Data API 操作 · 影響のためのストレージ再暗号化 · 身代金要求ファイルの設置 · 侵害通知のための範囲特定 · クロスアカウントのオブジェクトコピー · 署名付き URL の生成 |
 | ⚡ Compute & Serverless | 17 | EC2 大量停止/終了 · SSM 横展開 · Lambda/ECS/EKS/ECR 改ざん · EventBridge 永続化 · クリプトマイニング · Lightsail 悪用 · IMDS/SSRF 弱体化 · AMI/スナップショット削除 · WorkSpaces ハイジャック |
-| 🤖 AI & LLM Abuse | 6 | Bedrock 呼び出しの急増 · モデルアクセスの有効化 · 呼び出しログの改ざん · リージョン横断偵察 · 失敗呼び出しのバースト · 呼び出し元/発信元の棚卸し (LLMjacking) |
-| 🌐 Network & Infrastructure | 15 | SG のインターネット公開 · VPC フローログ削除 · CloudFront ハイジャック · 秘匿 VPN/TGW トンネル · Elastic IP C2 · API Gateway キー · Route 53/ドメインハイジャック |
-| 🕵 Threat Patterns | 5 | 偵察バースト · 異常なユーザーエージェント · マルチリージョン拡散 · 初回 API 呼び出し · 初検出リージョンアクティビティ |
+| 🤖 AI & LLM Abuse | 11 | Bedrock 呼び出しの急増 · モデルアクセスの有効化 · 呼び出しログの改ざん · リージョン横断偵察 · 失敗呼び出しのバースト · 呼び出し元/発信元の棚卸し (LLMjacking) · AgentCore トークンボールト · ゲートウェイ認可バイパス · メモリ完全性 · サンドボックスのネットワークモード変更 · 可観測性の改ざん |
+| 🌐 Network & Infrastructure | 16 | SG のインターネット公開 · VPC フローログ削除 · CloudFront ハイジャック · 秘匿 VPN/TGW トンネル · Elastic IP C2 · API Gateway キー · Route 53/ドメインハイジャック · DDoS 防御の弱体化 |
+| 🕵 Threat Patterns | 10 | 偵察バースト · 異常なユーザーエージェント · マルチリージョン拡散 · 初回 API 呼び出し · 初検出リージョンアクティビティ · 業務時間外の活動 · 自己権限昇格 · 日次ボリュームの乖離 · 未使用リージョンでのリソース作成 · 大量 API 呼び出し |
 | 📊 Activity & Baseline | 3 | コンソール書き込みイベント · エラー急増 · 直近のエラー |
 | 🌍 GeoIP Analysis | 10 | 国別のコンソールログイン/拒否/書き込み · まれな国からのアクセス · 国/ASN/都市の内訳 · event_name × country · identity × country · プライベート IP ベースライン |
 | ☁ IaC & Platform | 2 | CI/CD サプライチェーン · CloudFormation 悪用 |
 
 <details markdown="1">
-<summary>📋 全リスト — 全 126 クエリ (クリックで展開)</summary>
+<summary>📋 全リスト — 全 151 クエリ (クリックで展開)</summary>
 
 ## 組み込みハント
 
@@ -40,6 +40,7 @@
 | 10 | 🔍 GuardDuty Findings Read | timeseries | 読み取り専用の GuardDuty API 呼び出しを検知します。Pacu の guardduty__list_findings モジュールはアクティブな検出結果を読み取り、防御側がすでに何を検知したかを把握することで、攻撃者が戦術を適応させ新たなアラートのトリガーを回避できるようにします。 |
 | 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets および Cost Anomaly モニターの削除や変更を検知します。攻撃者はクリプトマイニングやリソース集約的な操作を隠すために予算アラートを削除します。 |
 | 12 | 🚫 Access Denied Errors | bar | AccessDenied エラーを ID と API ごとにグループ化します。上位の違反者は認証情報の悪用を示す可能性があります。 |
+| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | ランサムウェアの 3 段階 — 復旧手段の削除、保護の無効化、データの破壊または暗号化 — をプリンシパルと日付ごとに相関させます。各段階単体は運用ノイズに見えますが、3 つ揃えば違います。 |
 
 ### 🔑 Identity & Access
 
@@ -75,6 +76,15 @@
 | 28 | 👑 AssumeRoot Usage | timeseries | 管理アカウントからメンバーアカウントの root への sts:AssumeRoot 呼び出しを検知します。管理アカウントが侵害されると、この方法ですべてのメンバーアカウントを乗っ取ることができます。 |
 | 29 | 🎫 Support Case Manipulation | timeseries | AWS サポートケースのクローズとコメント活動を検知します。攻撃者は侵害に関する AWS の通知を抑制するために、不正使用/サポートケースを解決します。 |
 | 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito ユーザープールとアプリクライアントの変更 (トークン有効期限の延長、新規クライアント、管理者ユーザーの作成) を検知します。攻撃者はこれらを悪用して長期間有効なトークンを発行したり、バックドアユーザーを仕込んだりします。 |
+| 31 | 🔗 Role Chaining (Session → Role) | timeseries | assume されたロールセッションがさらに別のロールを assume する動きを検出します。単発の AssumeRole は正常に見えますが、チェーンこそが攻撃者が侵害したインスタンスロールから本当に欲しい権限へ歩いていく経路です。 |
+| 32 | 🎫 Session Credential Trace | bar | 各一時 STS セッション (ASIA… アクセスキー) が何をしたか — 呼び出し数、対象サービス、送信元 IP、時間幅 — を要約します。認証情報侵害の調査が必ず最初に問う範囲特定です。 |
+| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | 要求された roleArn から対象アカウントを読み取ってアカウント境界の越境を検出します。呼び出し側アカウントのログしか取り込んでいなくても機能します。 |
+| 34 | 📊 AssumeRole Fan-In by Target Role | bar | 誰がどこからロールを assume したかでロールを順位付けします。通常 1 アカウントからしか assume されないロールに 2 つ目の呼び出し元が現れたとき、生ログでは埋もれますがここでは目立ちます。 |
+| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | プリンシパルと送信元 IP ごとに GetCallerIdentity 呼び出しを可視化します。盗まれた認証情報に対して最初に打たれるコマンドであり、しかも 1 回の呼び出しなので、件数閾値型の偵察ハントには決して届きません。 |
+| 36 | 🪪 Federated Console Logins | timeseries | 外部 ID プロバイダー経由で到達したコンソールログインを、プロバイダー名と発信元とともに一覧します。IdP 側が侵害された場合、AWS からは正当なログインにしか見えません。 |
+| 37 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center の権限セット作成、ポリシー添付、アカウント割り当てを検出します。組織内のすべてのアカウントに常設の管理者アクセスを与える経路です。 |
+| 38 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center の ID ストアに直接作成されたユーザー、グループ、メンバーシップを検出します。IAM には一切現れない永続化であり、IAM のみを監視していると見逃します。 |
+| 39 | 👑 Delegated Administrator Registration | timeseries | 組織サービスの委任管理者の登録を検出します。上流の Identity Center プレイブックが CRITICAL と評価する唯一のイベントで、組織全体の制御を別アカウントに引き渡します。 |
 
 ### 🪣 Data & Storage
 
@@ -106,6 +116,10 @@
 | 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API のクエリ、マスターパスワードのリセット、スナップショットの復元を検知します。攻撃者はデータを直接読み取ったり、アクセスを得るために認証情報をリセットしたり、スナップショットを自分が制御するインスタンスに復元したりします。 |
 | 25 | 🔎 S3 Bucket Enumeration | bar | バケットとオブジェクトのメタデータを走査する呼び出し元を検知します (1 時間に 10 回以上の List/GetBucket* 読み取り)。持ち出し前に価値あるデータの場所を特定する一般的な初期ステップです。 |
 | 26 | 🔑 Storage Re-Encryption for Impact | timeseries | 明示的な KMS キーで再暗号化された EBS/RDS スナップショットとボリューム、およびデフォルトの EBS 暗号化の無効化を検知します。攻撃者が保有するキーで再暗号化することで、データを人質に取ります。 |
+| 27 | 📝 Ransom Note Placement | timeseries | オブジェクトキーが身代金要求ファイルに見える PutObject 呼び出しを検出します。他のランサムウェアハントと異なり、示唆ではなく被害を確定させます — ノートがあるということは、攻撃者は既に支払いを要求しています。 |
+| 28 | 📐 Data Access Scope (Breach Notification) | bar | 各プリンシパルが 1 日に何を読んだか — 触れたバケット数と概算のオブジェクト数 — を定量化します。GDPR 第 33 条の通知が求める「おおよそのレコード件数」を算出します。 |
+| 29 | 📤 Cross-Account Object Copy | timeseries | バケット間でコピーされたオブジェクトを、x-amz-copy-source ヘッダーを伴う PutObject を含めて検出します。自分の管理下にないアカウントへデータを退避させる操作は、この痕跡しか残しません。 |
+| 30 | 🔗 Presigned URL Generation | bar | プリンシパルごとの署名付き URL 生成回数を数えます。署名付き URL はリンクを持つ誰にでもデータを渡し、それ以上の認証も CloudTrail の記録も残しません。 |
 
 ### ⚡ Compute & Serverless
 
@@ -139,6 +153,11 @@
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | 2 リージョン以上にわたって Bedrock モデルを列挙する、または 1 時間に 10 回以上列挙呼び出しを行う呼び出し元を特定します。盗まれたキーの保有者はモデルが使用可能な場所を見つけるためにリージョンを横断して探索します。 |
 | 5 | ⛔ Failed Bedrock Invocations | bar | 失敗した Bedrock 呼び出し (AccessDenied / ValidationException) のバーストを検出します。盗まれたキーのテストでは、有効な組み合わせが見つかるまでモデルとリージョンをまたいで失敗の嵐が発生します。 |
 | 6 | 🌍 Bedrock Callers & Origins | — | Bedrock に触れたことのあるすべてのプリンシパルを、送信元 IP、GeoIP の発信元、ユーザーエージェント、モデルの多様性とともに棚卸しします。Bedrock を使う理由がないはずの呼び出し元や発信元を見つけます。 |
+| 7 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore のトークンボールト払い出しをプリンシパルと発信元ごとに集計します。これらの呼び出しはサードパーティの OAuth トークンや API キーを配るため、悪用は AWS の外のサービスにまで及びます。 |
+| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | AgentCore Gateway とポリシーの変更を検出します。Cedar ポリシーエンジンが LOG_ONLY に落とされた場合を含みます。記録するだけの認可も成功を返すため、下流からは何も異常に見えません。 |
+| 9 | 🧠 AgentCore Memory Integrity | timeseries | AgentCore の Memory と Registry の変更を検出します。メモリストリームが外部アカウントの Kinesis ARN に向け直された場合を含みます。汚染された長期記憶はエージェントの以後すべてのセッションに残ります。 |
+| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore のコードインタープリターとブラウザのライフサイクルイベントを、ネットワークモードとともに一覧します。モードは変更できないため、削除してから作成し直すことがサンドボックスのネットワーク到達範囲を広げる唯一の方法です。 |
+| 11 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore の評価器の変更と X-Ray のサンプリング・トレース送信先の変更を検出します。攻撃者が作成した評価器は採点対象のすべての応答を読み取り、正規の経路でモデル出力を持ち出します。 |
 
 ### 🌐 Network & Infrastructure
 
@@ -159,6 +178,7 @@
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway キーの作成と REST API 管理を検知します。Pacu の api_gateway__create_api_keys は、IAM キーローテーションを生き延びる永続的な API 認証情報を作成します。攻撃者はアクセス制御を弱めるために API オーソライザーも変更します。 |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC エンドポイント経由のアクセス拒否エラーを検知します。エンドポイントポリシーの誤設定を示す可能性があります。 |
 | 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS レコードの編集、ホストゾーンの変更、ドメインの登録/移管を検知します。攻撃者はトラフィックをリダイレクトしたり、宙に浮いたサブドメインを乗っ取ったり、フィッシング用のなりすましドメインを登録したりします。 |
+| 16 | 🛡 DDoS Protection Weakening | timeseries | エッジ防御が削除ではなく緩められる動きを検出します。WebACL のデフォルトアクションが許可に反転する、ルールグループが緩和される、Shield の保護が削除される、CloudFront のオリジンが向け直される、といった変更です。 |
 
 ### 🕵 Threat Patterns
 
@@ -169,6 +189,11 @@
 | 3 | 🌍 Multi-Region Activity | bar | 1 日に 3 つ以上のリージョンで書き込みを行う ID を検知します。地理的な拡散は侵害を示す可能性があります。 |
 | 4 | 🕵 First-Time API Calls (24h) | — | 過去 24 時間に見られたが、それ以前には一度も見られなかった API 呼び出しを検出します。新規の操作は攻撃者ツールを示す可能性があります。 |
 | 5 | 🗺 First-Seen Region Activity | bar | データセットの直近 24 時間に初めての活動が発生した AWS リージョンを見つけます。これまで使用されたことのないリージョンで活動することは、リージョン限定の監視からクリプトマイニングやステージングを隠す典型的な手法です。 |
+| 6 | 🌙 Off-Hours Activity | bar | 設定可能な時間外ウィンドウ内で、プリンシパルと時刻帯ごとに活動をグループ化します。上流の内部不正プレイブックが最初に挙げる指標であり、他のどのハントもカバーしていません。 |
+| 7 | 🪞 Self-Service Privilege Escalation | timeseries | プリンシパルが自分自身の権限を変更した操作 — 呼び出し元 ARN と対象のユーザー名またはロール名が一致するもの — を検出します。既存の昇格ハントは付与自体は見えますが、それが自己適用だった事実を落とします。 |
+| 8 | 📈 Principal Daily Volume Deviation | bar | 各プリンシパルの日次呼び出し量をそのプリンシパル自身の平均と比較し、読み取りと書き込みを分けて示します。許可された API しか使わない持ち出し — 異常が行為ではなく量である場合 — を捉えます。 |
+| 9 | 🗺 Resource Creation Outside Normal Regions | bar | アカウントがほとんど使っていないリージョンでのリソース作成を、ハードコードではなくデータから導いたベースラインで検出します。クリプトマイニングも私的な環境構築もここに現れます。 |
+| 10 | 📞 High-Volume API Calls per Principal | bar | 成功した呼び出しが 50 件を超えるプリンシパルと API の組み合わせを、初回と最終の呼び出しとともに一覧します。列挙、一括抽出、一括削除はいずれもこの形をしています。 |
 
 ### 📊 Activity & Baseline
 
@@ -204,24 +229,24 @@
 
 ---
 
-## 📊 ダッシュボードチャート — 101 チャート
+## 📊 ダッシュボードチャート — 115 チャート
 
 | タブ | チャート数 | 表示内容 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 種類のトリアージ KPI カード (イベント、プリンシパル、IP、root、MFA なしログイン、アクセス拒否、防御回避、国、リージョン) + グローバルなイベント量の推移 |
-| 🎯 Threat Detection | 12 | 防御回避のキャッチオール · ロギングギャップ · VPC フローログ/Config/EventBridge/WAF の改ざん · SCP/組織メンバーシップの変更 · エラー/スロットリングの推移 · 書き込み/読み取り比率 |
+| 🎯 Threat Detection | 14 | 防御回避のキャッチオール · ロギングギャップ · VPC フローログ/Config/EventBridge/WAF の改ざん · SCP/組織メンバーシップの変更 · エラー/スロットリングの推移 · 書き込み/読み取り比率 · P1/P2 エスカレーション条件の KPI カード |
 | 🔑 Identity & Access | 16 | コンソールログイン · MFA 推移 · ログインヒートマップ · 失敗→成功の認証シーケンス · root の使用 · IAM エンティティのアクティビティ/削除 · 権限昇格タイムライン · 新規プリンシパル · SSO · クロスアカウント AssumeRole · AssumeRoot の使用 |
 | 🚨 High-Risk API Monitor | 5 | セキュリティサービス改ざん & 認証情報取得 API のログ · 上位の高リスク呼び出し · 上位アクター · 時系列の高リスク呼び出し量 |
 | 📊 API Activity | 6 | 上位 API · アクセス拒否アクション · リージョン分布 · エラーコードの構成 · ソース IP · ユーザーエージェント |
-| 🪣 S3 & RDS | 15 | S3 一括ダウンロード/削除 · バージョニング/ロギングの無効化 · クロスアカウントレプリケーション · バケットポリシー/ACL · 列挙 · 保護設定 · Backup vault の削除 · KMS キーの削除 · RDS スナップショット共有 / スナップショットなしの削除 · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS クエリ/インスタンス操作 · 影響のためのストレージ再暗号化 |
+| 🪣 S3 & RDS | 18 | S3 一括ダウンロード/削除 · バージョニング/ロギングの無効化 · クロスアカウントレプリケーション · バケットポリシー/ACL · 列挙 · 保護設定 · Backup vault の削除 · KMS キーの削除 · RDS スナップショット共有 / スナップショットなしの削除 · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS クエリ/インスタンス操作 · 影響のためのストレージ再暗号化 · 侵害通知のためのアクセス範囲 · クロスアカウントのオブジェクトコピー · 身代金要求ファイルの設置 |
 | 🖥️ Computing | 17 | EC2 起動/大量停止/キーペア/インスタンスプロファイル/ユーザーデータ/スナップショット共有/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS の弱体化 · AMI/スナップショット削除 · WorkSpaces ハイジャック |
-| 🤖 AI / LLM | 4 | Bedrock 呼び出しの推移 · モデルアクセス & ログ変更 · 失敗呼び出し · 発信元別の呼び出し元 (LLMjacking トリアージ) |
+| 🤖 AI / LLM | 6 | Bedrock 呼び出しの推移 · モデルアクセス & ログ変更 · 失敗呼び出し · 発信元別の呼び出し元 (LLMjacking トリアージ) · AgentCore トークン発行 · ゲートウェイ & ポリシー変更 |
 | 🌐 Network | 5 | セキュリティグループの変更 · NACL/ルートテーブルの変更 · VPC インフラ · VPC ピアリング/Transit Gateway · Route53 DNS の変更 |
-| 🕒 Temporal Analysis | 6 | イベント速度の急増 · 再アクティブ化された休眠アカウント · ID/IP/API/サービスソース別の初回/最終確認 |
+| 🕒 Temporal Analysis | 8 | イベント速度の急増 · 再アクティブ化された休眠アカウント · ID/IP/API/サービスソース別の初回/最終確認 · 業務時間外の書き込みヒートマップ · プリンシパル日次の読み取り/書き込み量 |
 | 🌍 GeoIP Intelligence | 6 | 移動不可能な旅程 (複数国のプリンシパル) · 上位国/都市/ASN · 世界地図 · event_name × country |
 
 <details markdown="1">
-<summary>📋 全リスト — 全 101 チャート (クリックで展開)</summary>
+<summary>📋 全リスト — 全 115 チャート (クリックで展開)</summary>
 
 ## ダッシュボードチャート (Apache Superset — `dashboard/`)
 
@@ -256,6 +281,8 @@
 | 10 | Write/Read Ratio Trend | 読み取り対書き込み API 呼び出しの時間別内訳 (DSH-20)。read_events に対する write_events の持続的な増加は、攻撃者が偵察からアクティブな攻撃へ移行したことを示します。MITRE ATT&CK: TA0040 Impact / TA0007 Discovery。 |
 | 11 | CloudTrail Events Over Time | 時系列での時間別 Read 対 Write イベント量 (DSH-01)。積み上げ棒グラフは Read/Write の内訳を示します — write_events の急上昇は、攻撃者が偵察からアクティブな攻撃に移行していることを示します。アクティビティの急増や時間外の操作を特定するのに役立ちます。 |
 | 12 | Organization Membership Changes | アカウントをガードレールから切り離したり、攻撃者が制御する組織の配下に移動させたりする Organizations のメンバーシップ変更。Threat Technique Catalog for AWS: T1666.A002 / T1666.A003。 |
+| 13 | P1 Escalation Triggers | 15 分以内の対応を要する TRIAGE_GUIDE のエスカレーション条件に一致するイベント数: root の使用、ロギングや検知の改ざん、身代金要求ファイル、委任管理者の登録。ゼロでなければ時計を回し始めます。 |
+| 14 | P2 Escalation Triggers | 1 時間以内の対応を要する TRIAGE_GUIDE の条件に一致するイベント数: 認証情報の作成、権限付与、信頼ポリシーの編集、クロスアカウントのロール引き受け。単独ではなく P1 カードと合わせて読みます。 |
 
 ### 🔑 Identity & Access
 
@@ -277,6 +304,11 @@
 | 14 | IAM Identity Center (SSO) Events | sso.amazonaws.com、sso-directory.amazonaws.com、sso-oauth.amazonaws.com、identitystore.amazonaws.com からの AWS IAM Identity Center 管理イベント (DSH-44)。Identity Center はマルチアカウント組織における主要な認証経路です。主な脅威: CreatePermissionSet (バックドア管理者アクセス)、CreateAccountAssignment (攻撃者が制御するユーザーへのアカウント割り当て)、AttachManagedPolicyToPermissionSet (権限昇格)。MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation。 |
 | 15 | IAM Entity Deletion | 攻撃者が作成した ID の痕跡を消去したり、防御側をロックアウトしたりするために使われる IAM ユーザー、ロール、ポリシー、MFA デバイスの削除。Threat Technique Catalog for AWS: T1070.A001。 |
 | 16 | AssumeRoot Usage | 管理アカウントからメンバーアカウントの root への sts:AssumeRoot 呼び出し — メンバーアカウントを完全に乗っ取る経路です。Threat Technique Catalog for AWS: AT1669。 |
+| 17 | Role Chaining (Session → Role) | ロールチェーンのホップ — assume されたロールセッションがさらに別のロールを assume したもの。深さが signal です。昇格された session_issuer_arn 列が必要です。 |
+| 18 | Session Credential Trace (ASIA keys) | 各一時 STS セッションが何をしたかを ASIA アクセスキー単位で示します: 呼び出し数、API 種別、送信元 IP、リージョン、時間幅。複数の送信元 IP にまたがるセッションから調べます。 |
+| 19 | API Calls Without MFA | MFA 認証されていないセッションによる書き込み呼び出し。MFA なしコンソールログインのカードと異なり、ConsoleLogin だけでなくすべての API 呼び出しが対象です。 |
+| 20 | Federated Console Logins by Provider & Origin | 外部 ID プロバイダー経由のコンソールログインを、プロバイダー名・国・ASN とともに表示します。IdP が侵害された場合、AWS からは正当なログインにしか見えません。 |
+| 21 | Identity Center Permission Set Grants | IAM Identity Center の権限付与をイベント名別に日次で表示します。権限セットは組織全体に及ぶため、1 件の割り当てが攻撃者の未接触アカウントに管理者権限を与えます。 |
 
 ### 🚨 High-Risk API Monitor
 
@@ -318,6 +350,9 @@
 | 13 | S3 Lifecycle-Triggered Deletion | DeleteObject のバーストなしでデータを密かに消去するために使われる、オブジェクトを期限切れにする S3 ライフサイクルルール (およびライフサイクル設定の削除)。Threat Technique Catalog for AWS: T1485.001。 |
 | 14 | RDS Query & Instance Manipulation | データを直接読み取ったり、攻撃者が制御するインスタンスに復元したりするために使われる RDS Data API のクエリとスナップショットの復元。Threat Technique Catalog for AWS: AT1023.001 / T1213.A013。 |
 | 15 | Storage Re-Encryption for Impact | 攻撃者が制御する明示的な KMS キーで再暗号化された EBS/RDS スナップショットとボリューム、およびデフォルト暗号化の無効化。Threat Technique Catalog for AWS: T1486.A002 / T1486.A003。 |
+| 16 | Data Access Scope (Breach Notification) | プリンシパルごとの S3 読み取り数、対象バケット数、概算オブジェクト数。GDPR 第 33 条が求める「おおよそのレコード件数」を算出します。バケットへの CloudTrail データイベントが必要です。 |
+| 17 | Cross-Account Object Copy | S3 CopyObject と x-amz-copy-source ヘッダーを伴う PutObject を、コピー元と先とともに表示します。レプリケーションのチャートは設定を、これは個々のコピーを扱います。 |
+| 18 | Ransom Note Placement | オブジェクトキーが身代金要求ファイルに見える PutObject。他のランサムウェアパネルと異なり被害を確定させます — ここに 1 行でもあれば P1 です。 |
 
 ### 🖥️ Computing
 
@@ -349,6 +384,8 @@
 | 2 | Bedrock Model Access & Logging Changes | 基盤モデルのアクセス有効化と呼び出しログの改ざん (DSH-99)。盗まれた認証情報を持つ攻撃者は、悪用する前に自ら Bedrock のモデルアクセスを有効化し、プロンプトが記録されないようにモデル呼び出しログの設定を確認または削除します — どちらも文書化された LLMjacking の指標です。Bedrock を一度も導入していない組織でのいずれの行も即座の調査が必要です。MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496)。 |
 | 3 | Bedrock Failed Invocations | 呼び出し元とエラーコードでグループ化した失敗した Amazon Bedrock 呼び出し試行 (DSH-100)。複数のモデルとリージョンにまたがる AccessDenied / ValidationException エラーのバーストは、攻撃者が盗まれたキーで呼び出せるモデルを探っていることを示します — LLMjacking の偵察フェーズです。MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery。 |
 | 4 | Bedrock Callers by Origin | 発信元とモデルの多様性を含むすべての Amazon Bedrock 呼び出し元の一覧 (DSH-101)。LLMjacking トリアージのためのベースラインビュー: 予期しない国、ホスティング/VPN の ASN、または汎用的なスクリプト用ユーザーエージェント (python-requests、curl) から高い呼び出し量で呼び出しているプリンシパルは、有力な容疑者です。MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking)。 |
+| 5 | AgentCore Token Issuance (Daily) | AgentCore トークンボールトの払い出しを操作別に日次で表示します。サードパーティの OAuth トークンや API キーを配るため、悪用は AWS 外のサービスにまで及びます。 |
+| 6 | AgentCore Gateway & Policy Changes | AgentCore の Gateway・ターゲット・ポリシー変更を、Cedar ポリシーエンジンのモードとともに表示します。ENFORCE から LOG_ONLY に落ちても成功を返すため、下流からは異常が見えません。 |
 
 ### 🌐 Network
 
@@ -370,6 +407,8 @@
 | 4 | First / Last Seen per Source IP | 初回/最終確認、異なる ID、異なる API、GeoIP コンテキストを持つソース IP (DSH-32)。データセットの後半に現れる新しい IP は、横展開や新しい攻撃者インフラを示唆します。MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement。 |
 | 5 | First / Last Seen per API Call | 初出順に並べた API アクション (DSH-33)。初めて現れる新しい API 呼び出しは、偵察や権限昇格の試みを示唆します。MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation。 |
 | 6 | First / Last Seen per Service Source | すべての異なる AWS サービスソースの初回/最終確認タイムスタンプ (DSH-26)。first_seen の降順でソートすると、新しく導入されたサービス (潜在的な攻撃者インフラ) が浮かび上がります。last_seen の昇順でソートすると、活動が止まったサービス (侵害後のクリーンアップの可能性) を見つけられます。MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery。 |
+| 7 | Off-Hours Write Activity (Hour x Day) | 書き込みイベント数を JST の時刻 × 曜日ヒートマップで表示します。ログインヒートマップは ConsoleLogin のみですが、これはすべての変更系呼び出しを対象とします。 |
+| 8 | Principal Daily Volume (Read vs Write) | プリンシパルごとの日次呼び出し量を読み取りと書き込みに分けて表示します。各プリンシパルは自分自身と比較します — ビルドロールの 1 万件は正常、人間の 200 件は異常です。 |
 
 ### 🌍 GeoIP Intelligence
 

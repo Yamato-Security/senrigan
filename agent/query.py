@@ -54,6 +54,34 @@ class QueryValidationError(Exception):
     """Raised when a SQL query fails safety validation."""
 
 
+def _mask_string_literals(sql: str) -> str:
+    """Blank out the contents of single-quoted literals, preserving length.
+
+    The forbidden-keyword scan runs over raw SQL text, so it fires on any query
+    that merely *mentions* a keyword — including inside a quoted literal, where
+    it is data and cannot execute. Legitimate hunts hit this: matching AWS API
+    names with ``LIKE 'Create%'``, or reading the S3 ``x-amz-copy-source``
+    header, whose hyphens are regex word boundaries around ``copy``.
+
+    Masking is length-preserving so error messages still point at the right
+    offset, and an *unterminated* quote is deliberately left unmasked: swallowing
+    the remainder of the statement as literal text is exactly how a keyword would
+    be smuggled past the scan.
+
+    Args:
+        sql: SQL text to mask.
+
+    Returns:
+        The SQL with the inside of every closed single-quoted literal replaced
+        by spaces.
+    """
+
+    def blank(match: re.Match) -> str:
+        return "'" + " " * (len(match.group(0)) - 2) + "'"
+
+    return _SQL_STRING_LITERAL.sub(blank, sql)
+
+
 def _sub_outside_string_literals(pattern: re.Pattern, repl: str, sql: str) -> str:
     """Apply ``pattern.sub(repl, ...)`` to *sql* but skip single-quoted literals.
 
@@ -411,7 +439,7 @@ def validate_query(conn: duckdb.DuckDBPyConnection, sql: str) -> None:
             f"(got {len(statements)}): {sql[:120]}"
         )
 
-    if _FORBIDDEN_PATTERN.search(sql):
+    if _FORBIDDEN_PATTERN.search(_mask_string_literals(sql)):
         raise QueryValidationError(f"Write/DDL statements are not allowed: {sql[:120]}")
 
     try:

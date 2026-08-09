@@ -1,440 +1,385 @@
-# CloudTrail Threat Hunting — Top Events — Dashboard Definition (v4)
-# (Paired with the derived "— Rare Events" dashboard built by ../rebuild_rare_zip.py)
-# 11-tab triage-first layout:
-#   Overview | Identity & Access | Threat Detection | High-Risk API Monitor |
-#   API Activity | S3 & RDS | Computing | AI / LLM | Network | Temporal Analysis |
-#   GeoIP Intelligence.
-# 91 charts total (75 themed + 9 Overview KPI cards + 7 Phase-2/3/4 DFIR hunts;
-#   4 low-value/redundant charts removed in R3: HRM top source IPs, HRM by region,
-#   identities-by-country, first/last-seen user agent):
-#   Overview KPI-81 to KPI-89   ( 9 big_number triage cards — total events, distinct
-#                                 principals/IPs, root events, MFA-less logins, access denied,
-#                                 defense-evasion hits, distinct countries, active regions)
-#   Phase-2  DSH-91 to DSH-93   ( 3 DFIR hunts — CloudTrail logging gap, impossible travel,
-#                                 failed->success auth sequence)
-#   Phase-1  DSH-01 to DSH-43   (43 charts — baseline, identity, data, network, compute)
-#   Phase-2  DSH-44 to DSH-46   ( 3 charts — SSO, S3 policy, NACL/route)
-#   Phase-3  DSH-47 to DSH-48   ( 2 charts — EventBridge/CW rule changes, EKS/ECR events)
-#   Phase-4  DSH-49 to DSH-51   ( 3 charts — ECS task definition, Glue/SageMaker IAM role, EBS Direct API)
-#   Phase-5  DSH-52 to DSH-57   ( 6 charts — S3 & RDS DFIR: high-volume downloads, bulk deletion,
-#                                             versioning/logging disabled, cross-account replication,
-#                                             RDS deleted without snapshot, AWS Backup vault deletion)
-#   Phase-6  DSH-58 to DSH-63   ( 6 charts — EC2 DFIR: instance launches, key pair creation,
-#                                             instance profile changes, user data modification,
-#                                             mass stop/terminate, spot fleet purchases)
-#   Phase-7  DSH-64 to DSH-66   ( 3 charts — Lambda config changes, CloudFormation changes, KMS key deletion)
-#   LLMjack  DSH-98 to DSH-101  ( 4 charts — Bedrock invocation trend, model access & logging changes,
-#                                             failed invocations, callers by origin)
-# Import via: superset import-dashboards -p cloudtrail_default.zip -u admin
 uuid: c3d4e5f6-a7b8-9012-cdef-123456789012
 version: 1.0.0
 dashboard_title: CloudTrail Threat Hunting — Top Events
-description: >
-  Pre-built threat hunting dashboard for AWS CloudTrail logs stored in DuckDB.
-  Triage-first 10-tab layout led by an Overview tab of at-a-glance KPI cards, then
-  Threat Detection, Identity & Access, High-Risk API Monitor, API Activity, S3 & RDS,
-  Computing, Network, Temporal Analysis, and GeoIP Intelligence.  Covers event volume
-  trends, top API calls, IAM entity activity, error patterns, security monitoring
-  control changes, IAM privilege change timelines, secrets access anomalies, SSRF/IMDS
-  detection, DNS record changes, geographic source analysis, and first/last seen
-  temporal hunting for DFIR.
-published: true
-css: ""
-slug: cloudtrail-threat-hunting
+description: 'Pre-built threat hunting dashboard for AWS CloudTrail logs stored in DuckDB. Triage-first 10-tab layout led by an Overview tab of at-a-glance KPI cards, then Threat Detection, Identity & Access, High-Risk API Monitor, API Activity, S3 & RDS, Computing, Network, Temporal Analysis, and GeoIP Intelligence.  Covers event volume trends, top API calls, IAM entity activity, error patterns, security monitoring control changes, IAM privilege change timelines, secrets access anomalies, SSRF/IMDS detection, DNS record changes, geographic source analysis, and first/last seen temporal hunting for DFIR.
 
+  '
+published: true
+css: ''
+slug: cloudtrail-threat-hunting
 position:
-  DASHBOARD_VERSION_KEY: "v2"
+  DASHBOARD_VERSION_KEY: v2
   ROOT_ID:
     type: ROOT
     id: ROOT_ID
     children:
-      - GRID_ID
+    - GRID_ID
   GRID_ID:
     type: GRID
     id: GRID_ID
     children:
-      - TABS_ID
+    - TABS_ID
   TABS_ID:
     type: TABS
     id: TABS_ID
     children:
-      # Triage-first ordering (DFIR): start with the at-a-glance overview, then
-      # detection-tampering, identity, high-risk APIs, data impact, compute,
-      # network, temporal, and finally GeoIP (enrichment-dependent).
-      - TAB-overview
-      - TAB-threat
-      - TAB-identity
-      - TAB-hrm
-      - TAB-data
-      - TAB-s3-rds
-      - TAB-computing
-      - TAB-ai
-      - TAB-network
-      - TAB-temporal
-      - TAB-geoip
-
-  # Tab 1 — Overview (KPI summary cards + global context)
+    - TAB-overview
+    - TAB-threat
+    - TAB-identity
+    - TAB-hrm
+    - TAB-data
+    - TAB-s3-rds
+    - TAB-computing
+    - TAB-ai
+    - TAB-network
+    - TAB-temporal
+    - TAB-geoip
   TAB-overview:
     type: TAB
     id: TAB-overview
     children:
-      - ROW-hdr-overview
-      - ROW-ov-1    # KPI cards: Total Events | Distinct Principals | Distinct Source IPs
-      - ROW-ov-2    # KPI cards: Root Events | MFA-less Logins | Access Denied
-      - ROW-ov-3    # KPI cards: Defense-Evasion Hits | Distinct Countries | Active Regions
-      - ROW-ov-4    # Global event volume over time [CONTEXT]
+    - ROW-hdr-overview
+    - ROW-ov-1
+    - ROW-ov-2
+    - ROW-ov-3
+    - ROW-ov-4
+    - ROW-pb-playbooks
     meta:
-      text: "\U0001f6a6 Overview"
-      defaultText: "Overview"
-      tooltip: "At-a-glance triage KPIs — start here, then drill into the themed tabs"
+      text: 🚦 Overview
+      defaultText: Overview
+      tooltip: At-a-glance triage KPIs — start here, then drill into the themed tabs
   ROW-ov-1:
     type: ROW
     id: ROW-ov-1
     children:
-      - CHART-kpi-total-events
-      - CHART-kpi-distinct-principals
-      - CHART-kpi-distinct-source-ips
+    - CHART-kpi-total-events
+    - CHART-kpi-distinct-principals
+    - CHART-kpi-distinct-source-ips
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ov-2:
     type: ROW
     id: ROW-ov-2
     children:
-      - CHART-kpi-root-events
-      - CHART-kpi-mfa-less-logins
-      - CHART-kpi-access-denied
+    - CHART-kpi-root-events
+    - CHART-kpi-mfa-less-logins
+    - CHART-kpi-access-denied
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ov-3:
     type: ROW
     id: ROW-ov-3
     children:
-      - CHART-kpi-defense-evasion
-      - CHART-kpi-distinct-countries
-      - CHART-kpi-distinct-regions
+    - CHART-kpi-defense-evasion
+    - CHART-kpi-distinct-countries
+    - CHART-kpi-distinct-regions
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ov-4:
     type: ROW
     id: ROW-ov-4
     children:
-      - CHART-kpi-timeseries
+    - CHART-kpi-timeseries
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 2 — Identity & Access
   TAB-identity:
     type: TAB
     id: TAB-identity
     children:
-      - ROW-hdr-identity
-      - ROW-ia-1    # Console Login + MFA-less Login Trend [HIGH]
-      - ROW-ia-8    # Failed -> Success Auth Sequence [HIGH]
-      - ROW-ia-2    # Login Activity Heatmap [MEDIUM]
-      - ROW-ia-4    # Root Account Usage + IAM Entity Activity [CRITICAL]
-      - ROW-ia-5    # IAM Privilege Change Timeline [CRITICAL]
-      - ROW-ia-9    # New IAM Principal Creation Timeline [HIGH]
-      - ROW-ia-7    # Glue/SageMaker IAM Role Pass Events [CRITICAL]
-      - ROW-di-4    # AssumedRole from External IP [CRITICAL]
-      - ROW-ia-10   # Cross-Account AssumeRole [HIGH]
-      - ROW-di-3    # Secrets Access Anomaly [CRITICAL]
-      - ROW-ia-3    # Security-Relevant API Calls [MEDIUM]
-      - ROW-ia-6    # SSO Events [LOW]
-      - ROW-ttc-iamdel      # IAM Entity Deletion [HIGH] (T1070.A001)
-      - ROW-ttc-assumeroot  # AssumeRoot Usage [CRITICAL] (AT1669)
+    - ROW-hdr-identity
+    - ROW-ia-1
+    - ROW-ia-8
+    - ROW-ia-2
+    - ROW-ia-4
+    - ROW-ia-5
+    - ROW-ia-9
+    - ROW-ia-7
+    - ROW-di-4
+    - ROW-ia-10
+    - ROW-di-3
+    - ROW-ia-3
+    - ROW-ia-6
+    - ROW-ttc-iamdel
+    - ROW-ttc-assumeroot
+    - ROW-pb-identity-1
+    - ROW-pb-identity-2
+    - ROW-pb-identity-3
     meta:
-      text: "\U0001f511 Identity & Access"
-      defaultText: "Identity & Access"
-      tooltip: "Login monitoring, IAM privilege changes, and security-relevant API tracking"
+      text: 🔑 Identity & Access
+      defaultText: Identity & Access
+      tooltip: Login monitoring, IAM privilege changes, and security-relevant API tracking
   ROW-ia-1:
     type: ROW
     id: ROW-ia-1
     children:
-      - CHART-console-login
-      - CHART-mfa-login-trend
+    - CHART-console-login
+    - CHART-mfa-login-trend
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ia-2:
     type: ROW
     id: ROW-ia-2
     children:
-      - CHART-login-heatmap
+    - CHART-login-heatmap
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ia-3:
     type: ROW
     id: ROW-ia-3
     children:
-      - CHART-sensitive-api
+    - CHART-sensitive-api
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ia-4:
     type: ROW
     id: ROW-ia-4
     children:
-      - CHART-root-usage
-      - CHART-iam-entity
+    - CHART-root-usage
+    - CHART-iam-entity
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ia-5:
     type: ROW
     id: ROW-ia-5
     children:
-      - CHART-priv-esc-timeline
+    - CHART-priv-esc-timeline
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-2 new row: SSO events (DSH-44)
   ROW-ia-6:
     type: ROW
     id: ROW-ia-6
     children:
-      - CHART-sso-events
+    - CHART-sso-events
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: Glue & SageMaker IAM role pass events (DSH-50)
   ROW-ia-7:
     type: ROW
     id: ROW-ia-7
     children:
-      - CHART-glue-sagemaker-privesc
+    - CHART-glue-sagemaker-privesc
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-2 new row: Failed -> Success auth sequence (brute force / spray)
   ROW-ia-8:
     type: ROW
     id: ROW-ia-8
     children:
-      - CHART-auth-failure-success
+    - CHART-auth-failure-success
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-3 new row: New IAM principal creation timeline (persistence)
   ROW-ia-9:
     type: ROW
     id: ROW-ia-9
     children:
-      - CHART-iam-principal-creation
+    - CHART-iam-principal-creation
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-3 new row: Cross-account AssumeRole (trusted-relationship abuse)
   ROW-ia-10:
     type: ROW
     id: ROW-ia-10
     children:
-      - CHART-cross-account-assume
+    - CHART-cross-account-assume
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 2 — Threat Detection
   TAB-threat:
     type: TAB
     id: TAB-threat
     children:
-      - ROW-hdr-threat
-      - ROW-td-3    # Security Monitoring Control Changes [CRITICAL]
-      - ROW-td-12   # CloudTrail Logging Gap [CRITICAL]
-      - ROW-td-7    # VPC Flow Log Changes + Config Recorder Changes [CRITICAL]
-      - ROW-td-9    # EventBridge/CW Rule Modifications [CRITICAL]
-      - ROW-td-10   # WAF Configuration Changes [HIGH]
-      - ROW-td-5    # Org/SCP Changes [HIGH]
-      - ROW-td-4    # Error Trend [MEDIUM]
-      - ROW-td-2    # Throttling Spikes [MEDIUM]
-      - ROW-td-11   # Write/Read Ratio Trend [CONTEXT]
-      - ROW-td-1    # Event Timeseries [CONTEXT]
-      - ROW-ttc-orgmember   # Organization Membership Changes [HIGH] (T1666.A002/A003)
+    - ROW-hdr-threat
+    - ROW-td-3
+    - ROW-td-12
+    - ROW-td-7
+    - ROW-td-9
+    - ROW-td-10
+    - ROW-td-5
+    - ROW-td-4
+    - ROW-td-2
+    - ROW-td-11
+    - ROW-td-1
+    - ROW-ttc-orgmember
+    - ROW-pb-threat-1
     meta:
-      text: "\U0001f3af Threat Detection"
-      defaultText: "Threat Detection"
-      tooltip: "Security monitoring control changes, anomalous patterns, and baseline deviations"
+      text: 🎯 Threat Detection
+      defaultText: Threat Detection
+      tooltip: Security monitoring control changes, anomalous patterns, and baseline deviations
   ROW-td-1:
     type: ROW
     id: ROW-td-1
     children:
-      - CHART-timeseries
+    - CHART-timeseries
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-2 row: CloudTrail logging gap (anti-forensics blind-spot detection)
   ROW-td-12:
     type: ROW
     id: ROW-td-12
     children:
-      - CHART-logging-gap
+    - CHART-logging-gap
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Context row: read-vs-write ratio (recon -> attack-execution transition)
   ROW-td-11:
     type: ROW
     id: ROW-td-11
     children:
-      - CHART-write-read-ratio
+    - CHART-write-read-ratio
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-2:
     type: ROW
     id: ROW-td-2
     children:
-      - CHART-throttling-spikes
+    - CHART-throttling-spikes
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-3:
     type: ROW
     id: ROW-td-3
     children:
-      - CHART-defense-evasion
+    - CHART-defense-evasion
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-4:
     type: ROW
     id: ROW-td-4
     children:
-      - CHART-error-trend
+    - CHART-error-trend
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-5:
     type: ROW
     id: ROW-td-5
     children:
-      - CHART-org-scp
+    - CHART-org-scp
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-td-6:
     type: ROW
     id: ROW-td-6
     children:
-      - CHART-first-time-svc
+    - CHART-first-time-svc
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-1 new rows: Security monitoring control additions (DSH-42, DSH-43)
   ROW-td-7:
     type: ROW
     id: ROW-td-7
     children:
-      - CHART-vpc-flowlog
-      - CHART-config-tampering
+    - CHART-vpc-flowlog
+    - CHART-config-tampering
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-2 new row: Network-layer changes (DSH-46)
   ROW-td-8:
     type: ROW
     id: ROW-td-8
     children:
-      - CHART-nacl-route
+    - CHART-nacl-route
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-3 new row: EventBridge / CloudWatch rule modifications (DSH-47)
   ROW-td-9:
     type: ROW
     id: ROW-td-9
     children:
-      - CHART-eventbridge-cw
+    - CHART-eventbridge-cw
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-8 new row: WAF configuration changes (DSH-75)
   ROW-td-10:
     type: ROW
     id: ROW-td-10
     children:
-      - CHART-waf-changes
+    - CHART-waf-changes
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 3 — Data & Infrastructure
   TAB-data:
     type: TAB
     id: TAB-data
     children:
-      - ROW-hdr-data
-      - ROW-di-1    # Top API Calls + Access Denied [graph]
-      - ROW-di-1b   # Region Activity [graph]
-      - ROW-di-20   # Error-Code Composition Over Time [MEDIUM]
-      - ROW-di-2    # Source IP [table]
-      - ROW-di-2b   # User Agent [table]
+    - ROW-hdr-data
+    - ROW-di-1
+    - ROW-di-1b
+    - ROW-di-20
+    - ROW-di-2
+    - ROW-di-2b
     meta:
-      text: "\U0001f4ca API Activity"
-      defaultText: "API Activity"
-      tooltip: "API call volume, regional distribution, caller attribution (IP/UserAgent), and suspicious access patterns"
-
-  # Tab 4 — Network
+      text: 📊 API Activity
+      defaultText: API Activity
+      tooltip: API call volume, regional distribution, caller attribution (IP/UserAgent), and suspicious access patterns
   TAB-network:
     type: TAB
     id: TAB-network
     children:
-      - ROW-hdr-network
-      - ROW-net-1   # Security Group Changes [CRITICAL]
-      - ROW-td-8    # NACL/Route Table Changes [HIGH]
-      - ROW-net-2   # VPC Infrastructure Changes [HIGH]
-      - ROW-net-3   # VPC Peering & Transit Gateway [HIGH]
-      - ROW-di-5    # Route53 DNS Changes [MEDIUM]
+    - ROW-hdr-network
+    - ROW-net-1
+    - ROW-td-8
+    - ROW-net-2
+    - ROW-net-3
+    - ROW-di-5
     meta:
-      text: "\U0001f310 Network"
-      defaultText: "Network"
-      tooltip: "Security group changes, VPC topology, peering/Transit Gateway, and DNS"
+      text: 🌐 Network
+      defaultText: Network
+      tooltip: Security group changes, VPC topology, peering/Transit Gateway, and DNS
   ROW-net-1:
     type: ROW
     id: ROW-net-1
     children:
-      - CHART-sg-changes
+    - CHART-sg-changes
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-net-2:
     type: ROW
     id: ROW-net-2
     children:
-      - CHART-vpc-infra
+    - CHART-vpc-infra
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-net-3:
     type: ROW
     id: ROW-net-3
     children:
-      - CHART-vpc-peering-tgw
+    - CHART-vpc-peering-tgw
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 5 — Computing (EC2, ECS, EKS, SSM, EBS)
   TAB-computing:
     type: TAB
     id: TAB-computing
     children:
-      - ROW-hdr-computing
-      - ROW-di-12   # EC2 Instance Launches [MEDIUM]
-      - ROW-di-21   # RunInstances Spike by Region [HIGH]
-      - ROW-di-16   # EC2 Mass Stop / Terminate [CRITICAL]
-      - ROW-di-13   # EC2 Key Pair Creation [HIGH]
-      - ROW-di-14   # EC2 Instance Profile Changes [HIGH]
-      - ROW-di-15   # EC2 User Data Modification [HIGH]
-      - ROW-di-7b   # EC2 Public Snapshot / AMI Sharing [HIGH]
-      - ROW-di-17   # EC2 Spot Fleet Purchases [MEDIUM]
-      - ROW-di-10   # ECS Task Definition Changes [HIGH]
-      - ROW-di-18   # Lambda Function Config Changes [HIGH]
-      - ROW-di-6    # SSM Session / Run Command [HIGH]
-      - ROW-di-11   # EBS Direct API Snapshot Access [HIGH]
-      - ROW-di-9    # Container Platform Events [MEDIUM]
-      - ROW-di-19   # CloudFormation Stack Changes [MEDIUM]
-      - ROW-ttc-imds        # IMDS Options Weakening [HIGH] (T1552.005)
-      - ROW-ttc-amisnap     # AMI & Snapshot Deletion [HIGH] (T1485.A002)
-      - ROW-ttc-workspaces  # WorkSpaces Hijacking [MEDIUM] (T1496.A009)
+    - ROW-hdr-computing
+    - ROW-di-12
+    - ROW-di-21
+    - ROW-di-16
+    - ROW-di-13
+    - ROW-di-14
+    - ROW-di-15
+    - ROW-di-7b
+    - ROW-di-17
+    - ROW-di-10
+    - ROW-di-18
+    - ROW-di-6
+    - ROW-di-11
+    - ROW-di-9
+    - ROW-di-19
+    - ROW-ttc-imds
+    - ROW-ttc-amisnap
+    - ROW-ttc-workspaces
     meta:
-      text: "\U0001f5a5️ Computing"
-      defaultText: "Computing"
-      tooltip: "EC2, ECS, EKS, SSM, and EBS compute platform events"
-
-  # Tab — AI / LLM (LLMjacking: Bedrock abuse on stolen credentials, DSH-98 to DSH-101)
+      text: 🖥️ Computing
+      defaultText: Computing
+      tooltip: EC2, ECS, EKS, SSM, and EBS compute platform events
   TAB-ai:
     type: TAB
     id: TAB-ai
     children:
-      - ROW-hdr-ai
-      - ROW-ai-1    # Bedrock Model Invocation Trend [HIGH]
-      - ROW-ai-2    # Model Access & Logging Changes | Failed Invocations [CRITICAL]
-      - ROW-ai-3    # Bedrock Callers by Origin [MEDIUM]
+    - ROW-hdr-ai
+    - ROW-ai-1
+    - ROW-ai-2
+    - ROW-ai-3
+    - ROW-pb-ai-1
+    - ROW-pb-ai-2
     meta:
-      text: "\U0001f916 AI / LLM"
-      defaultText: "AI / LLM"
-      tooltip: "LLMjacking detection — Bedrock invocation spikes, model-access enablement, logging tampering, and caller origins"
+      text: 🤖 AI / LLM
+      defaultText: AI / LLM
+      tooltip: LLMjacking detection — Bedrock invocation spikes, model-access enablement, logging tampering, and caller origins
   ROW-hdr-ai:
     type: ROW
     id: ROW-hdr-ai
-    children: [MARKDOWN-hdr-ai]
+    children:
+    - MARKDOWN-hdr-ai
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-ai:
@@ -444,33 +389,29 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🤖 Is someone consuming LLM inference on your bill?
+      code: '### 🤖 Is someone consuming LLM inference on your bill?
 
-        LLMjacking: stolen credentials abusing Amazon Bedrock — invocation spikes,
-        self-enabled model access, invocation-logging tampering, and failure storms
-        from key probing. **MITRE: TA0040 Impact (T1496 Resource Hijacking) ·
-        TA0005 Defense Evasion.**
+        LLMjacking: stolen credentials abusing Amazon Bedrock — invocation spikes, self-enabled model access, invocation-logging tampering, and failure storms from key probing. **MITRE: TA0040 Impact (T1496 Resource Hijacking) · TA0005 Defense Evasion.**'
   ROW-ai-1:
     type: ROW
     id: ROW-ai-1
     children:
-      - CHART-bedrock-invocation-trend
+    - CHART-bedrock-invocation-trend
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ai-2:
     type: ROW
     id: ROW-ai-2
     children:
-      - CHART-bedrock-model-access
-      - CHART-bedrock-failed-invocations
+    - CHART-bedrock-model-access
+    - CHART-bedrock-failed-invocations
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ai-3:
     type: ROW
     id: ROW-ai-3
     children:
-      - CHART-bedrock-callers-geo
+    - CHART-bedrock-callers-geo
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-bedrock-invocation-trend:
@@ -513,13 +454,11 @@ position:
       width: 12
       height: 50
       sliceName: Bedrock Callers by Origin
-
-  # Threat Technique Catalog gap charts (DSH-64 to DSH-73)
   ROW-ttc-iamdel:
     type: ROW
     id: ROW-ttc-iamdel
     children:
-      - CHART-ttc-iamdel
+    - CHART-ttc-iamdel
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-iamdel:
@@ -536,7 +475,7 @@ position:
     type: ROW
     id: ROW-ttc-assumeroot
     children:
-      - CHART-ttc-assumeroot
+    - CHART-ttc-assumeroot
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-assumeroot:
@@ -553,7 +492,7 @@ position:
     type: ROW
     id: ROW-ttc-s3ssec
     children:
-      - CHART-ttc-s3ssec
+    - CHART-ttc-s3ssec
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-s3ssec:
@@ -570,7 +509,7 @@ position:
     type: ROW
     id: ROW-ttc-s3lifecycle
     children:
-      - CHART-ttc-s3lifecycle
+    - CHART-ttc-s3lifecycle
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-s3lifecycle:
@@ -587,7 +526,7 @@ position:
     type: ROW
     id: ROW-ttc-rdsmanip
     children:
-      - CHART-ttc-rdsmanip
+    - CHART-ttc-rdsmanip
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-rdsmanip:
@@ -604,7 +543,7 @@ position:
     type: ROW
     id: ROW-ttc-imds
     children:
-      - CHART-ttc-imds
+    - CHART-ttc-imds
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-imds:
@@ -621,7 +560,7 @@ position:
     type: ROW
     id: ROW-ttc-amisnap
     children:
-      - CHART-ttc-amisnap
+    - CHART-ttc-amisnap
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-amisnap:
@@ -638,7 +577,7 @@ position:
     type: ROW
     id: ROW-ttc-storreenc
     children:
-      - CHART-ttc-storreenc
+    - CHART-ttc-storreenc
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-storreenc:
@@ -655,7 +594,7 @@ position:
     type: ROW
     id: ROW-ttc-workspaces
     children:
-      - CHART-ttc-workspaces
+    - CHART-ttc-workspaces
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-workspaces:
@@ -672,7 +611,7 @@ position:
     type: ROW
     id: ROW-ttc-orgmember
     children:
-      - CHART-ttc-orgmember
+    - CHART-ttc-orgmember
     meta:
       background: BACKGROUND_TRANSPARENT
   CHART-ttc-orgmember:
@@ -685,299 +624,282 @@ position:
       width: 12
       height: 50
       sliceName: Organization Membership Changes
-
-  # Tab 5 — S3 & RDS Security
   TAB-s3-rds:
     type: TAB
     id: TAB-s3-rds
     children:
-      - ROW-hdr-s3rds
-      - ROW-s3-3    # S3 Bulk Download [CRITICAL]
-      - ROW-s3-4    # S3 Bulk Deletion [CRITICAL]
-      - ROW-s3-5    # S3 Versioning/Logging Disabled [CRITICAL]
-      - ROW-s3-6    # S3 Cross-Account Replication [HIGH]
-      - ROW-s3-2    # S3 Bucket Policy/ACL Changes [MEDIUM]
-      - ROW-s3-8    # S3 List Activity [MEDIUM]
-      - ROW-s3-1    # S3 Protection Config Changes [MEDIUM]
-      - ROW-s3-7    # AWS Backup Vault Deletion [CRITICAL]
-      - ROW-kms-1   # KMS Key Deletion [CRITICAL]
-      - ROW-rds-2   # RDS Deleted without Final Snapshot [HIGH]
-      - ROW-rds-1   # RDS Snapshot Cross-Account Share [HIGH]
-      - ROW-ttc-s3ssec      # S3 SSE-C Ransomware Encryption [CRITICAL] (T1486.A001)
-      - ROW-ttc-s3lifecycle # S3 Lifecycle-Triggered Deletion [HIGH] (T1485.001)
-      - ROW-ttc-rdsmanip    # RDS Query & Instance Manipulation [HIGH] (AT1023.001/T1213.A013)
-      - ROW-ttc-storreenc   # Storage Re-Encryption for Impact [HIGH] (T1486.A002/A003)
+    - ROW-hdr-s3rds
+    - ROW-s3-3
+    - ROW-s3-4
+    - ROW-s3-5
+    - ROW-s3-6
+    - ROW-s3-2
+    - ROW-s3-8
+    - ROW-s3-1
+    - ROW-s3-7
+    - ROW-kms-1
+    - ROW-rds-2
+    - ROW-rds-1
+    - ROW-ttc-s3ssec
+    - ROW-ttc-s3lifecycle
+    - ROW-ttc-rdsmanip
+    - ROW-ttc-storreenc
+    - ROW-pb-s3-rds-1
+    - ROW-pb-s3-rds-2
     meta:
-      text: "\U0001faa3 S3 & RDS"
-      defaultText: "S3 & RDS"
-      tooltip: "S3 & RDS DFIR: high-volume downloads, bulk deletion, anti-forensics, and backup vault deletion"
+      text: 🪣 S3 & RDS
+      defaultText: S3 & RDS
+      tooltip: 'S3 & RDS DFIR: high-volume downloads, bulk deletion, anti-forensics, and backup vault deletion'
   ROW-di-1:
     type: ROW
     id: ROW-di-1
     children:
-      - CHART-top-api
-      - CHART-access-denied
+    - CHART-top-api
+    - CHART-access-denied
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-1b:
     type: ROW
     id: ROW-di-1b
     children:
-      - CHART-region-activity
+    - CHART-region-activity
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-2:
     type: ROW
     id: ROW-di-2
     children:
-      - CHART-source-ip
+    - CHART-source-ip
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-2b:
     type: ROW
     id: ROW-di-2b
     children:
-      - CHART-user-agent
+    - CHART-user-agent
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-3:
     type: ROW
     id: ROW-di-3
     children:
-      - CHART-secrets-anomaly
+    - CHART-secrets-anomaly
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-4:
     type: ROW
     id: ROW-di-4
     children:
-      - CHART-assumed-role-ext
+    - CHART-assumed-role-ext
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-5:
     type: ROW
     id: ROW-di-5
     children:
-      - CHART-route53
+    - CHART-route53
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-1 new rows: Direct API access additions (DSH-39, DSH-40, DSH-41)
   ROW-di-6:
     type: ROW
     id: ROW-di-6
     children:
-      - CHART-ssm-execution
+    - CHART-ssm-execution
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-7b:
     type: ROW
     id: ROW-di-7b
     children:
-      - CHART-ec2-public-snapshot
+    - CHART-ec2-public-snapshot
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-3 new row: Container platform events (DSH-48)
   ROW-di-9:
     type: ROW
     id: ROW-di-9
     children:
-      - CHART-container-platform
+    - CHART-container-platform
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: ECS Task Definition Changes (DSH-49)
   ROW-di-10:
     type: ROW
     id: ROW-di-10
     children:
-      - CHART-ecs-task-def
+    - CHART-ecs-task-def
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: EBS Direct API Snapshot Access (DSH-51)
   ROW-di-11:
     type: ROW
     id: ROW-di-11
     children:
-      - CHART-ebs-direct-api
+    - CHART-ebs-direct-api
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-6 new rows: EC2 DFIR (DSH-58 to DSH-63)
   ROW-di-12:
     type: ROW
     id: ROW-di-12
     children:
-      - CHART-ec2-instance-launches
+    - CHART-ec2-instance-launches
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-13:
     type: ROW
     id: ROW-di-13
     children:
-      - CHART-ec2-key-pair
+    - CHART-ec2-key-pair
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-14:
     type: ROW
     id: ROW-di-14
     children:
-      - CHART-ec2-instance-profile
+    - CHART-ec2-instance-profile
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-15:
     type: ROW
     id: ROW-di-15
     children:
-      - CHART-ec2-user-data
+    - CHART-ec2-user-data
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-16:
     type: ROW
     id: ROW-di-16
     children:
-      - CHART-ec2-mass-stop
+    - CHART-ec2-mass-stop
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-17:
     type: ROW
     id: ROW-di-17
     children:
-      - CHART-ec2-spot-fleet
+    - CHART-ec2-spot-fleet
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-7 new rows: Lambda, CloudFormation (DSH-64, DSH-65)
   ROW-di-18:
     type: ROW
     id: ROW-di-18
     children:
-      - CHART-lambda-backdoor
+    - CHART-lambda-backdoor
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-di-19:
     type: ROW
     id: ROW-di-19
     children:
-      - CHART-cloudformation
+    - CHART-cloudformation
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: Error-code composition over time (API Activity)
   ROW-di-20:
     type: ROW
     id: ROW-di-20
     children:
-      - CHART-error-code-composition
+    - CHART-error-code-composition
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-4 new row: RunInstances spike by region (Computing)
   ROW-di-21:
     type: ROW
     id: ROW-di-21
     children:
-      - CHART-runinstances-region
+    - CHART-runinstances-region
     meta:
       background: BACKGROUND_TRANSPARENT
-  # S3 sub-tab rows
   ROW-s3-1:
     type: ROW
     id: ROW-s3-1
     children:
-      - CHART-s3-protection
+    - CHART-s3-protection
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-2:
     type: ROW
     id: ROW-s3-2
     children:
-      - CHART-s3-policy-changes
+    - CHART-s3-policy-changes
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # RDS sub-tab rows
   ROW-rds-1:
     type: ROW
     id: ROW-rds-1
     children:
-      - CHART-rds-snapshot-share
+    - CHART-rds-snapshot-share
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Phase-5 new rows: S3 & RDS DFIR (DSH-52 to DSH-57)
   ROW-s3-3:
     type: ROW
     id: ROW-s3-3
     children:
-      - CHART-s3-bulk-download
+    - CHART-s3-bulk-download
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-4:
     type: ROW
     id: ROW-s3-4
     children:
-      - CHART-s3-bulk-deletion
+    - CHART-s3-bulk-deletion
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-5:
     type: ROW
     id: ROW-s3-5
     children:
-      - CHART-s3-versioning-logging
+    - CHART-s3-versioning-logging
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-6:
     type: ROW
     id: ROW-s3-6
     children:
-      - CHART-s3-replication
+    - CHART-s3-replication
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-rds-2:
     type: ROW
     id: ROW-rds-2
     children:
-      - CHART-rds-deleted-no-snapshot
+    - CHART-rds-deleted-no-snapshot
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-7:
     type: ROW
     id: ROW-s3-7
     children:
-      - CHART-backup-tampering
+    - CHART-backup-tampering
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-s3-8:
     type: ROW
     id: ROW-s3-8
     children:
-      - CHART-s3-list-recon
+    - CHART-s3-list-recon
     meta:
       background: BACKGROUND_TRANSPARENT
-  # Phase-7 new row: KMS key deletion (DSH-66)
   ROW-kms-1:
     type: ROW
     id: ROW-kms-1
     children:
-      - CHART-kms-key-destruction
+    - CHART-kms-key-destruction
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 6 — GeoIP Intelligence
   TAB-geoip:
     type: TAB
     id: TAB-geoip
     children:
-      - ROW-geo-note  # Empty-state guidance for GeoIP enrichment
-      - ROW-geo-5   # Impossible Travel — multi-country principals [CRITICAL]
-      - ROW-geo-1
-      - ROW-geo-2
-      - ROW-geo-3
+    - ROW-geo-note
+    - ROW-geo-5
+    - ROW-geo-1
+    - ROW-geo-2
+    - ROW-geo-3
     meta:
-      text: "\U0001f30d GeoIP Intelligence"
-      defaultText: "GeoIP Intelligence"
-      tooltip: "Geographic origin of API calls (requires GeoIP enrichment)"
-  # R1-8: empty-state note — these charts are blank without GeoIP enrichment
+      text: 🌍 GeoIP Intelligence
+      defaultText: GeoIP Intelligence
+      tooltip: Geographic origin of API calls (requires GeoIP enrichment)
   ROW-geo-note:
     type: ROW
     id: ROW-geo-note
     children:
-      - MARKDOWN-geoip-note
+    - MARKDOWN-geoip-note
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-geoip-note:
@@ -987,98 +909,91 @@ position:
     meta:
       width: 12
       height: 18
-      code: >-
-        ### 🌍 GeoIP enrichment required
+      code: '### 🌍 GeoIP enrichment required
 
-        The charts on this tab are **blank unless CloudTrail events have been
-        enriched with GeoIP data**. If you see no data, run
-        `make ingest-geoip` after placing the MaxMind GeoLite2 `.mmdb` files in
-        `docker/data/geoip/`, then re-open this dashboard.
-  # Phase-2 new row: impossible travel (same principal, multiple countries)
+        The charts on this tab are **blank unless CloudTrail events have been enriched with GeoIP data**. If you see no data, run `make ingest-geoip` after placing the MaxMind GeoLite2 `.mmdb` files in `docker/data/geoip/`, then re-open this dashboard.'
   ROW-geo-5:
     type: ROW
     id: ROW-geo-5
     children:
-      - CHART-impossible-travel
+    - CHART-impossible-travel
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-geo-1:
     type: ROW
     id: ROW-geo-1
     children:
-      - CHART-geo-country
-      - CHART-geo-asn
+    - CHART-geo-country
+    - CHART-geo-asn
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-geo-2:
     type: ROW
     id: ROW-geo-2
     children:
-      - CHART-geo-city
-      - CHART-geo-world-map
+    - CHART-geo-city
+    - CHART-geo-world-map
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-geo-3:
     type: ROW
     id: ROW-geo-3
     children:
-      - CHART-geo-event-name
+    - CHART-geo-event-name
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Tab 5 — Temporal Analysis (DFIR)
   TAB-temporal:
     type: TAB
     id: TAB-temporal
     children:
-      - ROW-hdr-temporal
-      - ROW-ta-7    # Event Velocity Spikes [CRITICAL]
-      - ROW-ta-6    # Dormant Accounts Reactivated [CRITICAL]
-      - ROW-ta-1    # First/Last Seen IAM Identity [HIGH]
-      - ROW-ta-2    # First/Last Seen Source IP [HIGH]
-      - ROW-ta-3    # First/Last Seen API Call [HIGH]
-      - ROW-td-6    # First / Last Seen per Service Source [MEDIUM]
+    - ROW-hdr-temporal
+    - ROW-ta-7
+    - ROW-ta-6
+    - ROW-ta-1
+    - ROW-ta-2
+    - ROW-ta-3
+    - ROW-td-6
+    - ROW-pb-temporal-1
+    - ROW-pb-temporal-2
     meta:
-      text: "\U0001f552 Temporal Analysis"
-      defaultText: "Temporal Analysis"
-      tooltip: "First/Last seen tracking, temporal anomalies, and activity velocity for DFIR"
+      text: 🕒 Temporal Analysis
+      defaultText: Temporal Analysis
+      tooltip: First/Last seen tracking, temporal anomalies, and activity velocity for DFIR
   ROW-ta-1:
     type: ROW
     id: ROW-ta-1
     children:
-      - CHART-fs-identity
+    - CHART-fs-identity
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ta-2:
     type: ROW
     id: ROW-ta-2
     children:
-      - CHART-fs-source-ip
+    - CHART-fs-source-ip
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ta-3:
     type: ROW
     id: ROW-ta-3
     children:
-      - CHART-fs-event-name
+    - CHART-fs-event-name
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ta-6:
     type: ROW
     id: ROW-ta-6
     children:
-      - CHART-dormant-reactivated
+    - CHART-dormant-reactivated
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-ta-7:
     type: ROW
     id: ROW-ta-7
     children:
-      - CHART-velocity-spikes
+    - CHART-velocity-spikes
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Chart entries — Overview (KPI big_number cards, height 30, width 4)
   CHART-kpi-total-events:
     type: CHART
     id: CHART-kpi-total-events
@@ -1169,7 +1084,6 @@ position:
       width: 4
       height: 30
       sliceName: Active Regions
-  # Overview context chart — reuses the existing CloudTrail Events Over Time slice
   CHART-kpi-timeseries:
     type: CHART
     id: CHART-kpi-timeseries
@@ -1180,8 +1094,6 @@ position:
       width: 12
       height: 50
       sliceName: CloudTrail Events Over Time
-
-  # Chart entries — Phase-2 DFIR hunts (R2-2, R2-4, R2-5)
   CHART-logging-gap:
     type: CHART
     id: CHART-logging-gap
@@ -1252,8 +1164,6 @@ position:
       width: 12
       height: 50
       sliceName: RunInstances Spike by Region
-
-  # Chart entries — Tab 1: Identity & Access
   CHART-console-login:
     type: CHART
     id: CHART-console-login
@@ -1324,8 +1234,6 @@ position:
       width: 12
       height: 50
       sliceName: IAM Privilege Change Event Timeline
-
-  # Chart entries — Tab 2: Threat Detection
   CHART-timeseries:
     type: CHART
     id: CHART-timeseries
@@ -1416,8 +1324,6 @@ position:
       width: 12
       height: 50
       sliceName: First / Last Seen per Service Source
-
-  # Chart entries — Tab 3: Data & Infrastructure
   CHART-top-api:
     type: CHART
     id: CHART-top-api
@@ -1488,8 +1394,6 @@ position:
       width: 12
       height: 50
       sliceName: Route53 DNS Changes
-
-  # Chart entries — Tab 4: GeoIP Intelligence
   CHART-geo-country:
     type: CHART
     id: CHART-geo-country
@@ -1539,8 +1443,7 @@ position:
       uuid: 79a0b1c2-d3e4-5678-9012-345678901234
       width: 12
       height: 75
-      sliceName: "API Calls by Country (Event Name \xD7 GeoIP)"
-  # Chart entries — Tab 5: Temporal Analysis
+      sliceName: API Calls by Country (Event Name × GeoIP)
   CHART-fs-identity:
     type: CHART
     id: CHART-fs-identity
@@ -1591,52 +1494,48 @@ position:
       width: 12
       height: 50
       sliceName: Event Velocity Spikes per Identity
-
-  # Tab 6 — High-Risk API Monitor
   TAB-hrm:
     type: TAB
     id: TAB-hrm
     children:
-      - ROW-hdr-hrm
-      - ROW-hrm-4   # Security Service Modifications + Credential Retrieval (table) [CRITICAL]
-      - ROW-hrm-2   # Top High-Risk API Calls [HIGH]
-      - ROW-hrm-3   # Top Actors — High-Risk APIs [MEDIUM]
-      - ROW-hrm-1   # High-Risk API Timeseries [CONTEXT]
+    - ROW-hdr-hrm
+    - ROW-hrm-4
+    - ROW-hrm-2
+    - ROW-hrm-3
+    - ROW-hrm-1
     meta:
-      text: "\U0001f6a8 High-Risk API Monitor"
-      defaultText: "High-Risk API Monitor"
-      tooltip: "APIs frequently used in attacks — volume anomalies are the key signal"
+      text: 🚨 High-Risk API Monitor
+      defaultText: High-Risk API Monitor
+      tooltip: APIs frequently used in attacks — volume anomalies are the key signal
   ROW-hrm-1:
     type: ROW
     id: ROW-hrm-1
     children:
-      - CHART-hrm-timeseries
+    - CHART-hrm-timeseries
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-hrm-2:
     type: ROW
     id: ROW-hrm-2
     children:
-      - CHART-hrm-top-calls
+    - CHART-hrm-top-calls
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-hrm-3:
     type: ROW
     id: ROW-hrm-3
     children:
-      - CHART-hrm-top-actors
+    - CHART-hrm-top-actors
     meta:
       background: BACKGROUND_TRANSPARENT
   ROW-hrm-4:
     type: ROW
     id: ROW-hrm-4
     children:
-      - CHART-hrm-defense-evasion
-      - CHART-hrm-credential-access
+    - CHART-hrm-defense-evasion
+    - CHART-hrm-credential-access
     meta:
       background: BACKGROUND_TRANSPARENT
-
-  # Chart entries — Tab 6: High-Risk API Monitor
   CHART-hrm-timeseries:
     type: CHART
     id: CHART-hrm-timeseries
@@ -1687,8 +1586,6 @@ position:
       width: 6
       height: 50
       sliceName: Credential Retrieval API Events
-
-  # Phase-1 new charts (DSH-39 to DSH-43)
   CHART-ssm-execution:
     type: CHART
     id: CHART-ssm-execution
@@ -1699,7 +1596,6 @@ position:
       width: 12
       height: 50
       sliceName: SSM Session / Run Command Execution
-
   CHART-rds-snapshot-share:
     type: CHART
     id: CHART-rds-snapshot-share
@@ -1710,7 +1606,6 @@ position:
       width: 12
       height: 50
       sliceName: RDS Snapshot Cross-Account Share
-
   CHART-ec2-public-snapshot:
     type: CHART
     id: CHART-ec2-public-snapshot
@@ -1721,7 +1616,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Public Snapshot / AMI Sharing
-
   CHART-vpc-flowlog:
     type: CHART
     id: CHART-vpc-flowlog
@@ -1732,7 +1626,6 @@ position:
       width: 6
       height: 50
       sliceName: VPC Flow Log Changes
-
   CHART-config-tampering:
     type: CHART
     id: CHART-config-tampering
@@ -1743,8 +1636,6 @@ position:
       width: 6
       height: 50
       sliceName: AWS Config Recorder & Rule Changes
-
-  # Phase-2 new charts (DSH-44 to DSH-46)
   CHART-sso-events:
     type: CHART
     id: CHART-sso-events
@@ -1755,8 +1646,6 @@ position:
       width: 12
       height: 50
       sliceName: IAM Identity Center (SSO) Events
-
-  # Phase-4 new charts (DSH-49 to DSH-51)
   CHART-glue-sagemaker-privesc:
     type: CHART
     id: CHART-glue-sagemaker-privesc
@@ -1767,7 +1656,6 @@ position:
       width: 12
       height: 50
       sliceName: Glue & SageMaker IAM Role Pass Events
-
   CHART-ecs-task-def:
     type: CHART
     id: CHART-ecs-task-def
@@ -1778,7 +1666,6 @@ position:
       width: 12
       height: 50
       sliceName: ECS Task Definition & Service Changes
-
   CHART-ebs-direct-api:
     type: CHART
     id: CHART-ebs-direct-api
@@ -1789,7 +1676,6 @@ position:
       width: 12
       height: 50
       sliceName: EBS Direct API Snapshot Block Access
-
   CHART-s3-policy-changes:
     type: CHART
     id: CHART-s3-policy-changes
@@ -1800,8 +1686,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 Bucket Policy / ACL Changes
-
-  # Phase-5 new charts (DSH-52 to DSH-57)
   CHART-s3-bulk-download:
     type: CHART
     id: CHART-s3-bulk-download
@@ -1812,7 +1696,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 High-Volume Object Downloads
-
   CHART-s3-bulk-deletion:
     type: CHART
     id: CHART-s3-bulk-deletion
@@ -1823,7 +1706,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 Bulk Object Deletion
-
   CHART-s3-versioning-logging:
     type: CHART
     id: CHART-s3-versioning-logging
@@ -1834,7 +1716,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 Versioning / Logging Disabled
-
   CHART-s3-replication:
     type: CHART
     id: CHART-s3-replication
@@ -1845,7 +1726,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 Cross-Account Replication
-
   CHART-rds-deleted-no-snapshot:
     type: CHART
     id: CHART-rds-deleted-no-snapshot
@@ -1856,7 +1736,6 @@ position:
       width: 12
       height: 50
       sliceName: RDS Deleted without Final Snapshot
-
   CHART-backup-tampering:
     type: CHART
     id: CHART-backup-tampering
@@ -1867,7 +1746,6 @@ position:
       width: 12
       height: 50
       sliceName: AWS Backup Vault & Plan Deletion Events
-
   CHART-s3-list-recon:
     type: CHART
     id: CHART-s3-list-recon
@@ -1878,7 +1756,6 @@ position:
       width: 12
       height: 50
       sliceName: S3 Bucket & Object List Activity
-
   CHART-nacl-route:
     type: CHART
     id: CHART-nacl-route
@@ -1889,8 +1766,6 @@ position:
       width: 12
       height: 50
       sliceName: Network ACL / Route Table Changes
-
-  # Phase-3 new charts (DSH-47, DSH-48)
   CHART-eventbridge-cw:
     type: CHART
     id: CHART-eventbridge-cw
@@ -1901,7 +1776,6 @@ position:
       width: 12
       height: 50
       sliceName: EventBridge & CloudWatch Rule Modifications
-
   CHART-container-platform:
     type: CHART
     id: CHART-container-platform
@@ -1912,8 +1786,6 @@ position:
       width: 12
       height: 50
       sliceName: EKS / ECR Container Platform Events
-
-  # Phase-8 new charts (DSH-75 to DSH-78) — WAF, Network
   CHART-waf-changes:
     type: CHART
     id: CHART-waf-changes
@@ -1924,7 +1796,6 @@ position:
       width: 12
       height: 50
       sliceName: WAF Configuration Changes
-
   CHART-sg-changes:
     type: CHART
     id: CHART-sg-changes
@@ -1935,7 +1806,6 @@ position:
       width: 12
       height: 50
       sliceName: Security Group Changes
-
   CHART-vpc-infra:
     type: CHART
     id: CHART-vpc-infra
@@ -1946,7 +1816,6 @@ position:
       width: 12
       height: 50
       sliceName: VPC Infrastructure Changes
-
   CHART-vpc-peering-tgw:
     type: CHART
     id: CHART-vpc-peering-tgw
@@ -1957,8 +1826,6 @@ position:
       width: 12
       height: 50
       sliceName: VPC Peering & Transit Gateway Changes
-
-  # Phase-6 new charts (DSH-58 to DSH-63) — EC2 DFIR
   CHART-ec2-instance-launches:
     type: CHART
     id: CHART-ec2-instance-launches
@@ -1969,7 +1836,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Instance Launches
-
   CHART-ec2-key-pair:
     type: CHART
     id: CHART-ec2-key-pair
@@ -1980,7 +1846,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Key Pair Creation
-
   CHART-ec2-instance-profile:
     type: CHART
     id: CHART-ec2-instance-profile
@@ -1991,7 +1856,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Instance Profile Changes
-
   CHART-ec2-user-data:
     type: CHART
     id: CHART-ec2-user-data
@@ -2002,7 +1866,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 User Data Modification
-
   CHART-ec2-mass-stop:
     type: CHART
     id: CHART-ec2-mass-stop
@@ -2013,7 +1876,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Mass Stop / Terminate
-
   CHART-ec2-spot-fleet:
     type: CHART
     id: CHART-ec2-spot-fleet
@@ -2024,8 +1886,6 @@ position:
       width: 12
       height: 50
       sliceName: EC2 Spot Fleet & Reserved Instance Purchases
-
-  # Phase-7 new charts (DSH-64 to DSH-66) — Lambda, CloudFormation, KMS
   CHART-lambda-backdoor:
     type: CHART
     id: CHART-lambda-backdoor
@@ -2036,7 +1896,6 @@ position:
       width: 12
       height: 50
       sliceName: Lambda Function Configuration & Permission Changes
-
   CHART-cloudformation:
     type: CHART
     id: CHART-cloudformation
@@ -2047,7 +1906,6 @@ position:
       width: 12
       height: 50
       sliceName: CloudFormation Stack Changes
-
   CHART-kms-key-destruction:
     type: CHART
     id: CHART-kms-key-destruction
@@ -2058,12 +1916,11 @@ position:
       width: 12
       height: 50
       sliceName: KMS Key Deletion & Disable Events
-
-  # R4-4: per-tab context headers — hunting question + relevant MITRE tactics.
   ROW-hdr-overview:
     type: ROW
     id: ROW-hdr-overview
-    children: [MARKDOWN-hdr-overview]
+    children:
+    - MARKDOWN-hdr-overview
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-overview:
@@ -2073,16 +1930,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🚦 Triage — start here
+      code: '### 🚦 Triage — start here
 
-        Scan the KPI cards for anomalies (**root usage**, **MFA-less logins**,
-        **defense-evasion hits** should all be near zero), then drill into the
-        themed tabs. Use the filter bar to scope by principal, IP, region, or time.
+        Scan the KPI cards for anomalies (**root usage**, **MFA-less logins**, **defense-evasion hits** should all be near zero), then drill into the themed tabs. Use the filter bar to scope by principal, IP, region, or time.'
   ROW-hdr-threat:
     type: ROW
     id: ROW-hdr-threat
-    children: [MARKDOWN-hdr-threat]
+    children:
+    - MARKDOWN-hdr-threat
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-threat:
@@ -2092,15 +1947,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🎯 Was detection or logging tampered with?
+      code: '### 🎯 Was detection or logging tampered with?
 
-        Audit-service disabling, logging gaps, and baseline deviations — the first
-        DFIR triage question. **MITRE: TA0005 Defense Evasion (T1562 Impair Defenses).**
+        Audit-service disabling, logging gaps, and baseline deviations — the first DFIR triage question. **MITRE: TA0005 Defense Evasion (T1562 Impair Defenses).**'
   ROW-hdr-identity:
     type: ROW
     id: ROW-hdr-identity
-    children: [MARKDOWN-hdr-identity]
+    children:
+    - MARKDOWN-hdr-identity
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-identity:
@@ -2110,15 +1964,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🔑 Who acted, and how did they authenticate?
+      code: '### 🔑 Who acted, and how did they authenticate?
 
-        Logins, IAM privilege changes, new principals/credentials, and cross-account
-        roles. **MITRE: TA0001 Initial Access · TA0003 Persistence · TA0004 Privilege Escalation.**
+        Logins, IAM privilege changes, new principals/credentials, and cross-account roles. **MITRE: TA0001 Initial Access · TA0003 Persistence · TA0004 Privilege Escalation.**'
   ROW-hdr-hrm:
     type: ROW
     id: ROW-hdr-hrm
-    children: [MARKDOWN-hdr-hrm]
+    children:
+    - MARKDOWN-hdr-hrm
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-hrm:
@@ -2128,15 +1981,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🚨 High-risk API watchlist
+      code: '### 🚨 High-risk API watchlist
 
-        Volume of the 42 APIs most frequently abused in attacks. An unfamiliar
-        principal at the top of these charts is the key signal. **MITRE: multiple tactics.**
+        Volume of the 42 APIs most frequently abused in attacks. An unfamiliar principal at the top of these charts is the key signal. **MITRE: multiple tactics.**'
   ROW-hdr-data:
     type: ROW
     id: ROW-hdr-data
-    children: [MARKDOWN-hdr-data]
+    children:
+    - MARKDOWN-hdr-data
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-data:
@@ -2146,15 +1998,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 📊 What is the call volume, and who is calling?
+      code: '### 📊 What is the call volume, and who is calling?
 
-        Top APIs, access-denied patterns, regional distribution, and caller
-        attribution (IP / user agent). **MITRE: TA0007 Discovery.**
+        Top APIs, access-denied patterns, regional distribution, and caller attribution (IP / user agent). **MITRE: TA0007 Discovery.**'
   ROW-hdr-s3rds:
     type: ROW
     id: ROW-hdr-s3rds
-    children: [MARKDOWN-hdr-s3rds]
+    children:
+    - MARKDOWN-hdr-s3rds
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-s3rds:
@@ -2164,15 +2015,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🪣 Data impact — exfiltration & anti-forensics
+      code: '### 🪣 Data impact — exfiltration & anti-forensics
 
-        High-volume downloads, bulk deletion, versioning/logging disabled, and
-        backup/KMS destruction. **MITRE: TA0010 Exfiltration · TA0040 Impact.**
+        High-volume downloads, bulk deletion, versioning/logging disabled, and backup/KMS destruction. **MITRE: TA0010 Exfiltration · TA0040 Impact.**'
   ROW-hdr-computing:
     type: ROW
     id: ROW-hdr-computing
-    children: [MARKDOWN-hdr-computing]
+    children:
+    - MARKDOWN-hdr-computing
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-computing:
@@ -2182,15 +2032,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🖥️ Compute abuse & execution
+      code: '### 🖥️ Compute abuse & execution
 
-        EC2 / ECS / SSM / EBS / Lambda activity — resource abuse (e.g. cryptomining)
-        and remote execution. **MITRE: TA0002 Execution · TA0040 Impact.**
+        EC2 / ECS / SSM / EBS / Lambda activity — resource abuse (e.g. cryptomining) and remote execution. **MITRE: TA0002 Execution · TA0040 Impact.**'
   ROW-hdr-network:
     type: ROW
     id: ROW-hdr-network
-    children: [MARKDOWN-hdr-network]
+    children:
+    - MARKDOWN-hdr-network
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-network:
@@ -2200,15 +2049,14 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🌐 Network exposure & egress
+      code: '### 🌐 Network exposure & egress
 
-        Security group / NACL / route changes, VPC topology, peering, and DNS.
-        **MITRE: TA0011 Command & Control · TA0010 Exfiltration.**
+        Security group / NACL / route changes, VPC topology, peering, and DNS. **MITRE: TA0011 Command & Control · TA0010 Exfiltration.**'
   ROW-hdr-temporal:
     type: ROW
     id: ROW-hdr-temporal
-    children: [MARKDOWN-hdr-temporal]
+    children:
+    - MARKDOWN-hdr-temporal
     meta:
       background: BACKGROUND_TRANSPARENT
   MARKDOWN-hdr-temporal:
@@ -2218,858 +2066,1112 @@ position:
     meta:
       width: 12
       height: 10
-      code: >-
-        ### 🕒 What is new or anomalous in time?
+      code: '### 🕒 What is new or anomalous in time?
 
-        First/last-seen tracking, dormant-account reactivation, and activity-velocity
-        spikes. **MITRE: TA0001 Initial Access · TA0040 Impact.**
+        First/last-seen tracking, dormant-account reactivation, and activity-velocity spikes. **MITRE: TA0001 Initial Access · TA0040 Impact.**'
+  CHART-role-chain:
+    type: CHART
+    id: CHART-role-chain
+    children: []
+    meta:
+      chartId: 112
+      uuid: c1a10001-0000-4000-8000-0000000c1a01
+      width: 6
+      height: 60
+      sliceName: Role Chaining (Session → Role)
+  CHART-session-key:
+    type: CHART
+    id: CHART-session-key
+    children: []
+    meta:
+      chartId: 113
+      uuid: c1a10002-0000-4000-8000-0000000c1a02
+      width: 6
+      height: 60
+      sliceName: Session Credential Trace (ASIA keys)
+  ROW-pb-identity-1:
+    type: ROW
+    id: ROW-pb-identity-1
+    children:
+    - CHART-role-chain
+    - CHART-session-key
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-kpi-non-mfa:
+    type: CHART
+    id: CHART-kpi-non-mfa
+    children: []
+    meta:
+      chartId: 114
+      uuid: c1a10003-0000-4000-8000-0000000c1a03
+      width: 4
+      height: 30
+      sliceName: API Calls Without MFA
+  CHART-federated-login:
+    type: CHART
+    id: CHART-federated-login
+    children: []
+    meta:
+      chartId: 115
+      uuid: c1a10004-0000-4000-8000-0000000c1a04
+      width: 8
+      height: 60
+      sliceName: Federated Console Logins by Provider & Origin
+  ROW-pb-identity-2:
+    type: ROW
+    id: ROW-pb-identity-2
+    children:
+    - CHART-kpi-non-mfa
+    - CHART-federated-login
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-permission-set:
+    type: CHART
+    id: CHART-permission-set
+    children: []
+    meta:
+      chartId: 116
+      uuid: c1a10005-0000-4000-8000-0000000c1a05
+      width: 12
+      height: 50
+      sliceName: Identity Center Permission Set Grants
+  ROW-pb-identity-3:
+    type: ROW
+    id: ROW-pb-identity-3
+    children:
+    - CHART-permission-set
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-kpi-p1:
+    type: CHART
+    id: CHART-kpi-p1
+    children: []
+    meta:
+      chartId: 117
+      uuid: c1a10006-0000-4000-8000-0000000c1a06
+      width: 6
+      height: 30
+      sliceName: P1 Escalation Triggers
+  CHART-kpi-p2:
+    type: CHART
+    id: CHART-kpi-p2
+    children: []
+    meta:
+      chartId: 118
+      uuid: c1a10007-0000-4000-8000-0000000c1a07
+      width: 6
+      height: 30
+      sliceName: P2 Escalation Triggers
+  ROW-pb-threat-1:
+    type: ROW
+    id: ROW-pb-threat-1
+    children:
+    - CHART-kpi-p1
+    - CHART-kpi-p2
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-off-hours-heatmap:
+    type: CHART
+    id: CHART-off-hours-heatmap
+    children: []
+    meta:
+      chartId: 119
+      uuid: c1a10008-0000-4000-8000-0000000c1a08
+      width: 12
+      height: 60
+      sliceName: Off-Hours Write Activity (Hour x Day)
+  ROW-pb-temporal-1:
+    type: ROW
+    id: ROW-pb-temporal-1
+    children:
+    - CHART-off-hours-heatmap
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-principal-volume:
+    type: CHART
+    id: CHART-principal-volume
+    children: []
+    meta:
+      chartId: 120
+      uuid: c1a10009-0000-4000-8000-0000000c1a09
+      width: 12
+      height: 50
+      sliceName: Principal Daily Volume (Read vs Write)
+  ROW-pb-temporal-2:
+    type: ROW
+    id: ROW-pb-temporal-2
+    children:
+    - CHART-principal-volume
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-data-scope:
+    type: CHART
+    id: CHART-data-scope
+    children: []
+    meta:
+      chartId: 121
+      uuid: c1a1000a-0000-4000-8000-0000000c1a0a
+      width: 6
+      height: 60
+      sliceName: Data Access Scope (Breach Notification)
+  CHART-xacct-copy:
+    type: CHART
+    id: CHART-xacct-copy
+    children: []
+    meta:
+      chartId: 122
+      uuid: c1a1000b-0000-4000-8000-0000000c1a0b
+      width: 6
+      height: 60
+      sliceName: Cross-Account Object Copy
+  ROW-pb-s3-rds-1:
+    type: ROW
+    id: ROW-pb-s3-rds-1
+    children:
+    - CHART-data-scope
+    - CHART-xacct-copy
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ransom-note:
+    type: CHART
+    id: CHART-ransom-note
+    children: []
+    meta:
+      chartId: 123
+      uuid: c1a1000c-0000-4000-8000-0000000c1a0c
+      width: 12
+      height: 50
+      sliceName: Ransom Note Placement
+  ROW-pb-s3-rds-2:
+    type: ROW
+    id: ROW-pb-s3-rds-2
+    children:
+    - CHART-ransom-note
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-agentcore-tokens:
+    type: CHART
+    id: CHART-agentcore-tokens
+    children: []
+    meta:
+      chartId: 124
+      uuid: c1a1000d-0000-4000-8000-0000000c1a0d
+      width: 12
+      height: 50
+      sliceName: AgentCore Token Issuance (Daily)
+  ROW-pb-ai-1:
+    type: ROW
+    id: ROW-pb-ai-1
+    children:
+    - CHART-agentcore-tokens
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-agentcore-gateway:
+    type: CHART
+    id: CHART-agentcore-gateway
+    children: []
+    meta:
+      chartId: 125
+      uuid: c1a1000e-0000-4000-8000-0000000c1a0e
+      width: 12
+      height: 60
+      sliceName: AgentCore Gateway & Policy Changes
+  ROW-pb-ai-2:
+    type: ROW
+    id: ROW-pb-ai-2
+    children:
+    - CHART-agentcore-gateway
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-pb-playbooks:
+    type: MARKDOWN
+    id: MARKDOWN-pb-playbooks
+    children: []
+    meta:
+      width: 12
+      height: 60
+      code: '## 📕 Found something? Go to the response playbook
 
+
+        Senrigan answers *what happened*. These playbooks answer *what to do next* —
+
+        they are the AWS incident response playbooks this dashboard was aligned against.
+
+
+        | What you found | Playbook |
+
+        |---|---|
+
+        | Unusual API calls from an unknown IP, new access keys | [IRP-CredCompromise](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md) |
+
+        | AssumeRole chains, cross-account activity, role sessions | [IRP-STSTokenAbuse](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md) |
+
+        | SAML/OIDC provider changes, federated session abuse | [IRP-FederatedAccessAbuse](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-FederatedAccessAbuse.md) |
+
+        | Permission set changes, new account assignments | [IRP-IdentityCenterCompromise](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-IdentityCenterCompromise.md) |
+
+        | Backup deletion, versioning suspended, ransom notes | [IRP-Ransomware](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-Ransomware.md) |
+
+        | Bulk S3 reads, public buckets, cross-account copies | [IRP-DataAccess](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DataAccess.md) · [IRP-PersonalDataBreach](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-PersonalDataBreach.md) |
+
+        | Off-hours bulk access, self-granted privileges | [IRP-InsiderThreat](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-InsiderThreat.md) |
+
+        | WAF/Shield weakened, traffic spikes | [IRP-DoS](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md) |
+
+
+        Start from [TRIAGE_GUIDE](https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/TRIAGE_GUIDE.md) for the P1–P4 severity matrix and escalation triggers.
+
+        '
+  ROW-pb-playbooks:
+    type: ROW
+    id: ROW-pb-playbooks
+    children:
+    - MARKDOWN-pb-playbooks
+    meta:
+      background: BACKGROUND_TRANSPARENT
 metadata:
-  # R1-6: clicking a value (principal / IP / region / country) in any chart
-  # scopes the whole dashboard — the core DFIR pivot workflow.
   cross_filters_enabled: true
   color_scheme: supersetColors
   native_filter_configuration:
-    - id: NATIVE_FILTER-timerange
-      name: Date Range
-      filterType: filter_time
-      targets:
-        - {}
-      defaultDataMask:
-        filterState:
-          value: "No filter"
-      controlValues:
-        enableEmptyFilter: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter all charts by event_time date range"
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-identity-type
-      name: "Identity Type"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_type
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: false
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter by identity type: Root, IAMUser, AssumedRole, etc."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-identity-type-not
-      name: "Identity Type  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_type
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: false
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected identity types (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-arn
-      name: "Principal ARN  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_arn
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Include only the selected IAM principal ARNs."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-arn-not
-      name: "Principal ARN  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_arn
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected IAM principal ARNs (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-source-ip
-      name: "Source IP  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: source_ip_address
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Include only the selected source IP addresses."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-source-ip-not
-      name: "Source IP  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: source_ip_address
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected source IP addresses (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-name
-      name: "Event Name  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_name
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Include only the selected API action names."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-name-not
-      name: "Event Name  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_name
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected API action names (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-source
-      name: "Event Source  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_source
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Include only the selected AWS service sources."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-source-not
-      name: "Event Source  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_source
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected AWS service sources (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-region
-      name: "AWS Region  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: aws_region
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter all charts to the selected AWS regions."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-region-not
-      name: "AWS Region  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: aws_region
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected AWS regions (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-user-agent
-      name: "User Agent  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_agent
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Include only the selected user agents."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-user-agent-not
-      name: "User Agent  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_agent
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected user agents (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-error-code
-      name: "Error Code"
-      filterType: filter_select
-      targets:
-        - column:
-            name: error_code
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Focus on a specific error code (AccessDenied, Throttling, etc.)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-error-code-not
-      name: "Error Code  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: error_code
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected error codes (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-read-only
-      name: "Write / Read"
-      filterType: filter_select
-      targets:
-        - column:
-            name: read_only
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: false
-        searchAllOptions: false
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter to write-only (false) or read-only (true) operations."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-read-only-not
-      name: "Write / Read  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: read_only
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: false
-        searchAllOptions: false
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected read_only value (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-type
-      name: "Event Type  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_type
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: false
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter by event type: AwsApiCall, AwsConsoleSignIn, AwsServiceEvent."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-event-type-not
-      name: "Event Type  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: event_type
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: false
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected event types (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-account-id
-      name: "Account ID  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_account_id
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter to a specific AWS account ID (caller). Useful in multi-account orgs."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-account-id-not
-      name: "Account ID  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: user_identity_account_id
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude the selected caller account IDs (NOT filter)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-recipient-account-id
-      name: "Recipient Account ID"
-      filterType: filter_select
-      targets:
-        - column:
-            name: recipient_account_id
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter by the account that received the event. Combine with Account ID to detect cross-account access."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-country
-      name: "Country  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: geo_country_name
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter all charts to requests from the selected countries (GeoIP enrichment required)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-country-not
-      name: "Country  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: geo_country_name
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude requests from the selected countries (NOT filter, GeoIP enrichment required)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-asn-org
-      name: "ASN Organization  + Include"
-      filterType: filter_select
-      targets:
-        - column:
-            name: geo_org
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: false
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Filter to requests from the selected ASN organizations (GeoIP enrichment required)."
-      chartsInScope: []
-      tabsInScope: []
-    - id: NATIVE_FILTER-asn-org-not
-      name: "ASN Organization  NOT"
-      filterType: filter_select
-      targets:
-        - column:
-            name: geo_org
-          datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
-      defaultDataMask:
-        filterState:
-          value: null
-      controlValues:
-        enableEmptyFilter: false
-        defaultToFirstItem: false
-        multiSelect: true
-        searchAllOptions: true
-        inverseSelection: true
-      cascadeParentIds: []
-      scope:
-        rootPath:
-          - ROOT_ID
-        excluded: []
-      type: NATIVE_FILTER
-      description: "Exclude requests from the selected ASN organizations (NOT filter). Use to remove AWS/Google noise."
-      chartsInScope: []
-      tabsInScope: []
+  - id: NATIVE_FILTER-timerange
+    name: Date Range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      filterState:
+        value: No filter
+    controlValues:
+      enableEmptyFilter: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter all charts by event_time date range
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-identity-type
+    name: Identity Type
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_type
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: 'Filter by identity type: Root, IAMUser, AssumedRole, etc.'
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-identity-type-not
+    name: Identity Type  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_type
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected identity types (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-arn
+    name: Principal ARN  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_arn
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Include only the selected IAM principal ARNs.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-arn-not
+    name: Principal ARN  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_arn
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected IAM principal ARNs (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-source-ip
+    name: Source IP  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: source_ip_address
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Include only the selected source IP addresses.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-source-ip-not
+    name: Source IP  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: source_ip_address
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected source IP addresses (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-name
+    name: Event Name  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_name
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Include only the selected API action names.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-name-not
+    name: Event Name  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_name
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected API action names (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-source
+    name: Event Source  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_source
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Include only the selected AWS service sources.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-source-not
+    name: Event Source  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_source
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected AWS service sources (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-region
+    name: AWS Region  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: aws_region
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter all charts to the selected AWS regions.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-region-not
+    name: AWS Region  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: aws_region
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected AWS regions (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-user-agent
+    name: User Agent  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_agent
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Include only the selected user agents.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-user-agent-not
+    name: User Agent  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_agent
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected user agents (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-error-code
+    name: Error Code
+    filterType: filter_select
+    targets:
+    - column:
+        name: error_code
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Focus on a specific error code (AccessDenied, Throttling, etc.).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-error-code-not
+    name: Error Code  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: error_code
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected error codes (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-read-only
+    name: Write / Read
+    filterType: filter_select
+    targets:
+    - column:
+        name: read_only
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: false
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter to write-only (false) or read-only (true) operations.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-read-only-not
+    name: Write / Read  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: read_only
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: false
+      searchAllOptions: false
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected read_only value (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-type
+    name: Event Type  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_type
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: 'Filter by event type: AwsApiCall, AwsConsoleSignIn, AwsServiceEvent.'
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-event-type-not
+    name: Event Type  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: event_type
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected event types (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-account-id
+    name: Account ID  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_account_id
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter to a specific AWS account ID (caller). Useful in multi-account orgs.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-account-id-not
+    name: Account ID  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: user_identity_account_id
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude the selected caller account IDs (NOT filter).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-recipient-account-id
+    name: Recipient Account ID
+    filterType: filter_select
+    targets:
+    - column:
+        name: recipient_account_id
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter by the account that received the event. Combine with Account ID to detect cross-account access.
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-country
+    name: Country  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: geo_country_name
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter all charts to requests from the selected countries (GeoIP enrichment required).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-country-not
+    name: Country  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: geo_country_name
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude requests from the selected countries (NOT filter, GeoIP enrichment required).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-asn-org
+    name: ASN Organization  + Include
+    filterType: filter_select
+    targets:
+    - column:
+        name: geo_org
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter to requests from the selected ASN organizations (GeoIP enrichment required).
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-asn-org-not
+    name: ASN Organization  NOT
+    filterType: filter_select
+    targets:
+    - column:
+        name: geo_org
+      datasetUuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: true
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Exclude requests from the selected ASN organizations (NOT filter). Use to remove AWS/Google noise.
+    chartsInScope: []
+    tabsInScope: []
   charts:
-    - slice_name: CloudTrail Events Over Time
-      viz_type: echarts_timeseries_bar
-      description: DSH-01 - Hourly Read/Write event volume (stacked bar).
-    - slice_name: Top 20 API Calls
-      viz_type: bar
-      description: DSH-02 - Most frequently called AWS API actions.
-    - slice_name: IAM Entity Activity
-      viz_type: table
-      description: DSH-03 - IAM entities ranked by API call volume with write ratio.
-    - slice_name: Error Event Trend
-      viz_type: echarts_timeseries_bar
-      description: DSH-04 - Hourly error counts broken down by error code.
-    - slice_name: Top Source IP Addresses
-      viz_type: table
-      description: DSH-05 - External source IPs ranked by request count.
-    - slice_name: Console Login Activity
-      viz_type: table
-      description: DSH-08 - Console sign-in attempts with MFA-less count.
-    - slice_name: Top Access Denied Actions
-      viz_type: bar
-      description: DSH-09 - API actions most frequently denied access.
-    - slice_name: User Agent Analysis
-      viz_type: table
-      description: DSH-11 - Top user agents by request count.
-    - slice_name: Security-Relevant API Calls
-      viz_type: table
-      description: DSH-12 - Expanded list of security-relevant API invocations.
-    - slice_name: Root Account Usage
-      viz_type: table
-      description: DSH-13 - All API calls made by the Root account.
-    - slice_name: Region Activity
-      viz_type: bar
-      description: DSH-14 - Event distribution across AWS regions with write ratio.
-    - slice_name: Top Countries by Request Volume
-      viz_type: dist_bar
-      description: DSH-15 - Top 20 source countries (GeoIP enrichment required).
-    - slice_name: Global Request Origin Map
-      viz_type: world_map
-      description: DSH-16 - World map of API call origins (GeoIP enrichment required).
-    - slice_name: Top Cities by Request Volume
-      viz_type: table
-      description: DSH-17 - Top 25 source cities (GeoIP enrichment required).
-    - slice_name: Top ASN Organizations by Request Volume
-      viz_type: table
-      description: DSH-18 - Top 25 ASN organizations (GeoIP enrichment required).
-    - slice_name: Login Activity Heatmap
-      viz_type: table
-      description: DSH-19 - Console login counts by hour-of-day and day-of-week.
-
-    - slice_name: Throttling Exception Spikes
-      viz_type: echarts_timeseries_bar
-      description: DSH-21 - Throttling errors per service per hour.
-    - slice_name: Security Monitoring & Control Changes
-      viz_type: table
-      description: DSH-22 - CloudTrail/GuardDuty/Config/VPC security monitoring control changes.
-    - slice_name: Secrets Access Anomaly
-      viz_type: table
-      description: DSH-23 - Bulk Secrets Manager / SSM Parameter Store reads.
-    - slice_name: Organizations / SCP Changes
-      viz_type: table
-      description: DSH-24 - AWS Organizations management events.
-    - slice_name: S3 Protection Config Changes
-      viz_type: table
-      description: DSH-25 - S3 logging / encryption / public-access changes.
-    - slice_name: First / Last Seen per Service Source
-      viz_type: table
-      description: DSH-26 - First and last seen timestamps per AWS service source.
-    - slice_name: AssumedRole from External IP
-      viz_type: table
-      description: DSH-27 - AssumedRole calls from public (non-RFC1918) IPs.
-    - slice_name: MFA-less Login Trend
-      viz_type: echarts_timeseries_bar
-      description: DSH-28 - Daily console logins split by MFA usage.
-    - slice_name: Route53 DNS Changes
-      viz_type: table
-      description: DSH-29 - Route 53 hosted-zone and resolver changes.
-    - slice_name: IAM Privilege Change Event Timeline
-      viz_type: echarts_timeseries_bar
-      description: DSH-30 - Daily IAM privilege change API calls by event name.
-    - slice_name: First / Last Seen per IAM Identity
-      viz_type: table
-      description: DSH-31 - IAM identities with first/last seen timestamps, event counts, and active span.
-    - slice_name: First / Last Seen per Source IP
-      viz_type: table
-      description: DSH-32 - Source IPs with first/last seen, identity count, and GeoIP context.
-    - slice_name: First / Last Seen per API Call
-      viz_type: table
-      description: DSH-33 - API actions ordered by first appearance for new activity detection.
-    - slice_name: First / Last Seen per User Agent
-      viz_type: table
-      description: DSH-34 - User agents ordered by first appearance for tool introduction detection.
-    - slice_name: Dormant Accounts Reactivated
-      viz_type: table
-      description: DSH-37 - Identities with long inactivity gaps that resumed activity.
-    - slice_name: Event Velocity Spikes per Identity
-      viz_type: table
-      description: DSH-38 - Identities with 50+ events/hour burst activity periods.
-    - slice_name: High-Risk API Events Over Time
-      viz_type: echarts_timeseries_bar
-      description: HRM-39 - Daily volume of calls to 42 security-monitored APIs stacked by event name.
-    - slice_name: Top High-Risk API Calls
-      viz_type: bar
-      description: HRM-40 - APIs from the high-risk watchlist ranked by total call count.
-    - slice_name: Top Actors — High-Risk APIs
-      viz_type: bar
-      description: HRM-42 - IAM principals ranked by calls to high-risk watchlist APIs.
-    - slice_name: Top Source IPs — High-Risk APIs
-      viz_type: bar
-      description: HRM-43 - Source IPs ranked by calls to high-risk watchlist APIs.
-    - slice_name: Security Service Modification API Events
-      viz_type: table
-      description: HRM-44 - Detailed log of DeleteTrail / StopLogging / UpdateTrail / PutEventSelectors / DeletePolicy / DetachPolicy calls.
-    - slice_name: Credential Retrieval API Events
-      viz_type: table
-      description: HRM-45 - Detailed log of GetSecretValue / GetParameter / GetParameterHistory calls.
-    - slice_name: High-Risk API Calls by Region
-      viz_type: bar
-      description: HRM-46 - High-risk watchlist API calls distributed by AWS region.
-    - slice_name: Glue & SageMaker IAM Role Pass Events
-      viz_type: table
-      description: DSH-50 - Glue DevEndpoint and SageMaker Notebook events involving iam:PassRole.
-    - slice_name: ECS Task Definition & Service Changes
-      viz_type: table
-      description: DSH-49 - ECS task definition registration and service update events.
-    - slice_name: EBS Direct API Snapshot Block Access
-      viz_type: table
-      description: DSH-51 - EBS Direct API calls (ListSnapshotBlocks/GetSnapshotBlock) to access snapshot block data without creating EC2 instances.
-    - slice_name: S3 High-Volume Object Downloads
-      viz_type: table
-      description: DSH-52 - Identities performing >=100 GetObject calls per hour.
-    - slice_name: S3 Bulk Object Deletion
-      viz_type: table
-      description: DSH-53 - Identities performing >=50 DeleteObject/DeleteObjects calls per hour.
-    - slice_name: S3 Versioning / Logging Disabled
-      viz_type: table
-      description: DSH-54 - PutBucketVersioning (Suspended) and PutBucketLogging (disabled).
-    - slice_name: S3 Cross-Account Replication
-      viz_type: table
-      description: DSH-55 - PutBucketReplication/DeleteBucketReplication — cross-account data replication changes.
-    - slice_name: RDS Deleted without Final Snapshot
-      viz_type: table
-      description: DSH-56 - DeleteDBInstance/DeleteDBCluster with skipFinalSnapshot=true.
-    - slice_name: AWS Backup Vault & Plan Deletion Events
-      viz_type: table
-      description: DSH-57 - Backup Vault/Plan/RecoveryPoint deletion and Vault Lock removal.
-    - slice_name: "API Calls by Country (Event Name \xD7 GeoIP)"
-      viz_type: table
-      description: DSH-79 - Top (event_name, country) pairs by API call volume (GeoIP enrichment required).
+  - slice_name: CloudTrail Events Over Time
+    viz_type: echarts_timeseries_bar
+    description: DSH-01 - Hourly Read/Write event volume (stacked bar).
+  - slice_name: Top 20 API Calls
+    viz_type: bar
+    description: DSH-02 - Most frequently called AWS API actions.
+  - slice_name: IAM Entity Activity
+    viz_type: table
+    description: DSH-03 - IAM entities ranked by API call volume with write ratio.
+  - slice_name: Error Event Trend
+    viz_type: echarts_timeseries_bar
+    description: DSH-04 - Hourly error counts broken down by error code.
+  - slice_name: Top Source IP Addresses
+    viz_type: table
+    description: DSH-05 - External source IPs ranked by request count.
+  - slice_name: Console Login Activity
+    viz_type: table
+    description: DSH-08 - Console sign-in attempts with MFA-less count.
+  - slice_name: Top Access Denied Actions
+    viz_type: bar
+    description: DSH-09 - API actions most frequently denied access.
+  - slice_name: User Agent Analysis
+    viz_type: table
+    description: DSH-11 - Top user agents by request count.
+  - slice_name: Security-Relevant API Calls
+    viz_type: table
+    description: DSH-12 - Expanded list of security-relevant API invocations.
+  - slice_name: Root Account Usage
+    viz_type: table
+    description: DSH-13 - All API calls made by the Root account.
+  - slice_name: Region Activity
+    viz_type: bar
+    description: DSH-14 - Event distribution across AWS regions with write ratio.
+  - slice_name: Top Countries by Request Volume
+    viz_type: dist_bar
+    description: DSH-15 - Top 20 source countries (GeoIP enrichment required).
+  - slice_name: Global Request Origin Map
+    viz_type: world_map
+    description: DSH-16 - World map of API call origins (GeoIP enrichment required).
+  - slice_name: Top Cities by Request Volume
+    viz_type: table
+    description: DSH-17 - Top 25 source cities (GeoIP enrichment required).
+  - slice_name: Top ASN Organizations by Request Volume
+    viz_type: table
+    description: DSH-18 - Top 25 ASN organizations (GeoIP enrichment required).
+  - slice_name: Login Activity Heatmap
+    viz_type: table
+    description: DSH-19 - Console login counts by hour-of-day and day-of-week.
+  - slice_name: Throttling Exception Spikes
+    viz_type: echarts_timeseries_bar
+    description: DSH-21 - Throttling errors per service per hour.
+  - slice_name: Security Monitoring & Control Changes
+    viz_type: table
+    description: DSH-22 - CloudTrail/GuardDuty/Config/VPC security monitoring control changes.
+  - slice_name: Secrets Access Anomaly
+    viz_type: table
+    description: DSH-23 - Bulk Secrets Manager / SSM Parameter Store reads.
+  - slice_name: Organizations / SCP Changes
+    viz_type: table
+    description: DSH-24 - AWS Organizations management events.
+  - slice_name: S3 Protection Config Changes
+    viz_type: table
+    description: DSH-25 - S3 logging / encryption / public-access changes.
+  - slice_name: First / Last Seen per Service Source
+    viz_type: table
+    description: DSH-26 - First and last seen timestamps per AWS service source.
+  - slice_name: AssumedRole from External IP
+    viz_type: table
+    description: DSH-27 - AssumedRole calls from public (non-RFC1918) IPs.
+  - slice_name: MFA-less Login Trend
+    viz_type: echarts_timeseries_bar
+    description: DSH-28 - Daily console logins split by MFA usage.
+  - slice_name: Route53 DNS Changes
+    viz_type: table
+    description: DSH-29 - Route 53 hosted-zone and resolver changes.
+  - slice_name: IAM Privilege Change Event Timeline
+    viz_type: echarts_timeseries_bar
+    description: DSH-30 - Daily IAM privilege change API calls by event name.
+  - slice_name: First / Last Seen per IAM Identity
+    viz_type: table
+    description: DSH-31 - IAM identities with first/last seen timestamps, event counts, and active span.
+  - slice_name: First / Last Seen per Source IP
+    viz_type: table
+    description: DSH-32 - Source IPs with first/last seen, identity count, and GeoIP context.
+  - slice_name: First / Last Seen per API Call
+    viz_type: table
+    description: DSH-33 - API actions ordered by first appearance for new activity detection.
+  - slice_name: First / Last Seen per User Agent
+    viz_type: table
+    description: DSH-34 - User agents ordered by first appearance for tool introduction detection.
+  - slice_name: Dormant Accounts Reactivated
+    viz_type: table
+    description: DSH-37 - Identities with long inactivity gaps that resumed activity.
+  - slice_name: Event Velocity Spikes per Identity
+    viz_type: table
+    description: DSH-38 - Identities with 50+ events/hour burst activity periods.
+  - slice_name: High-Risk API Events Over Time
+    viz_type: echarts_timeseries_bar
+    description: HRM-39 - Daily volume of calls to 42 security-monitored APIs stacked by event name.
+  - slice_name: Top High-Risk API Calls
+    viz_type: bar
+    description: HRM-40 - APIs from the high-risk watchlist ranked by total call count.
+  - slice_name: Top Actors — High-Risk APIs
+    viz_type: bar
+    description: HRM-42 - IAM principals ranked by calls to high-risk watchlist APIs.
+  - slice_name: Top Source IPs — High-Risk APIs
+    viz_type: bar
+    description: HRM-43 - Source IPs ranked by calls to high-risk watchlist APIs.
+  - slice_name: Security Service Modification API Events
+    viz_type: table
+    description: HRM-44 - Detailed log of DeleteTrail / StopLogging / UpdateTrail / PutEventSelectors / DeletePolicy / DetachPolicy calls.
+  - slice_name: Credential Retrieval API Events
+    viz_type: table
+    description: HRM-45 - Detailed log of GetSecretValue / GetParameter / GetParameterHistory calls.
+  - slice_name: High-Risk API Calls by Region
+    viz_type: bar
+    description: HRM-46 - High-risk watchlist API calls distributed by AWS region.
+  - slice_name: Glue & SageMaker IAM Role Pass Events
+    viz_type: table
+    description: DSH-50 - Glue DevEndpoint and SageMaker Notebook events involving iam:PassRole.
+  - slice_name: ECS Task Definition & Service Changes
+    viz_type: table
+    description: DSH-49 - ECS task definition registration and service update events.
+  - slice_name: EBS Direct API Snapshot Block Access
+    viz_type: table
+    description: DSH-51 - EBS Direct API calls (ListSnapshotBlocks/GetSnapshotBlock) to access snapshot block data without creating EC2 instances.
+  - slice_name: S3 High-Volume Object Downloads
+    viz_type: table
+    description: DSH-52 - Identities performing >=100 GetObject calls per hour.
+  - slice_name: S3 Bulk Object Deletion
+    viz_type: table
+    description: DSH-53 - Identities performing >=50 DeleteObject/DeleteObjects calls per hour.
+  - slice_name: S3 Versioning / Logging Disabled
+    viz_type: table
+    description: DSH-54 - PutBucketVersioning (Suspended) and PutBucketLogging (disabled).
+  - slice_name: S3 Cross-Account Replication
+    viz_type: table
+    description: DSH-55 - PutBucketReplication/DeleteBucketReplication — cross-account data replication changes.
+  - slice_name: RDS Deleted without Final Snapshot
+    viz_type: table
+    description: DSH-56 - DeleteDBInstance/DeleteDBCluster with skipFinalSnapshot=true.
+  - slice_name: AWS Backup Vault & Plan Deletion Events
+    viz_type: table
+    description: DSH-57 - Backup Vault/Plan/RecoveryPoint deletion and Vault Lock removal.
+  - slice_name: API Calls by Country (Event Name × GeoIP)
+    viz_type: table
+    description: DSH-79 - Top (event_name, country) pairs by API call volume (GeoIP enrichment required).

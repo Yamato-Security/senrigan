@@ -2,25 +2,25 @@
 
 > 💡 Keine SQL- oder tiefgehenden AWS-Kenntnisse erforderlich — einfach eine Suche aus dem Dropdown-Menü auswählen und sofort Ergebnisse erhalten.
 
-## 🎯 Integrierte Suchen — 126 Abfragen
+## 🎯 Integrierte Suchen — 151 Abfragen
 
 Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst Manipulationen an Erkennungswerkzeugen, dann Identitätsmissbrauch und schließlich Auswirkungen auf Daten.
 
 | Kategorie | Abfragen | Abgedeckte zentrale Bedrohungen |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 12 | Manipulation von Audit-Diensten (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP-Löschung · Alarmunterdrückung · Log-Exfiltration |
-| 🔑 Identity & Access | 30 | Root-Nutzung · Konsolen-Login/MFA · Rechteausweitung · Backdoor in Vertrauensrichtlinie · PassRole-Missbrauch · kontoübergreifendes AssumeRole · SSO/SAML/OIDC · Anmeldeinformations-Enumeration · Löschung von IAM-Entitäten · AssumeRoot-Übernahme · Cognito-User-Pool-/Token-Missbrauch · Unterdrückung von Support-Fällen |
-| 🪣 Data & Storage | 26 | S3-Massenlöschung/-Download · Massenlesen von Secrets · Backup-Manipulation · KMS-Operationen · Snapshot-Freigabe · EBS-Direct-API-Exfiltration · DynamoDB-Export · S3-kontoübergreifende Replikation · SSE-C-Ransomware-Verschlüsselung · lifecycle-ausgelöste Löschung · RDS-Data-API-Manipulation · Storage-Neuverschlüsselung als Angriffsmittel |
+| 🛡 Detection & Response | 13 | Manipulation von Audit-Diensten (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP-Löschung · Alarmunterdrückung · Log-Exfiltration · Korrelation der Ransomware-Kill-Chain |
+| 🔑 Identity & Access | 44 | Root-Nutzung · Konsolen-Login/MFA · Rechteausweitung · Backdoor in Vertrauensrichtlinie · PassRole-Missbrauch · kontoübergreifendes AssumeRole · SSO/SAML/OIDC · Anmeldeinformations-Enumeration · Löschung von IAM-Entitäten · AssumeRoot-Übernahme · Cognito-User-Pool-/Token-Missbrauch · Unterdrückung von Support-Fällen · Rollenverkettung · Nachverfolgung von Sitzungsanmeldeinformationen · GetCallerIdentity-Aufklärung · föderierte Konsolenanmeldungen · Identity-Center-Berechtigungssätze und delegierte Administratoren · Rollenverkettung · Sitzungsanmeldeinformationen · API-Aufrufe ohne MFA · föderierte Anmeldungen · Identity-Center-Berechtigungssätze |
+| 🪣 Data & Storage | 30 | S3-Massenlöschung/-Download · Massenlesen von Secrets · Backup-Manipulation · KMS-Operationen · Snapshot-Freigabe · EBS-Direct-API-Exfiltration · DynamoDB-Export · S3-kontoübergreifende Replikation · SSE-C-Ransomware-Verschlüsselung · lifecycle-ausgelöste Löschung · RDS-Data-API-Manipulation · Storage-Neuverschlüsselung als Angriffsmittel · Platzierung von Erpressernachrichten · Umfangsbestimmung für Meldepflichten · kontoübergreifendes Kopieren von Objekten · Erzeugung vorsignierter URLs |
 | ⚡ Compute & Serverless | 17 | EC2-Massenstopp/-Terminierung · SSM-Lateralbewegung · Lambda/ECS/EKS/ECR-Manipulation · EventBridge-Persistenz · Cryptomining · Lightsail-Missbrauch · IMDS-/SSRF-Schwächung · AMI-/Snapshot-Löschung · WorkSpaces-Hijacking |
-| 🤖 AI & LLM Abuse | 6 | Spitzen bei Bedrock-Aufrufen · Aktivierung des Modellzugriffs · Manipulation des Invocation-Loggings · regionübergreifende Aufklärung · Bursts fehlgeschlagener Aufrufe · Bestand an Aufrufern/Ursprüngen (LLMjacking) |
-| 🌐 Network & Infrastructure | 15 | SG für das Internet geöffnet · Löschung von VPC-Flow-Logs · CloudFront-Hijack · verdeckte VPN/TGW-Tunnel · Elastic-IP-C2 · API-Gateway-Schlüssel · Route-53-/Domain-Hijack |
-| 🕵 Threat Patterns | 5 | Aufklärungs-Burst · ungewöhnliche User Agents · Multi-Region-Ausbreitung · erstmalige API-Aufrufe · erstmalige Aktivität in einer Region |
+| 🤖 AI & LLM Abuse | 11 | Spitzen bei Bedrock-Aufrufen · Aktivierung des Modellzugriffs · Manipulation des Invocation-Loggings · regionübergreifende Aufklärung · Bursts fehlgeschlagener Aufrufe · Bestand an Aufrufern/Ursprüngen (LLMjacking) · AgentCore-Token-Vault · Umgehung der Gateway-Autorisierung · Speicherintegrität · Änderung des Sandbox-Netzwerkmodus · Manipulation der Observability |
+| 🌐 Network & Infrastructure | 16 | SG für das Internet geöffnet · Löschung von VPC-Flow-Logs · CloudFront-Hijack · verdeckte VPN/TGW-Tunnel · Elastic-IP-C2 · API-Gateway-Schlüssel · Route-53-/Domain-Hijack · Abschwächung des DDoS-Schutzes |
+| 🕵 Threat Patterns | 10 | Aufklärungs-Burst · ungewöhnliche User Agents · Multi-Region-Ausbreitung · erstmalige API-Aufrufe · erstmalige Aktivität in einer Region · Aktivität außerhalb der Geschäftszeiten · Selbstprivilegierung · Abweichung des Tagesvolumens · Ressourcenerstellung in ungenutzten Regionen · hohes API-Aufrufvolumen |
 | 📊 Activity & Baseline | 3 | Konsolen-Schreibereignisse · Fehlerspitzen · jüngste Fehler |
 | 🌍 GeoIP Analysis | 10 | Konsolen-Logins/-Verweigerungen/-Schreibvorgänge nach Land · Zugriff aus seltenen Ländern · Aufschlüsselung nach Land/ASN/Stadt · event_name × Land · Identität × Land · Baseline für private IPs |
 | ☁ IaC & Platform | 2 | CI/CD-Lieferkette · CloudFormation-Missbrauch |
 
 <details markdown="1">
-<summary>📋 Vollständige Liste — alle 126 Abfragen (zum Aufklappen anklicken)</summary>
+<summary>📋 Vollständige Liste — alle 151 Abfragen (zum Aufklappen anklicken)</summary>
 
 ## Integrierte Suchen
 
@@ -40,6 +40,7 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Erkennt schreibgeschützte GuardDuty-API-Aufrufe. Das Modul guardduty__list_findings von Pacu liest aktive Findings, um zu verstehen, was der Verteidiger bereits erkannt hat — so kann der Angreifer seine Taktik anpassen und neue Alarme vermeiden. |
 | 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Erkennt die Löschung oder Änderung von AWS Budgets und Cost-Anomaly-Monitoren. Angreifer entfernen Budgetwarnungen, um Cryptomining oder ressourcenintensive Operationen zu verbergen. |
 | 12 | 🚫 Access Denied Errors | bar | Gruppiert AccessDenied-Fehler nach Identität und API. Die Hauptverursacher können auf Missbrauch von Anmeldeinformationen hindeuten. |
+| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Korreliert die drei Ransomware-Phasen — Wiederherstellung entfernt, Schutz deaktiviert, Daten zerstört oder verschlüsselt — pro Principal und Tag. Jede Phase für sich ist Betriebsrauschen, alle drei zusammen nicht. |
 
 ### 🔑 Identity & Access
 
@@ -75,6 +76,15 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 28 | 👑 AssumeRoot Usage | timeseries | Erkennt sts:AssumeRoot-Aufrufe vom Management-Konto in das Root eines Mitgliedskontos. Ein kompromittiertes Management-Konto kann auf diesem Weg jedes Mitgliedskonto übernehmen. |
 | 29 | 🎫 Support Case Manipulation | timeseries | Erkennt das Schließen von AWS-Support-Fällen und Kommentaraktivität. Angreifer lösen Missbrauchs-/Support-Fälle auf, um AWS-Benachrichtigungen über eine Kompromittierung zu unterdrücken. |
 | 30 | 🪪 Cognito User Pool Manipulation | timeseries | Erkennt Änderungen an Cognito-User-Pools und App-Clients: verlängerte Token-Gültigkeit, neue Clients und die Erstellung von Admin-Benutzern. Angreifer missbrauchen dies, um langlebige Tokens zu erzeugen oder Backdoor-Benutzer einzuschleusen. |
+| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Erkennt, wenn eine bereits angenommene Rollensitzung eine weitere Rolle annimmt. Einzelne AssumeRole-Aufrufe wirken gewöhnlich; die Kette ist der Weg, auf dem ein Angreifer von einer kompromittierten Instanzrolle zu den eigentlich gewünschten Berechtigungen gelangt. |
+| 32 | 🎫 Session Credential Trace | bar | Fasst zusammen, was jede temporäre STS-Sitzung (ASIA…-Zugriffsschlüssel) getan hat: Anzahl der Aufrufe, Dienste, Quell-IPs und Zeitraum. Die Frage nach dem Umfang, mit der jede Untersuchung eines Anmeldeinformationsdiebstahls beginnt. |
+| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Erkennt kontoübergreifende Zugriffe, indem das Zielkonto aus der angeforderten roleArn gelesen wird — das funktioniert auch, wenn nur die Protokolle des aufrufenden Kontos vorliegen. |
+| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Sortiert Rollen danach, wer sie annimmt und von wo. Eine Rolle, die normalerweise von einem Konto angenommen wird und plötzlich einen zweiten Aufrufer erhält, fällt hier auf, während sie in der Rohereignisliste untergeht. |
+| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | Zeigt GetCallerIdentity-Aufrufe pro Principal und Quell-IP. Es ist der erste Befehl, der mit gestohlenen Anmeldeinformationen ausgeführt wird — und ein einzelner Aufruf, den volumenbasierte Aufklärungs-Hunts nie erreichen. |
+| 36 | 🪪 Federated Console Logins | timeseries | Listet Konsolenanmeldungen auf, die über einen externen Identitätsanbieter eintrafen, mit Anbietername und Herkunft. Ist der IdP die kompromittierte Komponente, sieht AWS nur eine gültige Anmeldung. |
+| 37 | 🎟 Identity Center Permission Set Grants | timeseries | Erkennt das Erstellen von Berechtigungssätzen, das Anhängen von Richtlinien und Kontozuweisungen im IAM Identity Center — der Weg zu dauerhaftem Administratorzugriff in jedem Konto der Organisation. |
+| 38 | 🧑 Identity Store User & Group Creation | timeseries | Erkennt Benutzer, Gruppen und Mitgliedschaften, die direkt im Identity Store des Identity Center erstellt werden — Persistenz, die in IAM nie erscheint und daher von reiner IAM-Überwachung übersehen wird. |
+| 39 | 👑 Delegated Administrator Registration | timeseries | Erkennt die Registrierung eines delegierten Administrators für einen Organisationsdienst. Das einzige Ereignis, das das Identity-Center-Playbook als CRITICAL einstuft — es übergibt die organisationsweite Kontrolle an ein anderes Konto. |
 
 ### 🪣 Data & Storage
 
@@ -106,6 +116,10 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 24 | 🗃 RDS Query & Instance Manipulation | timeseries | Erkennt RDS-Data-API-Abfragen, Master-Passwort-Resets und Snapshot-Wiederherstellungen. Angreifer lesen Daten direkt, setzen Anmeldeinformationen zurück, um Zugriff zu erlangen, oder stellen Snapshots in von ihnen kontrollierten Instanzen wieder her. |
 | 25 | 🔎 S3 Bucket Enumeration | bar | Erkennt Aufrufer, die Bucket- und Objekt-Metadaten durchforsten (≥10 List-/GetBucket*-Lesevorgänge innerhalb einer Stunde). Ein häufiger früher Schritt, um wertvolle Daten vor der Exfiltration zu lokalisieren. |
 | 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Erkennt EBS-/RDS-Snapshots und -Volumes, die mit einem expliziten KMS-Schlüssel neu verschlüsselt wurden, sowie das Deaktivieren der EBS-Standardverschlüsselung. Das Neuverschlüsseln mit einem angreiferkontrollierten Schlüssel hält die Daten als Lösegeldpfand fest. |
+| 27 | 📝 Ransom Note Placement | timeseries | Erkennt PutObject-Aufrufe, deren Objektschlüssel wie eine Erpressernachricht aussieht. Anders als die übrigen Ransomware-Hunts bestätigt dieser den Schaden, statt ihn nahezulegen — eine Nachricht bedeutet, dass bereits Lösegeld gefordert wird. |
+| 28 | 📐 Data Access Scope (Breach Notification) | bar | Quantifiziert, was jeder Principal pro Tag gelesen hat: berührte Buckets und ungefähre Anzahl unterschiedlicher Objekte. Liefert die von DSGVO Art. 33 geforderte „ungefähre Zahl der Datensätze“. |
+| 29 | 📤 Cross-Account Object Copy | timeseries | Erkennt zwischen Buckets kopierte Objekte, einschließlich PutObject-Aufrufen mit einem x-amz-copy-source-Header. Daten in ein fremdes Konto zu verlagern hinterlässt genau diese und keine andere Spur. |
+| 30 | 🔗 Presigned URL Generation | bar | Zählt die Erzeugung vorsignierter URLs pro Principal. Eine vorsignierte URL gibt Daten an jeden weiter, der den Link besitzt — ohne weitere Authentifizierung und ohne weiteren CloudTrail-Eintrag. |
 
 ### ⚡ Compute & Serverless
 
@@ -139,6 +153,11 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | Identifiziert Aufrufer, die Bedrock-Modelle in 2 oder mehr Regionen enumerieren oder 10 oder mehr Enumerationsaufrufe innerhalb einer Stunde tätigen. Inhaber gestohlener Schlüssel durchsuchen Regionen, um herauszufinden, wo Modelle nutzbar sind. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Findet Bursts fehlgeschlagener Bedrock-Aufrufe (AccessDenied / ValidationException). Das Testen gestohlener Schlüssel erzeugt Fehlerstürme über Modelle und Regionen hinweg, bis eine funktionierende Kombination gefunden wird. |
 | 6 | 🌍 Bedrock Callers & Origins | — | Erfasst jeden Principal, der jemals mit Bedrock interagiert hat, mit Quell-IP, GeoIP-Ursprung, User Agent und Modellvielfalt. Erkennen Sie den Aufrufer oder Ursprung, der überhaupt nichts mit Bedrock zu tun haben sollte. |
+| 7 | 🔑 AgentCore Token Vault Abuse | bar | Aggregiert die AgentCore-Token-Vault-Ausgabe pro Principal und Quelle. Diese Aufrufe geben OAuth-Token und API-Schlüssel Dritter aus, sodass Missbrauch bis zu Diensten außerhalb von AWS reicht. |
+| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Erkennt Änderungen an AgentCore-Gateways und -Richtlinien, einschließlich einer auf LOG_ONLY heruntergesetzten Cedar-Richtlinien-Engine. Eine Autorisierung, die nur protokolliert, gibt weiterhin Erfolg zurück — nachgelagert wirkt nichts falsch. |
+| 9 | 🧠 AgentCore Memory Integrity | timeseries | Erkennt Änderungen an AgentCore Memory und Registry, einschließlich eines auf eine fremde Kinesis-ARN umgeleiteten Speicherstroms. Vergiftetes Langzeitgedächtnis überdauert jede künftige Sitzung des Agenten. |
+| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Listet Lebenszyklusereignisse von AgentCore-Code-Interpretern und -Browsern samt Netzwerkmodus auf. Der Modus ist unveränderlich, daher ist Löschen und Neuanlegen der einzige Weg, den Netzwerkzugriff einer Sandbox zu erweitern. |
+| 11 | 🙈 AgentCore Observability Tampering | timeseries | Erkennt Änderungen an AgentCore-Evaluatoren sowie an X-Ray-Sampling und Trace-Zielen. Ein vom Angreifer erstellter Evaluator liest jede Antwort, die er bewertet, und exportiert Modellausgaben über einen legitimen Kanal. |
 
 ### 🌐 Network & Infrastructure
 
@@ -159,6 +178,7 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 13 | 🔑 API Gateway Key Creation & Management | timeseries | Erkennt die Erstellung von API-Gateway-Schlüsseln und die Verwaltung von REST-APIs. Das Modul api_gateway__create_api_keys von Pacu erstellt dauerhafte API-Anmeldeinformationen, die eine IAM-Schlüsselrotation überdauern. Angreifer ändern zudem API-Authorizer, um Zugriffskontrollen zu schwächen. |
 | 14 | 🚧 VPC Endpoint Access Denied | timeseries | Erkennt Access-Denied-Fehler über VPC-Endpunkte. Kann auf eine falsch konfigurierte Endpunktrichtlinie hindeuten. |
 | 15 | 🌐 Route 53 & Domain Changes | timeseries | Erkennt DNS-Eintragsänderungen, Hosted-Zone-Änderungen sowie Domain-Registrierung/-Transfer. Angreifer leiten Datenverkehr um, übernehmen verwaiste Subdomains oder registrieren Lookalike-Domains für Phishing. |
+| 16 | 🛡 DDoS Protection Weakening | timeseries | Erkennt, wenn Edge-Schutzmaßnahmen gelockert statt entfernt werden: eine WebACL-Standardaktion auf Zulassen umgestellt, Regelgruppen entschärft, Shield-Schutz gelöscht, CloudFront-Ursprünge umgeleitet. |
 
 ### 🕵 Threat Patterns
 
@@ -169,6 +189,11 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 3 | 🌍 Multi-Region Activity | bar | Erkennt Identitäten, die an einem Tag Schreibvorgänge in 3 oder mehr Regionen durchführen. Geografische Streuung kann auf eine Kompromittierung hindeuten. |
 | 4 | 🕵 First-Time API Calls (24h) | — | Findet API-Aufrufe, die in den letzten 24 Stunden, aber nie zuvor beobachtet wurden. Neuartige Operationen können auf Angreiferwerkzeuge hindeuten. |
 | 5 | 🗺 First-Seen Region Activity | bar | Findet AWS-Regionen, deren allererste Aktivität in die letzten 24 Stunden des Datensatzes fällt. Das Operieren in einer nie zuvor genutzten Region ist eine klassische Methode, um Cryptomining oder Vorbereitungen vor regionsbezogener Überwachung zu verbergen. |
+| 6 | 🌙 Off-Hours Activity | bar | Gruppiert Aktivität nach Principal und Tagesstunde innerhalb eines konfigurierbaren Zeitfensters außerhalb der Geschäftszeiten. Der erste Indikator des Insider-Threat-Playbooks, den kein anderer Hunt abdeckt. |
+| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Erkennt, wenn ein Principal seine eigenen Berechtigungen ändert — die aufrufende ARN und der Ziel-Benutzer- oder Rollenname stimmen überein. Bestehende Eskalations-Hunts sehen die Vergabe, verlieren aber, dass sie auf sich selbst angewandt wurde. |
+| 8 | 📈 Principal Daily Volume Deviation | bar | Vergleicht das tägliche Aufrufvolumen jedes Principals mit seinem eigenen Durchschnitt, getrennt nach Lese- und Schreibzugriffen. Erfasst Exfiltration, die nur erlaubte APIs nutzt und deren Anomalie die Menge statt die Aktion ist. |
+| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Markiert das Erstellen von Ressourcen in Regionen, die das Konto kaum nutzt, wobei die Baseline aus den Daten statt fest kodiert abgeleitet wird. Kryptomining und private Nebenprojekte landen beide hier. |
+| 10 | 📞 High-Volume API Calls per Principal | bar | Listet Paarungen aus Principal und API mit mehr als 50 erfolgreichen Aufrufen samt erstem und letztem Aufruf. Enumeration, Massenextraktion und Massenlöschung haben alle diese Form. |
 
 ### 📊 Activity & Baseline
 
@@ -204,24 +229,24 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 
 ---
 
-## 📊 Dashboard-Diagramme — 101 Diagramme
+## 📊 Dashboard-Diagramme — 115 Diagramme
 
 | Tab | Diagramme | Was es zeigt |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 Triage-KPI-Karten (Ereignisse, Principals, IPs, Root, MFA-lose Logins, Access Denied, Defense Evasion, Länder, Regionen) + globaler Trend des Ereignisvolumens |
-| 🎯 Threat Detection | 12 | Defense-Evasion-Sammelanzeige · Logging-Lücken · VPC-Flow-Log-/Config-/EventBridge-/WAF-Manipulation · SCP-/Organisationsmitgliedschaftsänderungen · Fehler- und Throttling-Trends · Schreib-/Lese-Verhältnis |
+| 🎯 Threat Detection | 14 | Defense-Evasion-Sammelanzeige · Logging-Lücken · VPC-Flow-Log-/Config-/EventBridge-/WAF-Manipulation · SCP-/Organisationsmitgliedschaftsänderungen · Fehler- und Throttling-Trends · Schreib-/Lese-Verhältnis · KPI-Karten für P1/P2-Eskalationsauslöser |
 | 🔑 Identity & Access | 16 | Konsolen-Logins · MFA-Trend · Login-Heatmap · Fehlgeschlagen-→-Erfolgreich-Auth-Sequenz · Root-Nutzung · IAM-Entitätsaktivität/-löschung · Rechteausweitungs-Zeitachse · neue Principals · SSO · kontoübergreifendes AssumeRole · AssumeRoot-Nutzung |
 | 🚨 High-Risk API Monitor | 5 | Protokolle zu Manipulation von Sicherheitsdiensten & Abruf von Anmeldeinformationen über die API · Top-Hochrisiko-Aufrufe · Top-Akteure · Hochrisiko-Aufrufvolumen im Zeitverlauf |
 | 📊 API Activity | 6 | Top-APIs · Access-Denied-Aktionen · Regionsverteilung · Fehlercode-Zusammensetzung · Quell-IPs · User Agents |
-| 🪣 S3 & RDS | 15 | S3-Massendownload/-löschung · Versionierung/Logging deaktiviert · kontoübergreifende Replikation · Bucket-Richtlinie/ACL · Enumeration · Schutzkonfiguration · Löschung des Backup-Vaults · KMS-Schlüssellöschung · RDS-Snapshot-Freigabe / Löschung ohne Snapshot · SSE-C-Ransomware-Verschlüsselung · lifecycle-ausgelöste Löschung · RDS-Abfrage-/Instanzmanipulation · Storage-Neuverschlüsselung als Angriffsmittel |
+| 🪣 S3 & RDS | 18 | S3-Massendownload/-löschung · Versionierung/Logging deaktiviert · kontoübergreifende Replikation · Bucket-Richtlinie/ACL · Enumeration · Schutzkonfiguration · Löschung des Backup-Vaults · KMS-Schlüssellöschung · RDS-Snapshot-Freigabe / Löschung ohne Snapshot · SSE-C-Ransomware-Verschlüsselung · lifecycle-ausgelöste Löschung · RDS-Abfrage-/Instanzmanipulation · Storage-Neuverschlüsselung als Angriffsmittel · Zugriffsumfang für Meldepflichten · kontoübergreifendes Objektkopieren · Erpressernachrichten |
 | 🖥️ Computing | 17 | EC2-Starts/Massenstopp/Schlüsselpaare/Instanzprofil/User-Data/Snapshot-Freigabe/Spot-Fleet · ECS/Lambda/SSM/EBS-Direct-API/EKS-ECR/CloudFormation · IMDS-Schwächung · AMI-/Snapshot-Löschung · WorkSpaces-Hijacking |
-| 🤖 AI / LLM | 4 | Trend bei Bedrock-Aufrufen · Änderungen an Modellzugriff & Logging · fehlgeschlagene Aufrufe · Aufrufer nach Ursprung (LLMjacking-Triage) |
+| 🤖 AI / LLM | 6 | Trend bei Bedrock-Aufrufen · Änderungen an Modellzugriff & Logging · fehlgeschlagene Aufrufe · Aufrufer nach Ursprung (LLMjacking-Triage) · AgentCore-Token-Ausgabe · Gateway- und Richtlinienänderungen |
 | 🌐 Network | 5 | Security-Group-Änderungen · NACL-/Routing-Tabellen-Änderungen · VPC-Infrastruktur · VPC-Peering/Transit Gateway · Route-53-DNS-Änderungen |
-| 🕒 Temporal Analysis | 6 | Spitzen der Ereignisgeschwindigkeit · reaktivierte ruhende Konten · erstes/letztes Auftreten nach Identität/IP/API/Dienstquelle |
+| 🕒 Temporal Analysis | 8 | Spitzen der Ereignisgeschwindigkeit · reaktivierte ruhende Konten · erstes/letztes Auftreten nach Identität/IP/API/Dienstquelle · Heatmap für Schreibzugriffe außerhalb der Geschäftszeiten · tägliches Lese-/Schreibvolumen pro Principal |
 | 🌍 GeoIP Intelligence | 6 | Unmögliche Reisen (Principals mit mehreren Ländern) · Top-Länder/-Städte/-ASNs · Weltkarte · event_name × Land |
 
 <details markdown="1">
-<summary>📋 Vollständige Liste — alle 101 Diagramme (zum Aufklappen anklicken)</summary>
+<summary>📋 Vollständige Liste — alle 115 Diagramme (zum Aufklappen anklicken)</summary>
 
 ## Dashboard-Diagramme (Apache Superset — `dashboard/`)
 
@@ -256,6 +281,8 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 10 | Write/Read Ratio Trend | Stündliche Aufschlüsselung von Lese- vs. Schreib-API-Aufrufen (DSH-20). Ein anhaltender Anstieg von write_events im Verhältnis zu read_events deutet darauf hin, dass ein Angreifer von der Aufklärung zur aktiven Ausnutzung übergegangen ist. MITRE ATT&CK: TA0040 Impact / TA0007 Discovery. |
 | 11 | CloudTrail Events Over Time | Stündliches Read- vs. Write-Ereignisvolumen im Zeitverlauf (DSH-01). Gestapelte Balken zeigen die Read-/Write-Aufteilung: Ein plötzlicher Anstieg von write_events signalisiert, dass ein Angreifer von der Aufklärung zur aktiven Ausnutzung übergeht. Nützlich, um Aktivitätsspitzen und Operationen außerhalb der Geschäftszeiten zu erkennen. |
 | 12 | Organization Membership Changes | Organizations-Mitgliedschaftsänderungen, die Konten von Schutzmaßnahmen abkoppeln oder sie unter eine angreiferkontrollierte Organisation verschieben. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
+| 13 | P1 Escalation Triggers | Ereignisse, die den TRIAGE_GUIDE-Eskalationsauslösern mit 15-Minuten-Frist entsprechen: Root-Nutzung, Manipulation von Protokollierung oder Erkennung, Erpressernachrichten, Registrierung delegierter Administratoren. Ungleich null heißt: die Uhr läuft. |
+| 14 | P2 Escalation Triggers | Ereignisse, die den TRIAGE_GUIDE-Bedingungen für eine Reaktion binnen einer Stunde entsprechen: Erstellung von Anmeldeinformationen, Rechtevergabe, Änderungen an Vertrauensrichtlinien und kontoübergreifende Rollenannahme. Immer zusammen mit der P1-Karte lesen. |
 
 ### 🔑 Identity & Access
 
@@ -277,6 +304,11 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 14 | IAM Identity Center (SSO) Events | AWS-IAM-Identity-Center-Verwaltungsereignisse (DSH-44) von sso.amazonaws.com, sso-directory.amazonaws.com, sso-oauth.amazonaws.com und identitystore.amazonaws.com. Identity Center ist der primäre Authentifizierungspfad in Organisationen mit mehreren Konten. Wichtige Bedrohungen: CreatePermissionSet (Backdoor-Admin-Zugriff), CreateAccountAssignment (Zuweisung von Konten an angreiferkontrollierte Benutzer) und AttachManagedPolicyToPermissionSet (Rechteausweitung). MITRE ATT&CK: TA0001 Initial Access / TA0003 Persistence / TA0004 Privilege Escalation. |
 | 15 | IAM Entity Deletion | Löschung von IAM-Benutzern, -Rollen, -Richtlinien und MFA-Geräten, mit der Spuren angreifererstellter Identitäten beseitigt oder Verteidiger ausgesperrt werden. Threat Technique Catalog for AWS: T1070.A001. |
 | 16 | AssumeRoot Usage | sts:AssumeRoot-Aufrufe vom Management-Konto in das Root eines Mitgliedskontos — ein Pfad zur vollständigen Übernahme eines Mitgliedskontos. Threat Technique Catalog for AWS: AT1669. |
+| 17 | Role Chaining (Session → Role) | Rollenketten-Sprünge — eine angenommene Rollensitzung, die eine weitere Rolle annimmt. Die Tiefe ist das Signal. Erfordert die promotete Spalte session_issuer_arn. |
+| 18 | Session Credential Trace (ASIA keys) | Was jede temporäre STS-Sitzung getan hat, geschlüsselt nach ihrem ASIA-Zugriffsschlüssel: Aufrufe, APIs, Quell-IPs, Regionen und Zeitraum. Eine Sitzung über mehrere Quell-IPs zuerst prüfen. |
+| 19 | API Calls Without MFA | Schreibaufrufe aus Sitzungen ohne MFA-Authentifizierung. Anders als die Karte für MFA-lose Konsolenanmeldungen deckt dies jeden API-Aufruf ab, nicht nur ConsoleLogin. |
+| 20 | Federated Console Logins by Provider & Origin | Konsolenanmeldungen über einen externen Identitätsanbieter, mit Anbietername, Land und ASN. Ist der IdP kompromittiert, sieht AWS nur eine gültige Anmeldung. |
+| 21 | Identity Center Permission Set Grants | Tägliche Rechtevergaben im IAM Identity Center nach Ereignisname. Ein Berechtigungssatz gilt organisationsweit: eine Zuweisung kann Adminrechte in einem nie berührten Konto gewähren. |
 
 ### 🚨 High-Risk API Monitor
 
@@ -318,6 +350,9 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 13 | S3 Lifecycle-Triggered Deletion | S3-Lifecycle-Regeln, die Objekte ablaufen lassen (und die Löschung von Lifecycle-Konfigurationen), mit denen Daten still ohne DeleteObject-Bursts gelöscht werden. Threat Technique Catalog for AWS: T1485.001. |
 | 14 | RDS Query & Instance Manipulation | RDS-Data-API-Abfragen und Snapshot-Wiederherstellungen, mit denen Daten direkt gelesen oder in eine angreiferkontrollierte Instanz wiederhergestellt werden. Threat Technique Catalog for AWS: AT1023.001 / T1213.A013. |
 | 15 | Storage Re-Encryption for Impact | EBS-/RDS-Snapshots und -Volumes, die mit einem expliziten, angreiferkontrollierten KMS-Schlüssel neu verschlüsselt wurden, sowie das Deaktivieren der Standardverschlüsselung. Threat Technique Catalog for AWS: T1486.A002 / T1486.A003. |
+| 16 | Data Access Scope (Breach Notification) | Pro Principal: S3-Lesevorgänge, betroffene Buckets und ungefähre Anzahl unterschiedlicher Objekte. Liefert die von DSGVO Art. 33 geforderte Zahl. Benötigt CloudTrail-Datenereignisse. |
+| 17 | Cross-Account Object Copy | S3-CopyObject-Aufrufe und PutObject-Aufrufe mit x-amz-copy-source-Header, mit Quelle und Ziel. Die Replikationsdiagramme decken die Konfiguration ab, dieses die einzelnen Kopien. |
+| 18 | Ransom Note Placement | PutObject-Aufrufe, deren Objektschlüssel wie eine Erpressernachricht aussieht. Anders als die übrigen Ransomware-Panels bestätigt dies den Schaden — jede Zeile hier ist ein P1. |
 
 ### 🖥️ Computing
 
@@ -349,6 +384,8 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 2 | Bedrock Model Access & Logging Changes | Aktivierung des Foundation-Model-Zugriffs und Manipulation des Invocation-Loggings (DSH-99). Angreifer mit gestohlenen Anmeldeinformationen aktivieren den Bedrock-Modellzugriff selbst, bevor sie ihn missbrauchen, und prüfen oder löschen die Invocation-Logging-Konfiguration, damit ihre Prompts nicht aufgezeichnet werden — beides dokumentierte LLMjacking-Indikatoren. Jede Zeile in einer Organisation, die Bedrock nie eingeführt hat, rechtfertigt eine sofortige Untersuchung. MITRE ATT&CK: TA0005 Defense Evasion / TA0040 Impact (T1496). |
 | 3 | Bedrock Failed Invocations | Fehlgeschlagene Amazon-Bedrock-Aufrufversuche, gruppiert nach Aufrufer und Fehlercode (DSH-100). Bursts von AccessDenied-/ValidationException-Fehlern über mehrere Modelle und Regionen hinweg deuten auf einen Angreifer hin, der prüft, welche Modelle ein gestohlener Schlüssel aufrufen kann — die Aufklärungsphase des LLMjacking. MITRE ATT&CK: TA0006 Credential Access / TA0007 Discovery. |
 | 4 | Bedrock Callers by Origin | Bestand aller Amazon-Bedrock-Aufrufer mit Ursprung und Modellvielfalt (DSH-101). Baseline-Ansicht für die LLMjacking-Triage: Principals, die aus unerwarteten Ländern, Hosting-/VPN-ASNs oder mit generischen Skript-User-Agents (python-requests, curl) und hohem Aufrufvolumen aufrufen, sind Hauptverdächtige. MITRE ATT&CK: TA0040 Impact (T1496 Resource Hijacking). |
+| 5 | AgentCore Token Issuance (Daily) | Tägliche AgentCore-Token-Vault-Ausgabe nach Operation. Diese Aufrufe geben OAuth-Token und API-Schlüssel Dritter aus, sodass Missbrauch Dienste außerhalb von AWS erreicht. |
+| 6 | AgentCore Gateway & Policy Changes | AgentCore-Gateway-, Ziel- und Richtlinienänderungen samt Cedar-Richtlinien-Engine-Modus. Von ENFORCE auf LOG_ONLY gesetzt liefert die Engine weiterhin Erfolg — nachgelagert wirkt nichts falsch. |
 
 ### 🌐 Network
 
@@ -370,6 +407,8 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 4 | First / Last Seen per Source IP | Quell-IPs mit erstem/letztem Auftreten, verschiedenen Identitäten, verschiedenen APIs und GeoIP-Kontext (DSH-32). Neue IPs, die spät im Datensatz auftauchen, deuten auf Lateralbewegung oder neue Angreiferinfrastruktur hin. MITRE ATT&CK: TA0001 Initial Access / TA0008 Lateral Movement. |
 | 5 | First / Last Seen per API Call | API-Aktionen, geordnet nach erstem Auftreten (DSH-33). Erstmals auftauchende neue API-Aufrufe deuten auf Aufklärung oder Versuche der Rechteausweitung hin. MITRE ATT&CK: TA0007 Discovery / TA0004 Privilege Escalation. |
 | 6 | First / Last Seen per Service Source | Erste und letzte Auftrittszeitstempel für jede eindeutige AWS-Dienstquelle (DSH-26). Sortieren Sie nach first_seen absteigend, um neu eingeführte Dienste sichtbar zu machen (potenzielle Angreiferinfrastruktur). Sortieren Sie nach last_seen aufsteigend, um Dienste zu finden, die verstummt sind (mögliche Aufräumarbeiten nach einer Kompromittierung). MITRE ATT&CK: TA0003 Persistence / TA0007 Discovery. |
+| 7 | Off-Hours Write Activity (Hour x Day) | Schreibereignisse als Heatmap aus Tagesstunde und Wochentag (JST). Die Login-Heatmap deckt nur ConsoleLogin ab; diese jeden mutierenden Aufruf, wo massenhafte Zugriffe außerhalb der Geschäftszeiten sichtbar werden. |
+| 8 | Principal Daily Volume (Read vs Write) | Tägliches Aufrufvolumen pro Principal, getrennt nach Lese- und Schreibzugriffen. Jeden Principal an sich selbst messen: zehntausend Aufrufe einer Build-Rolle sind normal, zweihundert eines Menschen nicht. |
 
 ### 🌍 GeoIP Intelligence
 

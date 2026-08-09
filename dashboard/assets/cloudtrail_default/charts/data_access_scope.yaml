@@ -1,0 +1,61 @@
+# PB-10: Data Access Scope
+# This answers the regulator's question - roughly how many records - rather
+# than the responder's. Without S3 data events enabled the panel is empty.
+# Playbook: IRP-PersonalDataBreach
+uuid: c1a1000a-0000-4000-8000-0000000c1a0a
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Data Access Scope (Breach Notification)
+viz_type: table
+description: >
+  Per principal: S3 read calls, distinct buckets and approximate distinct
+  objects (IRP-PersonalDataBreach). Produces the 'approximate number of records'
+  figure GDPR Article 33 requires. Needs CloudTrail data events on the buckets.
+  MITRE ATT&CK: TA0009 Collection / T1530.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: read_calls
+      hasCustomLabel: true
+      optionName: metric_das_reads
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT json_extract_string(request_parameters, '$.bucketName'))"
+      label: distinct_buckets
+      hasCustomLabel: true
+      optionName: metric_das_buckets
+    - expressionType: SQL
+      sqlExpression: "APPROX_COUNT_DISTINCT(json_extract_string(request_parameters, '$.key'))"
+      label: approx_distinct_objects
+      hasCustomLabel: true
+      optionName: metric_das_objects
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_access
+      hasCustomLabel: true
+      optionName: metric_das_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_access
+      hasCustomLabel: true
+      optionName: metric_das_last
+  groupby:
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 's3.amazonaws.com'
+        AND event_name IN (
+          'GetObject', 'SelectObjectContent', 'CopyObject',
+          'ListObjects', 'ListObjectsV2'
+        )
+      filterOptionName: filter_das
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

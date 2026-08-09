@@ -157,7 +157,7 @@ def phase2_db(tmp_path: pathlib.Path) -> str:
          'arn:aws:iam::111111111111:user/attacker', '203.0.113.30',
          '{"sAMLProviderArn":"arn:aws:iam::111111111111:saml-provider/CorpSSO"}',
          NULL, NULL, false, '111111111111', '111111111111', 'aws-cli/2.0'),
-        ('2024-04-06 06:15:00', 'CreateOIDCProvider', 'iam.amazonaws.com', 'us-east-1',
+        ('2024-04-06 06:15:00', 'CreateOpenIDConnectProvider', 'iam.amazonaws.com', 'us-east-1',
          'arn:aws:iam::111111111111:user/attacker', '203.0.113.30',
          '{"url":"https://attacker-idp.example.com","thumbprintList":["abc123"]}',
          NULL, NULL, false, '111111111111', '111111111111', 'aws-cli/2.0'),
@@ -400,13 +400,17 @@ def test_g14_detects_update_saml_provider(phase2_db: str):
 
 
 def test_g14_detects_create_oidc_provider(phase2_db: str):
-    """G-14: SQL must detect CreateOIDCProvider (rogue OIDC IdP)."""
+    """G-14: SQL must detect CreateOpenIDConnectProvider (rogue OIDC IdP).
+
+    IAM spells the operation out in full; the abbreviated ``CreateOIDCProvider``
+    this hunt used to match on is not an API name (see phase 7).
+    """
     sql = get_builtin_sql("\U0001f517 SAML / OIDC Provider Updates")
     rows = _run_sql(phase2_db, sql)
     names = [r["event_name"] for r in rows]
     assert (
-        "CreateOIDCProvider" in names
-    ), f"CreateOIDCProvider not detected. Got: {names}"
+        "CreateOpenIDConnectProvider" in names
+    ), f"CreateOpenIDConnectProvider not detected. Got: {names}"
 
 
 # ---------------------------------------------------------------------------

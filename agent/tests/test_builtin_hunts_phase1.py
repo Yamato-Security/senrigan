@@ -114,10 +114,11 @@ def phase1_db(tmp_path: pathlib.Path) -> str:
          '{"dBSnapshotIdentifier":"prod-snapshot-20240302","attributeName":"restore","valuesToAdd":["999999999999"]}',
          NULL, NULL, false, '111111111111', '111111111111'),
 
-        -- G-03: GuardDuty detector disabled
-        ('2024-03-03 04:00:00', 'DisableDetector', 'guardduty.amazonaws.com', 'us-east-1',
+        -- G-03: GuardDuty detector disabled. There is no DisableDetector API —
+        -- disabling is UpdateDetector with enable=false (see phase 7).
+        ('2024-03-03 04:00:00', 'UpdateDetector', 'guardduty.amazonaws.com', 'us-east-1',
          'arn:aws:iam::111111111111:user/attacker', '10.0.0.1',
-         '{"detectorId":"abc123def456"}',
+         '{"detectorId":"abc123def456","enable":false}',
          NULL, NULL, false, '111111111111', '111111111111'),
         ('2024-03-03 04:10:00', 'DeletePublishingDestination', 'guardduty.amazonaws.com', 'us-east-1',
          'arn:aws:iam::111111111111:user/attacker', '10.0.0.1',
@@ -253,12 +254,12 @@ def test_g03_guardduty_tampering_label_exists_in_yaml():
     assert len(sql) > 10
 
 
-def test_g03_guardduty_detects_disable_detector(phase1_db: str):
-    """G-03: SQL must detect DisableDetector event."""
+def test_g03_guardduty_detects_detector_disable(phase1_db: str):
+    """G-03: SQL must detect a detector being disabled via UpdateDetector."""
     sql = get_builtin_sql("\U0001f6e1\ufe0f GuardDuty Detector Tampering")
     rows = _run_sql(phase1_db, sql)
     names = [r["event_name"] for r in rows]
-    assert "DisableDetector" in names, f"DisableDetector not detected. Got: {names}"
+    assert "UpdateDetector" in names, f"UpdateDetector not detected. Got: {names}"
 
 
 def test_g03_guardduty_detects_delete_publishing_destination(phase1_db: str):

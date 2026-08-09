@@ -158,3 +158,41 @@ def test_render_chart_auto_without_numeric_skips():
 
     mock_plotly.assert_not_called()
     mock_bar.assert_not_called()
+
+
+def test_render_chart_timeseries_accepts_hour_bucket_alias():
+    """A query aliasing its bucket ``hour_bucket`` must still chart.
+
+    Eleven hunts bucket with ``DATE_TRUNC('hour', event_time) AS hour_bucket``.
+    Exact-matching only ``bucket`` left those charts silently undrawn — the query
+    ran, the table rendered, and the declared timeseries never appeared.
+    """
+    df = pd.DataFrame(
+        {
+            "hour_bucket": ["2024-06-10 01:00:00", "2024-06-10 02:00:00"],
+            "call_count": [5, 9],
+        }
+    )
+    with patch("streamlit.line_chart") as mock_line:
+        from app import render_chart
+
+        render_chart(df, {"type": "timeseries", "bucket": "hour"})
+
+    mock_line.assert_called_once()
+
+
+def test_render_chart_timeseries_ignores_bucket_name_column():
+    """``bucket_name`` is an S3 bucket, not a time bucket."""
+    df = pd.DataFrame(
+        {"bucket_name": ["prod-data", "pii-archive"], "call_count": [5, 9]}
+    )
+    with (
+        patch("streamlit.line_chart") as mock_line,
+        patch("streamlit.plotly_chart") as mock_plotly,
+    ):
+        from app import render_chart
+
+        render_chart(df, {"type": "timeseries"})
+
+    mock_line.assert_not_called()
+    mock_plotly.assert_not_called()

@@ -1,0 +1,38 @@
+# PB-06: P1 Escalation Triggers (Triage KPI card)
+# The upstream TRIAGE_GUIDE escalates these regardless of the initial
+# assessment, so the card counts them directly rather than scoring severity.
+# Playbook: TRIAGE_GUIDE
+uuid: c1a10006-0000-4000-8000-0000000c1a06
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: P1 Escalation Triggers
+viz_type: big_number_total
+description: >
+  Events matching the TRIAGE_GUIDE escalation triggers that demand a response
+  within 15 minutes: root usage, logging or detection tampering, ransom notes,
+  and delegated-administrator registration. Non-zero means start the clock.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE user_identity_type = 'Root'
+           OR event_name IN (
+              'StopLogging', 'DeleteTrail', 'PutEventSelectors',
+              'PutInsightSelectors', 'DeleteDetector',
+              'DisableSecurityHub', 'StopConfigurationRecorder',
+              'DeleteBackupVault', 'ScheduleKeyDeletion',
+              'RegisterDelegatedAdministrator', 'AssumeRoot'
+           )
+      )
+    label: p1_triggers
+    hasCustomLabel: true
+    optionName: metric_kpi_p1
+  adhoc_filters: []
+  subheader: "Respond within 15 minutes"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

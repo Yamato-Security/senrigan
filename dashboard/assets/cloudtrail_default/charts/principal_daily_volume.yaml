@@ -1,0 +1,46 @@
+# PB-09: Principal Daily Volume Deviation
+# Catches the exfiltration that uses only permitted APIs, where the anomaly is
+# quantity rather than action.
+# Playbook: IRP-InsiderThreat
+uuid: c1a10009-0000-4000-8000-0000000c1a09
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Principal Daily Volume (Read vs Write)
+viz_type: echarts_timeseries_bar
+description: >
+  Daily call volume per principal, split into reads and writes
+  (IRP-InsiderThreat). Judge each principal against itself: a build role making
+  ten thousand calls a day is normal, a human making two hundred is not.
+  MITRE ATT&CK: TA0009 Collection / T1530.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS TRUE)"
+      label: read_calls
+      hasCustomLabel: true
+      optionName: metric_pdv_reads
+    - expressionType: SQL
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
+      label: write_calls
+      hasCustomLabel: true
+      optionName: metric_pdv_writes
+  groupby:
+    - user_identity_arn
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: "user_identity_arn IS NOT NULL"
+      filterOptionName: filter_pdv_principal
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: API Calls
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null

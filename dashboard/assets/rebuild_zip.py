@@ -147,6 +147,21 @@ FILE_MAP = {
     "charts/storage_reencryption.yaml": "charts/Storage_Re_Encryption_For_Impact.yaml",
     "charts/workspaces_activity.yaml": "charts/WorkSpaces_Hijacking.yaml",
     "charts/org_membership_changes.yaml": "charts/Organization_Membership_Changes.yaml",
+    # AWS incident response playbook alignment (PB-01 to PB-14)
+    "charts/role_chain_depth.yaml": "charts/Role_Chaining_Session_To_Role.yaml",
+    "charts/session_key_activity.yaml": "charts/Session_Credential_Trace.yaml",
+    "charts/kpi_non_mfa_api_calls.yaml": "charts/KPI_API_Calls_Without_MFA.yaml",
+    "charts/federated_login_origin.yaml": "charts/Federated_Console_Logins.yaml",
+    "charts/permission_set_grants.yaml": "charts/Identity_Center_Permission_Set_Grants.yaml",
+    "charts/kpi_p1_indicators.yaml": "charts/KPI_P1_Escalation_Triggers.yaml",
+    "charts/kpi_p2_indicators.yaml": "charts/KPI_P2_Escalation_Triggers.yaml",
+    "charts/off_hours_heatmap.yaml": "charts/Off_Hours_Write_Activity_Heatmap.yaml",
+    "charts/principal_daily_volume.yaml": "charts/Principal_Daily_Volume.yaml",
+    "charts/data_access_scope.yaml": "charts/Data_Access_Scope.yaml",
+    "charts/cross_account_object_copy.yaml": "charts/Cross_Account_Object_Copy.yaml",
+    "charts/ransom_note_placement.yaml": "charts/Ransom_Note_Placement.yaml",
+    "charts/agentcore_token_issuance.yaml": "charts/AgentCore_Token_Issuance.yaml",
+    "charts/agentcore_gateway_changes.yaml": "charts/AgentCore_Gateway_Policy_Changes.yaml",
 }
 
 

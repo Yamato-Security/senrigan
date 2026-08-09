@@ -107,6 +107,63 @@ CLOUDTRAIL_COLUMNS: list[dict] = [
         "nullable": False,
         "description": "Full original CloudTrail event as JSON string",
     },
+    # Six of the 24 extended columns, promoted because each one unlocks a hunt
+    # that cannot be written without it (role chaining, session tracing, MFA
+    # truth). The remaining 18 stay hidden to keep the prompt small.
+    {
+        "name": "user_identity_access_key_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "Access key used for the call. Keys starting with ASIA are temporary "
+            "STS session credentials — group by this to trace everything one "
+            "assumed-role session did"
+        ),
+    },
+    {
+        "name": "session_issuer_arn",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "ARN of the role that issued the current session. Set only for "
+            "AssumedRole calls; combined with an AssumeRole event_name it reveals "
+            "role chaining (a session assuming a further role)"
+        ),
+    },
+    {
+        "name": "session_mfa_authenticated",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "Whether the session was MFA-authenticated, as the string 'true' or "
+            "'false' (not a BOOLEAN). Covers every API call, unlike the "
+            "ConsoleLogin-only MFA field in additional_event_data"
+        ),
+    },
+    {
+        "name": "additional_event_data",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "Service-specific extra fields as a JSON string. Carries MFAUsed and "
+            "federatedProvider for ConsoleLogin, and SSEApplied for S3"
+        ),
+    },
+    {
+        "name": "event_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Unique CloudTrail event ID — use it to cite a specific event",
+    },
+    {
+        "name": "vpc_endpoint_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": (
+            "VPC endpoint the request arrived through, when it did not traverse "
+            "the public internet"
+        ),
+    },
     {
         "name": "geo_country_code",
         "type": "VARCHAR",

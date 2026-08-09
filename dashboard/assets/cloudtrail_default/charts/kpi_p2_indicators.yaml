@@ -1,0 +1,44 @@
+# PB-07: P2 Escalation Triggers (Triage KPI card)
+# Confirmed-compromise indicators that need containment but not the 15-minute
+# clock. Pairs with the P1 card above it.
+# Playbook: TRIAGE_GUIDE
+uuid: c1a10007-0000-4000-8000-0000000c1a07
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: P2 Escalation Triggers
+viz_type: big_number_total
+description: >
+  Events matching the TRIAGE_GUIDE conditions for a response within the hour:
+  credential creation, privilege grants, trust-policy edits and cross-account
+  role assumption. Read it against the P1 card, not on its own.
+query_context: ""
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: >-
+      COUNT(*) FILTER (
+        WHERE event_name IN (
+            'CreateAccessKey', 'CreateLoginProfile', 'UpdateLoginProfile',
+            'AttachUserPolicy', 'AttachRolePolicy', 'PutUserPolicy',
+            'PutRolePolicy', 'UpdateAssumeRolePolicy', 'AddUserToGroup',
+            'CreateSAMLProvider', 'UpdateSAMLProvider',
+            'CreateOpenIDConnectProvider',
+            'CreatePermissionSet', 'CreateAccountAssignment'
+        )
+        OR (
+            event_name = 'AssumeRole'
+            AND user_identity_account_id IS NOT NULL
+            AND recipient_account_id IS NOT NULL
+            AND user_identity_account_id <> recipient_account_id
+        )
+      )
+    label: p2_triggers
+    hasCustomLabel: true
+    optionName: metric_kpi_p2
+  adhoc_filters: []
+  subheader: "Respond within 1 hour"
+  time_range: "No filter"
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+cache_timeout: null

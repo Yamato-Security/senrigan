@@ -1,0 +1,50 @@
+# PB-13: AgentCore Token Issuance
+# Baseline is per workload: an agent that fetches one token per run and
+# suddenly fetches hundreds is being driven by something other than its logic.
+# Playbook: IRP-AgentCoreIdentityCompromise
+uuid: c1a1000d-0000-4000-8000-0000000c1a0d
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: AgentCore Token Issuance (Daily)
+viz_type: echarts_timeseries_bar
+description: >
+  Daily AgentCore token-vault issuance by operation
+  (IRP-AgentCoreIdentityCompromise). These calls hand out third-party OAuth
+  tokens and API keys, so abuse reaches services outside AWS entirely.
+  MITRE ATT&CK: TA0006 Credential Access / T1528.
+query_context: ""
+params:
+  x_axis: event_time
+  time_grain_sqla: P1D
+  time_range: "No filter"
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: token_requests
+      hasCustomLabel: true
+      optionName: metric_agentcore_tokens
+  groupby:
+    - event_name
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_source = 'bedrock-agentcore.amazonaws.com'
+        AND event_name IN (
+          'GetWorkloadAccessToken',      'GetWorkloadAccessTokenForJWT',
+          'GetWorkloadAccessTokenForUserId',
+          'GetResourceOauth2Token',      'GetResourceApiKey',
+          'CreateWorkloadIdentity',      'DeleteWorkloadIdentity',
+          'SetTokenVaultCMK',
+          'CreateApiKeyCredentialProvider', 'CreateOauth2CredentialProvider'
+        )
+      filterOptionName: filter_agentcore_tokens
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Date
+  y_axis_title: Token Requests
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+cache_timeout: null

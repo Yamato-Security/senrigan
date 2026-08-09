@@ -1,0 +1,59 @@
+# PB-01: Role Chaining (Session -> Role)
+# Rows are single hops of a role chain, keyed by the issuing role and the role
+# assumed next. Single AssumeRole calls look ordinary; the chain is how an
+# attacker walks from a compromised instance role to the permissions they want.
+# Playbook: IRP-STSTokenAbuse
+uuid: c1a10001-0000-4000-8000-0000000c1a01
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Role Chaining (Session → Role)
+viz_type: table
+description: >
+  Role-chain hops: an assumed-role session assuming a further role (IRP-STSTokenAbuse).
+  Requires the promoted session_issuer_arn column. Depth is the signal — a session
+  that assumes a role which assumes another role is moving laterally.
+  MITRE ATT&CK: TA0008 Lateral Movement / T1199 Trusted Relationship.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: hops
+      hasCustomLabel: true
+      optionName: metric_rolechain_hops
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_source_ips
+      hasCustomLabel: true
+      optionName: metric_rolechain_ips
+    - expressionType: SQL
+      sqlExpression: "MIN(event_time)"
+      label: first_seen
+      hasCustomLabel: true
+      optionName: metric_rolechain_first
+    - expressionType: SQL
+      sqlExpression: "MAX(event_time)"
+      label: last_seen
+      hasCustomLabel: true
+      optionName: metric_rolechain_last
+  groupby:
+    - session_issuer_arn
+    - expressionType: SQL
+      sqlExpression: "json_extract_string(request_parameters, '$.roleArn')"
+      label: to_role
+      hasCustomLabel: true
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name = 'AssumeRole'
+        AND user_identity_type = 'AssumedRole'
+        AND session_issuer_arn IS NOT NULL
+      filterOptionName: filter_rolechain
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
