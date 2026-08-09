@@ -378,18 +378,23 @@ def _read_meta(
 
 
 def _as_utc(value: object) -> datetime | None:
-    """Return *value* as a timezone-aware datetime, or None.
+    """Return *value* as a UTC datetime, or None.
 
     Accepts what DuckDB hands back for a cast ``TIMESTAMP WITH TIME ZONE`` —
     a string whose offset is rendered as ``+09``, not ``+09:00`` — as well as a
     real datetime. A hand-rebuilt file may carry a naive timestamp; comparing
     naive and aware values raises, so naive ones are read as UTC.
 
+    The result is converted to UTC, not merely made aware: DuckDB renders that
+    cast in the session's timezone, so the same file reads ``+09`` in Tokyo and
+    ``-07`` in California, and reports print the value verbatim. Ordering is
+    unaffected either way — display is what would otherwise disagree.
+
     Args:
         value: The raw ``generated_at``.
 
     Returns:
-        An aware datetime, or ``None`` when there is nothing usable. Never
+        A UTC datetime, or ``None`` when there is nothing usable. Never
         raises: ordering falls back to mtime rather than refusing the file.
     """
     if isinstance(value, str):
@@ -401,7 +406,7 @@ def _as_utc(value: object) -> datetime | None:
         return None
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
-    return value
+    return value.astimezone(timezone.utc)
 
 
 def _as_int(value: object) -> int | None:
