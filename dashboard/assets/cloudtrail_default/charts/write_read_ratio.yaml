@@ -21,12 +21,12 @@ params:
   time_range: "No filter"
   metrics:
     - expressionType: SQL
-      sqlExpression: "COUNT(*) FILTER (WHERE read_only = true)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS TRUE)"
       label: read_events
       hasCustomLabel: true
       optionName: metric_read_events
     - expressionType: SQL
-      sqlExpression: "COUNT(*) FILTER (WHERE read_only = false)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_events
       hasCustomLabel: true
       optionName: metric_write_events
@@ -43,10 +43,10 @@ cache_timeout: null
 # SQL used to power this chart:
 # SELECT
 #     DATE_TRUNC('hour', event_time)                               AS hour_bucket,
-#     COUNT(*) FILTER (WHERE read_only = true)                     AS read_events,
-#     COUNT(*) FILTER (WHERE read_only = false)                    AS write_events,
+#     COUNT(*) FILTER (WHERE read_only IS TRUE)                     AS read_events,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)                    AS write_events,
 #     ROUND(
-#         COUNT(*) FILTER (WHERE read_only = false) * 100.0
+#         COUNT(*) FILTER (WHERE read_only IS NOT TRUE) * 100.0
 #         / NULLIF(COUNT(*), 0), 1
 #     )                                                            AS write_pct
 # FROM cloudtrail_events

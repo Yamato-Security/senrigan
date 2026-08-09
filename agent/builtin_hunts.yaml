@@ -59,11 +59,13 @@
         aws_region,
         error_code
     FROM cloudtrail_events
+    -- Log-group deletion and retention changes belong to the CloudWatch Logs
+    -- hunt, which reports them with the subscription filters they travel
+    -- with; listing them here as well double-counts one action in triage.
     WHERE event_name IN (
         'CreateTrail', 'UpdateTrail', 'DeleteTrail',
         'StartLogging', 'StopLogging',
-        'PutEventSelectors', 'PutInsightSelectors',
-        'DeleteLogGroup', 'PutRetentionPolicy', 'DeleteRetentionPolicy'
+        'PutEventSelectors', 'PutInsightSelectors'
     )
     ORDER BY event_time DESC
     LIMIT 100
@@ -562,6 +564,12 @@
         event_name,
         event_source,
         COUNT(*)        AS denied_count,
+        -- A denial arriving over a VPC endpoint usually means the endpoint
+        -- policy, not the principal's IAM policy, is what refused it.
+        COUNT(*) FILTER (WHERE vpc_endpoint_id IS NOT NULL) AS via_vpc_endpoint,
+        array_agg(DISTINCT vpc_endpoint_id) FILTER (
+            WHERE vpc_endpoint_id IS NOT NULL
+        )               AS vpc_endpoint_id,
         MIN(event_time) AS first_seen,
         MAX(event_time) AS last_seen
     FROM cloudtrail_events
@@ -750,6 +758,10 @@
                 THEN json_extract_string(additional_event_data, '$.success')
             ELSE NULL
         END AS login_result,
+        geo_country_code,
+        geo_country_name,
+        geo_city,
+        geo_org,
         error_code,
         error_message
     FROM cloudtrail_events
@@ -1070,7 +1082,8 @@
         aws_region,
         error_code
     FROM cloudtrail_events
-    WHERE event_name IN (
+    WHERE (
+      event_name IN (
         'RunInstances',
         'CreateFunction20150331',                'CreateFunction',
         'UpdateFunctionConfiguration20150331v2', 'UpdateFunctionConfiguration',
@@ -1081,48 +1094,23 @@
         'StartAutomationExecution',
         'CreateStateMachine',                    'UpdateStateMachine'
     )
+      -- Data Pipeline and CodeStar also run code under a passed role, but
+      -- their event names collide with CodePipeline's, so they are matched by
+      -- source rather than name alone — CodePipeline has its own supply-chain
+      -- hunt and must not fire here too.
+      OR (
+          event_source IN ('datapipeline.amazonaws.com', 'codestar.amazonaws.com')
+          AND event_name IN (
+              'CreatePipeline',   'PutPipelineDefinition', 'ActivatePipeline',
+              'CreateProject',    'CreateProjectFromTemplate'
+          )
+      )
+    )
       AND (
           request_parameters LIKE '%roleArn%'
           OR request_parameters LIKE '%iamInstanceProfile%'
           OR request_parameters LIKE '%"role"%'
       )
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f511 Identity & Access"
-  label: "\U0001f510 AssumeRole Cross-Account"
-  description: "Shows AssumeRole events where caller and target are in different AWS accounts. Indicates lateral movement."
-  severity: "P2"
-  playbook:
-    name: "IRP-STSTokenAbuse"
-    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
-  techniques:
-    - tid: "T1199.A002"
-      name: "Trusted Relationship: Role Assumption and Federated Access"
-      summary: "Adversaries pivot across accounts through assumed roles and federated sessions."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1199.A002.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Show all AssumeRole events where the assumed role ARN is in a different
-    AWS account than the caller. Include session duration and external ID if present.
-    Cross-account role assumptions can indicate lateral movement.
-  sql: |
-    SELECT
-        event_time,
-        user_identity_arn,
-        user_identity_account_id                                     AS caller_account,
-        recipient_account_id,
-        json_extract_string(request_parameters, '$.roleArn')         AS assumed_role_arn,
-        json_extract_string(request_parameters, '$.externalId')      AS external_id,
-        json_extract_string(request_parameters, '$.durationSeconds') AS duration_seconds,
-        source_ip_address
-    FROM cloudtrail_events
-    WHERE event_name = 'AssumeRole'
-      AND user_identity_account_id IS NOT NULL
-      AND recipient_account_id     IS NOT NULL
-      AND user_identity_account_id != recipient_account_id
     ORDER BY event_time DESC
     LIMIT 100
 
@@ -1436,14 +1424,20 @@
     multiple source_ip_address values, which may indicate key compromise.
     Show the user_identity_arn, event_time, and source_ip_address.
   sql: |
+    -- "Last 7 days" is measured against the newest ingested event, not the
+    -- machine clock: CloudTrail logs are always historical by the time they
+    -- reach DuckDB, so a clock-relative window would match nothing.
+    WITH dataset_bounds AS (
+        SELECT MAX(event_time) AS max_time FROM cloudtrail_events
+    )
     SELECT
         user_identity_arn,
         COUNT(DISTINCT source_ip_address) AS distinct_source_ips,
         MIN(event_time)                   AS first_seen,
         MAX(event_time)                   AS last_seen,
         COUNT(*)                          AS total_events
-    FROM cloudtrail_events
-    WHERE event_time >= NOW() - INTERVAL '7 days'
+    FROM cloudtrail_events, dataset_bounds b
+    WHERE event_time >= b.max_time - INTERVAL 7 DAY
       AND user_identity_arn IS NOT NULL
       AND source_ip_address IS NOT NULL
     GROUP BY user_identity_arn
@@ -1503,11 +1497,13 @@
     FROM cloudtrail_events
     WHERE event_source = 'organizations.amazonaws.com'
       AND event_name IN (
+          -- Delegated-administrator registration and service-access changes
+          -- are owned by the P1 "Delegated Administrator Registration" hunt,
+          -- which the Identity Center playbook grades CRITICAL. Repeating
+          -- them here would report one action as two findings.
           'CreateAccount',                 'InviteAccountToOrganization',
           'CreateOrganizationalUnit',      'MoveAccount',
           'AttachPolicy',                  'DetachPolicy',
-          'RegisterDelegatedAdministrator','DeregisterDelegatedAdministrator',
-          'EnableAWSServiceAccess',        'DisableAWSServiceAccess',
           'LeaveOrganization',             'RemoveAccountFromOrganization',
           'AcceptHandshake',               'CancelHandshake', 'DeclineHandshake'
       )
@@ -1639,102 +1635,6 @@
           'CreatePresignedNotebookInstanceUrl',
           'CreateTrainingJob',                   'CreateProcessingJob',
           'CreateTransformJob',                  'CreateHyperParameterTuningJob'
-      )
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f511 Identity & Access"
-  label: "\U0001f6e0 Data Pipeline / CodeStar Privilege Escalation"
-  description: "Detects Data Pipeline and CodeStar resource creation. Both accept iam:PassRole and can execute arbitrary code with the passed role's permissions. CodeStar:CreateProjectFromTemplate is an undocumented API that creates an admin IAM role."
-  severity: "P2"
-  techniques:
-    - tid: "T1098.003"
-      name: "Account Manipulation: Additional Cloud Roles"
-      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Find all AWS Data Pipeline and CodeStar management events used for
-    privilege escalation:
-    Data Pipeline: CreatePipeline + PutPipelineDefinition + ActivatePipeline
-    (the pipeline definition can contain a ShellCommandActivity that runs
-    arbitrary code with the passed role's permissions),
-    CodeStar: CreateProjectFromTemplate (undocumented API that creates an
-    admin-equivalent IAM role as a side effect), CreateProject, AssociateTeamMember
-    (granting team member role with elevated access).
-    Show resource name, caller, region, and time.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        event_source,
-        user_identity_arn,
-        COALESCE(
-            json_extract_string(request_parameters, '$.name'),
-            json_extract_string(request_parameters, '$.pipelineId')
-        )                                                               AS resource_name,
-        source_ip_address,
-        aws_region,
-        error_code
-    FROM cloudtrail_events
-    WHERE (
-        event_source = 'datapipeline.amazonaws.com'
-        AND event_name IN (
-            'CreatePipeline',     'PutPipelineDefinition',
-            'ActivatePipeline',   'DeletePipeline'
-        )
-    ) OR (
-        event_source = 'codestar.amazonaws.com'
-        AND event_name IN (
-            'CreateProject',              'DeleteProject',
-            'CreateProjectFromTemplate',
-            'AssociateTeamMember',        'DisassociateTeamMember',
-            'UpdateTeamMember'
-        )
-    )
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f511 Identity & Access"
-  label: "\U0001f9e9 Step Functions Privilege Escalation"
-  description: "Detects Step Functions state machine creation and execution. iam:PassRole + states:CreateStateMachine + states:StartExecution allows running arbitrary Lambda / ECS tasks under the passed role's permissions."
-  severity: "P2"
-  techniques:
-    - tid: "T1098.003"
-      name: "Account Manipulation: Additional Cloud Roles"
-      summary: "Adversaries attach roles or policies to grant themselves elevated permissions."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.003.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Find all AWS Step Functions management events:
-    CreateStateMachine (iam:PassRole + states:CreateStateMachine can execute
-    Lambda functions or ECS tasks under the passed role's full permissions),
-    UpdateStateMachine (changing the role or task definitions),
-    DeleteStateMachine, StartExecution, StopExecution, CreateActivity.
-    Step Functions is an often-overlooked privilege escalation path because
-    it indirectly invokes other services under the passed role.
-    Show state machine name, role ARN, caller, region, and time.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        user_identity_arn,
-        json_extract_string(request_parameters, '$.name')         AS state_machine_name,
-        json_extract_string(request_parameters, '$.roleArn')      AS role_arn,
-        json_extract_string(request_parameters, '$.stateMachineArn') AS state_machine_arn,
-        source_ip_address,
-        aws_region,
-        error_code
-    FROM cloudtrail_events
-    WHERE event_source = 'states.amazonaws.com'
-      AND event_name IN (
-          'CreateStateMachine',  'UpdateStateMachine',  'DeleteStateMachine',
-          'StartExecution',      'StopExecution',
-          'CreateActivity',      'DeleteActivity'
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -4119,43 +4019,6 @@
     LIMIT 100
 
 - category: "\U0001f916 AI & LLM Abuse"
-  label: "\U0001f30d Bedrock Callers & Origins"
-  description: "Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all."
-  severity: "P4"
-  techniques:
-    - tid: "T1496.A007"
-      name: "Resource Hijacking: Cloud Service Hijacking - Bedrock LLM Abuse"
-      summary: "Adversaries run LLM inference on Bedrock with stolen credentials (LLMjacking)."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A007.html"
-  prompt: |
-    Build an inventory of all Amazon Bedrock callers
-    (event_source bedrock.amazonaws.com): group by user_identity_arn,
-    source_ip_address, geo_country_code, geo_org, and user_agent, with
-    total call count, distinct models used, first-seen and last-seen
-    timestamps. This baseline lets an analyst spot principals or origins
-    (unexpected countries, hosting ASNs, python-requests user agents)
-    that have no legitimate reason to use Bedrock.
-  sql: |
-    SELECT
-        user_identity_arn,
-        source_ip_address,
-        geo_country_code,
-        geo_org,
-        user_agent,
-        COUNT(*)                                                       AS total_calls,
-        COUNT(DISTINCT json_extract_string(request_parameters, '$.modelId'))
-                                                                       AS distinct_models,
-        COUNT(DISTINCT event_name)                                     AS distinct_apis,
-        MIN(event_time)                                                AS first_seen,
-        MAX(event_time)                                                AS last_seen
-    FROM cloudtrail_events
-    WHERE event_source = 'bedrock.amazonaws.com'
-    GROUP BY user_identity_arn, source_ip_address, geo_country_code,
-             geo_org, user_agent
-    ORDER BY total_calls DESC
-    LIMIT 200
-
-- category: "\U0001f916 AI & LLM Abuse"
   label: "\U0001f648 AgentCore Observability Tampering"
   description: "Detects AgentCore evaluator changes and X-Ray sampling or trace-destination changes. An attacker-created evaluator reads every response it grades, exporting model output through a legitimate channel."
   severity: "P1"
@@ -4424,41 +4287,6 @@
 # ===========================================================================
 
 - category: "\U0001f310 Network & Infrastructure"
-  label: "\U0001f30d Security Group Opened to Internet"
-  description: "Finds security group rules that allow traffic from 0.0.0.0/0. Direct public exposure risk."
-  severity: "P2"
-  techniques:
-    - tid: "T1190.A019"
-      name: "Exploit Public-Facing Application: Overly Permissive VPC Security Groups"
-      summary: "Overly open security groups expose workloads directly to the internet."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1190.A019.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Find security group rules that allow traffic from 0.0.0.0/0 (any IP).
-    This includes AuthorizeSecurityGroupIngress and ModifySecurityGroupRules.
-    Show the security group ID, caller, region, and full rule parameters.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        user_identity_arn,
-        aws_region,
-        json_extract_string(request_parameters, '$.groupId') AS security_group_id,
-        source_ip_address,
-        request_parameters
-    FROM cloudtrail_events
-    WHERE event_name IN (
-        'AuthorizeSecurityGroupIngress',
-        'AuthorizeSecurityGroupEgress',
-        'ModifySecurityGroupRules'
-    )
-      AND request_parameters LIKE '%0.0.0.0/0%'
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f310 Network & Infrastructure"
   label: "\U0001f525 Security Group Modifications"
   description: "Detects security group rule changes, especially rules allowing 0.0.0.0/0 on any port."
   severity: "P3"
@@ -4487,6 +4315,10 @@
         user_identity_arn,
         aws_region,
         json_extract_string(request_parameters, '$.groupId') AS security_group_id,
+        -- The rule that exposes the group to the whole internet is the one
+        -- worth reading first; sort on this column to get those rows on top.
+        (request_parameters LIKE '%0.0.0.0/0%'
+         OR request_parameters LIKE '%::/0%')                AS open_to_internet,
         source_ip_address,
         request_parameters
     FROM cloudtrail_events
@@ -4496,7 +4328,7 @@
         'CreateSecurityGroup',           'DeleteSecurityGroup',
         'ModifySecurityGroupRules'
     )
-    ORDER BY event_time DESC
+    ORDER BY open_to_internet DESC, event_time DESC
     LIMIT 100
 
 - category: "\U0001f310 Network & Infrastructure"
@@ -4572,63 +4404,6 @@
           'CreateCachePolicy',        'UpdateCachePolicy',
           'CreateOriginAccessControl','UpdateOriginAccessControl',
           'AssociateAlias'
-      )
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f310 Network & Infrastructure"
-  label: "\U0001f6e1 Network Firewall / Shield Tampering"
-  description: "Detects Network Firewall and Shield protection removal. Deleting network-layer defenses exposes VPCs to direct attack traffic."
-  severity: "P2"
-  playbook:
-    name: "IRP-DoS"
-    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-DoS.md"
-  techniques:
-    - tid: "T1562.007"
-      name: "Impair Defenses: Disable or Modify Cloud Firewall"
-      summary: "Adversaries open or remove cloud firewall rules to enable their own access."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.007.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Find all AWS Network Firewall and Shield tampering events:
-    DeleteFirewall, DeleteFirewallPolicy, DeleteRuleGroup (removing packet
-    inspection rules), DisassociateSubnets (detaching firewall from protected
-    subnets), UpdateFirewallPolicy / UpdateRuleGroup (weakening inspection rules),
-    Shield DeleteProtection (removing DDoS protection from a resource),
-    DisableProactiveEngagement (removing 24/7 Shield Response Team engagement),
-    DeleteSubscription (cancelling Shield Advanced).
-    Unlike WAF (covered separately), Network Firewall operates at the VPC
-    level and its removal exposes entire subnet ranges to attack traffic.
-    Show resource name, caller, region, and time.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        event_source,
-        user_identity_arn,
-        aws_region,
-        json_extract_string(request_parameters, '$.firewallName')          AS firewall_name,
-        json_extract_string(request_parameters, '$.firewallPolicyArn')     AS firewall_policy_arn,
-        json_extract_string(request_parameters, '$.ruleGroupArn')          AS rule_group_arn,
-        source_ip_address,
-        error_code
-    FROM cloudtrail_events
-    WHERE (
-        event_source = 'network-firewall.amazonaws.com'
-        AND event_name IN (
-            'DeleteFirewall',       'DeleteFirewallPolicy',
-            'DeleteRuleGroup',      'DisassociateSubnets',
-            'UpdateFirewallPolicy', 'UpdateRuleGroup'
-        )
-      ) OR (
-        event_source = 'shield.amazonaws.com'
-        AND event_name IN (
-            'DeleteProtection',          'DisableProactiveEngagement',
-            'DeleteSubscription',        'DisassociateDRTLogBucket',
-            'DisassociateDRTRole'
-        )
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -4958,38 +4733,6 @@
           'CreateDeployment',   'UpdateAccount',
           'CreateUsagePlan',    'DeleteUsagePlan'
       )
-    ORDER BY event_time DESC
-    LIMIT 100
-
-- category: "\U0001f310 Network & Infrastructure"
-  label: "\U0001f6a7 VPC Endpoint Access Denied"
-  description: "Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy."
-  severity: "P4"
-  techniques:
-    - tid: "T1059.009"
-      name: "Command and Scripting Interpreter: Cloud API"
-      summary: "Adversaries drive the attack through direct AWS API calls and tooling such as Pacu."
-      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1059.009.html"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Find access denied errors that occurred via VPC endpoints. These may
-    indicate misconfigured VPC endpoint policies or unauthorized access attempts.
-    Show the VPC endpoint ID, service, caller, and error details.
-  sql: |
-    SELECT
-        event_time,
-        event_name,
-        event_source,
-        user_identity_arn,
-        source_ip_address,
-        error_code,
-        error_message,
-        vpc_endpoint_id
-    FROM cloudtrail_events
-    WHERE error_code IN ('AccessDenied', 'AccessDeniedException')
-      AND vpc_endpoint_id IS NOT NULL
     ORDER BY event_time DESC
     LIMIT 100
 
@@ -5581,6 +5324,7 @@
         )                                                         AS default_action,
         json_extract_string(request_parameters, '$.protectionId') AS protection_id,
         json_extract_string(request_parameters, '$.id')           AS distribution_id,
+        json_extract_string(request_parameters, '$.firewallName') AS firewall_name,
         source_ip_address,
         aws_region,
         error_code
@@ -5592,8 +5336,22 @@
         'DeleteProtection',        'DeleteProtectionGroup',
         'DisableProactiveEngagement',
         'DisassociateDRTRole',     'DisassociateDRTLogBucket',
-        'UpdateDistribution',      'UpdateStage'
+        'UpdateDistribution',      'UpdateStage',
+        -- Network Firewall: deleting the firewall, its policy or its subnet
+        -- associations removes the network-layer defence outright, which is
+        -- the same weakening this hunt reports for WAF and Shield.
+        'DeleteFirewall',          'DeleteFirewallPolicy',
+        'UpdateFirewallPolicy',    'DisassociateSubnets',
+        'DeleteSubscription'
     )
+      -- 'DeleteSubscription' and 'DeleteRuleGroup' are not unique to the edge
+      -- services, so the sources these events may come from are pinned.
+      AND event_source IN (
+          'wafv2.amazonaws.com',            'waf.amazonaws.com',
+          'waf-regional.amazonaws.com',     'shield.amazonaws.com',
+          'cloudfront.amazonaws.com',       'apigateway.amazonaws.com',
+          'network-firewall.amazonaws.com'
+      )
     ORDER BY event_time DESC
     LIMIT 200
 
@@ -5698,7 +5456,7 @@
       - distinct_regions
   prompt: |
     Identify user identities (user_identity_arn) that performed write operations
-    (read_only = false) in 3 or more distinct aws_region values within the
+    (read_only IS NOT TRUE) in 3 or more distinct aws_region values within the
     same day. Unusual geographic spread may indicate compromised credentials
     being used from multiple attacker locations.
   sql: |
@@ -5708,7 +5466,7 @@
         COUNT(DISTINCT aws_region)     AS distinct_regions,
         array_agg(DISTINCT aws_region) AS regions
     FROM cloudtrail_events
-    WHERE read_only = false
+    WHERE read_only IS NOT TRUE
       AND user_identity_arn IS NOT NULL
     GROUP BY user_identity_arn, CAST(event_time AS DATE)
     HAVING COUNT(DISTINCT aws_region) >= 3
@@ -5724,10 +5482,45 @@
       name: "Command and Scripting Interpreter: Cloud API"
       summary: "Adversaries drive the attack through direct AWS API calls and tooling such as Pacu."
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1059.009.html"
+  chart:
+    type: bar
+    x: event_name
+    y:
+      - call_count
   prompt: |
     Find API calls that appear in the last 24 hours but have never been seen
     before in the entire log dataset. These novel operations may indicate
     attacker reconnaissance or tooling.
+  sql: |
+    -- "Last 24 hours" is the tail of the ingested data, not of the wall clock;
+    -- an API whose first-ever appearance falls in that tail is novel.
+    WITH dataset_bounds AS (
+        SELECT MAX(event_time) AS max_time FROM cloudtrail_events
+    ),
+    api_first_seen AS (
+        SELECT
+            event_source,
+            event_name,
+            MIN(event_time)                   AS first_seen,
+            MAX(event_time)                   AS last_seen,
+            COUNT(*)                          AS call_count,
+            COUNT(DISTINCT user_identity_arn) AS distinct_callers,
+            COUNT(DISTINCT source_ip_address) AS distinct_source_ips
+        FROM cloudtrail_events
+        GROUP BY event_source, event_name
+    )
+    SELECT
+        a.event_name,
+        a.event_source,
+        a.first_seen,
+        a.last_seen,
+        a.call_count,
+        a.distinct_callers,
+        a.distinct_source_ips
+    FROM api_first_seen a, dataset_bounds b
+    WHERE a.first_seen >= b.max_time - INTERVAL 24 HOUR
+    ORDER BY a.call_count DESC
+    LIMIT 100
 
 - category: "🕵 Threat Patterns"
   label: "🗺 First-Seen Region Activity"
@@ -5976,7 +5769,7 @@
 
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f319 Off-Hours Activity"
-  description: "Groups activity by principal and hour of day inside a configurable out-of-hours window. The first indicator the upstream insider-threat playbook lists, and one no other hunt covers."
+  description: "Groups activity by principal and hour of day inside the 22:00-06:00 UTC night window. The first indicator the upstream insider-threat playbook lists, and one no other hunt covers. Shift the two hour bounds if your team's working day is not centred on UTC."
   severity: "P3"
   playbook:
     name: "IRP-InsiderThreat"
@@ -5993,11 +5786,10 @@
       - calls
   prompt: |
     Report activity that falls outside business hours, grouped by principal and
-    hour of day. The SQL uses 15:00–23:00 UTC, which is roughly midnight to 08:00
-    in JST — adjust the two hour bounds for the timezone the team actually works
-    in. Show the call count, how many of those were writes, the distinct APIs and
-    source IPs. Legitimate automation is steady across every night; a person is
-    not.
+    hour of day. The SQL uses the 22:00–06:00 UTC night window; shift the two
+    hour bounds if the team works in a timezone far from UTC. Show the call
+    count, how many of those were writes, the distinct APIs and source IPs.
+    Legitimate automation is steady across every night; a person is not.
   sql: |
     SELECT
         user_identity_arn,
@@ -6010,8 +5802,12 @@
         MAX(event_time)                                 AS last_seen
     FROM cloudtrail_events
     WHERE user_identity_arn IS NOT NULL
-      AND EXTRACT(hour FROM event_time) >= 15
-      AND EXTRACT(hour FROM event_time) <  23
+      -- 22:00-06:00 UTC. The window wraps midnight, so the two bounds are
+      -- ORed rather than ANDed.
+      AND (
+          EXTRACT(hour FROM event_time) >= 22
+          OR EXTRACT(hour FROM event_time) < 6
+      )
     GROUP BY user_identity_arn, event_hour_utc
     ORDER BY calls DESC
     LIMIT 100
@@ -6042,13 +5838,16 @@
         event_name,
         aws_region,
         source_ip_address,
-        user_agent
+        user_agent,
+        session_credential_from_console
     FROM cloudtrail_events
-    WHERE read_only = false
+    WHERE read_only IS NOT TRUE
       AND (
-          -- session_credential_from_console is not a standard CloudTrail column.
-          -- Detect console-originated calls via additionalEventData or user_agent instead.
-          json_extract_string(additional_event_data, '$.credentialId') IS NOT NULL
+          -- CloudTrail's own sessionCredentialFromConsole flag, ingested into
+          -- its own column, is authoritative where the record carries it.
+          lower(session_credential_from_console) = 'true'
+          -- Older records omit the flag, so keep the heuristics as a fallback.
+          OR json_extract_string(additional_event_data, '$.credentialId') IS NOT NULL
           OR user_agent LIKE '%console.aws.amazon.com%'
           OR user_agent LIKE '%signin.amazonaws.com%'
       )
@@ -6077,9 +5876,12 @@
         user_agent,
         error_code,
         error_message
-    FROM cloudtrail_events
+    FROM cloudtrail_events, (
+        -- "Last 24 hours" of the ingested data, not of the wall clock.
+        SELECT MAX(event_time) AS max_time FROM cloudtrail_events
+    ) b
     WHERE error_code IS NOT NULL
-      AND event_time >= NOW() - INTERVAL '24 hours'
+      AND event_time >= b.max_time - INTERVAL 24 HOUR
     ORDER BY event_time DESC
     LIMIT 200
 
@@ -6087,54 +5889,47 @@
   label: "\u274c Error Spike Detection"
   description: "Finds 1-hour windows where error count exceeds the daily average by 3x. Signals scanning or outage."
   severity: "P3"
+  chart:
+    type: timeseries
+    bucket: hour
   prompt: |
     Find time windows (1-hour buckets) where the total number of API errors
     (error_code IS NOT NULL) exceeds the daily average by 3x or more.
     Show the time bucket, error count, top error codes, and the user
     identities generating the most errors.
+  sql: |
+    -- The baseline is each day's own mean hourly error count, so a quiet
+    -- account and a busy one are both measured against themselves.
+    WITH hourly AS (
+        SELECT
+            DATE_TRUNC('hour', event_time)                    AS hour_bucket,
+            CAST(event_time AS DATE)                          AS activity_date,
+            COUNT(*)                                          AS error_count,
+            COUNT(DISTINCT user_identity_arn)                 AS distinct_callers,
+            COUNT(DISTINCT source_ip_address)                 AS distinct_source_ips,
+            array_agg(DISTINCT error_code ORDER BY error_code)[:5] AS sample_error_codes
+        FROM cloudtrail_events
+        WHERE error_code IS NOT NULL
+        GROUP BY hour_bucket, activity_date
+    )
+    SELECT
+        hour_bucket,
+        error_count,
+        distinct_callers,
+        distinct_source_ips,
+        sample_error_codes,
+        ROUND(AVG(error_count) OVER (PARTITION BY activity_date), 1) AS avg_hourly_errors,
+        ROUND(
+            error_count / NULLIF(AVG(error_count) OVER (PARTITION BY activity_date), 0), 2
+        )                                                            AS times_baseline
+    FROM hourly
+    QUALIFY error_count >= 3 * AVG(error_count) OVER (PARTITION BY activity_date)
+    ORDER BY times_baseline DESC, error_count DESC
+    LIMIT 100
 
 # ===========================================================================
 # GeoIP Analysis
 # ===========================================================================
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f5fa Console Logins by Country"
-  description: "Maps console login events to their geographic origin. Logins from unexpected countries are high-risk."
-  severity: "P3"
-  playbook:
-    name: "IRP-CredCompromise"
-    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
-  chart:
-    type: timeseries
-    bucket: day
-  prompt: |
-    Show all console login events with their GeoIP information, including
-    the newer OAuth2-based sign-in flow (CreateOAuth2Token /
-    AuthorizeOAuth2Access) some accounts emit instead of ConsoleLogin.
-    Group by country and show success/failure counts. Console logins
-    from unexpected countries are a critical indicator of compromise.
-  sql: |
-    SELECT
-        geo_country_code,
-        geo_country_name,
-        geo_city,
-        source_ip_address,
-        user_identity_arn,
-        CASE
-            WHEN json_extract_string(response_elements, '$.ConsoleLogin') IS NOT NULL
-                THEN json_extract_string(response_elements, '$.ConsoleLogin')
-            WHEN json_extract_string(additional_event_data, '$.success') IS NOT NULL
-                THEN json_extract_string(additional_event_data, '$.success')
-            ELSE NULL
-        END AS login_result,
-        event_time,
-        error_code
-    FROM cloudtrail_events
-    WHERE event_source = 'signin.amazonaws.com'
-      AND event_name IN ('ConsoleLogin', 'CreateOAuth2Token', 'AuthorizeOAuth2Access')
-      AND geo_country_code IS NOT NULL
-    ORDER BY event_time DESC
-    LIMIT 100
 
 - category: "\U0001f30d GeoIP Analysis"
   label: "\U0001f6a8 Unusual Country Access"
@@ -6199,212 +5994,6 @@
     GROUP BY geo_country_code, geo_country_name
     ORDER BY denied_count DESC
     LIMIT 20
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f50d Write Events by Country"
-  description: "Shows mutating (write) API calls grouped by country. Writes from unexpected countries are high-priority."
-  severity: "P3"
-  chart:
-    type: bar
-    x: geo_country_name
-    y:
-      - write_events
-      - unique_callers
-  prompt: |
-    Show all write (mutating) API calls grouped by source country.
-    Writes from unexpected countries are a stronger signal than reads.
-    Include event counts, unique callers, and top event names per country.
-  sql: |
-    SELECT
-        geo_country_code,
-        geo_country_name,
-        COUNT(*)                            AS write_events,
-        COUNT(DISTINCT user_identity_arn)   AS unique_callers,
-        COUNT(DISTINCT event_name)          AS distinct_apis,
-        array_agg(DISTINCT event_name ORDER BY event_name)[:5] AS sample_apis
-    FROM cloudtrail_events
-    WHERE read_only = false
-      AND geo_country_code IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY geo_country_code, geo_country_name
-    ORDER BY write_events DESC
-    LIMIT 20
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f30d Top Source Countries"
-  description: "Ranks source countries by API call volume. Identifies the geographic distribution of all activity."
-  severity: "P4"
-  chart:
-    type: bar
-    x: geo_country_name
-    y:
-      - event_count
-      - write_events
-  prompt: |
-    Rank source countries by API call volume using the geo_country_code and
-    geo_country_name columns. Show event count and unique IP count per country.
-    Exclude private/loopback/link-local IPs.
-  sql: |
-    SELECT
-        geo_country_code,
-        geo_country_name,
-        COUNT(*)                            AS event_count,
-        COUNT(DISTINCT source_ip_address)   AS unique_ips,
-        COUNT(DISTINCT user_identity_arn)   AS unique_identities,
-        COUNT(*) FILTER (WHERE read_only = false) AS write_events
-    FROM cloudtrail_events
-    WHERE geo_country_code IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY geo_country_code, geo_country_name
-    ORDER BY event_count DESC
-    LIMIT 20
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f3e2 Top ASN / Organizations"
-  description: "Lists autonomous systems (ISPs/cloud providers) by API call volume. Spot VPN/hosting providers."
-  severity: "P4"
-  chart:
-    type: bar
-    x: geo_org
-    y:
-      - event_count
-  prompt: |
-    Show the top ASN organizations making API calls. Cloud provider ASNs
-    (AWS, GCP, Azure) are expected, but VPN/hosting providers may indicate
-    attacker infrastructure.
-  sql: |
-    SELECT
-        geo_asn,
-        geo_org,
-        geo_country_code,
-        COUNT(*)                            AS event_count,
-        COUNT(DISTINCT source_ip_address)   AS unique_ips,
-        COUNT(DISTINCT user_identity_arn)   AS unique_identities
-    FROM cloudtrail_events
-    WHERE geo_asn IS NOT NULL
-    GROUP BY geo_asn, geo_org, geo_country_code
-    ORDER BY event_count DESC
-    LIMIT 30
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f4cd Top Source Cities"
-  description: "Ranks source cities by event volume. Pinpoints the most active geographic origins."
-  severity: "P4"
-  chart:
-    type: bar
-    x: geo_city
-    y:
-      - event_count
-  prompt: |
-    Rank source cities by API call volume. Show country, city, event count,
-    and unique IPs. City-level data can help identify specific attacker
-    infrastructure or corporate office locations.
-  sql: |
-    SELECT
-        geo_country_code,
-        geo_city,
-        COUNT(*)                            AS event_count,
-        COUNT(DISTINCT source_ip_address)   AS unique_ips,
-        COUNT(DISTINCT user_identity_arn)   AS unique_callers
-    FROM cloudtrail_events
-    WHERE geo_city IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY geo_country_code, geo_city
-    ORDER BY event_count DESC
-    LIMIT 30
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f4cb API Calls by Country (Event Name)"
-  description: "Shows which API operations are called from each country. Write events from unexpected countries indicate credential compromise."
-  severity: "P4"
-  chart:
-    type: bar
-    x: geo_country_name
-    y:
-      - event_count
-      - write_count
-  prompt: |
-    Show the top (event_name, country) pairs by API call volume.
-    Include write event count and unique caller count per pair.
-    Focus on write operations from countries not normally associated
-    with the organisation's operations — these are high-confidence
-    indicators of credential compromise.
-  sql: |
-    SELECT
-        event_name,
-        geo_country_name,
-        geo_country_code,
-        COUNT(*)                            AS event_count,
-        COUNT(CASE WHEN read_only = false THEN 1 END) AS write_count,
-        COUNT(DISTINCT user_identity_arn)   AS unique_callers
-    FROM cloudtrail_events
-    WHERE geo_country_code IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY event_name, geo_country_name, geo_country_code
-    ORDER BY event_count DESC
-    LIMIT 50
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f464 Identities by Country (user_identity_arn)"
-  description: "Shows which IAM identities are active from each country. An identity appearing from a new country is a high-confidence compromise indicator."
-  severity: "P4"
-  chart:
-    type: bar
-    x: geo_country_name
-    y:
-      - event_count
-      - write_count
-  prompt: |
-    Show the top (user_identity_arn, country) pairs by API call volume.
-    Include write event count and distinct API count per pair.
-    An IAM identity that suddenly appears from a foreign country —
-    especially performing write operations — is a strong signal of
-    compromised credentials or unauthorised access.
-  sql: |
-    SELECT
-        user_identity_arn,
-        geo_country_name,
-        geo_country_code,
-        COUNT(*)                            AS event_count,
-        COUNT(CASE WHEN read_only = false THEN 1 END) AS write_count,
-        COUNT(DISTINCT event_name)          AS distinct_apis,
-        MIN(event_time)                     AS first_seen,
-        MAX(event_time)                     AS last_seen
-    FROM cloudtrail_events
-    WHERE geo_country_code IS NOT NULL
-      AND geo_country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY user_identity_arn, geo_country_name, geo_country_code
-    ORDER BY event_count DESC
-    LIMIT 50
-
-- category: "\U0001f30d GeoIP Analysis"
-  label: "\U0001f310 Private / Internal IP Summary"
-  description: "Summarizes events from private, loopback, and AWS-internal IPs. Baseline for expected internal traffic."
-  severity: "P4"
-  chart:
-    type: bar
-    x: ip_type
-    y:
-      - event_count
-  prompt: |
-    Summarize events originating from private IPs, loopback, and link-local
-    addresses. These represent internal AWS traffic and should dominate
-    the baseline. Show breakdown by IP type marker and top callers.
-  sql: |
-    SELECT
-        geo_country_code                    AS ip_type,
-        COUNT(*)                            AS event_count,
-        COUNT(DISTINCT source_ip_address)   AS unique_ips,
-        COUNT(DISTINCT user_identity_arn)   AS unique_identities,
-        COUNT(DISTINCT event_name)          AS distinct_apis
-    FROM cloudtrail_events
-    WHERE geo_country_code IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
-    GROUP BY geo_country_code
-    ORDER BY event_count DESC
-
-# ===========================================================================
-# IaC & Platform
-# ===========================================================================
 
 - category: "\u2601 IaC & Platform"
   label: "\U0001f6e0 CodeBuild / CodePipeline Supply Chain Attack"

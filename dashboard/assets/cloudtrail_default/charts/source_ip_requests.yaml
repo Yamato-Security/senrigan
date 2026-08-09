@@ -38,7 +38,7 @@ cache_timeout: null
 #     source_ip_address,
 #     COUNT(*)                                      AS request_count,
 #     COUNT(DISTINCT user_identity_arn)             AS unique_identities,
-#     COUNT(CASE WHEN read_only = false THEN 1 END) AS write_requests
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE) AS write_requests
 # FROM cloudtrail_events
 # WHERE source_ip_address IS NOT NULL
 #   AND source_ip_address NOT LIKE '%.amazonaws.com'

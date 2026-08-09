@@ -8,7 +8,7 @@ dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
 slice_name: Off-Hours Write Activity (Hour x Day)
 viz_type: heatmap
 description: >
-  Write-event counts as a heatmap of hour-of-day by day-of-week in JST
+  Write-event counts as a heatmap of hour-of-day by day-of-week in UTC
   (IRP-InsiderThreat). The existing login heatmap covers ConsoleLogin only;
   this one covers every mutating call, which is where bulk off-hours access
   actually shows up. MITRE ATT&CK: TA0009 Collection.
@@ -18,15 +18,15 @@ params:
     expressionType: SQL
     sqlExpression: >-
       LPAD(
-        CAST(EXTRACT(HOUR FROM event_time AT TIME ZONE 'Asia/Tokyo') AS VARCHAR),
+        CAST(EXTRACT(HOUR FROM event_time) AS VARCHAR),
         2, '0'
       )
-    label: hour_jst
+    label: hour_utc
     hasCustomLabel: true
   groupby:
     - expressionType: SQL
       sqlExpression: >-
-        CASE EXTRACT(DOW FROM (event_time AT TIME ZONE 'Asia/Tokyo'))
+        CASE EXTRACT(DOW FROM (event_time))
           WHEN 0 THEN '0_Sun'
           WHEN 1 THEN '1_Mon'
           WHEN 2 THEN '2_Tue'

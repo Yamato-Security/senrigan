@@ -26,7 +26,6 @@ import yaml
 YAML_PATH = pathlib.Path(__file__).parent.parent / "builtin_hunts.yaml"
 
 CONSOLE_LOGINS_LABEL = "\U0001f310 Console Logins"
-CONSOLE_LOGINS_BY_COUNTRY_LABEL = "\U0001f5fa Console Logins by Country"
 
 
 def _load_hunts() -> list[dict[str, Any]]:
@@ -76,7 +75,8 @@ def oauth2_login_db(tmp_path: pathlib.Path) -> str:
             recipient_account_id     VARCHAR,
             geo_country_code         VARCHAR,
             geo_country_name         VARCHAR,
-            geo_city                 VARCHAR
+            geo_city                 VARCHAR,
+            geo_org                  VARCHAR
         )
     """)
     conn.execute("""
@@ -110,11 +110,8 @@ def test_console_logins_detects_oauth2_token_events(oauth2_login_db: str):
     assert all(
         r["login_result"] == "true" for r in rows
     ), f"login_result should be extracted from additional_event_data.success. Got: {rows}"
-
-
-def test_console_logins_by_country_detects_oauth2_token_events(
-    oauth2_login_db: str,
-):
-    sql = get_builtin_sql(CONSOLE_LOGINS_BY_COUNTRY_LABEL)
-    rows = _run_sql(oauth2_login_db, sql)
-    assert len(rows) >= 2, f"Expected OAuth2 sign-ins by country, got: {rows}"
+    # The retired "Console Logins by Country" hunt folded into this one, so
+    # the geographic origin has to arrive with every login row.
+    assert all(
+        (r["geo_country_code"], r["geo_city"]) == ("JP", "Tokyo") for r in rows
+    ), f"geo origin lost when the by-country hunt was folded in. Got: {rows}"

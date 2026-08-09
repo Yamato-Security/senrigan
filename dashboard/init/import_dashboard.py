@@ -141,6 +141,53 @@ def main() -> None:
         app_ctx.pop()
 
 
+# UUIDs of charts that have been intentionally removed from a dashboard.
+#
+# Superset keeps a Slice object once it has been imported, so dropping a chart
+# from the ZIP is not enough to make it disappear — it lingers in the Charts
+# list and on any dashboard that positioned it. Every retirement is listed here
+# and deleted explicitly by _remove_retired_charts().
+#
+# For charts on the Rare Events dashboard, add the DERIVED uuid produced by
+# assets/rebuild_rare_zip.derive_uuid(), not the source chart's uuid.
+RETIRED_UUIDS = {
+    "e3f4a5b6-c7d8-9012-cdef-012345678901",  # DSH-10: AWS Service Breakdown (removed)
+    "41c3d4e5-f6a7-8901-cdef-012345678941",  # HRM-41: High-Risk API by Attack Category (removed)
+    # --- Rare Events: charts with no bottom-N reading, no longer mirrored ----
+    # A KPI total, a time series, a world map and a heatmap render identically
+    # in both dashboards, so the "(Rare)" copies said nothing the default
+    # dashboard did not already say. See rebuild_rare_zip.has_rare_variant().
+    "fde06b2a-72b2-5ad3-a781-7da35e9a415c",  # API Calls Without MFA (Rare)
+    "9a4e7bc6-8c34-5912-95b3-6ce2094521cb",  # Access Denied Events (Rare)
+    "860bd6c6-564e-56b4-9886-650eb691d5a5",  # Active Regions (Rare)
+    "a8267004-9637-505d-98d1-eb7dfe47e647",  # CloudTrail Events Over Time (Rare)
+    "54de5ec0-b14c-5d5b-873b-cdc4d403095c",  # CloudTrail Logging Gap (Rare)
+    "3893b266-9c6b-5628-8fa3-af21960d1058",  # Defense-Evasion Hits (Rare)
+    "73d9cf2c-dc6e-5d69-820e-6bdc6fca8d94",  # Distinct Countries (Rare)
+    "b0294c56-e20d-5261-9bc3-b1488e4255d6",  # Distinct Principals (Rare)
+    "8a8bc3f0-f8f8-5c44-9d8d-74d372e8f6cc",  # Distinct Source IPs (Rare)
+    "3665ff1e-06e0-58f5-be21-3b557fdf463e",  # Error-Code Composition Over Time (Rare)
+    "256450f1-9e2c-53b5-83a7-f327bd2e70b4",  # Global Request Origin Map (Rare)
+    "e69c7d03-b717-502b-8f00-d95b29611fa4",  # Login Activity Heatmap (Rare)
+    "cb107f9a-284a-575a-b3d7-57e249a115b5",  # MFA-less Console Logins (Rare)
+    "ecdeebc1-eebd-56db-b6a2-2c752788af0f",  # MFA-less Login Trend (Rare)
+    "e8e8a6dc-a62b-5348-8304-fbec0b48d8ef",  # New IAM Principal Creation Timeline (Rare)
+    "5fcd2af4-8665-56a0-839b-8635e4fadb7e",  # Off-Hours Write Activity (Rare)
+    "60cefcf8-337f-5d4f-89b8-c722d1519def",  # P1 Escalation Triggers (Rare)
+    "4879a966-06fc-5ef8-9f9c-46b465e8f1f5",  # P2 Escalation Triggers (Rare)
+    "a2f284d5-08d9-5623-bf33-106a9b99fcce",  # Root Account Events (Rare)
+    "e15a7b4f-735f-5f94-ac3f-a3fc26f5730f",  # RunInstances Spike by Region (Rare)
+    "029d2581-9a5a-5dc5-95d0-10acbab7beb5",  # Total Events (Rare)
+    "1d0fa8b8-d864-56ed-b6d5-3d42b5113b33",  # Write/Read Ratio Trend (Rare)
+    # --- Suzaku Timeline: charts folded into a richer neighbour --------------
+    # SZK-12 grouped a strict subset of SZK-56's columns with the same metric
+    # and viz; SZK-46 differed from SZK-09 only by a time grain the viewer can
+    # change on the chart itself.
+    "5a021006-0000-4000-8000-000000000012",  # SZK-12: Detection Timeline
+    "5a021006-0000-4000-8000-000000000046",  # SZK-46: Daily Severity Trend
+}
+
+
 def _remove_retired_charts() -> None:
     """Delete charts that have been retired from the dashboard ZIP.
 
@@ -148,18 +195,10 @@ def _remove_retired_charts() -> None:
     in its database.  This function explicitly deletes charts by UUID so
     they no longer appear in the Charts list or on the dashboard.
 
-    Add UUIDs here whenever a chart YAML is intentionally removed.
-    For charts on the Rare Events dashboard, add the DERIVED uuid produced
-    by assets/rebuild_rare_zip.py, not the source chart's uuid.
+    Add UUIDs to RETIRED_UUIDS whenever a chart YAML is intentionally removed.
     """
     from superset.extensions import db  # noqa: PLC0415
     from superset.models.slice import Slice  # noqa: PLC0415
-
-    # UUIDs of charts that have been intentionally removed from the dashboard.
-    RETIRED_UUIDS = {
-        "e3f4a5b6-c7d8-9012-cdef-012345678901",  # DSH-10: AWS Service Breakdown (removed)
-        "41c3d4e5-f6a7-8901-cdef-012345678941",  # HRM-41: High-Risk API by Attack Category (removed)
-    }
 
     removed = 0
     for uuid in RETIRED_UUIDS:

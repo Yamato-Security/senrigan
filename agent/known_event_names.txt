@@ -33,7 +33,6 @@ AssociateAddress
 AssociateAlias
 AssociateIamInstanceProfile
 AssociateRouteTable
-AssociateTeamMember
 AssociateWebACL
 AssumeRole
 AssumeRoleWithSAML
@@ -75,7 +74,6 @@ CreateAccessEntry
 CreateAccessKey
 CreateAccount
 CreateAccountAssignment
-CreateActivity
 CreateAddon
 CreateAnomalyMonitor
 CreateAnomalySubscription
@@ -193,7 +191,6 @@ Decrypt
 DeleteAccessEntry
 DeleteAccessKey
 DeleteAccountAssignment
-DeleteActivity
 DeleteAddon
 DeleteAlarms
 DeleteAnomalyMonitor
@@ -297,7 +294,6 @@ DeleteSecurityGroup
 DeleteService
 DeleteSnapshot
 DeleteStack
-DeleteStateMachine
 DeleteSubnet
 DeleteSubscription
 DeleteSubscriptionFilter
@@ -343,7 +339,6 @@ DisassociateKmsKey
 DisassociateRecoveryPoint
 DisassociateRouteTable
 DisassociateSubnets
-DisassociateTeamMember
 DisassociateWebACL
 DownloadDBLogFilePortion
 DownloadDefaultKeyPair
@@ -533,7 +528,6 @@ SetTopicAttributes
 SplitShard
 StartAutomationExecution
 StartBuild
-StartExecution
 StartInstances
 StartLogging
 StartNotebookInstance
@@ -542,7 +536,6 @@ StartSession
 StartSnapshot
 StartTask
 StopConfigurationRecorder
-StopExecution
 StopInstances
 StopLogging
 StopNotebookInstance
@@ -608,7 +601,6 @@ UpdateStack
 UpdateStage
 UpdateStandardsControl
 UpdateStateMachine
-UpdateTeamMember
 UpdateTraceSegmentDestination
 UpdateTrail
 UpdateUser

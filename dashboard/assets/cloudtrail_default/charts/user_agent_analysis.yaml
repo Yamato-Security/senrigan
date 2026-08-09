@@ -19,7 +19,7 @@ params:
       hasCustomLabel: true
       optionName: metric_request_count
     - expressionType: SQL
-      sqlExpression: "COUNT(CASE WHEN read_only = false THEN 1 END)"
+      sqlExpression: "COUNT(*) FILTER (WHERE read_only IS NOT TRUE)"
       label: write_requests
       hasCustomLabel: true
       optionName: metric_write_requests
@@ -46,7 +46,7 @@ cache_timeout: null
 # SELECT
 #     COALESCE(user_agent, 'N/A')                         AS user_agent,
 #     COUNT(*)                                             AS request_count,
-#     COUNT(CASE WHEN read_only = false THEN 1 END)        AS write_requests,
+#     COUNT(*) FILTER (WHERE read_only IS NOT TRUE)        AS write_requests,
 #     COUNT(CASE WHEN error_code IS NOT NULL THEN 1 END)   AS error_requests,
 #     COUNT(DISTINCT user_identity_arn)                    AS unique_identities
 # FROM cloudtrail_events

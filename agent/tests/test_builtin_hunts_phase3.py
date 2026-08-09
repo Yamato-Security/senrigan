@@ -453,14 +453,23 @@ def test_g25_org_detects_create_account(phase3_db: str):
     assert "CreateAccount" in names, f"CreateAccount not detected. Got: {names}"
 
 
-def test_g25_org_detects_register_delegated_admin(phase3_db: str):
-    """G-25: SQL must detect RegisterDelegatedAdministrator."""
+def test_g25_org_leaves_delegated_admin_to_the_p1_hunt(phase3_db: str):
+    """G-25: delegated-administrator events belong to one hunt, not two.
+
+    "Delegated Administrator Registration" is P1 and playbook-graded CRITICAL;
+    this hunt reporting the same event again would raise one action as two
+    findings during triage.
+    """
     sql = get_builtin_sql("\U0001f4f0 AWS Organizations Account Creation")
     rows = _run_sql(phase3_db, sql)
     names = [r["event_name"] for r in rows]
-    assert (
-        "RegisterDelegatedAdministrator" in names
-    ), f"RegisterDelegatedAdministrator not detected. Got: {names}"
+    assert "CreateAccount" in names
+    assert "RegisterDelegatedAdministrator" not in names
+
+    owner = _run_sql(
+        phase3_db, get_builtin_sql("\U0001f451 Delegated Administrator Registration")
+    )
+    assert "RegisterDelegatedAdministrator" in [r["event_name"] for r in owner]
 
 
 # ---------------------------------------------------------------------------

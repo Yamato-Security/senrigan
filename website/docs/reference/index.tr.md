@@ -2,25 +2,25 @@
 
 > 💡 SQL veya derin AWS bilgisi gerekmez — açılır menüden bir av seçin ve sonuçları anında alın.
 
-## 🎯 Yerleşik Avlar — 151 sorgu
+## 🎯 Yerleşik Avlar — 136 sorgu
 
 Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit aracı kurcalamasını, ardından kimlik istismarını, sonra veri etkisini kontrol edin.
 
 | Kategori | Sorgu Sayısı | Kapsanan Başlıca Tehditler |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma · fidye yazılımı saldırı zinciri korelasyonu |
-| 🔑 Identity & Access | 44 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma · rol zincirleme · oturum kimlik bilgisi izleme · GetCallerIdentity keşfi · federe konsol oturum açmaları · Identity Center izin kümeleri ve yetkilendirilmiş yönetici · rol zincirleme · oturum kimlik bilgisi izleme · MFA'sız API çağrıları · federe oturum açmalar · Identity Center izin kümeleri |
+| 🔑 Identity & Access | 36 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma · rol zincirleme · oturum kimlik bilgisi izleme · GetCallerIdentity keşfi · federe konsol oturum açmaları · Identity Center izin kümeleri ve yetkilendirilmiş yönetici · MFA'sız API çağrıları |
 | 🪣 Data & Storage | 30 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme · fidye notu yerleştirme · ihlal bildirimi kapsam belirleme · hesaplar arası nesne kopyalama · önceden imzalanmış URL üretimi |
 | ⚡ Compute & Serverless | 17 | EC2 toplu durdurma/sonlandırma · SSM yanal hareket · Lambda/ECS/EKS/ECR kurcalama · EventBridge kalıcılığı · kripto madenciliği · Lightsail istismarı · IMDS/SSRF zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
-| 🤖 AI & LLM Abuse | 11 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · çağıran/köken envanteri (LLMjacking) · AgentCore token kasası · ağ geçidi yetkilendirme atlatma · bellek bütünlüğü · korumalı alan ağ modu değişikliği · gözlemlenebilirlik kurcalama |
-| 🌐 Network & Infrastructure | 16 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme · DDoS korumasının zayıflatılması |
+| 🤖 AI & LLM Abuse | 10 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · AgentCore token kasası · ağ geçidi yetkilendirme atlatma · bellek bütünlüğü · korumalı alan ağ modu değişikliği · gözlemlenebilirlik kurcalama |
+| 🌐 Network & Infrastructure | 13 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme · DDoS korumasının zayıflatılması |
 | 🕵 Threat Patterns | 10 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği · mesai dışı etkinlik · kendi kendine yetki yükseltme · günlük hacim sapması · kullanılmayan bölgelerde kaynak oluşturma · yüksek hacimli API kullanımı |
 | 📊 Activity & Baseline | 3 | Konsol yazma olayları · hata sıçramaları · son hatalar |
-| 🌍 GeoIP Analysis | 10 | Ülkeye göre konsol oturum açma/red/yazma · nadir ülke erişimi · ülke/ASN/şehir dökümü · event_name × country · identity × country · özel-IP temel çizgisi |
+| 🌍 GeoIP Analysis | 2 | Ülkeye göre konsol oturum açma/red/yazma · nadir ülke erişimi |
 | ☁ IaC & Platform | 2 | CI/CD tedarik zinciri · CloudFormation istismarı |
 
 <details markdown="1">
-<summary>📋 Tam liste — 151 sorgunun tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 136 sorgunun tamamı (genişletmek için tıklayın)</summary>
 
 ## Yerleşik Avlar
 
@@ -57,34 +57,31 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 9 | 👥 IAM Group Membership Changes | timeseries | Grup adından bağımsız olarak tüm AddUserToGroup ve RemoveUserFromGroup olaylarını tespit eder. Herhangi bir grup eklemesi, gruptan devralınan politikalar yoluyla ayrıcalık yükseltmeye işaret edebilir. |
 | 10 | 👤 New IAM Users / Keys | timeseries | IAM kullanıcı ve erişim anahtarı oluşturma olaylarını tanımlar. Beklenmedik oluşturma kalıcılığa işaret edebilir. |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | iam:PassRole çağrılarını tespit eder. Ayrıcalıklı bir rolü EC2/Lambda/Glue/ECS/SageMaker'a geçirmek, en yaygın yanal ayrıcalık yükseltme yoludur. |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | Çağıranın ve hedefin farklı AWS hesaplarında olduğu AssumeRole olaylarını gösterir. Yanal hareketi gösterir. |
-| 13 | 🏢 Cross-Account Access | timeseries | Çağıran hesabın alıcı hesaptan farklı olduğu olayları bulur. Yanal hareket sinyali. |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | GetFederationToken ve GetSessionToken çağrılarını tespit eder. Saldırganlar bunları uzun ömürlü anahtarları kalıcı geçici kimlik bilgilerine dönüştürmek için kullanır. |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | AssumeRoleWithWebIdentity çağrılarını tespit eder. Yanlış yapılandırılmış bir OIDC güveninin istismar edilmesi (örn. aşırı geniş bir sub talebi), saldırganların saldırgan kontrolündeki token'ları kullanarak bir rolü ele geçirmesine olanak tanır. |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center yönetim işlemlerini tespit eder. Saldırganlar SSO'yu, arka kapı izin setleri oluşturmak veya hesapları saldırgan kontrolündeki kullanıcılara atamak için istismar eder. |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC kimlik sağlayıcı değişikliklerini tespit eder. Bir SAML sağlayıcısını saldırgan kontrolündeki meta verilerle güncellemek kalıcı bir kimlik doğrulama arka kapısı oluşturur. |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer'ın herhangi bir kullanımını tespit eder. Saldırganlar, özel keşif betikleri yazmadan harici erişilebilir kaynakları numaralandırmak için AWS'nin yerel analizöründen yararlanır. |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | Tüm IAM ortamını haritalayan IAM numaralandırma etkinliğini tespit eder. Saldırının erken aşamalarında yaygındır. |
-| 20 | 🗝 Access Key Abuse | bar | 7 gün içinde 3 veya daha fazla farklı kaynak IP'den kullanılan erişim anahtarlarını tespit eder. Anahtar sızıntısının güçlü göstergesi. |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | Organizations hesap oluşturma ve delege edilmiş yönetici değişikliklerini tespit eder. Saldırganlar, ana hesabın dışında kalıcı dayanak noktaları oluşturmak için gölge hesaplar oluşturur. |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | Kimlik doğrulamasız erişimin etkin olduğu Cognito Identity Pools'u tespit eder. Anonim kullanıcıların, kimlik doğrulamasız IAM rolünün izinleriyle AWS API'lerini çağırmasına olanak tanır. |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Glue geliştirme uç noktası oluşturmayı ve bağlantı numaralandırmasını tespit eder. iam:PassRole + glue:CreateDevEndpoint, geçirilen rolün tüm izinleriyle SSH üzerinden tam erişim sağlar — en çok göz ardı edilen IAM ayrıcalık yükseltme tekniklerinden biri. |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker notebook örneği oluşturmayı ve önceden imzalanmış URL oluşturmayı tespit eder. iam:PassRole + sagemaker:CreateNotebookInstance, geçirilen rolün tüm AWS izinleriyle bir Jupyter ortamı sağlar. CreatePresignedNotebookInstanceUrl tek başına mevcut bir notebook'a erişim sağlayabilir. |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Data Pipeline ve CodeStar kaynak oluşturmayı tespit eder. Her ikisi de iam:PassRole kabul eder ve geçirilen rolün izinleriyle rastgele kod çalıştırabilir. CodeStar:CreateProjectFromTemplate, bir admin IAM rolü oluşturan belgelenmemiş bir API'dir. |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Step Functions durum makinesi oluşturmayı ve yürütmeyi tespit eder. iam:PassRole + states:CreateStateMachine + states:StartExecution, geçirilen rolün izinleri altında rastgele Lambda / ECS görevlerini çalıştırmaya olanak tanır. |
-| 27 | 🪓 IAM Entity Deletion | timeseries | IAM kullanıcılarının, rollerinin, politikalarının ve MFA cihazlarının silinmesini tespit eder. Saldırganlar, etkinliklerinin izlerini kaldırmak veya savunmacıları dışarıda bırakmak için IAM varlıklarını siler. |
-| 28 | 👑 AssumeRoot Usage | timeseries | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrılarını tespit eder. Ele geçirilmiş bir yönetim hesabı, bu yolla her üye hesabı ele geçirebilir. |
-| 29 | 🎫 Support Case Manipulation | timeseries | AWS Support vaka kapatma ve yorum etkinliğini tespit eder. Saldırganlar, bir ele geçirilme hakkındaki AWS bildirimlerini bastırmak için istismar/destek vakalarını çözer. |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito user pool ve app client değişikliklerini tespit eder: uzatılmış token geçerliliği, yeni client'lar ve admin kullanıcı oluşturma. Saldırganlar bunları uzun ömürlü token'lar üretmek veya arka kapı kullanıcıları oluşturmak için istismar eder. |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Halihazırda üstlenilmiş bir rol oturumunun bir rol daha üstlenmesini tespit eder. Tek tek AssumeRole çağrıları sıradan görünür; zincir ise saldırganın ele geçirilmiş bir örnek rolünden gerçekten istediği izinlere yürüdüğü yoldur. |
-| 32 | 🎫 Session Credential Trace | bar | Her geçici STS oturumunun (ASIA… erişim anahtarı) ne yaptığını özetler: çağrı sayısı, hizmetler, kaynak IP'ler ve zaman aralığı. Her kimlik bilgisi ihlali soruşturmasının başladığı kapsam sorusu. |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | İstenen roleArn içinden hedef hesabı okuyarak hesap sınırı geçişlerini tespit eder; yalnızca çağıran hesabın günlükleri alınmış olsa bile çalışır. |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Rolleri, kimin nereden üstlendiğine göre sıralar. Normalde tek bir hesap tarafından üstlenilen bir rolün aniden ikinci bir çağıran kazanması burada öne çıkar, ham olay listesinde ise kaybolur. |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | GetCallerIdentity çağrılarını principal ve kaynak IP bazında gösterir. Çalınmış kimlik bilgileriyle çalıştırılan ilk komuttur — ve hacim eşiğine dayalı keşif avlarının asla ulaşamadığı tek bir çağrıdır. |
-| 36 | 🪪 Federated Console Logins | timeseries | Harici bir kimlik sağlayıcı üzerinden gelen konsol oturum açmalarını, sağlayıcı adı ve kaynağıyla birlikte listeler. Ele geçirilen bileşen IdP olduğunda AWS yalnızca geçerli bir oturum açma görür. |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center'da izin kümesi oluşturma, politika ekleme ve hesap atamalarını tespit eder — kuruluştaki her hesapta kalıcı yönetici erişimine giden yol. |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center kimlik deposunda doğrudan oluşturulan kullanıcı, grup ve üyelikleri tespit eder — IAM'de hiç görünmeyen, dolayısıyla yalnızca IAM izleyen bir kurulumun kaçırdığı kalıcılık. |
-| 39 | 👑 Delegated Administrator Registration | timeseries | Bir kuruluş hizmeti için yetkilendirilmiş yönetici kaydını tespit eder. Identity Center kılavuzunun CRITICAL olarak derecelendirdiği tek olay: kuruluş genelindeki denetimi başka bir hesaba devreder. |
+| 12 | 🏢 Cross-Account Access | timeseries | Çağıran hesabın alıcı hesaptan farklı olduğu olayları bulur. Yanal hareket sinyali. |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | GetFederationToken ve GetSessionToken çağrılarını tespit eder. Saldırganlar bunları uzun ömürlü anahtarları kalıcı geçici kimlik bilgilerine dönüştürmek için kullanır. |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | AssumeRoleWithWebIdentity çağrılarını tespit eder. Yanlış yapılandırılmış bir OIDC güveninin istismar edilmesi (örn. aşırı geniş bir sub talebi), saldırganların saldırgan kontrolündeki token'ları kullanarak bir rolü ele geçirmesine olanak tanır. |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center yönetim işlemlerini tespit eder. Saldırganlar SSO'yu, arka kapı izin setleri oluşturmak veya hesapları saldırgan kontrolündeki kullanıcılara atamak için istismar eder. |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC kimlik sağlayıcı değişikliklerini tespit eder. Bir SAML sağlayıcısını saldırgan kontrolündeki meta verilerle güncellemek kalıcı bir kimlik doğrulama arka kapısı oluşturur. |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer'ın herhangi bir kullanımını tespit eder. Saldırganlar, özel keşif betikleri yazmadan harici erişilebilir kaynakları numaralandırmak için AWS'nin yerel analizöründen yararlanır. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Tüm IAM ortamını haritalayan IAM numaralandırma etkinliğini tespit eder. Saldırının erken aşamalarında yaygındır. |
+| 19 | 🗝 Access Key Abuse | bar | 7 gün içinde 3 veya daha fazla farklı kaynak IP'den kullanılan erişim anahtarlarını tespit eder. Anahtar sızıntısının güçlü göstergesi. |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations hesap oluşturma ve delege edilmiş yönetici değişikliklerini tespit eder. Saldırganlar, ana hesabın dışında kalıcı dayanak noktaları oluşturmak için gölge hesaplar oluşturur. |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | Kimlik doğrulamasız erişimin etkin olduğu Cognito Identity Pools'u tespit eder. Anonim kullanıcıların, kimlik doğrulamasız IAM rolünün izinleriyle AWS API'lerini çağırmasına olanak tanır. |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Glue geliştirme uç noktası oluşturmayı ve bağlantı numaralandırmasını tespit eder. iam:PassRole + glue:CreateDevEndpoint, geçirilen rolün tüm izinleriyle SSH üzerinden tam erişim sağlar — en çok göz ardı edilen IAM ayrıcalık yükseltme tekniklerinden biri. |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | SageMaker notebook örneği oluşturmayı ve önceden imzalanmış URL oluşturmayı tespit eder. iam:PassRole + sagemaker:CreateNotebookInstance, geçirilen rolün tüm AWS izinleriyle bir Jupyter ortamı sağlar. CreatePresignedNotebookInstanceUrl tek başına mevcut bir notebook'a erişim sağlayabilir. |
+| 24 | 🪓 IAM Entity Deletion | timeseries | IAM kullanıcılarının, rollerinin, politikalarının ve MFA cihazlarının silinmesini tespit eder. Saldırganlar, etkinliklerinin izlerini kaldırmak veya savunmacıları dışarıda bırakmak için IAM varlıklarını siler. |
+| 25 | 👑 AssumeRoot Usage | timeseries | Yönetim hesabından üye hesap root'una yapılan sts:AssumeRoot çağrılarını tespit eder. Ele geçirilmiş bir yönetim hesabı, bu yolla her üye hesabı ele geçirebilir. |
+| 26 | 🎫 Support Case Manipulation | timeseries | AWS Support vaka kapatma ve yorum etkinliğini tespit eder. Saldırganlar, bir ele geçirilme hakkındaki AWS bildirimlerini bastırmak için istismar/destek vakalarını çözer. |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | Cognito user pool ve app client değişikliklerini tespit eder: uzatılmış token geçerliliği, yeni client'lar ve admin kullanıcı oluşturma. Saldırganlar bunları uzun ömürlü token'lar üretmek veya arka kapı kullanıcıları oluşturmak için istismar eder. |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | Halihazırda üstlenilmiş bir rol oturumunun bir rol daha üstlenmesini tespit eder. Tek tek AssumeRole çağrıları sıradan görünür; zincir ise saldırganın ele geçirilmiş bir örnek rolünden gerçekten istediği izinlere yürüdüğü yoldur. |
+| 29 | 🎫 Session Credential Trace | bar | Her geçici STS oturumunun (ASIA… erişim anahtarı) ne yaptığını özetler: çağrı sayısı, hizmetler, kaynak IP'ler ve zaman aralığı. Her kimlik bilgisi ihlali soruşturmasının başladığı kapsam sorusu. |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | İstenen roleArn içinden hedef hesabı okuyarak hesap sınırı geçişlerini tespit eder; yalnızca çağıran hesabın günlükleri alınmış olsa bile çalışır. |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | Rolleri, kimin nereden üstlendiğine göre sıralar. Normalde tek bir hesap tarafından üstlenilen bir rolün aniden ikinci bir çağıran kazanması burada öne çıkar, ham olay listesinde ise kaybolur. |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | GetCallerIdentity çağrılarını principal ve kaynak IP bazında gösterir. Çalınmış kimlik bilgileriyle çalıştırılan ilk komuttur — ve hacim eşiğine dayalı keşif avlarının asla ulaşamadığı tek bir çağrıdır. |
+| 33 | 🪪 Federated Console Logins | timeseries | Harici bir kimlik sağlayıcı üzerinden gelen konsol oturum açmalarını, sağlayıcı adı ve kaynağıyla birlikte listeler. Ele geçirilen bileşen IdP olduğunda AWS yalnızca geçerli bir oturum açma görür. |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | IAM Identity Center'da izin kümesi oluşturma, politika ekleme ve hesap atamalarını tespit eder — kuruluştaki her hesapta kalıcı yönetici erişimine giden yol. |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | Identity Center kimlik deposunda doğrudan oluşturulan kullanıcı, grup ve üyelikleri tespit eder — IAM'de hiç görünmeyen, dolayısıyla yalnızca IAM izleyen bir kurulumun kaçırdığı kalıcılık. |
+| 36 | 👑 Delegated Administrator Registration | timeseries | Bir kuruluş hizmeti için yetkilendirilmiş yönetici kaydını tespit eder. Identity Center kılavuzunun CRITICAL olarak derecelendirdiği tek olay: kuruluş genelindeki denetimi başka bir hesaba devreder. |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | Bedrock model çağrı loglamasının silinmesini veya değiştirilmesini ve saldırganların hesabı istismar etmeden önce loglamanın etkin olup olmadığını kontrol etmesini tespit eder (belgelenmiş bir LLMjacking IOC'si). |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | 2 veya daha fazla bölgede veya bir saatte 10 veya daha fazla numaralandırma çağrısıyla Bedrock modellerini numaralandıran çağıranları tanımlar. Çalınmış anahtar sahipleri, modellerin nerede kullanılabilir olduğunu bulmak için bölgeleri tarar. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Başarısız Bedrock çağrılarının (AccessDenied / ValidationException) patlamalarını bulur. Çalınan anahtar testi, çalışan bir kombinasyon bulunmadan önce modeller ve bölgeler genelinde başarısızlık fırtınaları üretir. |
-| 6 | 🌍 Bedrock Callers & Origins | — | Bedrock'a dokunan her principal'ı, kaynak IP, GeoIP kökeni, kullanıcı aracısı ve model çeşitliliğiyle birlikte envanterler. Bedrock kullanmasının hiçbir mantığı olmayan çağıranı veya kökeni tespit edin. |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore token kasası dağıtımını principal ve kaynak bazında toplar. Bu çağrılar üçüncü taraf OAuth token'ları ve API anahtarları dağıttığı için kötüye kullanım AWS dışındaki hizmetlere kadar uzanır. |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar politika motorunun LOG_ONLY'ye düşürülmesi dahil AgentCore ağ geçidi ve politika değişikliklerini tespit eder. Yalnızca günlüğe yazan bir yetkilendirme yine de başarı döndürür; aşağı akışta hiçbir şey yanlış görünmez. |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | Bellek akışının başka bir hesabın Kinesis ARN'sine yönlendirilmesi dahil AgentCore Memory ve Registry değişikliklerini tespit eder. Zehirlenmiş uzun süreli bellek, ajanın sonraki her oturumunda kalır. |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore kod yorumlayıcı ve tarayıcı yaşam döngüsü olaylarını ağ moduyla birlikte listeler. Mod düzenlenemez, dolayısıyla silip yeniden oluşturmak bir korumalı alanın ağ erişimini genişletmenin tek yoludur. |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore değerlendirici değişikliklerini ve X-Ray örnekleme veya iz hedefi değişikliklerini tespit eder. Saldırganın oluşturduğu bir değerlendirici, puanladığı her yanıtı okuyarak model çıktısını meşru bir kanaldan dışarı taşır. |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | AgentCore token kasası dağıtımını principal ve kaynak bazında toplar. Bu çağrılar üçüncü taraf OAuth token'ları ve API anahtarları dağıttığı için kötüye kullanım AWS dışındaki hizmetlere kadar uzanır. |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Cedar politika motorunun LOG_ONLY'ye düşürülmesi dahil AgentCore ağ geçidi ve politika değişikliklerini tespit eder. Yalnızca günlüğe yazan bir yetkilendirme yine de başarı döndürür; aşağı akışta hiçbir şey yanlış görünmez. |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | Bellek akışının başka bir hesabın Kinesis ARN'sine yönlendirilmesi dahil AgentCore Memory ve Registry değişikliklerini tespit eder. Zehirlenmiş uzun süreli bellek, ajanın sonraki her oturumunda kalır. |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | AgentCore kod yorumlayıcı ve tarayıcı yaşam döngüsü olaylarını ağ moduyla birlikte listeler. Mod düzenlenemez, dolayısıyla silip yeniden oluşturmak bir korumalı alanın ağ erişimini genişletmenin tek yoludur. |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | AgentCore değerlendirici değişikliklerini ve X-Ray örnekleme veya iz hedefi değişikliklerini tespit eder. Saldırganın oluşturduğu bir değerlendirici, puanladığı her yanıtı okuyarak model çıktısını meşru bir kanaldan dışarı taşır. |
 
 ### 🌐 Network & Infrastructure
 
 | # | Etiket | Grafik | Açıklama |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | 0.0.0.0/0'dan gelen trafiğe izin veren security group kurallarını bulur. Doğrudan genel erişim riski. |
-| 2 | 🔥 Security Group Modifications | timeseries | Özellikle herhangi bir portta 0.0.0.0/0'a izin veren kurallar olmak üzere security group kural değişikliklerini tespit eder. |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | VPC Flow Logs'un silinmesini tespit eder. Akış loglarının kaldırılması ağ düzeyindeki kanıtları ortadan kaldırır — kritik bir savunma atlatma göstergesi. |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | CloudFront dağıtımı oluşturmayı ve origin değişikliklerini tespit eder. Origin'leri değiştirmek, MitM müdahalesi veya veri toplama için CDN trafiğini saldırgan kontrolündeki sunuculara yönlendirir. |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Network Firewall ve Shield koruma kaldırmayı tespit eder. Ağ katmanı savunmalarını silmek VPC'leri doğrudan saldırı trafiğine maruz bırakır. |
-| 6 | 🧱 Network ACL Changes | timeseries | Network ACL girişi oluşturma, silme ve değiştirmeyi tespit eder. NACL'ler security group'ları geçersiz kılabilir ve tüm alt ağları saldırganlara açabilir. |
-| 7 | 🛣️ Route Table Changes | timeseries | Route table değişikliklerini tespit eder. Rota ekleme veya değiştirme, trafiği saldırgan kontrolündeki ana bilgisayarlara yönlendirebilir (MitM, trafik ele geçirme). |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Yeni VPN bağlantılarını, Direct Connect'i ve Transit Gateway eklerini tespit eder. Saldırganlar, kalıcı C2 veya veri sızdırma kanalları için gizli ağ tünelleri oluşturur. |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | Elastic IP tahsisini ve ilişkilendirmesini tespit eder. Saldırganlar, kararlı C2 altyapısı oluşturmak için ele geçirilmiş bir örneğe sabit bir genel IP atar. |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | CreateKeyPair ve ImportKeyPair olaylarını tespit eder. Saldırganlar, örnek erişimini sürdürmek için bir kalıcılık mekanizması olarak SSH anahtarları oluşturur veya içe aktarır. |
-| 11 | 📡 Network Infrastructure Changes | timeseries | Saldırgan kontrolündeki altyapıyı oluşturabilecek VPC ve ağ düzeyindeki değişiklikleri tespit eder. |
-| 12 | 🏷 ACM Certificate Operations | timeseries | ACM sertifika isteklerini ve silmelerini tespit eder. Saldırganlar, kimlik avı altyapısı oluşturmak için saldırgan kontrolündeki alanlar için TLS sertifikaları vermek amacıyla ele geçirilmiş hesapları kullanır. |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway anahtar oluşturma ve REST API yönetimini tespit eder. Pacu'nun api_gateway__create_api_keys'i, IAM anahtar rotasyonundan sağ çıkan kalıcı API kimlik bilgileri oluşturur. Saldırganlar ayrıca erişim kontrollerini zayıflatmak için API yetkilendiricilerini değiştirir. |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | VPC endpoint'leri üzerinden erişim reddedildi hatalarını tespit eder. Yanlış yapılandırılmış bir endpoint politikasına işaret edebilir. |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | DNS kaydı düzenlemelerini, barındırılan bölge değişikliklerini ve alan adı kaydını/transferini tespit eder. Saldırganlar trafiği yönlendirir, sarkan alt alan adlarını ele geçirir veya kimlik avı için benzer görünümlü alan adları kaydeder. |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | Uç koruma önlemlerinin kaldırılmak yerine gevşetilmesini tespit eder: bir WebACL varsayılan eyleminin izin vermeye çevrilmesi, kural gruplarının gevşetilmesi, Shield korumalarının silinmesi, CloudFront kaynaklarının yeniden yönlendirilmesi. |
+| 1 | 🔥 Security Group Modifications | timeseries | Özellikle herhangi bir portta 0.0.0.0/0'a izin veren kurallar olmak üzere security group kural değişikliklerini tespit eder. |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | VPC Flow Logs'un silinmesini tespit eder. Akış loglarının kaldırılması ağ düzeyindeki kanıtları ortadan kaldırır — kritik bir savunma atlatma göstergesi. |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | CloudFront dağıtımı oluşturmayı ve origin değişikliklerini tespit eder. Origin'leri değiştirmek, MitM müdahalesi veya veri toplama için CDN trafiğini saldırgan kontrolündeki sunuculara yönlendirir. |
+| 4 | 🧱 Network ACL Changes | timeseries | Network ACL girişi oluşturma, silme ve değiştirmeyi tespit eder. NACL'ler security group'ları geçersiz kılabilir ve tüm alt ağları saldırganlara açabilir. |
+| 5 | 🛣️ Route Table Changes | timeseries | Route table değişikliklerini tespit eder. Rota ekleme veya değiştirme, trafiği saldırgan kontrolündeki ana bilgisayarlara yönlendirebilir (MitM, trafik ele geçirme). |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Yeni VPN bağlantılarını, Direct Connect'i ve Transit Gateway eklerini tespit eder. Saldırganlar, kalıcı C2 veya veri sızdırma kanalları için gizli ağ tünelleri oluşturur. |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | Elastic IP tahsisini ve ilişkilendirmesini tespit eder. Saldırganlar, kararlı C2 altyapısı oluşturmak için ele geçirilmiş bir örneğe sabit bir genel IP atar. |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | CreateKeyPair ve ImportKeyPair olaylarını tespit eder. Saldırganlar, örnek erişimini sürdürmek için bir kalıcılık mekanizması olarak SSH anahtarları oluşturur veya içe aktarır. |
+| 9 | 📡 Network Infrastructure Changes | timeseries | Saldırgan kontrolündeki altyapıyı oluşturabilecek VPC ve ağ düzeyindeki değişiklikleri tespit eder. |
+| 10 | 🏷 ACM Certificate Operations | timeseries | ACM sertifika isteklerini ve silmelerini tespit eder. Saldırganlar, kimlik avı altyapısı oluşturmak için saldırgan kontrolündeki alanlar için TLS sertifikaları vermek amacıyla ele geçirilmiş hesapları kullanır. |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | API Gateway anahtar oluşturma ve REST API yönetimini tespit eder. Pacu'nun api_gateway__create_api_keys'i, IAM anahtar rotasyonundan sağ çıkan kalıcı API kimlik bilgileri oluşturur. Saldırganlar ayrıca erişim kontrollerini zayıflatmak için API yetkilendiricilerini değiştirir. |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | DNS kaydı düzenlemelerini, barındırılan bölge değişikliklerini ve alan adı kaydını/transferini tespit eder. Saldırganlar trafiği yönlendirir, sarkan alt alan adlarını ele geçirir veya kimlik avı için benzer görünümlü alan adları kaydeder. |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | Uç koruma önlemlerinin kaldırılmak yerine gevşetilmesini tespit eder: bir WebACL varsayılan eyleminin izin vermeye çevrilmesi, kural gruplarının gevşetilmesi, Shield korumalarının silinmesi, CloudFront kaynaklarının yeniden yönlendirilmesi. |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 
 | # | Etiket | Grafik | Açıklama |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | Konsol oturum açma olaylarını coğrafi kökenleriyle eşler. Beklenmedik ülkelerden oturum açmalar yüksek risklidir. |
-| 2 | 🚨 Unusual Country Access | bar | Nadir ülke/kimlik kombinasyonlarını göstererek beklenmedik ülkelerden API çağrılarını tespit eder. |
-| 3 | 🚫 Access Denied by Country | bar | Erişim reddedildi hatalarını kaynak ülkeye göre gruplar. Tek bir ülkeden yoğun redler bir saldırıya işaret edebilir. |
-| 4 | 🔍 Write Events by Country | bar | Ülkeye göre gruplandırılmış değiştirici (yazma) API çağrılarını gösterir. Beklenmedik ülkelerden yazmalar yüksek önceliklidir. |
-| 5 | 🌍 Top Source Countries | bar | Kaynak ülkeleri API çağrı hacmine göre sıralar. Tüm etkinliğin coğrafi dağılımını tanımlar. |
-| 6 | 🏢 Top ASN / Organizations | bar | Otonom sistemleri (ISP'ler/bulut sağlayıcıları) API çağrı hacmine göre listeler. VPN/hosting sağlayıcılarını tespit edin. |
-| 7 | 📍 Top Source Cities | bar | Kaynak şehirleri olay hacmine göre sıralar. En aktif coğrafi kökenleri belirler. |
-| 8 | 📋 API Calls by Country (Event Name) | bar | Hangi API işlemlerinin her ülkeden çağrıldığını gösterir. Beklenmedik ülkelerden yazma olayları kimlik bilgisi ele geçirilmesine işaret eder. |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | Hangi IAM kimliklerinin her ülkeden etkin olduğunu gösterir. Yeni bir ülkeden görünen bir kimlik, yüksek güvenilirlikli bir ele geçirilme göstergesidir. |
-| 10 | 🌐 Private / Internal IP Summary | bar | Özel, loopback ve AWS-dahili IP'lerden gelen olayları özetler. Beklenen dahili trafik için temel çizgi. |
+| 1 | 🚨 Unusual Country Access | bar | Nadir ülke/kimlik kombinasyonlarını göstererek beklenmedik ülkelerden API çağrılarını tespit eder. |
+| 2 | 🚫 Access Denied by Country | bar | Erişim reddedildi hatalarını kaynak ülkeye göre gruplar. Tek bir ülkeden yoğun redler bir saldırıya işaret edebilir. |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triyaj KPI kartı (olaylar, principal'lar, IP'ler, root, MFA'sız oturum açmalar, erişim reddedildi, savunma atlatma, ülkeler, bölgeler) + küresel olay hacmi trendi |
 | 🎯 Threat Detection | 14 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
-| 🔑 Identity & Access | 16 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
+| 🔑 Identity & Access | 36 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
 | 🚨 High-Risk API Monitor | 5 | Güvenlik hizmeti kurcalaması & kimlik bilgisi alma API logları · en çok yüksek riskli çağrılar · en çok aktörler · zaman içinde yüksek riskli çağrı hacmi |
 | 📊 API Activity | 6 | En çok API'ler · erişim reddedilen eylemler · bölge dağılımı · hata kodu bileşimi · kaynak IP'ler · kullanıcı aracıları |
 | 🪣 S3 & RDS | 18 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |

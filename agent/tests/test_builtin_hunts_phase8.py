@@ -310,7 +310,7 @@ def phase8_db(tmp_path: pathlib.Path) -> str:
         "GetObject",
         "s3.amazonaws.com",
         arn="arn:aws:iam::111111111111:user/mallory",
-        when="2024-06-11 18:30:00",
+        when="2024-06-11 23:30:00",
         read_only=True,
         params='{"bucketName":"hr-records","key":"salaries.csv"}',
     )
@@ -321,7 +321,7 @@ def phase8_db(tmp_path: pathlib.Path) -> str:
         user_name="mallory",
         params='{"userName":"mallory",'
         '"policyArn":"arn:aws:iam::aws:policy/AdministratorAccess"}',
-        when="2024-06-11 18:35:00",
+        when="2024-06-11 23:35:00",
     )
     # An admin granting someone *else* rights — not self-service.
     insert(
@@ -520,8 +520,8 @@ def test_hunt_sql_runs(label: str, phase8_db: str) -> None:
 
 
 def test_total_hunt_count() -> None:
-    """127 after phase 7's ransom-note hunt, plus these 24."""
-    assert len(_load()) == 151
+    """151 after phase 8, less the 15 folded into a neighbouring hunt."""
+    assert len(_load()) == 136
 
 
 # ---------------------------------------------------------------------------
@@ -602,7 +602,8 @@ def test_delegated_administrator_hunt(phase8_db: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_off_hours_activity_uses_a_configurable_window(phase8_db: str) -> None:
+def test_off_hours_activity_uses_the_utc_night_window(phase8_db: str) -> None:
+    """The window is 22:00-06:00 UTC — mallory reads HR records at 23:30."""
     sql = get_builtin_sql("🌙 Off-Hours Activity")
     assert "hour" in sql.lower(), "the hunt must filter on hour of day"
     rows = _run(phase8_db, sql)

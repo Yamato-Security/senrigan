@@ -2,25 +2,25 @@
 
 > 💡 No SQL or deep AWS knowledge required — just select a hunt from the dropdown and get results instantly.
 
-## 🎯 Built-in Hunts — 151 queries
+## 🎯 Built-in Hunts — 136 queries
 
 Categories are ordered by DFIR triage priority — check detection-tool tampering first, then identity abuse, then data impact.
 
 | Category | Queries | Key Threats Covered |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | Audit-service tampering (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP deletion · alarm suppression · log exfiltration · ransomware kill-chain correlation |
-| 🔑 Identity & Access | 44 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity deletion · AssumeRoot takeover · Cognito user-pool/token abuse · Support case suppression · role chaining · session credential tracing · GetCallerIdentity recon · federated console logins · Identity Center permission sets & delegated admin · role chaining · session credential trace · non-MFA API calls · federated logins · Identity Center permission sets |
+| 🔑 Identity & Access | 36 | Root usage · console login/MFA · privilege escalation · trust policy backdoor · PassRole abuse · cross-account AssumeRole · SSO/SAML/OIDC · credential enumeration · IAM entity deletion · AssumeRoot takeover · Cognito user-pool/token abuse · Support case suppression · role chaining · session credential tracing · GetCallerIdentity recon · federated console logins · Identity Center permission sets & delegated admin · non-MFA API calls |
 | 🪣 Data & Storage | 30 | S3 bulk deletion/download · secrets bulk read · backup tampering · KMS ops · snapshot sharing · EBS Direct API exfiltration · DynamoDB export · S3 cross-account replication · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS Data API manipulation · storage re-encryption for impact · ransom note placement · breach-notification scoping · cross-account object copy · presigned URL generation |
 | ⚡ Compute & Serverless | 17 | EC2 mass stop/terminate · SSM lateral movement · Lambda/ECS/EKS/ECR tampering · EventBridge persistence · cryptomining · Lightsail abuse · IMDS/SSRF weakening · AMI/snapshot deletion · WorkSpaces hijacking |
-| 🤖 AI & LLM Abuse | 11 | Bedrock invocation spikes · model access enablement · invocation-logging tampering · region-sweep reconnaissance · failed-invocation bursts · caller/origin inventory (LLMjacking) · AgentCore token vault · gateway authorization bypass · memory integrity · sandbox network drift · observability tampering |
-| 🌐 Network & Infrastructure | 16 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys · Route 53/domain hijack · DDoS protection weakening |
+| 🤖 AI & LLM Abuse | 10 | Bedrock invocation spikes · model access enablement · invocation-logging tampering · region-sweep reconnaissance · failed-invocation bursts · AgentCore token vault · gateway authorization bypass · memory integrity · sandbox network drift · observability tampering |
+| 🌐 Network & Infrastructure | 13 | SG open to internet · VPC flow log deletion · CloudFront hijack · covert VPN/TGW tunnels · Elastic IP C2 · API Gateway keys · Route 53/domain hijack · DDoS protection weakening |
 | 🕵 Threat Patterns | 10 | Reconnaissance burst · unusual user agents · multi-region spread · first-time API calls · first-seen region activity · off-hours activity · self-service privilege escalation · daily volume deviation · creation in unused regions · high-volume API use |
 | 📊 Activity & Baseline | 3 | Console write events · error spikes · recent errors |
-| 🌍 GeoIP Analysis | 10 | Console logins/denials/writes by country · rare-country access · country/ASN/city breakdown · event_name × country · identity × country · private-IP baseline |
+| 🌍 GeoIP Analysis | 2 | Rare country/identity pairings · access-denied concentration by country (volume rankings live on the dashboard Geo tab) |
 | ☁ IaC & Platform | 2 | CI/CD supply chain · CloudFormation abuse |
 
 <details markdown="1">
-<summary>📋 Full list — all 151 queries (click to expand)</summary>
+<summary>📋 Full list — all 136 queries (click to expand)</summary>
 
 ## Built-in Hunts
 
@@ -57,34 +57,31 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 9 | 👥 IAM Group Membership Changes | timeseries | Detects all AddUserToGroup and RemoveUserFromGroup events regardless of group name. Any group addition may indicate privilege escalation through group-inherited policies. |
 | 10 | 👤 New IAM Users / Keys | timeseries | Identifies IAM user and access key creation events. Unexpected creation may indicate persistence. |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | Detects iam:PassRole calls. Passing a privileged role to EC2/Lambda/Glue/ECS/SageMaker is the most common lateral privilege escalation path. |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | Shows AssumeRole events where caller and target are in different AWS accounts. Indicates lateral movement. |
-| 13 | 🏢 Cross-Account Access | timeseries | Finds events where the caller account differs from the recipient account. Lateral movement signal. |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | Detects GetFederationToken and GetSessionToken calls. Attackers use these to convert long-lived keys into persistent temporary credentials. |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Detects AssumeRoleWithWebIdentity calls. Abusing a misconfigured OIDC trust (e.g., overly broad sub claim) lets attackers hijack a role using attacker-controlled tokens. |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detects AWS IAM Identity Center management actions. Attackers abuse SSO to create backdoor permission sets or assign accounts to attacker-controlled users. |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | Detects SAML/OIDC identity provider changes. Updating a SAML provider with attacker-controlled metadata creates a persistent authentication backdoor. |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | Detects any use of IAM Access Analyzer. Attackers use the native AWS analyzer to enumerate externally accessible resources without writing custom recon scripts. |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | Detects IAM enumeration activity that maps the entire IAM landscape. Common in early attack stages. |
-| 20 | 🗝 Access Key Abuse | bar | Detects access keys used from 3+ distinct source IPs in 7 days. Strong indicator of key leak. |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | Detects Organizations account creation and delegated administrator changes. Attackers create shadow accounts to establish persistent footholds outside the main account. |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | Detects Cognito Identity Pools with unauthenticated access enabled. Allows anonymous users to call AWS APIs with the unauthenticated IAM role's permissions. |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Detects Glue development endpoint creation and connection enumeration. iam:PassRole + glue:CreateDevEndpoint grants full role permissions via SSH — one of the most overlooked IAM privilege escalation techniques. |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detects SageMaker notebook instance creation and presigned URL generation. iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter environment with the passed role's full AWS permissions. CreatePresignedNotebookInstanceUrl alone can grant access to an existing notebook. |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | Detects Data Pipeline and CodeStar resource creation. Both accept iam:PassRole and can execute arbitrary code with the passed role's permissions. CodeStar:CreateProjectFromTemplate is an undocumented API that creates an admin IAM role. |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | Detects Step Functions state machine creation and execution. iam:PassRole + states:CreateStateMachine + states:StartExecution allows running arbitrary Lambda / ECS tasks under the passed role's permissions. |
-| 27 | 🪓 IAM Entity Deletion | timeseries | Detects deletion of IAM users, roles, policies, and MFA devices. Attackers delete IAM entities to remove traces of their activity or lock defenders out. |
-| 28 | 👑 AssumeRoot Usage | timeseries | Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way. |
-| 29 | 🎫 Support Case Manipulation | timeseries | Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise. |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users. |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | Detects an assumed-role session assuming a further role. Single AssumeRole calls look ordinary; the chain is how an attacker walks from a compromised instance role to the permissions they actually want. |
-| 32 | 🎫 Session Credential Trace | bar | Summarises what each temporary STS session (ASIA… access key) did: how many calls, which services, which IPs and over what window. The scoping question every credential-compromise investigation starts with. |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Detects account-boundary crossings by reading the target account out of the requested roleArn, which works even when only the calling account's logs were ingested. |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | Ranks roles by who assumes them and from where. A role normally assumed by one account that suddenly gains a second caller stands out here, while the raw event list buries it. |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | Surfaces GetCallerIdentity calls per principal and source IP. It is the first command run against stolen credentials — and a single call, which volume-threshold recon hunts never reach. |
-| 36 | 🪪 Federated Console Logins | timeseries | Lists console logins that arrived through an external identity provider, with the provider name and origin. When the IdP is the compromised component, AWS sees only a valid login. |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | Detects IAM Identity Center permission-set creation, policy attachment and account assignment — the path to standing admin access across every account in the organisation. |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | Detects users, groups and memberships created directly in the Identity Center identity store — persistence that never appears in IAM and so is missed by IAM-only monitoring. |
-| 39 | 👑 Delegated Administrator Registration | timeseries | Detects registration of a delegated administrator for an organisation service. The only event the upstream Identity Center playbook grades CRITICAL — it hands organisation-wide control to another account. |
+| 12 | 🏢 Cross-Account Access | timeseries | Finds events where the caller account differs from the recipient account. Lateral movement signal. |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | Detects GetFederationToken and GetSessionToken calls. Attackers use these to convert long-lived keys into persistent temporary credentials. |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | Detects AssumeRoleWithWebIdentity calls. Abusing a misconfigured OIDC trust (e.g., overly broad sub claim) lets attackers hijack a role using attacker-controlled tokens. |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detects AWS IAM Identity Center management actions. Attackers abuse SSO to create backdoor permission sets or assign accounts to attacker-controlled users. |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | Detects SAML/OIDC identity provider changes. Updating a SAML provider with attacker-controlled metadata creates a persistent authentication backdoor. |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | Detects any use of IAM Access Analyzer. Attackers use the native AWS analyzer to enumerate externally accessible resources without writing custom recon scripts. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Detects IAM enumeration activity that maps the entire IAM landscape. Common in early attack stages. |
+| 19 | 🗝 Access Key Abuse | bar | Detects access keys used from 3+ distinct source IPs in 7 days. Strong indicator of key leak. |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | Detects Organizations account creation and delegated administrator changes. Attackers create shadow accounts to establish persistent footholds outside the main account. |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | Detects Cognito Identity Pools with unauthenticated access enabled. Allows anonymous users to call AWS APIs with the unauthenticated IAM role's permissions. |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | Detects Glue development endpoint creation and connection enumeration. iam:PassRole + glue:CreateDevEndpoint grants full role permissions via SSH — one of the most overlooked IAM privilege escalation techniques. |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | Detects SageMaker notebook instance creation and presigned URL generation. iam:PassRole + sagemaker:CreateNotebookInstance provides a Jupyter environment with the passed role's full AWS permissions. CreatePresignedNotebookInstanceUrl alone can grant access to an existing notebook. |
+| 24 | 🪓 IAM Entity Deletion | timeseries | Detects deletion of IAM users, roles, policies, and MFA devices. Attackers delete IAM entities to remove traces of their activity or lock defenders out. |
+| 25 | 👑 AssumeRoot Usage | timeseries | Detects sts:AssumeRoot calls from the management account into member-account root. A compromised management account can take over every member account this way. |
+| 26 | 🎫 Support Case Manipulation | timeseries | Detects AWS Support case closure and comment activity. Attackers resolve abuse/support cases to suppress AWS notifications about a compromise. |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | Detects Cognito user-pool and app-client changes: extended token validity, new clients, and admin user creation. Attackers abuse these to mint long-lived tokens or seed backdoor users. |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | Detects an assumed-role session assuming a further role. Single AssumeRole calls look ordinary; the chain is how an attacker walks from a compromised instance role to the permissions they actually want. |
+| 29 | 🎫 Session Credential Trace | bar | Summarises what each temporary STS session (ASIA… access key) did: how many calls, which services, which IPs and over what window. The scoping question every credential-compromise investigation starts with. |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | Detects account-boundary crossings by reading the target account out of the requested roleArn, which works even when only the calling account's logs were ingested. |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | Ranks roles by who assumes them and from where. A role normally assumed by one account that suddenly gains a second caller stands out here, while the raw event list buries it. |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | Surfaces GetCallerIdentity calls per principal and source IP. It is the first command run against stolen credentials — and a single call, which volume-threshold recon hunts never reach. |
+| 33 | 🪪 Federated Console Logins | timeseries | Lists console logins that arrived through an external identity provider, with the provider name and origin. When the IdP is the compromised component, AWS sees only a valid login. |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | Detects IAM Identity Center permission-set creation, policy attachment and account assignment — the path to standing admin access across every account in the organisation. |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | Detects users, groups and memberships created directly in the Identity Center identity store — persistence that never appears in IAM and so is missed by IAM-only monitoring. |
+| 36 | 👑 Delegated Administrator Registration | timeseries | Detects registration of a delegated administrator for an organisation service. The only event the upstream Identity Center playbook grades CRITICAL — it hands organisation-wide control to another account. |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | Detects deletion or modification of Bedrock model-invocation logging, plus attackers checking whether logging is enabled before abusing the account (a documented LLMjacking IOC). |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | Identifies callers enumerating Bedrock models across 2+ regions or with 10+ enumeration calls in one hour. Stolen-key holders sweep regions to find where models are usable. |
 | 5 | ⛔ Failed Bedrock Invocations | bar | Finds bursts of failed Bedrock invocations (AccessDenied / ValidationException). Stolen-key testing produces failure storms across models and regions before a working combination is found. |
-| 6 | 🌍 Bedrock Callers & Origins | — | Inventories every principal that ever touched Bedrock, with source IP, GeoIP origin, user agent, and model diversity. Spot the caller or origin that has no business using Bedrock at all. |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | Aggregates AgentCore token-vault issuance per principal and source. These calls hand out third-party OAuth tokens and API keys, so abuse here reaches services outside AWS entirely. |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Detects AgentCore Gateway and policy changes, including a Cedar policy engine dropped to LOG_ONLY. Authorization that only logs still returns success, so nothing downstream looks wrong. |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | Detects AgentCore Memory and Registry changes, including a memory stream repointed at a foreign Kinesis ARN. Poisoned long-term memory persists across every future session of the agent. |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Lists AgentCore code interpreter and browser lifecycle events with their network mode. The mode cannot be edited, so a delete followed by a create is the only way to widen a sandbox's network access. |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | Detects AgentCore evaluator changes and X-Ray sampling or trace-destination changes. An attacker-created evaluator reads every response it grades, exporting model output through a legitimate channel. |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | Aggregates AgentCore token-vault issuance per principal and source. These calls hand out third-party OAuth tokens and API keys, so abuse here reaches services outside AWS entirely. |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | Detects AgentCore Gateway and policy changes, including a Cedar policy engine dropped to LOG_ONLY. Authorization that only logs still returns success, so nothing downstream looks wrong. |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | Detects AgentCore Memory and Registry changes, including a memory stream repointed at a foreign Kinesis ARN. Poisoned long-term memory persists across every future session of the agent. |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | Lists AgentCore code interpreter and browser lifecycle events with their network mode. The mode cannot be edited, so a delete followed by a create is the only way to widen a sandbox's network access. |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | Detects AgentCore evaluator changes and X-Ray sampling or trace-destination changes. An attacker-created evaluator reads every response it grades, exporting model output through a legitimate channel. |
 
 ### 🌐 Network & Infrastructure
 
 | # | Label | Chart | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | Finds security group rules that allow traffic from 0.0.0.0/0. Direct public exposure risk. |
-| 2 | 🔥 Security Group Modifications | timeseries | Detects security group rule changes, especially rules allowing 0.0.0.0/0 on any port. |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | Detects deletion of VPC Flow Logs. Removing flow logs eliminates network-level evidence — a critical defense evasion indicator. |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | Detects CloudFront distribution creation and origin changes. Modifying origins redirects CDN traffic to attacker-controlled servers for MitM interception or data collection. |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | Detects Network Firewall and Shield protection removal. Deleting network-layer defenses exposes VPCs to direct attack traffic. |
-| 6 | 🧱 Network ACL Changes | timeseries | Detects Network ACL entry creation, deletion, and replacement. NACLs override security groups and can open entire subnets to attackers. |
-| 7 | 🛣️ Route Table Changes | timeseries | Detects route table modifications. Adding or replacing routes can redirect traffic to attacker-controlled hosts (MitM, traffic hijacking). |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Detects new VPN connections, Direct Connect, and Transit Gateway attachments. Attackers create covert network tunnels for persistent C2 or data exfiltration channels. |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | Detects Elastic IP allocation and association. Attackers assign a fixed public IP to a compromised instance to create stable C2 infrastructure. |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | Detects CreateKeyPair and ImportKeyPair events. Attackers create or import SSH keys as a persistence mechanism to maintain instance access. |
-| 11 | 📡 Network Infrastructure Changes | timeseries | Detects VPC and network-level changes that may establish attacker-controlled infrastructure. |
-| 12 | 🏷 ACM Certificate Operations | timeseries | Detects ACM certificate requests and deletions. Attackers use compromised accounts to issue TLS certificates for attacker-controlled domains to build phishing infrastructure. |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls. |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | Detects access denied errors via VPC endpoints. May indicate misconfigured endpoint policy. |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing. |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | Detects edge protections being loosened rather than removed: a WebACL default action flipped to allow, rule groups relaxed, Shield protections deleted, CloudFront origins repointed. |
+| 1 | 🔥 Security Group Modifications | timeseries | Detects security group rule changes, especially rules allowing 0.0.0.0/0 on any port. |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | Detects deletion of VPC Flow Logs. Removing flow logs eliminates network-level evidence — a critical defense evasion indicator. |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | Detects CloudFront distribution creation and origin changes. Modifying origins redirects CDN traffic to attacker-controlled servers for MitM interception or data collection. |
+| 4 | 🧱 Network ACL Changes | timeseries | Detects Network ACL entry creation, deletion, and replacement. NACLs override security groups and can open entire subnets to attackers. |
+| 5 | 🛣️ Route Table Changes | timeseries | Detects route table modifications. Adding or replacing routes can redirect traffic to attacker-controlled hosts (MitM, traffic hijacking). |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | Detects new VPN connections, Direct Connect, and Transit Gateway attachments. Attackers create covert network tunnels for persistent C2 or data exfiltration channels. |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | Detects Elastic IP allocation and association. Attackers assign a fixed public IP to a compromised instance to create stable C2 infrastructure. |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | Detects CreateKeyPair and ImportKeyPair events. Attackers create or import SSH keys as a persistence mechanism to maintain instance access. |
+| 9 | 📡 Network Infrastructure Changes | timeseries | Detects VPC and network-level changes that may establish attacker-controlled infrastructure. |
+| 10 | 🏷 ACM Certificate Operations | timeseries | Detects ACM certificate requests and deletions. Attackers use compromised accounts to issue TLS certificates for attacker-controlled domains to build phishing infrastructure. |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | Detects API Gateway key creation and REST API management. Pacu's api_gateway__create_api_keys creates persistent API credentials that survive IAM key rotation. Attackers also modify API authorizers to weaken access controls. |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | Detects DNS record edits, hosted-zone changes, and domain registration/transfer. Attackers redirect traffic, take over dangling subdomains, or register lookalike domains for phishing. |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | Detects edge protections being loosened rather than removed: a WebACL default action flipped to allow, rule groups relaxed, Shield protections deleted, CloudFront origins repointed. |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 | # | Label | Chart | Description |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | Maps console login events to their geographic origin. Logins from unexpected countries are high-risk. |
-| 2 | 🚨 Unusual Country Access | bar | Detects API calls from unexpected countries by showing rare country/identity combinations. |
-| 3 | 🚫 Access Denied by Country | bar | Groups access denied errors by source country. Concentrated denials from one country may signal an attack. |
-| 4 | 🔍 Write Events by Country | bar | Shows mutating (write) API calls grouped by country. Writes from unexpected countries are high-priority. |
-| 5 | 🌍 Top Source Countries | bar | Ranks source countries by API call volume. Identifies the geographic distribution of all activity. |
-| 6 | 🏢 Top ASN / Organizations | bar | Lists autonomous systems (ISPs/cloud providers) by API call volume. Spot VPN/hosting providers. |
-| 7 | 📍 Top Source Cities | bar | Ranks source cities by event volume. Pinpoints the most active geographic origins. |
-| 8 | 📋 API Calls by Country (Event Name) | bar | Shows which API operations are called from each country. Write events from unexpected countries indicate credential compromise. |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | Shows which IAM identities are active from each country. An identity appearing from a new country is a high-confidence compromise indicator. |
-| 10 | 🌐 Private / Internal IP Summary | bar | Summarizes events from private, loopback, and AWS-internal IPs. Baseline for expected internal traffic. |
+| 1 | 🚨 Unusual Country Access | bar | Detects API calls from unexpected countries by showing rare country/identity combinations. |
+| 2 | 🚫 Access Denied by Country | bar | Groups access denied errors by source country. Concentrated denials from one country may signal an attack. |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (events, principals, IPs, root, MFA-less logins, access denied, defense evasion, countries, regions) + global event-volume trend |
 | 🎯 Threat Detection | 14 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio · P1/P2 escalation-trigger KPI cards |
-| 🔑 Identity & Access | 16 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole · AssumeRoot usage |
+| 🔑 Identity & Access | 36 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API logs · top high-risk calls · top actors · high-risk call volume over time |
 | 📊 API Activity | 6 | Top APIs · access-denied actions · region distribution · error-code composition · source IPs · user agents |
 | 🪣 S3 & RDS | 18 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact · breach-notification access scope · cross-account object copy · ransom note placement |

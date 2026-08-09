@@ -2,25 +2,25 @@
 
 > 💡 無需 SQL 或深入的 AWS 知識——只要從下拉選單中選擇一項獵捕，即可立即取得結果。
 
-## 🎯 內建獵捕——151 個查詢
+## 🎯 內建獵捕——136 個查詢
 
 類別依 DFIR 分流優先順序排列——先檢查偵測工具竄改，接著是身分濫用，再來是資料影響。
 
 | 類別 | 查詢數 | 涵蓋的主要威脅 |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | 稽核服務竄改（CloudTrail/GuardDuty/Config/SecurityHub/Macie）· SCP 刪除 · 警報抑制 · 日誌外洩 · 勒索軟體攻擊鏈關聯分析 |
-| 🔑 Identity & Access | 44 | Root 使用 · 主控台登入/MFA · 權限提升 · 信任政策後門 · PassRole 濫用 · 跨帳戶 AssumeRole · SSO/SAML/OIDC · 憑證列舉 · IAM 實體刪除 · AssumeRoot 接管 · Cognito user pool/權杖濫用 · 支援案件壓制 · 角色串接 · 工作階段憑證追蹤 · GetCallerIdentity 偵查 · 聯合身分主控台登入 · Identity Center 權限集與委派管理員 · 角色串接 · 工作階段憑證追蹤 · 無 MFA 的 API 呼叫 · 聯合身分登入 · Identity Center 權限集 |
+| 🔑 Identity & Access | 36 | Root 使用 · 主控台登入/MFA · 權限提升 · 信任政策後門 · PassRole 濫用 · 跨帳戶 AssumeRole · SSO/SAML/OIDC · 憑證列舉 · IAM 實體刪除 · AssumeRoot 接管 · Cognito user pool/權杖濫用 · 支援案件壓制 · 角色串接 · 工作階段憑證追蹤 · GetCallerIdentity 偵查 · 聯合身分主控台登入 · Identity Center 權限集與委派管理員 · 無 MFA 的 API 呼叫 |
 | 🪣 Data & Storage | 30 | S3 大量刪除/下載 · 機密大量讀取 · 備份竄改 · KMS 操作 · 快照分享 · EBS Direct API 外洩 · DynamoDB 匯出 · S3 跨帳戶複寫 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS Data API 操弄 · 用於造成影響的儲存體再加密 · 勒索訊息投放 · 外洩通報範圍界定 · 跨帳戶物件複製 · 預簽章 URL 產生 |
 | ⚡ Compute & Serverless | 17 | EC2 大量停止/終止 · SSM 橫向移動 · Lambda/ECS/EKS/ECR 竄改 · EventBridge 持續駐留 · 加密貨幣挖礦 · Lightsail 濫用 · IMDS/SSRF 削弱 · AMI/快照刪除 · WorkSpaces 劫持 |
-| 🤖 AI & LLM Abuse | 11 | Bedrock 呼叫量激增 · 模型存取啟用 · 呼叫日誌竄改 · 跨區域偵察掃描 · 失敗呼叫爆發 · 呼叫方/來源盤點（LLMjacking） · AgentCore 權杖保管庫 · 閘道授權繞過 · 記憶體完整性 · 沙箱網路模式變更 · 可觀測性竄改 |
-| 🌐 Network & Infrastructure | 16 | SG 對網際網路開放 · VPC 流量日誌刪除 · CloudFront 劫持 · 隱蔽 VPN/TGW 通道 · Elastic IP C2 · API Gateway 金鑰 · Route 53/網域劫持 · DDoS 防護弱化 |
+| 🤖 AI & LLM Abuse | 10 | Bedrock 呼叫量激增 · 模型存取啟用 · 呼叫日誌竄改 · 跨區域偵察掃描 · 失敗呼叫爆發 · AgentCore 權杖保管庫 · 閘道授權繞過 · 記憶體完整性 · 沙箱網路模式變更 · 可觀測性竄改 |
+| 🌐 Network & Infrastructure | 13 | SG 對網際網路開放 · VPC 流量日誌刪除 · CloudFront 劫持 · 隱蔽 VPN/TGW 通道 · Elastic IP C2 · API Gateway 金鑰 · Route 53/網域劫持 · DDoS 防護弱化 |
 | 🕵 Threat Patterns | 10 | 偵察爆發 · 異常使用者代理 · 多區域擴散 · 首次 API 呼叫 · 首次出現區域活動 · 非上班時間活動 · 自我權限提升 · 每日流量偏差 · 未使用區域的資源建立 · 大量 API 呼叫 |
 | 📊 Activity & Baseline | 3 | 主控台寫入事件 · 錯誤激增 · 近期錯誤 |
-| 🌍 GeoIP Analysis | 10 | 依國家排序的主控台登入/拒絕/寫入 · 罕見國家存取 · 國家/ASN/城市細分 · event_name × country · identity × country · private-IP 基準線 |
+| 🌍 GeoIP Analysis | 2 | 依國家排序的主控台登入/拒絕/寫入 · 罕見國家存取 |
 | ☁ IaC & Platform | 2 | CI/CD 供應鏈 · CloudFormation 濫用 |
 
 <details markdown="1">
-<summary>📋 完整清單——全部 151 個查詢（點擊展開）</summary>
+<summary>📋 完整清單——全部 136 個查詢（點擊展開）</summary>
 
 ## 內建獵捕
 
@@ -57,34 +57,31 @@
 | 9 | 👥 IAM Group Membership Changes | timeseries | 偵測所有 AddUserToGroup 及 RemoveUserFromGroup 事件，無論群組名稱為何。任何群組新增都可能透過群組繼承的政策造成權限提升。 |
 | 10 | 👤 New IAM Users / Keys | timeseries | 辨識 IAM 使用者及存取金鑰建立事件。意外的建立可能表示持續駐留。 |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | 偵測 iam:PassRole 呼叫。將具特權的角色傳遞給 EC2/Lambda/Glue/ECS/SageMaker 是最常見的橫向權限提升路徑。 |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | 顯示呼叫方與目標位於不同 AWS 帳戶的 AssumeRole 事件。表示橫向移動。 |
-| 13 | 🏢 Cross-Account Access | timeseries | 找出呼叫方帳戶與接收方帳戶不同的事件。橫向移動訊號。 |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | 偵測 GetFederationToken 及 GetSessionToken 呼叫。攻擊者利用這些呼叫將長期金鑰轉換為持續性的臨時憑證。 |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | 偵測 AssumeRoleWithWebIdentity 呼叫。濫用設定錯誤的 OIDC 信任（例如過於寬鬆的 sub 宣告）讓攻擊者能使用攻擊者控制的權杖劫持角色。 |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | 偵測 AWS IAM Identity Center 管理動作。攻擊者濫用 SSO 建立後門式權限集，或將帳戶指派給攻擊者控制的使用者。 |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | 偵測 SAML/OIDC 身分提供者變更。以攻擊者控制的中繼資料更新 SAML 提供者會建立持續性的驗證後門。 |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | 偵測任何 IAM Access Analyzer 的使用。攻擊者利用原生分析器列舉可從外部存取的資源，無需自行撰寫偵察腳本。 |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | 偵測繪製整個 IAM 版圖的 IAM 列舉活動。常見於攻擊的早期階段。 |
-| 20 | 🗝 Access Key Abuse | bar | 偵測在 7 天內從 3 個以上不同來源 IP 使用的存取金鑰。金鑰外洩的強烈指標。 |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | 偵測 Organizations 帳戶建立及委派管理員變更。攻擊者建立影子帳戶以在主帳戶之外建立持續性據點。 |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | 偵測啟用未經驗證存取的 Cognito Identity Pools。允許匿名使用者以未經驗證 IAM 角色的權限呼叫 AWS API。 |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | 偵測 Glue 開發端點建立及連線列舉。iam:PassRole + glue:CreateDevEndpoint 會以所傳遞角色的完整權限授予可透過 SSH 存取的端點——最容易被忽略的 IAM 權限提升技巧之一。 |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | 偵測 SageMaker notebook 執行個體建立及預先簽署 URL 產生。iam:PassRole + sagemaker:CreateNotebookInstance 會提供具有所傳遞角色完整 AWS 權限的 Jupyter 環境。僅 CreatePresignedNotebookInstanceUrl 就能授予對現有 notebook 的存取權。 |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | 偵測 Data Pipeline 及 CodeStar 資源建立。兩者都接受 iam:PassRole，並能以所傳遞角色的權限執行任意程式碼。CodeStar:CreateProjectFromTemplate 是一個未有文件記載的 API，會建立管理員層級的 IAM 角色。 |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | 偵測 Step Functions 狀態機建立及執行。iam:PassRole + states:CreateStateMachine + states:StartExecution 允許以所傳遞角色的權限執行任意 Lambda / ECS 任務。 |
-| 27 | 🪓 IAM Entity Deletion | timeseries | 偵測 IAM 使用者、角色、政策及 MFA 裝置的刪除。攻擊者刪除 IAM 實體以消除其活動痕跡，或將防禦方鎖在外面。 |
-| 28 | 👑 AssumeRoot Usage | timeseries | 偵測從管理帳戶進入成員帳戶 root 的 sts:AssumeRoot 呼叫。遭入侵的管理帳戶可藉此接管每一個成員帳戶。 |
-| 29 | 🎫 Support Case Manipulation | timeseries | 偵測 AWS Support 案件關閉及留言活動。攻擊者會結案濫用/支援案件，以壓制 AWS 關於入侵事件的通知。 |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | 偵測 Cognito user pool 及 app client 的變更：延長權杖有效期、新增 client，以及建立管理員使用者。攻擊者濫用這些手法來核發長效權杖或植入後門使用者。 |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | 偵測已擔任角色的工作階段再去擔任另一個角色。單次 AssumeRole 呼叫看來平常；串接才是攻擊者從遭入侵的執行個體角色走向真正想要之權限的路徑。 |
-| 32 | 🎫 Session Credential Trace | bar | 彙總每個臨時 STS 工作階段（ASIA… 存取金鑰）做了什麼：呼叫次數、服務、來源 IP 與時間範圍。這是每一次憑證外洩調查最先提出的範圍問題。 |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | 從請求的 roleArn 讀取目標帳戶以偵測跨帳戶行為，即使只匯入了呼叫端帳戶的日誌也有效。 |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | 依誰擔任角色以及來自何處為角色排序。平時僅由一個帳戶擔任的角色突然多出第二個呼叫者，在此會凸顯出來，而在原始事件清單中則被淹沒。 |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | 依主體與來源 IP 顯示 GetCallerIdentity 呼叫。這是使用竊得憑證後執行的第一個指令，而且只有一次呼叫，以數量門檻為基礎的偵查獵捕永遠達不到。 |
-| 36 | 🪪 Federated Console Logins | timeseries | 列出透過外部身分提供者進入的主控台登入，並顯示提供者名稱與來源。當遭入侵的是 IdP 本身時，AWS 只會看到一次有效登入。 |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | 偵測 IAM Identity Center 的權限集建立、政策附加與帳戶指派 — 通往組織中每個帳戶常設管理員存取權的路徑。 |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | 偵測直接在 Identity Center 身分存放區建立的使用者、群組與成員資格 — 這種持久化完全不會出現在 IAM，只監控 IAM 便會遺漏。 |
-| 39 | 👑 Delegated Administrator Registration | timeseries | 偵測組織服務委派管理員的註冊。這是上游 Identity Center 手冊唯一評為 CRITICAL 的事件，會將整個組織的控制權交給另一個帳戶。 |
+| 12 | 🏢 Cross-Account Access | timeseries | 找出呼叫方帳戶與接收方帳戶不同的事件。橫向移動訊號。 |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | 偵測 GetFederationToken 及 GetSessionToken 呼叫。攻擊者利用這些呼叫將長期金鑰轉換為持續性的臨時憑證。 |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | 偵測 AssumeRoleWithWebIdentity 呼叫。濫用設定錯誤的 OIDC 信任（例如過於寬鬆的 sub 宣告）讓攻擊者能使用攻擊者控制的權杖劫持角色。 |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | 偵測 AWS IAM Identity Center 管理動作。攻擊者濫用 SSO 建立後門式權限集，或將帳戶指派給攻擊者控制的使用者。 |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | 偵測 SAML/OIDC 身分提供者變更。以攻擊者控制的中繼資料更新 SAML 提供者會建立持續性的驗證後門。 |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | 偵測任何 IAM Access Analyzer 的使用。攻擊者利用原生分析器列舉可從外部存取的資源，無需自行撰寫偵察腳本。 |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | 偵測繪製整個 IAM 版圖的 IAM 列舉活動。常見於攻擊的早期階段。 |
+| 19 | 🗝 Access Key Abuse | bar | 偵測在 7 天內從 3 個以上不同來源 IP 使用的存取金鑰。金鑰外洩的強烈指標。 |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | 偵測 Organizations 帳戶建立及委派管理員變更。攻擊者建立影子帳戶以在主帳戶之外建立持續性據點。 |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | 偵測啟用未經驗證存取的 Cognito Identity Pools。允許匿名使用者以未經驗證 IAM 角色的權限呼叫 AWS API。 |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | 偵測 Glue 開發端點建立及連線列舉。iam:PassRole + glue:CreateDevEndpoint 會以所傳遞角色的完整權限授予可透過 SSH 存取的端點——最容易被忽略的 IAM 權限提升技巧之一。 |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | 偵測 SageMaker notebook 執行個體建立及預先簽署 URL 產生。iam:PassRole + sagemaker:CreateNotebookInstance 會提供具有所傳遞角色完整 AWS 權限的 Jupyter 環境。僅 CreatePresignedNotebookInstanceUrl 就能授予對現有 notebook 的存取權。 |
+| 24 | 🪓 IAM Entity Deletion | timeseries | 偵測 IAM 使用者、角色、政策及 MFA 裝置的刪除。攻擊者刪除 IAM 實體以消除其活動痕跡，或將防禦方鎖在外面。 |
+| 25 | 👑 AssumeRoot Usage | timeseries | 偵測從管理帳戶進入成員帳戶 root 的 sts:AssumeRoot 呼叫。遭入侵的管理帳戶可藉此接管每一個成員帳戶。 |
+| 26 | 🎫 Support Case Manipulation | timeseries | 偵測 AWS Support 案件關閉及留言活動。攻擊者會結案濫用/支援案件，以壓制 AWS 關於入侵事件的通知。 |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | 偵測 Cognito user pool 及 app client 的變更：延長權杖有效期、新增 client，以及建立管理員使用者。攻擊者濫用這些手法來核發長效權杖或植入後門使用者。 |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | 偵測已擔任角色的工作階段再去擔任另一個角色。單次 AssumeRole 呼叫看來平常；串接才是攻擊者從遭入侵的執行個體角色走向真正想要之權限的路徑。 |
+| 29 | 🎫 Session Credential Trace | bar | 彙總每個臨時 STS 工作階段（ASIA… 存取金鑰）做了什麼：呼叫次數、服務、來源 IP 與時間範圍。這是每一次憑證外洩調查最先提出的範圍問題。 |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | 從請求的 roleArn 讀取目標帳戶以偵測跨帳戶行為，即使只匯入了呼叫端帳戶的日誌也有效。 |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | 依誰擔任角色以及來自何處為角色排序。平時僅由一個帳戶擔任的角色突然多出第二個呼叫者，在此會凸顯出來，而在原始事件清單中則被淹沒。 |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | 依主體與來源 IP 顯示 GetCallerIdentity 呼叫。這是使用竊得憑證後執行的第一個指令，而且只有一次呼叫，以數量門檻為基礎的偵查獵捕永遠達不到。 |
+| 33 | 🪪 Federated Console Logins | timeseries | 列出透過外部身分提供者進入的主控台登入，並顯示提供者名稱與來源。當遭入侵的是 IdP 本身時，AWS 只會看到一次有效登入。 |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | 偵測 IAM Identity Center 的權限集建立、政策附加與帳戶指派 — 通往組織中每個帳戶常設管理員存取權的路徑。 |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | 偵測直接在 Identity Center 身分存放區建立的使用者、群組與成員資格 — 這種持久化完全不會出現在 IAM，只監控 IAM 便會遺漏。 |
+| 36 | 👑 Delegated Administrator Registration | timeseries | 偵測組織服務委派管理員的註冊。這是上游 Identity Center 手冊唯一評為 CRITICAL 的事件，會將整個組織的控制權交給另一個帳戶。 |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | 偵測 Bedrock 模型呼叫日誌的刪除或修改，以及攻擊者在濫用帳戶前檢查日誌是否啟用（一個有文件記載的 LLMjacking IOC）。 |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | 識別在 2 個以上區域列舉 Bedrock 模型、或在一小時內有 10 次以上列舉呼叫的呼叫方。持有被竊憑證者會掃描各區域以找出模型可用之處。 |
 | 5 | ⛔ Failed Bedrock Invocations | bar | 找出失敗的 Bedrock 呼叫爆發（AccessDenied / ValidationException）。竊取憑證的測試會在找到可用組合之前，跨多個模型及區域產生失敗風暴。 |
-| 6 | 🌍 Bedrock Callers & Origins | — | 盤點每一個曾經接觸過 Bedrock 的主體，包含來源 IP、GeoIP 來源、使用者代理及模型多樣性。找出完全不應使用 Bedrock 的呼叫方或來源。 |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | 依主體與來源彙總 AgentCore 權杖保管庫的發放。這些呼叫會發出第三方 OAuth 權杖與 API 金鑰，因此濫用會延伸到 AWS 之外的服務。 |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | 偵測 AgentCore 閘道與政策變更，包含 Cedar 政策引擎被降為 LOG_ONLY。只記錄而不執行的授權仍會回傳成功，因此下游看不出任何異常。 |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | 偵測 AgentCore Memory 與 Registry 變更，包含記憶體串流被改指向其他帳戶的 Kinesis ARN。遭汙染的長期記憶會延續到代理程式日後的每一次工作階段。 |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | 列出 AgentCore 程式碼直譯器與瀏覽器的生命週期事件及其網路模式。模式無法編輯，因此刪除後重建是擴大沙箱網路存取的唯一途徑。 |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | 偵測 AgentCore 評估器變更以及 X-Ray 取樣或追蹤目的地變更。攻擊者建立的評估器會讀取其評分的每一則回應，透過正當管道匯出模型輸出。 |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | 依主體與來源彙總 AgentCore 權杖保管庫的發放。這些呼叫會發出第三方 OAuth 權杖與 API 金鑰，因此濫用會延伸到 AWS 之外的服務。 |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | 偵測 AgentCore 閘道與政策變更，包含 Cedar 政策引擎被降為 LOG_ONLY。只記錄而不執行的授權仍會回傳成功，因此下游看不出任何異常。 |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | 偵測 AgentCore Memory 與 Registry 變更，包含記憶體串流被改指向其他帳戶的 Kinesis ARN。遭汙染的長期記憶會延續到代理程式日後的每一次工作階段。 |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | 列出 AgentCore 程式碼直譯器與瀏覽器的生命週期事件及其網路模式。模式無法編輯，因此刪除後重建是擴大沙箱網路存取的唯一途徑。 |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | 偵測 AgentCore 評估器變更以及 X-Ray 取樣或追蹤目的地變更。攻擊者建立的評估器會讀取其評分的每一則回應，透過正當管道匯出模型輸出。 |
 
 ### 🌐 Network & Infrastructure
 
 | # | 標籤 | 圖表 | 說明 |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | 找出允許來自 0.0.0.0/0 流量的安全群組規則。直接的公開曝險風險。 |
-| 2 | 🔥 Security Group Modifications | timeseries | 偵測安全群組規則變更，特別是允許任意連接埠 0.0.0.0/0 的規則。 |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | 偵測 VPC 流量日誌的刪除。移除流量日誌會消除網路層級的證據——重要的防禦規避指標。 |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | 偵測 CloudFront distribution 建立及來源變更。修改來源會將 CDN 流量重新導向至攻擊者控制的伺服器，以進行 MitM 攔截或資料蒐集。 |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | 偵測 Network Firewall 及 Shield 保護移除。刪除網路層級防禦會將 VPC 暴露於直接的攻擊流量之下。 |
-| 6 | 🧱 Network ACL Changes | timeseries | 偵測 Network ACL 項目建立、刪除及取代。NACL 會覆寫安全群組，並可能將整個子網路開放給攻擊者。 |
-| 7 | 🛣️ Route Table Changes | timeseries | 偵測路由表修改。新增或取代路由可將流量重新導向至攻擊者控制的主機（MitM、流量劫持）。 |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | 偵測新的 VPN 連線、Direct Connect 及 Transit Gateway 附加。攻擊者建立隱蔽的網路通道，用於持續性 C2 或資料外洩通道。 |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | 偵測 Elastic IP 的配置及關聯。攻擊者為遭入侵的執行個體指派固定的公開 IP，以建立穩定的 C2 基礎設施。 |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | 偵測 CreateKeyPair 及 ImportKeyPair 事件。攻擊者建立或匯入 SSH 金鑰，作為維持執行個體存取的持續駐留機制。 |
-| 11 | 📡 Network Infrastructure Changes | timeseries | 偵測可能建立攻擊者控制基礎設施的 VPC 及網路層級變更。 |
-| 12 | 🏷 ACM Certificate Operations | timeseries | 偵測 ACM 憑證請求及刪除。攻擊者利用遭入侵的帳戶為攻擊者控制的網域核發 TLS 憑證，以建立釣魚基礎設施。 |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | 偵測 API Gateway 金鑰建立及 REST API 管理。Pacu 的 api_gateway__create_api_keys 會建立可在 IAM 金鑰輪換後仍存續的持續性 API 憑證。攻擊者也會修改 API authorizer 以削弱存取控制。 |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | 偵測透過 VPC 端點的存取遭拒錯誤。可能表示端點政策設定錯誤。 |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | 偵測 DNS 記錄編輯、託管區域變更及網域註冊/移轉。攻擊者藉此重新導向流量、接管懸置的子網域，或註冊仿冒網域以進行釣魚攻擊。 |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | 偵測邊緣防護被放寬而非移除：WebACL 預設動作改為允許、規則群組放鬆、Shield 保護遭刪除、CloudFront 來源被改指向。 |
+| 1 | 🔥 Security Group Modifications | timeseries | 偵測安全群組規則變更，特別是允許任意連接埠 0.0.0.0/0 的規則。 |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | 偵測 VPC 流量日誌的刪除。移除流量日誌會消除網路層級的證據——重要的防禦規避指標。 |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | 偵測 CloudFront distribution 建立及來源變更。修改來源會將 CDN 流量重新導向至攻擊者控制的伺服器，以進行 MitM 攔截或資料蒐集。 |
+| 4 | 🧱 Network ACL Changes | timeseries | 偵測 Network ACL 項目建立、刪除及取代。NACL 會覆寫安全群組，並可能將整個子網路開放給攻擊者。 |
+| 5 | 🛣️ Route Table Changes | timeseries | 偵測路由表修改。新增或取代路由可將流量重新導向至攻擊者控制的主機（MitM、流量劫持）。 |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | 偵測新的 VPN 連線、Direct Connect 及 Transit Gateway 附加。攻擊者建立隱蔽的網路通道，用於持續性 C2 或資料外洩通道。 |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | 偵測 Elastic IP 的配置及關聯。攻擊者為遭入侵的執行個體指派固定的公開 IP，以建立穩定的 C2 基礎設施。 |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | 偵測 CreateKeyPair 及 ImportKeyPair 事件。攻擊者建立或匯入 SSH 金鑰，作為維持執行個體存取的持續駐留機制。 |
+| 9 | 📡 Network Infrastructure Changes | timeseries | 偵測可能建立攻擊者控制基礎設施的 VPC 及網路層級變更。 |
+| 10 | 🏷 ACM Certificate Operations | timeseries | 偵測 ACM 憑證請求及刪除。攻擊者利用遭入侵的帳戶為攻擊者控制的網域核發 TLS 憑證，以建立釣魚基礎設施。 |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | 偵測 API Gateway 金鑰建立及 REST API 管理。Pacu 的 api_gateway__create_api_keys 會建立可在 IAM 金鑰輪換後仍存續的持續性 API 憑證。攻擊者也會修改 API authorizer 以削弱存取控制。 |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | 偵測 DNS 記錄編輯、託管區域變更及網域註冊/移轉。攻擊者藉此重新導向流量、接管懸置的子網域，或註冊仿冒網域以進行釣魚攻擊。 |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | 偵測邊緣防護被放寬而非移除：WebACL 預設動作改為允許、規則群組放鬆、Shield 保護遭刪除、CloudFront 來源被改指向。 |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@
 
 | # | 標籤 | 圖表 | 說明 |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | 將主控台登入事件對應至其地理來源。來自非預期國家的登入屬高風險。 |
-| 2 | 🚨 Unusual Country Access | bar | 藉由顯示罕見的國家/身分組合，偵測來自非預期國家的 API 呼叫。 |
-| 3 | 🚫 Access Denied by Country | bar | 依來源國家將存取遭拒錯誤分組。集中於某一國家的拒絕可能是攻擊訊號。 |
-| 4 | 🔍 Write Events by Country | bar | 顯示依國家分組的變更性（寫入）API 呼叫。來自非預期國家的寫入具有高度優先性。 |
-| 5 | 🌍 Top Source Countries | bar | 依 API 呼叫量為來源國家排名。辨識所有活動的地理分布。 |
-| 6 | 🏢 Top ASN / Organizations | bar | 依 API 呼叫量列出自治系統（ISP/雲端供應商）。觀察 VPN/託管供應商。 |
-| 7 | 📍 Top Source Cities | bar | 依事件量為來源城市排名。找出活動最頻繁的地理來源。 |
-| 8 | 📋 API Calls by Country (Event Name) | bar | 顯示哪些 API 操作是從各國家呼叫的。來自非預期國家的寫入事件表示憑證遭入侵。 |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | 顯示哪些 IAM 身分是從各國家活動的。從新國家出現的身分是可信度高的入侵指標。 |
-| 10 | 🌐 Private / Internal IP Summary | bar | 彙總來自私有、迴路及 AWS 內部 IP 的事件。預期內部流量的基準線。 |
+| 1 | 🚨 Unusual Country Access | bar | 藉由顯示罕見的國家/身分組合，偵測來自非預期國家的 API 呼叫。 |
+| 2 | 🚫 Access Denied by Country | bar | 依來源國家將存取遭拒錯誤分組。集中於某一國家的拒絕可能是攻擊訊號。 |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 張分流 KPI 卡片（事件、主體、IP、root、無 MFA 登入、access denied、防禦規避、國家、區域）+ 全域事件量趨勢 |
 | 🎯 Threat Detection | 14 | 防禦規避總覽 · 日誌缺口 · VPC flow log/Config/EventBridge/WAF 竄改 · SCP/組織成員變更 · 錯誤及節流趨勢 · write/read 比率 · P1/P2 升級觸發條件 KPI 卡 |
-| 🔑 Identity & Access | 16 | 主控台登入 · MFA 趨勢 · 登入熱圖 · 失敗→成功驗證序列 · root 使用 · IAM 實體活動/刪除 · 權限提升時間軸 · 新主體 · SSO · 跨帳戶 AssumeRole · AssumeRoot 使用 |
+| 🔑 Identity & Access | 36 | 主控台登入 · MFA 趨勢 · 登入熱圖 · 失敗→成功驗證序列 · root 使用 · IAM 實體活動/刪除 · 權限提升時間軸 · 新主體 · SSO · 跨帳戶 AssumeRole · AssumeRoot 使用 |
 | 🚨 High-Risk API Monitor | 5 | 安全服務竄改及憑證擷取的 API 日誌 · 熱門高風險呼叫 · 熱門行為者 · 高風險呼叫量隨時間變化 |
 | 📊 API Activity | 6 | 熱門 API · access-denied 動作 · 區域分布 · 錯誤代碼組成 · 來源 IP · 使用者代理 |
 | 🪣 S3 & RDS | 18 | S3 大量下載/刪除 · 版本控制/日誌停用 · 跨帳戶複寫 · 儲存桶政策/ACL · 列舉 · 保護設定 · Backup vault 刪除 · KMS 金鑰刪除 · RDS 快照分享／未快照即刪除 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS 查詢/執行個體操弄 · 用於造成影響的儲存體再加密 · 外洩通報用存取範圍 · 跨帳戶物件複製 · 勒索訊息投放 |

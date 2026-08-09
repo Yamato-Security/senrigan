@@ -2,25 +2,25 @@
 
 > 💡 ไม่ต้องใช้ SQL หรือความรู้เชิงลึกเกี่ยวกับ AWS — เพียงเลือก hunt จาก dropdown แล้วรับผลลัพธ์ได้ทันที
 
-## 🎯 Hunts ในตัว — 151 queries
+## 🎯 Hunts ในตัว — 136 queries
 
 หมวดหมู่ถูกจัดเรียงตามลำดับความสำคัญของการ triage แบบ DFIR — ตรวจสอบการดัดแปลงเครื่องมือตรวจจับก่อน จากนั้นจึงตรวจสอบการใช้อัตลักษณ์ในทางมิชอบ แล้วตามด้วยผลกระทบต่อข้อมูล
 
 | หมวดหมู่ | จำนวน Query | ภัยคุกคามสำคัญที่ครอบคลุม |
 |----------|:-------:|---------------------|
 | 🛡 Detection & Response | 13 | การดัดแปลงบริการตรวจสอบ (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · การลบ SCP · การระงับสัญญาณเตือน · การลักลอบนำ log ออก · การเชื่อมโยงห่วงโซ่การโจมตีแรนซัมแวร์ |
-| 🔑 Identity & Access | 44 | การใช้งาน root · การล็อกอินคอนโซล/MFA · การยกระดับสิทธิ์ · แบ็คดอร์ผ่าน trust policy · การใช้ PassRole ในทางมิชอบ · AssumeRole ข้ามบัญชี · SSO/SAML/OIDC · การแจกแจงข้อมูลประจำตัว · การลบ IAM entity · การยึดครองผ่าน AssumeRoot · การใช้ user pool/token ของ Cognito ในทางมิชอบ · การระงับ support case · การเชื่อมต่อบทบาท · การติดตามข้อมูลรับรองเซสชัน · การสอดแนมด้วย GetCallerIdentity · การเข้าสู่ระบบคอนโซลแบบเฟเดอเรต · ชุดสิทธิ์ Identity Center และผู้ดูแลที่ได้รับมอบหมาย · การเชื่อมต่อบทบาท · การติดตามข้อมูลรับรองเซสชัน · การเรียก API โดยไม่มี MFA · การเข้าสู่ระบบแบบเฟเดอเรต · ชุดสิทธิ์ Identity Center |
+| 🔑 Identity & Access | 36 | การใช้งาน root · การล็อกอินคอนโซล/MFA · การยกระดับสิทธิ์ · แบ็คดอร์ผ่าน trust policy · การใช้ PassRole ในทางมิชอบ · AssumeRole ข้ามบัญชี · SSO/SAML/OIDC · การแจกแจงข้อมูลประจำตัว · การลบ IAM entity · การยึดครองผ่าน AssumeRoot · การใช้ user pool/token ของ Cognito ในทางมิชอบ · การระงับ support case · การเชื่อมต่อบทบาท · การติดตามข้อมูลรับรองเซสชัน · การสอดแนมด้วย GetCallerIdentity · การเข้าสู่ระบบคอนโซลแบบเฟเดอเรต · ชุดสิทธิ์ Identity Center และผู้ดูแลที่ได้รับมอบหมาย · การเรียก API โดยไม่มี MFA |
 | 🪣 Data & Storage | 30 | การลบ/ดาวน์โหลด S3 จำนวนมาก · การอ่าน secrets จำนวนมาก · การดัดแปลงการสำรองข้อมูล · การดำเนินการ KMS · การแชร์ snapshot · การลักลอบนำข้อมูลออกผ่าน EBS Direct API · การ export DynamoDB · การจำลอง S3 ข้ามบัญชี · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ RDS Data API · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ · การวางข้อความเรียกค่าไถ่ · การกำหนดขอบเขตสำหรับการแจ้งเหตุละเมิด · การคัดลอกอ็อบเจกต์ข้ามบัญชี · การสร้าง URL แบบลงนามล่วงหน้า |
 | ⚡ Compute & Serverless | 17 | การหยุด/ยกเลิก EC2 จำนวนมาก · การเคลื่อนที่ด้านข้างผ่าน SSM · การดัดแปลง Lambda/ECS/EKS/ECR · การคงอยู่ผ่าน EventBridge · cryptomining · การใช้ Lightsail ในทางมิชอบ · การลดความเข้มงวดของ IMDS/SSRF · การลบ AMI/snapshot · การยึดครอง WorkSpaces |
-| 🤖 AI & LLM Abuse | 11 | การพุ่งสูงของการเรียกใช้โมเดล Bedrock · การเปิดใช้งานการเข้าถึงโมเดล · การดัดแปลงการบันทึก log การเรียกใช้ · การสอดแนมแบบกวาดทั่วภูมิภาค · การพุ่งสูงของการเรียกใช้ที่ล้มเหลว · บัญชีรายชื่อผู้เรียก/แหล่งที่มา (LLMjacking) · ที่เก็บโทเค็น AgentCore · การข้ามการอนุญาตเกตเวย์ · ความสมบูรณ์ของหน่วยความจำ · การเปลี่ยนโหมดเครือข่ายแซนด์บ็อกซ์ · การแก้ไขระบบสังเกตการณ์ |
-| 🌐 Network & Infrastructure | 16 | SG เปิดสู่อินเทอร์เน็ต · การลบ VPC flow log · การยึด CloudFront · อุโมงค์ VPN/TGW แอบแฝง · Elastic IP สำหรับ C2 · คีย์ API Gateway · การยึดครอง Route 53/โดเมน · การลดทอนการป้องกัน DDoS |
+| 🤖 AI & LLM Abuse | 10 | การพุ่งสูงของการเรียกใช้โมเดล Bedrock · การเปิดใช้งานการเข้าถึงโมเดล · การดัดแปลงการบันทึก log การเรียกใช้ · การสอดแนมแบบกวาดทั่วภูมิภาค · การพุ่งสูงของการเรียกใช้ที่ล้มเหลว · ที่เก็บโทเค็น AgentCore · การข้ามการอนุญาตเกตเวย์ · ความสมบูรณ์ของหน่วยความจำ · การเปลี่ยนโหมดเครือข่ายแซนด์บ็อกซ์ · การแก้ไขระบบสังเกตการณ์ |
+| 🌐 Network & Infrastructure | 13 | SG เปิดสู่อินเทอร์เน็ต · การลบ VPC flow log · การยึด CloudFront · อุโมงค์ VPN/TGW แอบแฝง · Elastic IP สำหรับ C2 · คีย์ API Gateway · การยึดครอง Route 53/โดเมน · การลดทอนการป้องกัน DDoS |
 | 🕵 Threat Patterns | 10 | การพุ่งของการสอดแนม · user agents ที่ผิดปกติ · การกระจายข้ามหลายภูมิภาค · การเรียก API ครั้งแรก · กิจกรรมภูมิภาคที่พบครั้งแรก · กิจกรรมนอกเวลาทำการ · การยกระดับสิทธิ์ให้ตนเอง · ความเบี่ยงเบนของปริมาณรายวัน · การสร้างทรัพยากรในภูมิภาคที่ไม่ได้ใช้ · การเรียก API ปริมาณมาก |
 | 📊 Activity & Baseline | 3 | เหตุการณ์การเขียนผ่านคอนโซล · การพุ่งขึ้นของ error · error ล่าสุด |
-| 🌍 GeoIP Analysis | 10 | การล็อกอิน/การปฏิเสธ/การเขียนผ่านคอนโซลจัดอันดับตามประเทศ · การเข้าถึงจากประเทศที่พบยาก · การแยกย่อยตามประเทศ/ASN/เมือง · event_name × country · identity × country · เส้นฐาน private-IP |
+| 🌍 GeoIP Analysis | 2 | การล็อกอิน/การปฏิเสธ/การเขียนผ่านคอนโซลจัดอันดับตามประเทศ · การเข้าถึงจากประเทศที่พบยาก |
 | ☁ IaC & Platform | 2 | การโจมตี supply chain ของ CI/CD · การใช้ CloudFormation ในทางมิชอบ |
 
 <details markdown="1">
-<summary>📋 รายการทั้งหมด — ทุก query ทั้ง 151 รายการ (คลิกเพื่อขยาย)</summary>
+<summary>📋 รายการทั้งหมด — ทุก query ทั้ง 136 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Hunts ในตัว
 
@@ -57,34 +57,31 @@
 | 9 | 👥 IAM Group Membership Changes | timeseries | ตรวจจับเหตุการณ์ AddUserToGroup และ RemoveUserFromGroup ทั้งหมดโดยไม่คำนึงถึงชื่อกลุ่ม การเพิ่มเข้ากลุ่มใด ๆ อาจบ่งชี้การยกระดับสิทธิ์ผ่าน policy ที่สืบทอดจากกลุ่ม |
 | 10 | 👤 New IAM Users / Keys | timeseries | ระบุเหตุการณ์การสร้างผู้ใช้ IAM และ access key การสร้างที่ไม่คาดคิดอาจบ่งชี้การคงอยู่ |
 | 11 | 🎯 IAM PassRole Abuse | timeseries | ตรวจจับการเรียก iam:PassRole การส่ง role ที่มีสิทธิ์สูงไปยัง EC2/Lambda/Glue/ECS/SageMaker เป็นเส้นทางการยกระดับสิทธิ์แบบเคลื่อนที่ด้านข้างที่พบบ่อยที่สุด |
-| 12 | 🔐 AssumeRole Cross-Account | timeseries | แสดงเหตุการณ์ AssumeRole ที่ผู้เรียกและเป้าหมายอยู่ในบัญชี AWS ต่างกัน บ่งชี้การเคลื่อนที่ด้านข้าง |
-| 13 | 🏢 Cross-Account Access | timeseries | ค้นหาเหตุการณ์ที่บัญชีผู้เรียกต่างจากบัญชีผู้รับ สัญญาณของการเคลื่อนที่ด้านข้าง |
-| 14 | 🔑 STS Federation Token Issuance | timeseries | ตรวจจับการเรียก GetFederationToken และ GetSessionToken ผู้โจมตีใช้สิ่งนี้เพื่อแปลงคีย์อายุยาวให้เป็น credential ชั่วคราวแบบถาวร |
-| 15 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | ตรวจจับการเรียก AssumeRoleWithWebIdentity การใช้ OIDC trust ที่ตั้งค่าผิดในทางมิชอบ (เช่น sub claim ที่กว้างเกินไป) ทำให้ผู้โจมตีสามารถยึด role โดยใช้ token ที่ผู้โจมตีควบคุม |
-| 16 | 🆔 IAM Identity Center (SSO) Events | timeseries | ตรวจจับการดำเนินการจัดการ AWS IAM Identity Center ผู้โจมตีใช้ SSO ในทางมิชอบเพื่อสร้าง permission set แบบแบ็คดอร์หรือกำหนดบัญชีให้กับผู้ใช้ที่ผู้โจมตีควบคุม |
-| 17 | 🔗 SAML / OIDC Provider Updates | timeseries | ตรวจจับการเปลี่ยนแปลง identity provider ของ SAML/OIDC การอัปเดต SAML provider ด้วย metadata ที่ผู้โจมตีควบคุมสร้างแบ็คดอร์การยืนยันตัวตนแบบถาวร |
-| 18 | 🧐 IAM Access Analyzer Calls | timeseries | ตรวจจับการใช้ IAM Access Analyzer ใด ๆ ผู้โจมตีใช้ analyzer ในตัวของ AWS เพื่อแจกแจงทรัพยากรที่เข้าถึงได้จากภายนอกโดยไม่ต้องเขียนสคริปต์ recon เอง |
-| 19 | 🔄 Credential Report & Enumeration | timeseries | ตรวจจับกิจกรรมการแจกแจง IAM ที่สำรวจภูมิทัศน์ IAM ทั้งหมด พบบ่อยในช่วงต้นของการโจมตี |
-| 20 | 🗝 Access Key Abuse | bar | ตรวจจับ access key ที่ใช้จาก source IP ที่แตกต่างกัน 3 แห่งขึ้นไปภายใน 7 วัน ตัวบ่งชี้ที่ชัดเจนของการรั่วไหลของคีย์ |
-| 21 | 📰 AWS Organizations Account Creation | timeseries | ตรวจจับการสร้างบัญชี Organizations และการเปลี่ยนแปลง delegated administrator ผู้โจมตีสร้างบัญชีเงาเพื่อสร้างฐานที่มั่นถาวรนอกบัญชีหลัก |
-| 22 | 👥 Cognito Unauthenticated Access | timeseries | ตรวจจับ Cognito Identity Pools ที่เปิดใช้งานการเข้าถึงแบบไม่ยืนยันตัวตน ทำให้ผู้ใช้ไม่ระบุตัวตนสามารถเรียก AWS API ด้วยสิทธิ์ของ IAM role แบบไม่ยืนยันตัวตน |
-| 23 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | ตรวจจับการสร้าง Glue development endpoint และการแจกแจง connection iam:PassRole + glue:CreateDevEndpoint ให้สิทธิ์ role เต็มรูปแบบผ่าน SSH — หนึ่งในเทคนิคการยกระดับสิทธิ์ IAM ที่มักถูกมองข้ามที่สุด |
-| 24 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | ตรวจจับการสร้าง SageMaker notebook instance และการสร้าง presigned URL iam:PassRole + sagemaker:CreateNotebookInstance ให้ environment Jupyter ที่มีสิทธิ์ AWS เต็มรูปแบบของ role ที่ส่งมา CreatePresignedNotebookInstanceUrl เพียงอย่างเดียวก็สามารถให้สิทธิ์เข้าถึง notebook ที่มีอยู่แล้วได้ |
-| 25 | 🛠 Data Pipeline / CodeStar Privilege Escalation | timeseries | ตรวจจับการสร้างทรัพยากร Data Pipeline และ CodeStar ทั้งสองรับ iam:PassRole และสามารถรันโค้ดตามอำเภอใจด้วยสิทธิ์ของ role ที่ส่งมา CodeStar:CreateProjectFromTemplate เป็น API ที่ไม่มีเอกสารซึ่งสร้าง IAM role ระดับ admin |
-| 26 | 🧩 Step Functions Privilege Escalation | timeseries | ตรวจจับการสร้างและการรัน state machine ของ Step Functions iam:PassRole + states:CreateStateMachine + states:StartExecution ทำให้สามารถรัน Lambda/ECS task ตามอำเภอใจภายใต้สิทธิ์ของ role ที่ส่งมา |
-| 27 | 🪓 IAM Entity Deletion | timeseries | ตรวจจับการลบผู้ใช้ IAM, role, policy และอุปกรณ์ MFA ผู้โจมตีลบ IAM entity เพื่อลบร่องรอยกิจกรรมของตนหรือล็อกผู้ป้องกันออก |
-| 28 | 👑 AssumeRoot Usage | timeseries | ตรวจจับการเรียก sts:AssumeRoot จากบัญชี management ไปยัง root ของ member account บัญชี management ที่ถูกบุกรุกสามารถยึดครองทุก member account ได้ด้วยวิธีนี้ |
-| 29 | 🎫 Support Case Manipulation | timeseries | ตรวจจับการปิดและการแสดงความคิดเห็นใน AWS Support case ผู้โจมตีปิด case การละเมิด/การสนับสนุนเพื่อระงับการแจ้งเตือนของ AWS เกี่ยวกับการถูกบุกรุก |
-| 30 | 🪪 Cognito User Pool Manipulation | timeseries | ตรวจจับการเปลี่ยนแปลง user pool และ app client ของ Cognito: การขยายอายุ token, ไคลเอนต์ใหม่ และการสร้างผู้ใช้ admin ผู้โจมตีใช้สิ่งเหล่านี้ในทางมิชอบเพื่อสร้าง token ที่มีอายุยาวหรือฝังผู้ใช้แบ็คดอร์ |
-| 31 | 🔗 Role Chaining (Session → Role) | timeseries | ตรวจจับเซสชันบทบาทที่รับมาแล้วไปรับบทบาทอื่นต่อ การเรียก AssumeRole เดี่ยวๆ ดูปกติ แต่ห่วงโซ่คือเส้นทางที่ผู้โจมตีเดินจากบทบาทอินสแตนซ์ที่ถูกยึดไปสู่สิทธิ์ที่ต้องการจริง |
-| 32 | 🎫 Session Credential Trace | bar | สรุปว่าแต่ละเซสชัน STS ชั่วคราว (คีย์การเข้าถึง ASIA…) ทำอะไรบ้าง: จำนวนการเรียก บริการ IP ต้นทาง และช่วงเวลา นี่คือคำถามเรื่องขอบเขตที่การสืบสวนข้อมูลรับรองรั่วไหลทุกครั้งเริ่มต้น |
-| 33 | 🌐 AssumeRole Target Account (roleArn) | timeseries | ตรวจจับการข้ามขอบเขตบัญชีโดยอ่านบัญชีปลายทางจาก roleArn ที่ร้องขอ ซึ่งใช้ได้แม้นำเข้าเฉพาะบันทึกของบัญชีผู้เรียกเท่านั้น |
-| 34 | 📊 AssumeRole Fan-In by Target Role | bar | จัดอันดับบทบาทตามว่าใครรับและมาจากที่ใด บทบาทที่ปกติมีเพียงบัญชีเดียวรับแล้วจู่ๆ มีผู้เรียกรายที่สองจะโดดเด่นที่นี่ ขณะที่รายการเหตุการณ์ดิบกลบมันไว้ |
-| 35 | 🔍 GetCallerIdentity Reconnaissance | bar | แสดงการเรียก GetCallerIdentity ตามหลักการและ IP ต้นทาง เป็นคำสั่งแรกที่ถูกรันด้วยข้อมูลรับรองที่ขโมยมา และเป็นการเรียกเพียงครั้งเดียวที่การล่าเชิงลาดตระเวนแบบใช้เกณฑ์ปริมาณไม่มีวันไปถึง |
-| 36 | 🪪 Federated Console Logins | timeseries | แสดงรายการเข้าสู่ระบบคอนโซลที่มาผ่านผู้ให้บริการข้อมูลประจำตัวภายนอก พร้อมชื่อผู้ให้บริการและแหล่งที่มา เมื่อ IdP คือส่วนที่ถูกเจาะ AWS จะเห็นเพียงการเข้าสู่ระบบที่ถูกต้อง |
-| 37 | 🎟 Identity Center Permission Set Grants | timeseries | ตรวจจับการสร้างชุดสิทธิ์ การผูกนโยบาย และการกำหนดบัญชีใน IAM Identity Center — เส้นทางสู่สิทธิ์ผู้ดูแลถาวรในทุกบัญชีขององค์กร |
-| 38 | 🧑 Identity Store User & Group Creation | timeseries | ตรวจจับผู้ใช้ กลุ่ม และการเป็นสมาชิกที่สร้างโดยตรงในที่เก็บข้อมูลประจำตัวของ Identity Center — การคงอยู่ที่ไม่ปรากฏใน IAM เลย จึงหลุดรอดการเฝ้าระวังที่ดูเฉพาะ IAM |
-| 39 | 👑 Delegated Administrator Registration | timeseries | ตรวจจับการลงทะเบียนผู้ดูแลที่ได้รับมอบหมายสำหรับบริการขององค์กร เป็นเหตุการณ์เดียวที่คู่มือ Identity Center จัดระดับเป็น CRITICAL เพราะมันมอบการควบคุมทั้งองค์กรให้บัญชีอื่น |
+| 12 | 🏢 Cross-Account Access | timeseries | ค้นหาเหตุการณ์ที่บัญชีผู้เรียกต่างจากบัญชีผู้รับ สัญญาณของการเคลื่อนที่ด้านข้าง |
+| 13 | 🔑 STS Federation Token Issuance | timeseries | ตรวจจับการเรียก GetFederationToken และ GetSessionToken ผู้โจมตีใช้สิ่งนี้เพื่อแปลงคีย์อายุยาวให้เป็น credential ชั่วคราวแบบถาวร |
+| 14 | 🧩 STS AssumeRoleWithWebIdentity | timeseries | ตรวจจับการเรียก AssumeRoleWithWebIdentity การใช้ OIDC trust ที่ตั้งค่าผิดในทางมิชอบ (เช่น sub claim ที่กว้างเกินไป) ทำให้ผู้โจมตีสามารถยึด role โดยใช้ token ที่ผู้โจมตีควบคุม |
+| 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | ตรวจจับการดำเนินการจัดการ AWS IAM Identity Center ผู้โจมตีใช้ SSO ในทางมิชอบเพื่อสร้าง permission set แบบแบ็คดอร์หรือกำหนดบัญชีให้กับผู้ใช้ที่ผู้โจมตีควบคุม |
+| 16 | 🔗 SAML / OIDC Provider Updates | timeseries | ตรวจจับการเปลี่ยนแปลง identity provider ของ SAML/OIDC การอัปเดต SAML provider ด้วย metadata ที่ผู้โจมตีควบคุมสร้างแบ็คดอร์การยืนยันตัวตนแบบถาวร |
+| 17 | 🧐 IAM Access Analyzer Calls | timeseries | ตรวจจับการใช้ IAM Access Analyzer ใด ๆ ผู้โจมตีใช้ analyzer ในตัวของ AWS เพื่อแจกแจงทรัพยากรที่เข้าถึงได้จากภายนอกโดยไม่ต้องเขียนสคริปต์ recon เอง |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | ตรวจจับกิจกรรมการแจกแจง IAM ที่สำรวจภูมิทัศน์ IAM ทั้งหมด พบบ่อยในช่วงต้นของการโจมตี |
+| 19 | 🗝 Access Key Abuse | bar | ตรวจจับ access key ที่ใช้จาก source IP ที่แตกต่างกัน 3 แห่งขึ้นไปภายใน 7 วัน ตัวบ่งชี้ที่ชัดเจนของการรั่วไหลของคีย์ |
+| 20 | 📰 AWS Organizations Account Creation | timeseries | ตรวจจับการสร้างบัญชี Organizations และการเปลี่ยนแปลง delegated administrator ผู้โจมตีสร้างบัญชีเงาเพื่อสร้างฐานที่มั่นถาวรนอกบัญชีหลัก |
+| 21 | 👥 Cognito Unauthenticated Access | timeseries | ตรวจจับ Cognito Identity Pools ที่เปิดใช้งานการเข้าถึงแบบไม่ยืนยันตัวตน ทำให้ผู้ใช้ไม่ระบุตัวตนสามารถเรียก AWS API ด้วยสิทธิ์ของ IAM role แบบไม่ยืนยันตัวตน |
+| 22 | 🧪 Glue DevEndpoint Privilege Escalation | timeseries | ตรวจจับการสร้าง Glue development endpoint และการแจกแจง connection iam:PassRole + glue:CreateDevEndpoint ให้สิทธิ์ role เต็มรูปแบบผ่าน SSH — หนึ่งในเทคนิคการยกระดับสิทธิ์ IAM ที่มักถูกมองข้ามที่สุด |
+| 23 | 🧪 SageMaker Notebook Privilege Escalation | timeseries | ตรวจจับการสร้าง SageMaker notebook instance และการสร้าง presigned URL iam:PassRole + sagemaker:CreateNotebookInstance ให้ environment Jupyter ที่มีสิทธิ์ AWS เต็มรูปแบบของ role ที่ส่งมา CreatePresignedNotebookInstanceUrl เพียงอย่างเดียวก็สามารถให้สิทธิ์เข้าถึง notebook ที่มีอยู่แล้วได้ |
+| 24 | 🪓 IAM Entity Deletion | timeseries | ตรวจจับการลบผู้ใช้ IAM, role, policy และอุปกรณ์ MFA ผู้โจมตีลบ IAM entity เพื่อลบร่องรอยกิจกรรมของตนหรือล็อกผู้ป้องกันออก |
+| 25 | 👑 AssumeRoot Usage | timeseries | ตรวจจับการเรียก sts:AssumeRoot จากบัญชี management ไปยัง root ของ member account บัญชี management ที่ถูกบุกรุกสามารถยึดครองทุก member account ได้ด้วยวิธีนี้ |
+| 26 | 🎫 Support Case Manipulation | timeseries | ตรวจจับการปิดและการแสดงความคิดเห็นใน AWS Support case ผู้โจมตีปิด case การละเมิด/การสนับสนุนเพื่อระงับการแจ้งเตือนของ AWS เกี่ยวกับการถูกบุกรุก |
+| 27 | 🪪 Cognito User Pool Manipulation | timeseries | ตรวจจับการเปลี่ยนแปลง user pool และ app client ของ Cognito: การขยายอายุ token, ไคลเอนต์ใหม่ และการสร้างผู้ใช้ admin ผู้โจมตีใช้สิ่งเหล่านี้ในทางมิชอบเพื่อสร้าง token ที่มีอายุยาวหรือฝังผู้ใช้แบ็คดอร์ |
+| 28 | 🔗 Role Chaining (Session → Role) | timeseries | ตรวจจับเซสชันบทบาทที่รับมาแล้วไปรับบทบาทอื่นต่อ การเรียก AssumeRole เดี่ยวๆ ดูปกติ แต่ห่วงโซ่คือเส้นทางที่ผู้โจมตีเดินจากบทบาทอินสแตนซ์ที่ถูกยึดไปสู่สิทธิ์ที่ต้องการจริง |
+| 29 | 🎫 Session Credential Trace | bar | สรุปว่าแต่ละเซสชัน STS ชั่วคราว (คีย์การเข้าถึง ASIA…) ทำอะไรบ้าง: จำนวนการเรียก บริการ IP ต้นทาง และช่วงเวลา นี่คือคำถามเรื่องขอบเขตที่การสืบสวนข้อมูลรับรองรั่วไหลทุกครั้งเริ่มต้น |
+| 30 | 🌐 AssumeRole Target Account (roleArn) | timeseries | ตรวจจับการข้ามขอบเขตบัญชีโดยอ่านบัญชีปลายทางจาก roleArn ที่ร้องขอ ซึ่งใช้ได้แม้นำเข้าเฉพาะบันทึกของบัญชีผู้เรียกเท่านั้น |
+| 31 | 📊 AssumeRole Fan-In by Target Role | bar | จัดอันดับบทบาทตามว่าใครรับและมาจากที่ใด บทบาทที่ปกติมีเพียงบัญชีเดียวรับแล้วจู่ๆ มีผู้เรียกรายที่สองจะโดดเด่นที่นี่ ขณะที่รายการเหตุการณ์ดิบกลบมันไว้ |
+| 32 | 🔍 GetCallerIdentity Reconnaissance | bar | แสดงการเรียก GetCallerIdentity ตามหลักการและ IP ต้นทาง เป็นคำสั่งแรกที่ถูกรันด้วยข้อมูลรับรองที่ขโมยมา และเป็นการเรียกเพียงครั้งเดียวที่การล่าเชิงลาดตระเวนแบบใช้เกณฑ์ปริมาณไม่มีวันไปถึง |
+| 33 | 🪪 Federated Console Logins | timeseries | แสดงรายการเข้าสู่ระบบคอนโซลที่มาผ่านผู้ให้บริการข้อมูลประจำตัวภายนอก พร้อมชื่อผู้ให้บริการและแหล่งที่มา เมื่อ IdP คือส่วนที่ถูกเจาะ AWS จะเห็นเพียงการเข้าสู่ระบบที่ถูกต้อง |
+| 34 | 🎟 Identity Center Permission Set Grants | timeseries | ตรวจจับการสร้างชุดสิทธิ์ การผูกนโยบาย และการกำหนดบัญชีใน IAM Identity Center — เส้นทางสู่สิทธิ์ผู้ดูแลถาวรในทุกบัญชีขององค์กร |
+| 35 | 🧑 Identity Store User & Group Creation | timeseries | ตรวจจับผู้ใช้ กลุ่ม และการเป็นสมาชิกที่สร้างโดยตรงในที่เก็บข้อมูลประจำตัวของ Identity Center — การคงอยู่ที่ไม่ปรากฏใน IAM เลย จึงหลุดรอดการเฝ้าระวังที่ดูเฉพาะ IAM |
+| 36 | 👑 Delegated Administrator Registration | timeseries | ตรวจจับการลงทะเบียนผู้ดูแลที่ได้รับมอบหมายสำหรับบริการขององค์กร เป็นเหตุการณ์เดียวที่คู่มือ Identity Center จัดระดับเป็น CRITICAL เพราะมันมอบการควบคุมทั้งองค์กรให้บัญชีอื่น |
 
 ### 🪣 Data & Storage
 
@@ -152,33 +149,29 @@
 | 3 | 🙈 Bedrock Invocation Logging Tampering | timeseries | ตรวจจับการลบหรือแก้ไขการบันทึก log การเรียกใช้โมเดลของ Bedrock รวมถึงผู้โจมตีที่ตรวจสอบว่า logging เปิดใช้งานอยู่หรือไม่ก่อนใช้บัญชีในทางมิชอบ (IOC ของ LLMjacking ที่มีการบันทึกไว้) |
 | 4 | 🧭 Bedrock Reconnaissance Sweep | bar | ระบุผู้เรียกที่แจกแจงโมเดล Bedrock ใน 2 ภูมิภาคขึ้นไป หรือมีการเรียกแจกแจง 10 ครั้งขึ้นไปในหนึ่งชั่วโมง ผู้ถือคีย์ที่ถูกขโมยกวาดภูมิภาคเพื่อค้นหาว่าโมเดลใช้งานได้ที่ไหน |
 | 5 | ⛔ Failed Bedrock Invocations | bar | ค้นหาการพุ่งสูงของการเรียกใช้ Bedrock ที่ล้มเหลว (AccessDenied / ValidationException) การทดสอบคีย์ที่ถูกขโมยสร้างพายุความล้มเหลวข้ามโมเดลและภูมิภาคก่อนที่จะพบชุดค่าผสมที่ใช้งานได้ |
-| 6 | 🌍 Bedrock Callers & Origins | — | จัดทำบัญชีรายชื่อ principal ทุกรายที่เคยแตะต้อง Bedrock พร้อม source IP, แหล่งที่มาตาม GeoIP, user agent และความหลากหลายของโมเดล ค้นหาผู้เรียกหรือแหล่งที่มาที่ไม่ควรใช้ Bedrock เลย |
-| 7 | 🔑 AgentCore Token Vault Abuse | bar | รวมยอดการออกโทเค็นจากที่เก็บโทเค็น AgentCore ตามหลักการและแหล่งที่มา การเรียกเหล่านี้แจกโทเค็น OAuth และคีย์ API ของบุคคลที่สาม การใช้ในทางที่ผิดจึงลามไปถึงบริการนอก AWS |
-| 8 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | ตรวจจับการเปลี่ยนแปลงเกตเวย์และนโยบายของ AgentCore รวมถึงเอนจินนโยบาย Cedar ที่ถูกลดเป็น LOG_ONLY การอนุญาตที่เพียงบันทึกยังคงคืนค่าสำเร็จ ปลายทางจึงไม่เห็นสิ่งผิดปกติใด |
-| 9 | 🧠 AgentCore Memory Integrity | timeseries | ตรวจจับการเปลี่ยนแปลง Memory และ Registry ของ AgentCore รวมถึงสตรีมหน่วยความจำที่ถูกชี้ไปยัง ARN ของ Kinesis ในบัญชีอื่น หน่วยความจำระยะยาวที่ถูกวางยาจะคงอยู่ในทุกเซสชันถัดไปของเอเจนต์ |
-| 10 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | แสดงเหตุการณ์วงจรชีวิตของโค้ดอินเทอร์พรีเตอร์และเบราว์เซอร์ของ AgentCore พร้อมโหมดเครือข่าย โหมดแก้ไขไม่ได้ การลบแล้วสร้างใหม่จึงเป็นวิธีเดียวที่จะขยายการเข้าถึงเครือข่ายของแซนด์บ็อกซ์ |
-| 11 | 🙈 AgentCore Observability Tampering | timeseries | ตรวจจับการเปลี่ยนแปลงตัวประเมินของ AgentCore และการเปลี่ยนการสุ่มตัวอย่างหรือปลายทางการติดตามของ X-Ray ตัวประเมินที่ผู้โจมตีสร้างจะอ่านทุกคำตอบที่มันให้คะแนน แล้วส่งออกผลลัพธ์ของโมเดลผ่านช่องทางที่ถูกต้อง |
+| 6 | 🔑 AgentCore Token Vault Abuse | bar | รวมยอดการออกโทเค็นจากที่เก็บโทเค็น AgentCore ตามหลักการและแหล่งที่มา การเรียกเหล่านี้แจกโทเค็น OAuth และคีย์ API ของบุคคลที่สาม การใช้ในทางที่ผิดจึงลามไปถึงบริการนอก AWS |
+| 7 | 🚪 AgentCore Gateway Authorization Bypass | timeseries | ตรวจจับการเปลี่ยนแปลงเกตเวย์และนโยบายของ AgentCore รวมถึงเอนจินนโยบาย Cedar ที่ถูกลดเป็น LOG_ONLY การอนุญาตที่เพียงบันทึกยังคงคืนค่าสำเร็จ ปลายทางจึงไม่เห็นสิ่งผิดปกติใด |
+| 8 | 🧠 AgentCore Memory Integrity | timeseries | ตรวจจับการเปลี่ยนแปลง Memory และ Registry ของ AgentCore รวมถึงสตรีมหน่วยความจำที่ถูกชี้ไปยัง ARN ของ Kinesis ในบัญชีอื่น หน่วยความจำระยะยาวที่ถูกวางยาจะคงอยู่ในทุกเซสชันถัดไปของเอเจนต์ |
+| 9 | 📦 AgentCore Sandbox Network Mode Drift | timeseries | แสดงเหตุการณ์วงจรชีวิตของโค้ดอินเทอร์พรีเตอร์และเบราว์เซอร์ของ AgentCore พร้อมโหมดเครือข่าย โหมดแก้ไขไม่ได้ การลบแล้วสร้างใหม่จึงเป็นวิธีเดียวที่จะขยายการเข้าถึงเครือข่ายของแซนด์บ็อกซ์ |
+| 10 | 🙈 AgentCore Observability Tampering | timeseries | ตรวจจับการเปลี่ยนแปลงตัวประเมินของ AgentCore และการเปลี่ยนการสุ่มตัวอย่างหรือปลายทางการติดตามของ X-Ray ตัวประเมินที่ผู้โจมตีสร้างจะอ่านทุกคำตอบที่มันให้คะแนน แล้วส่งออกผลลัพธ์ของโมเดลผ่านช่องทางที่ถูกต้อง |
 
 ### 🌐 Network & Infrastructure
 
 | # | ป้ายชื่อ | Chart | คำอธิบาย |
 |---|-------|:-----:|-------------|
-| 1 | 🌍 Security Group Opened to Internet | timeseries | ค้นหา rule ของ security group ที่อนุญาต traffic จาก 0.0.0.0/0 ความเสี่ยงการเปิดเผยสู่สาธารณะโดยตรง |
-| 2 | 🔥 Security Group Modifications | timeseries | ตรวจจับการเปลี่ยนแปลง rule ของ security group โดยเฉพาะ rule ที่อนุญาต 0.0.0.0/0 บนพอร์ตใด ๆ |
-| 3 | 🌊 VPC Flow Log Changes | timeseries | ตรวจจับการลบ VPC Flow Logs การลบ flow log ขจัดหลักฐานระดับเครือข่าย — ตัวบ่งชี้การหลบเลี่ยงการป้องกันที่สำคัญ |
-| 4 | 🌐 CloudFront Distribution Tampering | timeseries | ตรวจจับการสร้าง CloudFront distribution และการเปลี่ยน origin การแก้ไข origin เปลี่ยนเส้นทาง traffic ของ CDN ไปยังเซิร์ฟเวอร์ที่ผู้โจมตีควบคุมเพื่อดักจับแบบ MitM หรือเก็บข้อมูล |
-| 5 | 🛡 Network Firewall / Shield Tampering | timeseries | ตรวจจับการลบการป้องกันของ Network Firewall และ Shield การลบการป้องกันระดับเครือข่ายเปิดเผย VPC ต่อ traffic การโจมตีโดยตรง |
-| 6 | 🧱 Network ACL Changes | timeseries | ตรวจจับการสร้าง ลบ และแทนที่ entry ของ Network ACL NACL ลบล้าง security group และสามารถเปิดทั้ง subnet ให้กับผู้โจมตี |
-| 7 | 🛣️ Route Table Changes | timeseries | ตรวจจับการแก้ไข route table การเพิ่มหรือแทนที่ route สามารถเปลี่ยนเส้นทาง traffic ไปยังโฮสต์ที่ผู้โจมตีควบคุม (MitM, การขโมย traffic) |
-| 8 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | ตรวจจับการเชื่อมต่อ VPN ใหม่ Direct Connect และการแนบ Transit Gateway ผู้โจมตีสร้างอุโมงค์เครือข่ายแอบแฝงสำหรับ C2 แบบถาวรหรือช่องทางลักลอบนำข้อมูลออก |
-| 9 | 📡 Elastic IP Allocation / Association | timeseries | ตรวจจับการจัดสรรและการเชื่อมโยง Elastic IP ผู้โจมตีกำหนด public IP คงที่ให้กับ instance ที่ถูกบุกรุกเพื่อสร้างโครงสร้างพื้นฐาน C2 ที่เสถียร |
-| 10 | 🗝️ EC2 Key Pair Creation | timeseries | ตรวจจับเหตุการณ์ CreateKeyPair และ ImportKeyPair ผู้โจมตีสร้างหรือนำเข้า SSH key เป็นกลไกการคงอยู่เพื่อรักษาการเข้าถึง instance |
-| 11 | 📡 Network Infrastructure Changes | timeseries | ตรวจจับการเปลี่ยนแปลงระดับ VPC และเครือข่ายที่อาจสร้างโครงสร้างพื้นฐานที่ผู้โจมตีควบคุม |
-| 12 | 🏷 ACM Certificate Operations | timeseries | ตรวจจับคำขอและการลบใบรับรอง ACM ผู้โจมตีใช้บัญชีที่ถูกบุกรุกออกใบรับรอง TLS สำหรับโดเมนที่ผู้โจมตีควบคุมเพื่อสร้างโครงสร้างพื้นฐาน phishing |
-| 13 | 🔑 API Gateway Key Creation & Management | timeseries | ตรวจจับการสร้างคีย์ API Gateway และการจัดการ REST API api_gateway__create_api_keys ของ Pacu สร้าง credential API ถาวรที่อยู่รอดจากการหมุนคีย์ IAM ผู้โจมตียังแก้ไข API authorizer เพื่อลดความเข้มงวดของการควบคุมการเข้าถึง |
-| 14 | 🚧 VPC Endpoint Access Denied | timeseries | ตรวจจับ error access denied ผ่าน VPC endpoint อาจบ่งชี้ endpoint policy ที่ตั้งค่าผิด |
-| 15 | 🌐 Route 53 & Domain Changes | timeseries | ตรวจจับการแก้ไข DNS record, การเปลี่ยนแปลง hosted zone และการลงทะเบียน/โอนย้ายโดเมน ผู้โจมตีเปลี่ยนเส้นทาง traffic ยึดครอง subdomain ที่ถูกทิ้งร้าง หรือลงทะเบียนโดเมนที่คล้ายกันเพื่อ phishing |
-| 16 | 🛡 DDoS Protection Weakening | timeseries | ตรวจจับการป้องกันที่ขอบซึ่งถูกผ่อนคลายแทนที่จะถูกลบ: การกระทำเริ่มต้นของ WebACL เปลี่ยนเป็นอนุญาต กลุ่มกฎถูกผ่อนปรน การป้องกันของ Shield ถูกลบ ต้นทาง CloudFront ถูกชี้ใหม่ |
+| 1 | 🔥 Security Group Modifications | timeseries | ตรวจจับการเปลี่ยนแปลง rule ของ security group โดยเฉพาะ rule ที่อนุญาต 0.0.0.0/0 บนพอร์ตใด ๆ |
+| 2 | 🌊 VPC Flow Log Changes | timeseries | ตรวจจับการลบ VPC Flow Logs การลบ flow log ขจัดหลักฐานระดับเครือข่าย — ตัวบ่งชี้การหลบเลี่ยงการป้องกันที่สำคัญ |
+| 3 | 🌐 CloudFront Distribution Tampering | timeseries | ตรวจจับการสร้าง CloudFront distribution และการเปลี่ยน origin การแก้ไข origin เปลี่ยนเส้นทาง traffic ของ CDN ไปยังเซิร์ฟเวอร์ที่ผู้โจมตีควบคุมเพื่อดักจับแบบ MitM หรือเก็บข้อมูล |
+| 4 | 🧱 Network ACL Changes | timeseries | ตรวจจับการสร้าง ลบ และแทนที่ entry ของ Network ACL NACL ลบล้าง security group และสามารถเปิดทั้ง subnet ให้กับผู้โจมตี |
+| 5 | 🛣️ Route Table Changes | timeseries | ตรวจจับการแก้ไข route table การเพิ่มหรือแทนที่ route สามารถเปลี่ยนเส้นทาง traffic ไปยังโฮสต์ที่ผู้โจมตีควบคุม (MitM, การขโมย traffic) |
+| 6 | 🧱 VPN / Direct Connect / Transit Gateway | timeseries | ตรวจจับการเชื่อมต่อ VPN ใหม่ Direct Connect และการแนบ Transit Gateway ผู้โจมตีสร้างอุโมงค์เครือข่ายแอบแฝงสำหรับ C2 แบบถาวรหรือช่องทางลักลอบนำข้อมูลออก |
+| 7 | 📡 Elastic IP Allocation / Association | timeseries | ตรวจจับการจัดสรรและการเชื่อมโยง Elastic IP ผู้โจมตีกำหนด public IP คงที่ให้กับ instance ที่ถูกบุกรุกเพื่อสร้างโครงสร้างพื้นฐาน C2 ที่เสถียร |
+| 8 | 🗝️ EC2 Key Pair Creation | timeseries | ตรวจจับเหตุการณ์ CreateKeyPair และ ImportKeyPair ผู้โจมตีสร้างหรือนำเข้า SSH key เป็นกลไกการคงอยู่เพื่อรักษาการเข้าถึง instance |
+| 9 | 📡 Network Infrastructure Changes | timeseries | ตรวจจับการเปลี่ยนแปลงระดับ VPC และเครือข่ายที่อาจสร้างโครงสร้างพื้นฐานที่ผู้โจมตีควบคุม |
+| 10 | 🏷 ACM Certificate Operations | timeseries | ตรวจจับคำขอและการลบใบรับรอง ACM ผู้โจมตีใช้บัญชีที่ถูกบุกรุกออกใบรับรอง TLS สำหรับโดเมนที่ผู้โจมตีควบคุมเพื่อสร้างโครงสร้างพื้นฐาน phishing |
+| 11 | 🔑 API Gateway Key Creation & Management | timeseries | ตรวจจับการสร้างคีย์ API Gateway และการจัดการ REST API api_gateway__create_api_keys ของ Pacu สร้าง credential API ถาวรที่อยู่รอดจากการหมุนคีย์ IAM ผู้โจมตียังแก้ไข API authorizer เพื่อลดความเข้มงวดของการควบคุมการเข้าถึง |
+| 12 | 🌐 Route 53 & Domain Changes | timeseries | ตรวจจับการแก้ไข DNS record, การเปลี่ยนแปลง hosted zone และการลงทะเบียน/โอนย้ายโดเมน ผู้โจมตีเปลี่ยนเส้นทาง traffic ยึดครอง subdomain ที่ถูกทิ้งร้าง หรือลงทะเบียนโดเมนที่คล้ายกันเพื่อ phishing |
+| 13 | 🛡 DDoS Protection Weakening | timeseries | ตรวจจับการป้องกันที่ขอบซึ่งถูกผ่อนคลายแทนที่จะถูกลบ: การกระทำเริ่มต้นของ WebACL เปลี่ยนเป็นอนุญาต กลุ่มกฎถูกผ่อนปรน การป้องกันของ Shield ถูกลบ ต้นทาง CloudFront ถูกชี้ใหม่ |
 
 ### 🕵 Threat Patterns
 
@@ -207,16 +200,8 @@
 
 | # | ป้ายชื่อ | Chart | คำอธิบาย |
 |---|-------|:-----:|-------------|
-| 1 | 🗺 Console Logins by Country | timeseries | แมปเหตุการณ์ล็อกอินคอนโซลกับแหล่งที่มาทางภูมิศาสตร์ การล็อกอินจากประเทศที่ไม่คาดคิดมีความเสี่ยงสูง |
-| 2 | 🚨 Unusual Country Access | bar | ตรวจจับการเรียก API จากประเทศที่ไม่คาดคิดโดยแสดงชุดผสมประเทศ/อัตลักษณ์ที่พบยาก |
-| 3 | 🚫 Access Denied by Country | bar | จัดกลุ่ม error access denied ตามประเทศต้นทาง การปฏิเสธที่กระจุกตัวจากประเทศเดียวอาจส่งสัญญาณการโจมตี |
-| 4 | 🔍 Write Events by Country | bar | แสดงการเรียก API ที่เปลี่ยนแปลงข้อมูล (write) จัดกลุ่มตามประเทศ การเขียนจากประเทศที่ไม่คาดคิดมีความสำคัญสูง |
-| 5 | 🌍 Top Source Countries | bar | จัดอันดับประเทศต้นทางตามปริมาณการเรียก API ระบุการกระจายทางภูมิศาสตร์ของกิจกรรมทั้งหมด |
-| 6 | 🏢 Top ASN / Organizations | bar | แสดงรายการ autonomous system (ISP/ผู้ให้บริการคลาวด์) ตามปริมาณการเรียก API สังเกตผู้ให้บริการ VPN/hosting |
-| 7 | 📍 Top Source Cities | bar | จัดอันดับเมืองต้นทางตามปริมาณเหตุการณ์ ระบุแหล่งที่มาทางภูมิศาสตร์ที่มีกิจกรรมมากที่สุด |
-| 8 | 📋 API Calls by Country (Event Name) | bar | แสดงว่าการดำเนินการ API ใดถูกเรียกจากแต่ละประเทศ เหตุการณ์การเขียนจากประเทศที่ไม่คาดคิดบ่งชี้การถูกบุกรุก credential |
-| 9 | 👤 Identities by Country (user_identity_arn) | bar | แสดงว่า IAM identity ใดใช้งานอยู่จากแต่ละประเทศ identity ที่ปรากฏจากประเทศใหม่เป็นตัวบ่งชี้การถูกบุกรุกที่มีความน่าเชื่อถือสูง |
-| 10 | 🌐 Private / Internal IP Summary | bar | สรุปเหตุการณ์จาก IP แบบ private, loopback และภายใน AWS เส้นฐานสำหรับ traffic ภายในที่คาดหวัง |
+| 1 | 🚨 Unusual Country Access | bar | ตรวจจับการเรียก API จากประเทศที่ไม่คาดคิดโดยแสดงชุดผสมประเทศ/อัตลักษณ์ที่พบยาก |
+| 2 | 🚫 Access Denied by Country | bar | จัดกลุ่ม error access denied ตามประเทศต้นทาง การปฏิเสธที่กระจุกตัวจากประเทศเดียวอาจส่งสัญญาณการโจมตี |
 
 ### ☁ IaC & Platform
 
@@ -235,7 +220,7 @@
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | การ์ด KPI สำหรับ triage 9 รายการ (เหตุการณ์, principal, IP, root, การล็อกอินไม่มี MFA, access denied, การหลบเลี่ยงการป้องกัน, ประเทศ, ภูมิภาค) + แนวโน้มปริมาณเหตุการณ์ทั่วโลก |
 | 🎯 Threat Detection | 14 | จุดรวมการหลบเลี่ยงการป้องกัน · ช่องว่างของ logging · การดัดแปลง VPC flow log/Config/EventBridge/WAF · การเปลี่ยนแปลง SCP/สมาชิกภาพองค์กร · แนวโน้ม error และ throttling · อัตราส่วน write/read · การ์ด KPI ตัวกระตุ้นการยกระดับ P1/P2 |
-| 🔑 Identity & Access | 16 | การล็อกอินคอนโซล · แนวโน้ม MFA · heatmap การล็อกอิน · ลำดับเหตุการณ์ auth ล้มเหลว→สำเร็จ · การใช้ root · กิจกรรม/การลบของ IAM entity · ไทม์ไลน์การยกระดับสิทธิ์ · principal ใหม่ · SSO · AssumeRole ข้ามบัญชี · การใช้ AssumeRoot |
+| 🔑 Identity & Access | 36 | การล็อกอินคอนโซล · แนวโน้ม MFA · heatmap การล็อกอิน · ลำดับเหตุการณ์ auth ล้มเหลว→สำเร็จ · การใช้ root · กิจกรรม/การลบของ IAM entity · ไทม์ไลน์การยกระดับสิทธิ์ · principal ใหม่ · SSO · AssumeRole ข้ามบัญชี · การใช้ AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | log เหตุการณ์การดัดแปลงบริการความปลอดภัยและการดึง credential · การเรียกความเสี่ยงสูงอันดับต้น · ผู้กระทำอันดับต้น · ปริมาณการเรียกความเสี่ยงสูงตามเวลา |
 | 📊 API Activity | 6 | API อันดับต้น · การกระทำที่ถูก access-denied · การกระจายตามภูมิภาค · องค์ประกอบของ error-code · source IP · user agent |
 | 🪣 S3 & RDS | 18 | การดาวน์โหลด/ลบ S3 จำนวนมาก · การปิดใช้งาน versioning/logging · การจำลองข้ามบัญชี · policy/ACL ของ bucket · การแจกแจง · การตั้งค่าการป้องกัน · การลบ Backup vault · การลบคีย์ KMS · การแชร์ snapshot RDS / การลบ RDS โดยไม่มี snapshot · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ query/instance ของ RDS · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ · ขอบเขตการเข้าถึงสำหรับการแจ้งเหตุละเมิด · การคัดลอกอ็อบเจกต์ข้ามบัญชี · การวางข้อความเรียกค่าไถ่ |
