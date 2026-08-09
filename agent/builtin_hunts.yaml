@@ -5828,10 +5828,8 @@
       summary: "Adversaries operate in rarely used regions where monitoring is weaker."
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1535.html"
   chart:
-    type: bar
-    x: aws_region
-    y:
-      - events
+    type: timeseries
+    bucket: day
   prompt: |
     Derive the account's normal regions from the data — those carrying at least
     5% of all events — then list creation calls (Create*, RunInstances,

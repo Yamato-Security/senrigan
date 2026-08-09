@@ -67,6 +67,10 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
 # Column names a time-series chart can bucket on, in priority order. Results come
 # from different tables (``cloudtrail_events.event_time``, Suzaku's
 # ``Timestamp``) and hunts frequently bucket in SQL and return an alias.
+#
+# Matching is exact, not substring: ``hour_bucket`` is the alias eleven hunts use
+# for ``DATE_TRUNC('hour', event_time)`` and must match, while ``bucket_name`` is
+# an S3 bucket and must not.
 _TIME_COLUMN_CANDIDATES: tuple[str, ...] = (
     "event_time",
     "timestamp",
@@ -75,6 +79,8 @@ _TIME_COLUMN_CANDIDATES: tuple[str, ...] = (
     "week",
     "month",
     "bucket",
+    "hour_bucket",
+    "day_bucket",
     "first_seen",
     "last_seen",
 )
