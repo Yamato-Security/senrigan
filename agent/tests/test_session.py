@@ -296,3 +296,92 @@ def test_export_session_analyst_note_defaults_to_empty():
     result = _export_session([entry], title="Test Hunt")
     parsed = json.loads(result)
     assert parsed["queries"][0]["analyst_note"] == ""
+
+
+def test_mutable_defaults_are_not_shared_between_profiles():
+    """Each profile must get its own copy of every mutable default.
+
+    Regression: ``SESSION_STATE_DEFAULTS`` holds mutable containers, so
+    assigning the default object itself made ``messages`` /
+    ``query_history`` / ``analyst_notes`` the *same* list or dict for every
+    profile. A preset hunt run on the Senrigan page then appeared on the
+    Suzaku Timeline page as well, because both keys pointed at one object.
+    """
+    from app import SESSION_STATE_DEFAULTS, _init_session_state
+    from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE
+
+    mock_state: dict = {}
+    with patch("streamlit.session_state", mock_state):
+        _init_session_state(CLOUDTRAIL_PROFILE)
+        _init_session_state(SUZAKU_TIMELINE_PROFILE)
+
+    mutable_keys = [
+        key
+        for key, default in SESSION_STATE_DEFAULTS.items()
+        if isinstance(default, (list, dict, set))
+    ]
+    assert mutable_keys, "expected at least one mutable default to guard"
+    for key in mutable_keys:
+        ct_key = CLOUDTRAIL_PROFILE.state_key(key)
+        sz_key = SUZAKU_TIMELINE_PROFILE.state_key(key)
+        if ct_key == sz_key:  # shared setting, isolation does not apply
+            continue
+        assert mock_state[ct_key] is not mock_state[sz_key], (
+            f"'{key}' is the same object on both pages — "
+            "state written on one page shows up on the other"
+        )
+
+
+def test_mutable_defaults_are_not_shared_with_the_defaults_table():
+    """State must never alias ``SESSION_STATE_DEFAULTS`` itself.
+
+    Aliasing it leaks a page's history into the *next* Streamlit session,
+    since the module-level table outlives any one session.
+    """
+    from app import SESSION_STATE_DEFAULTS, _init_session_state
+    from profiles import CLOUDTRAIL_PROFILE
+
+    mock_state: dict = {}
+    with patch("streamlit.session_state", mock_state):
+        _init_session_state(CLOUDTRAIL_PROFILE)
+
+    for key, default in SESSION_STATE_DEFAULTS.items():
+        if isinstance(default, (list, dict, set)):
+            assert mock_state[CLOUDTRAIL_PROFILE.state_key(key)] is not default
+
+
+def test_direct_sql_on_one_page_leaves_the_other_page_empty():
+    """A preset hunt run on Senrigan must not appear on the Suzaku page.
+
+    End-to-end version of the regression: the Senrigan page runs a preset,
+    then the Suzaku Timeline page's history and chat must still be empty.
+    """
+    from unittest.mock import MagicMock
+
+    from handlers import _handle_direct_sql
+    from profiles import CLOUDTRAIL_PROFILE, SUZAKU_TIMELINE_PROFILE
+    from tests.conftest import MockSessionState
+
+    mock_state = MockSessionState()
+    with patch("streamlit.session_state", mock_state), patch(
+        "streamlit.spinner", MagicMock()
+    ):
+        from app import _init_session_state
+
+        _init_session_state(CLOUDTRAIL_PROFILE)
+        _init_session_state(SUZAKU_TIMELINE_PROFILE)
+
+        with patch(
+            "handlers._execute_sql_safely",
+            return_value=(pd.DataFrame({"event_name": ["CreateUser"]}), None),
+        ):
+            _handle_direct_sql(
+                "SELECT event_name FROM cloudtrail_events",
+                "unused.db",
+                label="🔑 Root Account Activity",
+                profile=CLOUDTRAIL_PROFILE,
+            )
+
+    assert len(mock_state[CLOUDTRAIL_PROFILE.state_key("query_history")]) == 1
+    assert mock_state[SUZAKU_TIMELINE_PROFILE.state_key("query_history")] == []
+    assert mock_state[SUZAKU_TIMELINE_PROFILE.state_key("messages")] == []
