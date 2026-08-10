@@ -12,6 +12,7 @@ Layout lives in ``app.py``; this module renders nothing. It touches
 Streamlit runtime.
 """
 
+import copy
 import json
 import logging
 
@@ -25,7 +26,9 @@ from report import ReportEntry
 
 logger = logging.getLogger(__name__)
 
-# Session state keys and their default values.
+# Session state keys and their default values. The mutable ones are templates,
+# never the value stored: :func:`_init_session_state` copies them per profile —
+# see the note there.
 SESSION_STATE_DEFAULTS: dict = {
     "messages": [],  # chat history: list of {role, content}
     "query_history": [],  # list of ReportEntry for report generation
@@ -56,6 +59,11 @@ def _init_session_state(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
     independent history, filters and reports while sharing the API key,
     model and row cap.
 
+    Mutable defaults are deep-copied. Storing the object from
+    :data:`SESSION_STATE_DEFAULTS` directly gave every profile the *same* list
+    or dict, so a hunt run on one page appended to the other page's history
+    too — and, because that table outlives the session, to the next session's.
+
     Args:
         profile: Dataset profile whose namespace to initialize.
     """
@@ -66,7 +74,7 @@ def _init_session_state(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> None:
                 default = list(profile.default_levels)
             elif key == "row_limit":
                 default = profile.default_row_limit
-            st.session_state[namespaced] = default
+            st.session_state[namespaced] = copy.deepcopy(default)
 
 
 def _format_technique_caption(technique: dict) -> str:
