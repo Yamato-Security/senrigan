@@ -220,6 +220,33 @@ CLOUDTRAIL_COLUMNS: list[dict] = [
 # The three GeoIP columns Suzaku adds under ``--geo-ip`` are deliberately absent:
 # they exist only in an enriched run, and a prompt promising a column that is not
 # there produces SQL that fails to bind.
+# Suzaku's ATT&CK tactic abbreviations, as mapped by ``config/mitre_tactics.txt``
+# in the Suzaku repository. The ``Tactics`` column holds these strings and never
+# the full ATT&CK tactic name, so a filter written as
+# ``list_contains("Tactics", 'Credential Access')`` binds, runs, and silently
+# returns nothing. Two full tags share one abbreviation: ``attack.stealth`` and
+# ``attack.defense-evasion`` both render as ``Stealth``.
+SUZAKU_TACTIC_ABBREVIATIONS: frozenset[str] = frozenset(
+    {
+        "Recon",  # attack.reconnaissance
+        "ResDev",  # attack.resource-development
+        "InitAccess",  # attack.initial-access
+        "Exec",  # attack.execution
+        "Persis",  # attack.persistence
+        "PrivEsc",  # attack.privilege-escalation
+        "Stealth",  # attack.stealth / attack.defense-evasion
+        "DefImpair",  # attack.defense-impairment
+        "CredAccess",  # attack.credential-access
+        "Disc",  # attack.discovery
+        "LatMov",  # attack.lateral-movement
+        "Collect",  # attack.collection
+        "C2",  # attack.command-and-control
+        "Exfil",  # attack.exfiltration
+        "Impact",  # attack.impact
+    }
+)
+
+
 SUZAKU_TIMELINE_COLUMNS: list[dict] = [
     {
         "name": "Timestamp",

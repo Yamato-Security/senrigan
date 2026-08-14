@@ -42,7 +42,7 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 19 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (44 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 20 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (44 charts) |
 | `aws-ct-summary` | 👤 **Suzaku Summary** — identity triage and drill-down | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
 | `aws-ct-metrics` | 📊 **Suzaku Metrics** — field explorer with live filters | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
 
@@ -87,8 +87,8 @@ Two things are specific to Suzaku data:
 | Category | Hunts |
 |----------|-------|
 | 🚨 Triage | Critical & High detections · detection volume by severity · detection trend per day |
-| 📜 Rules | Top rules (medium+) · rare rules (fired once) · rule onset (first/last seen) |
-| 🔑 Identity | Top principals by severe detections · root-account detections · access keys behind detections |
+| 📜 Rules | Top rules by detection volume · rare rules (fired once) · rule onset (first/last seen) |
+| 🔑 Identity | Top principals by severe detections · root-account detections · access keys behind detections · unattributed & service-principal detections |
 | 🌍 Origin | Top source IPs by distinct rules · top user agents · multi-region activity per principal |
 | ⚠ Failures | Failed API calls in detections |
 | 🧬 ATT&CK | Technique coverage · tactic breakdown · rule × technique matrix |
@@ -96,6 +96,10 @@ Two things are specific to Suzaku data:
 
 Every hunt runs without an API key, carries an explicit `ORDER BY` and `LIMIT`, and
 is executed against a real Suzaku fixture in CI.
+
+The **severity filter owns severity**: widening it to `low` widens the hunts with it.
+The one exception is *Critical & High detections*, whose whole meaning is its floor —
+it stays at `high` and above whatever the sidebar says.
 
 ## Agent — 👤 Suzaku Summary page
 

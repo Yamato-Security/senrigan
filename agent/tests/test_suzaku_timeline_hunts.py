@@ -16,6 +16,8 @@ import pytest
 import yaml
 
 from profiles import SUZAKU_TIMELINE_PROFILE
+from query import apply_filters
+from schema import SUZAKU_TACTIC_ABBREVIATIONS
 
 FIXTURE = (
     Path(__file__).resolve().parents[2]
@@ -35,6 +37,21 @@ SQL_HUNTS = [(hunt["label"], hunt) for hunt in HUNTS if hunt.get("sql", "").stri
 _TRAILING_LIMIT = re.compile(r"\bLIMIT\s+(\d+)\s*$", re.IGNORECASE)
 _QUOTED_IDENTIFIER = re.compile(r'"([^"]+)"')
 _VALID_TID = re.compile(r"^T\d{4}(\.[A-Z]?\d{3})?$")
+
+# `list_contains("Tactics", 'Impact')` — the literal a tactic filter compares to.
+_TACTIC_LITERAL = re.compile(r'list_contains\(\s*"Tactics"\s*,\s*\'([^\']*)\'')
+
+# `"Level" >= 'high'::suzaku_level` — a severity floor.
+_LEVEL_FLOOR = re.compile(r'"Level"\s*(?:>=|>)\s*\'(\w+)\'::suzaku_level')
+
+# `count(*) FILTER (WHERE ...)`. A floor inside one of these computes a metric
+# column and leaves the row set alone, so only floors outside them are filters.
+_FILTER_CLAUSE = re.compile(r"FILTER\s*\([^()]*\)", re.IGNORECASE)
+
+
+def row_filter_floors(sql: str) -> set[str]:
+    """Return the severity floors *sql* applies to its rows, not to its metrics."""
+    return set(_LEVEL_FLOOR.findall(_FILTER_CLAUSE.sub("", sql)))
 
 
 @pytest.fixture(scope="module")
@@ -188,8 +205,6 @@ def test_hunt_sql_still_validates_with_ui_filters_applied(
     """The page always injects the severity/date CTE, so validate that form too."""
     from datetime import date
 
-    from query import apply_filters
-
     filtered = apply_filters(
         hunt["sql"],
         profile=SUZAKU_TIMELINE_PROFILE,
@@ -217,3 +232,151 @@ def test_severity_ordering_puts_critical_first(
     hunt = next(h for h in HUNTS if "Detection Volume by Severity" in h["label"])
     levels = [str(row[0]) for row in conn.execute(hunt["sql"]).fetchall()]
     assert levels[0] == "critical", levels
+
+
+# ---------------------------------------------------------------------------
+# Does the hunt return the right rows?
+#
+# Everything above proves a hunt is well-formed SQL against the real schema. A
+# query can pass all of it and still be wrong in the one way that matters to an
+# analyst: it binds, it runs, and it answers nothing.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_hunt_returns_rows_under_the_default_severity_filter(
+    label: str, hunt: dict, conn: duckdb.DuckDBPyConnection
+) -> None:
+    """A hunt that is always empty is indistinguishable from a clean environment.
+
+    The page opens on the profile's default severities, so that — not the whole
+    table — is the condition a hunt has to produce something under. The fixture
+    carries every severity and eight of Suzaku's tactics, so an empty result
+    here means the predicate never matches anything, not that the data is quiet.
+    """
+    sql = apply_filters(
+        hunt["sql"],
+        profile=SUZAKU_TIMELINE_PROFILE,
+        levels=list(SUZAKU_TIMELINE_PROFILE.default_levels),
+    )
+    assert conn.execute(sql).fetchall(), (
+        f"{label}: no rows under the default severity filter — the predicate "
+        "matches nothing in a fixture that holds every severity"
+    )
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_hunt_tactic_literals_are_suzaku_abbreviations(label: str, hunt: dict) -> None:
+    """`Tactics` holds Suzaku's abbreviations, never the full ATT&CK name.
+
+    `list_contains("Tactics", 'Credential Access')` is valid SQL against a
+    VARCHAR[], so nothing else in this file rejects it — it simply matches no
+    row, forever.
+    """
+    for tactic in _TACTIC_LITERAL.findall(hunt["sql"]):
+        assert tactic in SUZAKU_TACTIC_ABBREVIATIONS, (
+            f"{label}: {tactic!r} is not a Suzaku tactic abbreviation "
+            f"({sorted(SUZAKU_TACTIC_ABBREVIATIONS)})"
+        )
+
+
+def test_known_abbreviations_cover_every_tactic_in_the_fixture(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """The pinned vocabulary is checked against real Suzaku output, not trusted."""
+    present = {
+        tactic
+        for (tactic,) in conn.execute(
+            'SELECT DISTINCT unnest("Tactics") FROM timeline'
+        ).fetchall()
+    }
+    unknown = present - SUZAKU_TACTIC_ABBREVIATIONS
+    assert not unknown, f"fixture holds tactics the constant omits: {sorted(unknown)}"
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_hunt_declares_the_severity_floor_it_hardcodes(label: str, hunt: dict) -> None:
+    """Severity belongs to the sidebar unless the hunt's meaning fixes it.
+
+    `apply_filters` has already narrowed the rows to the severities the analyst
+    selected. A second, hardcoded floor is the stricter of the two, so widening
+    the sidebar to `low` empties the hunt with no explanation. A hunt that is
+    *defined* by its floor — "Critical & High Detections" — keeps it and says so
+    in `min_level`, which is what makes the silence intentional and reviewable.
+    """
+    floors = row_filter_floors(hunt["sql"])
+    declared = hunt.get("min_level")
+
+    assert floors == ({declared} if declared else set()), (
+        f"{label}: SQL floors {sorted(floors)} vs min_level {declared!r} — "
+        "declare the floor in min_level or let the sidebar own severity"
+    )
+    if declared:
+        assert declared in SUZAKU_TIMELINE_PROFILE.level_order, f"{label}: {declared!r}"
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_row_level_hunts_project_the_event_id(label: str, hunt: dict) -> None:
+    """A detection an analyst cannot cite is a detection they cannot escalate.
+
+    `EventID` is the join back to the raw CloudTrail event on the Senrigan page,
+    and the only value an IR ticket can quote. Aggregates are exempt: they
+    describe a population, not an event.
+    """
+    if "GROUP BY" in hunt["sql"].upper():
+        return
+    assert '"EventID"' in hunt["sql"], f"{label}: row-level hunt without an EventID"
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_bar_chart_axes_match_the_result_columns(
+    label: str, hunt: dict, conn: duckdb.DuckDBPyConnection
+) -> None:
+    """`chart.x` is the category, `chart.y` the measure — never the reverse.
+
+    `_render_bar_chart` draws `px.bar(x=chart.y, y=chart.x, orientation="h")`,
+    mirroring its own fallback of "first non-numeric column, all numeric
+    columns". Swapping the two still renders, which is why this went unnoticed:
+    the bars come out plotted against a string axis and mean nothing.
+    """
+    chart = hunt.get("chart")
+    if not chart or chart.get("type") != "bar":
+        return
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    numeric = set(frame.select_dtypes(include="number").columns)
+
+    x_col = chart.get("x")
+    y_cols = chart.get("y", [])
+    y_cols = [y_cols] if isinstance(y_cols, str) else list(y_cols)
+
+    assert x_col in frame.columns, f"{label}: chart.x {x_col!r} is not selected"
+    assert (
+        x_col not in numeric
+    ), f"{label}: chart.x {x_col!r} is a measure, not a category"
+    for y_col in y_cols:
+        assert y_col in frame.columns, f"{label}: chart.y {y_col!r} is not selected"
+        assert (
+            y_col in numeric
+        ), f"{label}: chart.y {y_col!r} is a category, not a measure"
+
+
+def test_a_hunt_surfaces_detections_with_no_principal(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Every identity hunt filters `"UserARN" IS NOT NULL`, so nothing shows these.
+
+    AWS redacts the identity of a failed console login, and service-principal
+    calls carry no ARN at all. Both are detections; without a hunt of their own
+    they are invisible on this page.
+    """
+    expected = conn.execute(
+        'SELECT count(*) FROM timeline WHERE "UserARN" IS NULL'
+    ).fetchone()[0]
+    assert expected, "fixture has no unattributed rows to cover"
+
+    hunt = next((h for h in HUNTS if "Unattributed" in h["label"]), None)
+    assert hunt, "no hunt covers detections that carry no principal ARN"
+
+    rows = conn.execute(hunt["sql"]).fetchall()
+    assert len(rows) >= expected, f"covers {len(rows)} of {expected} unattributed rows"

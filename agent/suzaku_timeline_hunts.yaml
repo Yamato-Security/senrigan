@@ -6,7 +6,12 @@
 #   description: One-line explanation of what this query surfaces and why it matters
 #   severity:    P1..P4, as in builtin_hunts.yaml
 #   techniques:  Optional Threat Technique Catalog / ATT&CK mappings
-#   chart:       Optional chart config (type: bar|timeseries, x/y/bucket)
+#   chart:       Optional chart config (type: bar|timeseries, x/y/bucket) — for a
+#                bar chart `x` is the category column and `y` the measure(s)
+#   min_level:   Declares a severity floor the SQL hardcodes. Severity otherwise
+#                belongs to the sidebar filter, which has already narrowed the
+#                rows; a second undeclared floor silently empties the hunt when
+#                the analyst widens the selection.
 #   prompt:      Natural language prompt sent to the AI agent (requires API key)
 #   sql:         Pre-built DuckDB SQL for direct execution (no API key needed)
 #
@@ -29,12 +34,13 @@
   label: "\U0001f6a8 Critical & High Detections"
   description: "The shortest path to what matters: newest critical and high severity rule matches."
   severity: "P1"
+  min_level: "high"
   chart:
     type: timeseries
     bucket: day
   prompt: |
     Show the most recent critical and high severity Suzaku detections with
-    their rule title, event name, principal and source IP.
+    their rule title, event name, principal, source IP and event ID.
   sql: |
     SELECT
         "Timestamp",
@@ -44,7 +50,8 @@
         "UserARN",
         "SrcIP",
         "AwsRegion",
-        "ErrorCode"
+        "ErrorCode",
+        "EventID"
     FROM timeline
     WHERE "Level" >= 'high'::suzaku_level
     ORDER BY "Timestamp" DESC
@@ -56,8 +63,8 @@
   severity: "P4"
   chart:
     type: bar
-    x: "detections"
-    y: "Level"
+    x: "Level"
+    y: "detections"
   prompt: |
     Break down Suzaku detections by severity level, ordered from critical to
     informational, including how many distinct rules and events each covers.
@@ -101,16 +108,16 @@
 # ===========================================================================
 
 - category: "\U0001f4dc Rules"
-  label: "\U0001f3af Top Rules (Medium and Above)"
-  description: "Which detections dominate the medium+ signal, and over how many principals they spread."
+  label: "\U0001f3af Top Rules by Detection Volume"
+  description: "Which detections dominate the signal at the severities you selected, and over how many principals they spread."
   severity: "P3"
   chart:
     type: bar
-    x: "detections"
-    y: "RuleTitle"
+    x: "RuleTitle"
+    y: "detections"
   prompt: |
-    Rank Suzaku rules by how many medium-or-higher detections they produced,
-    including how many distinct principals and source IPs each one touched.
+    Rank Suzaku rules by how many detections they produced, including how many
+    distinct principals and source IPs each one touched.
   sql: |
     SELECT
         "RuleTitle",
@@ -121,7 +128,6 @@
         min("Timestamp")            AS first_seen,
         max("Timestamp")            AS last_seen
     FROM timeline
-    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY detections DESC
     LIMIT 50
@@ -163,7 +169,6 @@
         date_diff('day', min("Timestamp"), max("Timestamp")) AS active_days,
         count(*)          AS detections
     FROM timeline
-    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY first_seen DESC
     LIMIT 100
@@ -178,8 +183,8 @@
   severity: "P2"
   chart:
     type: bar
-    x: "severe"
-    y: "UserARN"
+    x: "UserARN"
+    y: "severe"
   techniques:
     - tid: "T1078"
       name: "Valid Accounts"
@@ -226,7 +231,8 @@
         "UserARN",
         "SrcIP",
         "UserAgent",
-        "AwsRegion"
+        "AwsRegion",
+        "EventID"
     FROM timeline
     WHERE lower("UserType") = 'root' OR "UserARN" LIKE '%:root'
     ORDER BY "Timestamp" DESC
@@ -260,6 +266,36 @@
     ORDER BY severe DESC, detections DESC
     LIMIT 100
 
+- category: "\U0001f511 Identity"
+  label: "\U0001f47b Unattributed & Service-Principal Detections"
+  description: "Detections carrying no principal ARN. AWS redacts the identity of a failed console login, and service-principal calls have none — every other identity hunt filters both away."
+  severity: "P2"
+  techniques:
+    - tid: "T1078.004"
+      name: "Valid Accounts: Cloud Accounts"
+      summary: "A failed console login against an unknown identity is how credential stuffing looks in CloudTrail: AWS withholds the user name, so the attempt is attributable only by source IP."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.004.html"
+  prompt: |
+    Show Suzaku detections that have no principal ARN, or whose identity is an
+    AWS service, with the rule, event name, user type, source IP and event ID.
+  sql: |
+    SELECT
+        "Timestamp",
+        "Level",
+        "RuleTitle",
+        "EventName",
+        "EventSource",
+        "UserType",
+        "UserName",
+        "SrcIP",
+        "AwsRegion",
+        "ErrorCode",
+        "EventID"
+    FROM timeline
+    WHERE "UserARN" IS NULL OR "UserType" = 'AWSService'
+    ORDER BY "Level" DESC, "Timestamp" DESC
+    LIMIT 200
+
 # ===========================================================================
 # Origin
 # ===========================================================================
@@ -270,11 +306,11 @@
   severity: "P3"
   chart:
     type: bar
-    x: "rules"
-    y: "SrcIP"
+    x: "SrcIP"
+    y: "rules"
   prompt: |
-    Rank source IPs by the number of distinct Suzaku rules they triggered at
-    medium severity or above, with their principals and activity window.
+    Rank source IPs by the number of distinct Suzaku rules they triggered, with
+    their principals and activity window.
   sql: |
     SELECT
         "SrcIP",
@@ -285,7 +321,7 @@
         min("Timestamp")                                         AS first_seen,
         max("Timestamp")                                         AS last_seen
     FROM timeline
-    WHERE "Level" >= 'medium'::suzaku_level AND "SrcIP" IS NOT NULL
+    WHERE "SrcIP" IS NOT NULL
     GROUP BY "SrcIP"
     ORDER BY rules DESC, severe DESC
     LIMIT 100
@@ -300,8 +336,8 @@
       summary: "Credential use from an unusual client is often the first sign of misuse."
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.html"
   prompt: |
-    Rank user agent strings by Suzaku detections at medium severity or above,
-    showing how many principals and IPs used each one.
+    Rank user agent strings by Suzaku detections, showing how many principals
+    and IPs used each one.
   sql: |
     SELECT
         "UserAgent",
@@ -310,7 +346,7 @@
         count(DISTINCT "UserARN")                                AS principals,
         count(DISTINCT "SrcIP")                                  AS source_ips
     FROM timeline
-    WHERE "Level" >= 'medium'::suzaku_level AND "UserAgent" IS NOT NULL
+    WHERE "UserAgent" IS NOT NULL
     GROUP BY "UserAgent"
     ORDER BY severe DESC, detections DESC
     LIMIT 100
@@ -382,8 +418,8 @@
   severity: "P4"
   chart:
     type: bar
-    x: "detections"
-    y: "technique"
+    x: "technique"
+    y: "detections"
   prompt: |
     Count Suzaku detections per ATT&CK technique ID, showing the severities
     involved.
@@ -405,8 +441,8 @@
   severity: "P4"
   chart:
     type: bar
-    x: "detections"
-    y: "tactic"
+    x: "tactic"
+    y: "detections"
   prompt: |
     Count Suzaku detections per ATT&CK tactic, with the distinct rules and
     principals behind each one.
@@ -424,11 +460,11 @@
 
 - category: "\U0001f9ec ATT&CK"
   label: "\U0001f5c2 Rule × Technique Matrix"
-  description: "Which rules cover which techniques, for medium+ detections. Reveals coverage gaps and overlaps."
+  description: "Which rules cover which techniques. Reveals coverage gaps and overlaps."
   severity: "P4"
   prompt: |
-    For medium-and-above Suzaku detections, list each rule with the ATT&CK
-    techniques it maps to and how often it fired.
+    List each Suzaku rule with the ATT&CK techniques it maps to and how often it
+    fired.
   sql: |
     SELECT
         "RuleTitle",
@@ -436,7 +472,6 @@
         string_agg(DISTINCT technique, ', ')  AS techniques,
         count(*)                              AS detections
     FROM timeline, unnest("TechniqueIDs") AS t(technique)
-    WHERE "Level" >= 'medium'::suzaku_level
     GROUP BY "RuleTitle", "Level"
     ORDER BY detections DESC
     LIMIT 100
@@ -470,7 +505,8 @@
         "UserARN",
         "SrcIP",
         "AwsRegion",
-        "ErrorCode"
+        "ErrorCode",
+        "EventID"
     FROM timeline
     WHERE list_contains("Tactics", 'Impact')
     ORDER BY "Level" DESC, "Timestamp" DESC
@@ -491,8 +527,9 @@
     x: "UserAccessKeyID"
     y: "detections"
   prompt: |
-    Show Suzaku detections whose Tactics include Credential Access or Initial
-    Access, grouped by access key and principal, with the rules that fired.
+    Show Suzaku detections whose Tactics include CredAccess or InitAccess
+    (Suzaku's abbreviations for Credential Access and Initial Access), grouped
+    by access key and principal, with the rules that fired.
   sql: |
     SELECT
         "UserAccessKeyID",
@@ -504,8 +541,8 @@
         min("Timestamp")                        AS first_seen,
         max("Timestamp")                        AS last_seen
     FROM timeline
-    WHERE list_contains("Tactics", 'Credential Access')
-       OR list_contains("Tactics", 'Initial Access')
+    WHERE list_contains("Tactics", 'CredAccess')
+       OR list_contains("Tactics", 'InitAccess')
     GROUP BY "UserAccessKeyID", "UserARN"
     ORDER BY detections DESC
     LIMIT 100
