@@ -220,7 +220,7 @@ def render_panel(
         st.caption(empty_message)
         return
 
-    render_chart(df, chart)
+    render_chart(df, chart, key=f"{profile.key}_chart_{key}")
     if show_table:
         st.dataframe(df, use_container_width=True, hide_index=True)
 

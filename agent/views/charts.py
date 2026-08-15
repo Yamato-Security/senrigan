@@ -16,7 +16,9 @@ import pandas as pd
 import streamlit as st
 
 
-def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
+def _render_bar_chart(
+    df: pd.DataFrame, chart_config: dict | None, key: str | None = None
+) -> None:
     """Render a Plotly Express horizontal bar chart.
 
     Uses the x/y keys from chart_config when provided; falls back to the first
@@ -25,6 +27,7 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
     Args:
         df:           The query result DataFrame.
         chart_config: Chart configuration dict, or None for auto-detection.
+        key:          Streamlit element key, unique per chart on the page.
     """
     import plotly.express as px
 
@@ -60,8 +63,13 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
 
     # Rendered inline, not in an expander: the caller (a result card) is already
     # an expander, and Streamlit forbids nesting them.
+    #
+    # The key is what keeps two cards holding the same result from colliding:
+    # Streamlit derives an element id from the type and the parameters, so two
+    # identical figures raise StreamlitDuplicateElementId and take the page with
+    # them.
     st.markdown("**📊 Bar Chart**")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 # Column names a time-series chart can bucket on, in priority order. Results come
@@ -183,7 +191,9 @@ def _pre_aggregated_measure(
     return numeric[0] if len(numeric) else None
 
 
-def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
+def render_chart(
+    df: pd.DataFrame, chart_config: dict | None, *, key: str | None = None
+) -> None:
     """Render a chart from the query result based on the chart configuration.
 
     Dispatch table:
@@ -196,6 +206,12 @@ def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
         df:           The query result DataFrame.
         chart_config: Chart configuration dict with 'type', 'x', 'y', 'bucket'
                       keys, or None for auto-detection.
+        key:          Streamlit element key. Two charts drawn from the same data
+                      share an auto-generated id and raise
+                      ``StreamlitDuplicateElementId``, so every caller that can
+                      render a chart more than once on one page passes what makes
+                      this one different — a result card its position, an
+                      explorer panel its own key.
     """
     if df is None or df.empty:
         return
@@ -210,10 +226,10 @@ def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
         return
 
     if chart_type == "bar":
-        _render_bar_chart(df, chart_config)
+        _render_bar_chart(df, chart_config, key)
         return
 
     # Auto-detection: render a bar chart when at least one numeric column exists.
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     if numeric_cols:
-        _render_bar_chart(df, None)
+        _render_bar_chart(df, None, key)
