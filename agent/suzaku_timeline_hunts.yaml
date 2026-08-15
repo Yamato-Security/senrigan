@@ -885,3 +885,76 @@
     GROUP BY tactic
     ORDER BY severe DESC, detections DESC
     LIMIT 100
+
+- category: "\U0001f4d5 Response"
+  label: "\U0001f9fe Indicator Extraction Sheet"
+  description: "Every source IP, principal and access key behind the detections, in one list with its activity window. This is the containment input — the IPs to block, the identities to disable, the keys to rotate — collected once instead of transcribed from three hunts."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  next_steps: >-
+    Work down the list by severe count: rotate or disable each credential, then block the
+    source IPs at the network boundary. Keep the first_seen / last_seen columns with the
+    ticket — they are the window every later evidence request will be scoped to.
+  prompt: |
+    List every distinct source IP, principal ARN and access key appearing in the
+    Suzaku detections, each with its detection counts and activity window,
+    labelled by which kind of indicator it is.
+  sql: |
+    WITH indicators AS (
+        SELECT 'source_ip'  AS indicator_type, "SrcIP"           AS indicator, "Level", "RuleTitle", "Timestamp"
+        FROM timeline WHERE "SrcIP" IS NOT NULL
+        UNION ALL
+        SELECT 'principal'  AS indicator_type, "UserARN"         AS indicator, "Level", "RuleTitle", "Timestamp"
+        FROM timeline WHERE "UserARN" IS NOT NULL
+        UNION ALL
+        SELECT 'access_key' AS indicator_type, "UserAccessKeyID" AS indicator, "Level", "RuleTitle", "Timestamp"
+        FROM timeline WHERE "UserAccessKeyID" IS NOT NULL
+    )
+    SELECT
+        indicator_type,
+        indicator,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen
+    FROM indicators
+    GROUP BY indicator_type, indicator
+    ORDER BY severe DESC, detections DESC, indicator_type, indicator
+    LIMIT 300
+
+- category: "\U0001f4d5 Response"
+  label: "\U0001f9e9 Rule Co-Occurrence per Principal"
+  description: "Rule pairs that fired for the same principal within the same hour. Detections read top-down report one intrusion three times under three rule titles; the pairs put the story back together."
+  severity: "P3"
+  prompt: |
+    Find pairs of Suzaku rules that fired for the same principal in the same
+    hour, with how often the pair occurred and how many principals it covered.
+  sql: |
+    WITH per_hour AS (
+        SELECT DISTINCT
+            "UserARN",
+            date_trunc('hour', "Timestamp")  AS hour,
+            "RuleTitle"
+        FROM timeline
+        WHERE "UserARN" IS NOT NULL
+    )
+    SELECT
+        a."RuleTitle"                 AS rule_a,
+        b."RuleTitle"                 AS rule_b,
+        count(*)                      AS co_occurrences,
+        count(DISTINCT a."UserARN")   AS principals,
+        min(a.hour)                   AS first_seen,
+        max(a.hour)                   AS last_seen
+    FROM per_hour a
+    JOIN per_hour b
+      ON a."UserARN" = b."UserARN"
+     AND a.hour = b.hour
+     -- `<` and not `<>`: the unordered join lists every pair twice, once in
+     -- each direction, and every rule against itself.
+     AND a."RuleTitle" < b."RuleTitle"
+    GROUP BY rule_a, rule_b
+    ORDER BY co_occurrences DESC, principals DESC, rule_a
+    LIMIT 100

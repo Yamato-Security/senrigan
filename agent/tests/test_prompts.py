@@ -173,3 +173,28 @@ def test_system_prompt_contains_geoip_column_guidance():
     assert "geo_country_code" in SYSTEM_PROMPT
     assert "geo_city" in SYSTEM_PROMPT
     assert "geo_org" in SYSTEM_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# SUZAKU_TIMELINE_SYSTEM_PROMPT (SQL generation against Suzaku's timeline)
+# ---------------------------------------------------------------------------
+
+
+def test_suzaku_prompt_lists_every_tactic_abbreviation():
+    """The model cannot guess that `Tactics` holds `CredAccess`, not the full name.
+
+    A filter written as `list_contains("Tactics", 'Credential Access')` is valid
+    SQL against a VARCHAR[] and returns nothing at all, so neither the SQL guard
+    nor the retry catches it — the analyst is told there were no such
+    detections. The prompt showed one example abbreviation and left the rest to
+    inference; the built-in hunts made exactly that mistake before it was found.
+    """
+    from prompts.suzaku_timeline_prompt import SUZAKU_TIMELINE_SYSTEM_PROMPT
+    from schema import SUZAKU_TACTIC_ABBREVIATIONS
+
+    missing = sorted(
+        abbreviation
+        for abbreviation in SUZAKU_TACTIC_ABBREVIATIONS
+        if abbreviation not in SUZAKU_TIMELINE_SYSTEM_PROMPT
+    )
+    assert not missing, f"tactic abbreviations absent from the prompt: {missing}"

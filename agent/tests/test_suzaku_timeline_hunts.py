@@ -505,3 +505,47 @@ def test_a_hunt_pairs_a_denial_with_the_success_that_followed(
     assert "minutes_to_success" in frame.columns, "the gap is not measured"
     assert not frame.empty, "no denial/success pair found in the fixture"
     assert (frame["minutes_to_success"] >= 0).all(), "a success predates its denial"
+
+
+# ---------------------------------------------------------------------------
+# Response — what leaves this page and goes into the ticket
+# ---------------------------------------------------------------------------
+
+
+def test_a_hunt_produces_a_ticket_ready_indicator_list(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Containment needs one list of values, not three tables to reconcile.
+
+    The IPs to block, the principals to disable and the keys to rotate are
+    spread across as many hunts as there are groupings. Transcribing them into
+    an incident ticket by hand is where indicators get dropped.
+    """
+    hunt = next((h for h in HUNTS if "Indicator" in h["label"]), None)
+    assert hunt, "nothing collects the indicators into one list"
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    assert "indicator_type" in frame.columns and "indicator" in frame.columns
+    assert {"source_ip", "principal", "access_key"} <= set(frame["indicator_type"])
+    assert frame["indicator"].notna().all(), "a NULL cannot be blocked or rotated"
+
+
+def test_a_hunt_shows_which_rules_fire_together(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Rules that co-occur are one behaviour, not several findings.
+
+    Triage that reads a detection list top-down reports the same intrusion three
+    times under three rule titles. The pairs are what turn them back into one
+    story.
+    """
+    hunt = next((h for h in HUNTS if "Co-Occurrence" in h["label"]), None)
+    assert hunt, "nothing shows which rules fire together"
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    assert {"rule_a", "rule_b"} <= set(frame.columns)
+    assert not frame.empty, "no co-occurring rules in the fixture"
+    assert (frame["rule_a"] < frame["rule_b"]).all(), (
+        "each pair must appear once — an unordered join lists both directions "
+        "and every rule against itself"
+    )
