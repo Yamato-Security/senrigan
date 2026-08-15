@@ -104,7 +104,7 @@ cd ../../docker && docker compose run --rm superset-init   # re-import (idempote
 time series, the world map and the heatmaps are not mirrored and a tab left with no chart is
 dropped. `dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
 
-Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 1970 (pytest),
+Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 2056 (pytest),
 config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 1199 (`make test-dashboard`), root `tests/` ≈ 238
 (`make test-repo`). A PR that changes a count updates this line **and** [AGENTS.md](AGENTS.md)
 together — stale counts cause false "regression" alarms later.

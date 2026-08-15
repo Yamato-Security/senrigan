@@ -336,3 +336,82 @@ def test_a_hunt_surfaces_detections_with_no_principal(
 
     rows = conn.execute(hunt["sql"]).fetchall()
     assert len(rows) >= expected, f"covers {len(rows)} of {expected} unattributed rows"
+
+
+# ---------------------------------------------------------------------------
+# Tempo — when did this happen?
+#
+# The first question of an investigation is not "who" but "when": the incident
+# window decides which logs get collected and which principals are even in
+# scope. Volume per day answers it too coarsely to act on.
+# ---------------------------------------------------------------------------
+
+TIMING_QUESTIONS = {
+    "Burst": "which hours the detections cluster in",
+    "Off-Hours": "whether a principal works outside its usual hours",
+    "Dwell": "how long a principal stayed active",
+}
+
+
+@pytest.mark.parametrize("fragment", sorted(TIMING_QUESTIONS))
+def test_the_catalogue_answers_the_timing_questions(fragment: str) -> None:
+    """Scoping an incident in time needs its own hunts, not a daily total."""
+    matches = [hunt for hunt in HUNTS if fragment in hunt["label"]]
+    assert len(matches) == 1, (
+        f"no single hunt answers {TIMING_QUESTIONS[fragment]!r} "
+        f"(labels containing {fragment!r}: {[h['label'] for h in matches]})"
+    )
+
+
+@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
+def test_time_of_day_hunts_say_which_clock_they_read(label: str, hunt: dict) -> None:
+    """An hour-of-day hunt is meaningless without the timezone it was read in.
+
+    Suzaku writes `Timestamp` in the zone named by `suzaku_meta.timestamp_tz` —
+    UTC unless the run used `--localtime`. "Off-hours" in one of those is
+    working hours in the other, so a hunt that slices by hour or weekday has to
+    say which clock the reader is looking at.
+    """
+    if not re.search(r"\b(hour|isodow|dayofweek|dayname)\s*\(", hunt["sql"]):
+        return
+    text = f"{hunt['description']} {hunt.get('next_steps', '')}"
+    assert "timestamp_tz" in text or "localtime" in text, (
+        f"{label}: slices by hour or weekday without naming the clock "
+        "(suzaku_meta.timestamp_tz / --localtime)"
+    )
+
+
+def test_the_root_hunt_summarises_rather_than_dumping_rows(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Root is over half of a real timeline, so a newest-200 list says nothing.
+
+    What a responder needs from the root identity is *what it did* — the API
+    actions, the days, whether they failed — not the tail of a firehose that a
+    LIMIT truncated arbitrarily.
+    """
+    hunt = next(h for h in HUNTS if "Root Account" in h["label"])
+    frame = conn.execute(hunt["sql"]).fetchdf()
+
+    assert "detections" in frame.columns, "the root hunt does not count anything"
+    assert (
+        frame["detections"].max() > 1
+    ), "every group holds one row — nothing was summarised"
+
+
+def test_the_failure_hunt_separates_authorization_from_the_rest(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """AccessDenied means something an absent configuration does not.
+
+    Ranking raw error codes puts permission probing next to
+    `NoSuchLifecycleConfiguration`, which is the API answering a question. The
+    hunt has to name the family so the responder can read the ranking.
+    """
+    hunt = next(h for h in HUNTS if "Failed API Calls" in h["label"])
+    frame = conn.execute(hunt["sql"]).fetchdf()
+
+    assert "error_family" in frame.columns, "failures are not classified"
+    families = set(frame["error_family"])
+    assert "authorization" in families, families
+    assert families - {"authorization"}, "every failure was called an authorization one"
