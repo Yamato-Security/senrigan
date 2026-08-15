@@ -4,6 +4,11 @@ Every hunt runs for real against the committed fixture, which is what catches
 the mistakes this dataset invites: an unquoted PascalCase identifier, an uncast
 severity threshold, a placeholder comparison where the column is NULL-able, or
 a missing LIMIT on a table that has millions of rows in production.
+
+What this file holds is what is true of *Suzaku* hunts. The rules both
+catalogues share — chart configs, wall-clock filters, shipping SQL at all — live
+in ``test_hunt_chart_configs.py`` and ``test_hunt_hygiene.py``, which read both
+YAMLs through ``hunt_catalogue.py``.
 """
 
 from __future__ import annotations
@@ -93,11 +98,6 @@ def test_hunt_labels_are_unique() -> None:
     assert len(labels) == len(set(labels))
 
 
-def test_every_hunt_ships_runnable_sql() -> None:
-    """The page must work without an API key, so every hunt needs SQL."""
-    assert len(SQL_HUNTS) == len(HUNTS)
-
-
 @pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
 def test_hunt_sql_declares_order_by_and_limit(label: str, hunt: dict) -> None:
     """Test 22: an un-ORDERed or un-LIMITed query is never right on this table."""
@@ -179,17 +179,6 @@ def test_hunt_techniques_are_well_formed(label: str, hunt: dict) -> None:
         assert technique.get("name")
         assert technique.get("summary")
         assert str(technique.get("url", "")).startswith("https://")
-
-
-@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
-def test_hunt_chart_config_is_supported(label: str, hunt: dict) -> None:
-    """An unknown chart type renders nothing, silently losing the visual."""
-    chart = hunt.get("chart")
-    if chart is None:
-        return
-    assert chart.get("type") in ("bar", "timeseries"), label
-    if chart["type"] == "timeseries":
-        assert chart.get("bucket") in ("hour", "day", "week", "month"), label
 
 
 def test_categories_are_a_small_stable_set() -> None:
@@ -326,39 +315,6 @@ def test_row_level_hunts_project_the_event_id(label: str, hunt: dict) -> None:
     if "GROUP BY" in hunt["sql"].upper():
         return
     assert '"EventID"' in hunt["sql"], f"{label}: row-level hunt without an EventID"
-
-
-@pytest.mark.parametrize(("label", "hunt"), SQL_HUNTS, ids=[i for i, _ in SQL_HUNTS])
-def test_bar_chart_axes_match_the_result_columns(
-    label: str, hunt: dict, conn: duckdb.DuckDBPyConnection
-) -> None:
-    """`chart.x` is the category, `chart.y` the measure — never the reverse.
-
-    `_render_bar_chart` draws `px.bar(x=chart.y, y=chart.x, orientation="h")`,
-    mirroring its own fallback of "first non-numeric column, all numeric
-    columns". Swapping the two still renders, which is why this went unnoticed:
-    the bars come out plotted against a string axis and mean nothing.
-    """
-    chart = hunt.get("chart")
-    if not chart or chart.get("type") != "bar":
-        return
-
-    frame = conn.execute(hunt["sql"]).fetchdf()
-    numeric = set(frame.select_dtypes(include="number").columns)
-
-    x_col = chart.get("x")
-    y_cols = chart.get("y", [])
-    y_cols = [y_cols] if isinstance(y_cols, str) else list(y_cols)
-
-    assert x_col in frame.columns, f"{label}: chart.x {x_col!r} is not selected"
-    assert (
-        x_col not in numeric
-    ), f"{label}: chart.x {x_col!r} is a measure, not a category"
-    for y_col in y_cols:
-        assert y_col in frame.columns, f"{label}: chart.y {y_col!r} is not selected"
-        assert (
-            y_col in numeric
-        ), f"{label}: chart.y {y_col!r} is a category, not a measure"
 
 
 def test_a_hunt_surfaces_detections_with_no_principal(

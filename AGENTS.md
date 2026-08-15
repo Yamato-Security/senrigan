@@ -85,7 +85,7 @@ Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (1199 dashboard
 `ruff check .`, `black .`. TypeScript (`config_viz/frontend/`): `npm test -- --run`
 (114 frontend tests), `npm run build` (Vite → `../static/`).
 
-Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 1797 (pytest), config_viz ≈ 67 backend +
+Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 1970 (pytest), config_viz ≈ 67 backend +
 114 frontend, dashboard ≈ 1199, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
 and lifecycle). Test count must not decrease in a PR, and a PR that changes one updates this line
 and [CLAUDE.md](CLAUDE.md) together.
