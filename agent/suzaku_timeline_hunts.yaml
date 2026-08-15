@@ -297,6 +297,44 @@
     LIMIT 50
 
 - category: "\U0001f511 Identity"
+  label: "\U0001fa9c Kill-Chain Progression per Principal"
+  description: "Principals whose detections span three or more ATT&CK tactics. Volume ranks the noisy; tactic spread ranks the compromised — a principal seen under Discovery, then PrivEsc, then Persistence is an intrusion in progress."
+  severity: "P1"
+  chart:
+    type: bar
+    x: "UserARN"
+    y: "tactics"
+  techniques:
+    - tid: "T1078"
+      name: "Valid Accounts"
+      summary: "An adversary operating a legitimate credential leaves its trace as breadth — one identity touching stages of the attack that a job or a human role never touches together."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.html"
+  next_steps: >-
+    Treat the top rows as the investigation's subjects: pivot each ARN into the timeline,
+    establish what its first tactic was, and collect the events around that first detection
+    before the retention window closes.
+  prompt: |
+    For each principal count the distinct ATT&CK tactics its Suzaku detections
+    span, listing the tactics, and show only principals spanning three or more.
+  sql: |
+    SELECT
+        "UserARN",
+        count(DISTINCT tactic)                                   AS tactics,
+        string_agg(DISTINCT tactic, ' · ')                       AS tactic_spread,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "RuleTitle")                              AS rules,
+        count(DISTINCT "SrcIP")                                  AS source_ips,
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen
+    FROM timeline, unnest("Tactics") AS t(tactic)
+    WHERE "UserARN" IS NOT NULL
+    GROUP BY "UserARN"
+    HAVING count(DISTINCT tactic) >= 3
+    ORDER BY tactics DESC, severe DESC
+    LIMIT 100
+
+- category: "\U0001f511 Identity"
   label: "\U0001f451 Root Account Activity Profile"
   description: "What the root identity actually did, per day and API action. Root is over half of a real timeline, so a newest-first list of rows would be truncated noise; each group carries one event ID to cite."
   severity: "P1"
@@ -327,8 +365,14 @@
 
 - category: "\U0001f511 Identity"
   label: "\U0001f5dd Access Keys Behind Detections"
-  description: "Long-lived access keys ranked by detections — a compromised key shows up here first."
+  description: "Access keys ranked by detections, split by type: an AKIA key is deactivated and rotated, an ASIA key is an STS session that outlives deactivation and needs the role's sessions revoked."
   severity: "P2"
+  playbook:
+    name: "IRP-STSTokenAbuse"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-STSTokenAbuse.md"
+  next_steps: >-
+    Rotate the long-lived keys and revoke the sessions of every role behind a temporary one —
+    deactivating the IAM user does not end an ASIA session that is already issued.
   techniques:
     - tid: "T1552.001"
       name: "Unsecured Credentials: Credentials In Files"
@@ -336,10 +380,16 @@
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1552.001.html"
   prompt: |
     Group Suzaku detections by access key ID, ignoring calls with no key, and
-    show the principal, source IP count and activity window for each.
+    show whether the key is a temporary STS session (ASIA) or a long-lived IAM
+    key (AKIA), with the principal, source IP count and activity window.
   sql: |
     SELECT
         "UserAccessKeyID",
+        CASE
+            WHEN "UserAccessKeyID" LIKE 'ASIA%' THEN 'temporary (STS session)'
+            WHEN "UserAccessKeyID" LIKE 'AKIA%' THEN 'long-lived (IAM user)'
+            ELSE 'other'
+        END                                                      AS key_type,
         min("UserARN")                                           AS user_arn,
         count(*)                                                 AS detections,
         count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
@@ -349,9 +399,18 @@
         max("Timestamp")                                         AS last_seen
     FROM timeline
     WHERE "UserAccessKeyID" IS NOT NULL
-    GROUP BY "UserAccessKeyID"
-    ORDER BY severe DESC, detections DESC
-    LIMIT 100
+    GROUP BY "UserAccessKeyID", key_type
+    -- Ranked within each type: session credentials outnumber IAM keys, so one
+    -- global top-N buries the very keys that have to be rotated. The key ID is
+    -- the tiebreaker, without which ties make the result differ run to run.
+    QUALIFY row_number() OVER (
+        PARTITION BY key_type
+        ORDER BY count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level) DESC,
+                 count(*) DESC,
+                 "UserAccessKeyID"
+    ) <= 50
+    ORDER BY severe DESC, detections DESC, "UserAccessKeyID"
+    LIMIT 200
 
 - category: "\U0001f511 Identity"
   label: "\U0001f47b Unattributed & Service-Principal Detections"

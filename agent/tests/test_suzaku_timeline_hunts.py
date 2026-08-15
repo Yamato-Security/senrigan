@@ -415,3 +415,48 @@ def test_the_failure_hunt_separates_authorization_from_the_rest(
     families = set(frame["error_family"])
     assert "authorization" in families, families
     assert families - {"authorization"}, "every failure was called an authorization one"
+
+
+# ---------------------------------------------------------------------------
+# Identity — which principal, and what did its credential look like?
+# ---------------------------------------------------------------------------
+
+
+def test_a_hunt_ranks_principals_by_how_far_they_crossed_the_kill_chain(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Detection volume ranks the noisy; tactic spread ranks the compromised.
+
+    A principal that appears under Discovery, then Privilege Escalation, then
+    Persistence is an intrusion in progress. One that fires the same rule five
+    hundred times is usually a misconfigured job — and it is the one that wins
+    every count(*) ranking the catalogue had.
+    """
+    hunt = next((h for h in HUNTS if "Kill-Chain" in h["label"]), None)
+    assert hunt, "nothing ranks principals by the tactics they crossed"
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    assert "tactics" in frame.columns, "the hunt does not count tactics"
+    assert frame["tactics"].max() >= 3, "no principal crossed three tactics"
+    assert list(frame["tactics"]) == sorted(
+        frame["tactics"], reverse=True
+    ), "the widest spread must come first"
+
+
+def test_the_access_key_hunt_says_which_keys_are_temporary(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """Containment differs by key type, so the hunt has to state it.
+
+    An `AKIA` key is deactivated and rotated; an `ASIA` key is an STS session
+    that outlives deactivation and is killed by revoking the role's sessions.
+    Ranking both together tells the responder to do the wrong thing to half the
+    rows.
+    """
+    hunt = next(h for h in HUNTS if "Access Keys" in h["label"])
+    frame = conn.execute(hunt["sql"]).fetchdf()
+
+    assert "key_type" in frame.columns, "keys are ranked without saying what they are"
+    kinds = set(frame["key_type"])
+    assert any("temporary" in kind for kind in kinds), kinds
+    assert any("long-lived" in kind for kind in kinds), kinds
