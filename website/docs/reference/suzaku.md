@@ -42,7 +42,7 @@ Suzaku Field Metrics(aws-ct-metrics) dashboard selects them.
 
 | Suzaku command | Agent page | Superset dashboard |
 |----------------|------------|--------------------|
-| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 24 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (44 charts) |
+| `aws-ct-timeline` | 🕒 **Suzaku Timeline** — 28 built-in hunts, AI chat, reports | Suzaku Detection Timeline(aws-ct-timeline) (44 charts) |
 | `aws-ct-summary` | 👤 **Suzaku Summary** — identity triage and drill-down | Suzaku Identity Summary(aws-ct-summary) (19 charts) |
 | `aws-ct-metrics` | 📊 **Suzaku Metrics** — field explorer with live filters | Suzaku Field Metrics(aws-ct-metrics) (15 charts) |
 
@@ -90,8 +90,8 @@ Two things are specific to Suzaku data:
 | ⏱ Tempo | Detection burst per hour · off-hours & weekend detections · principal dwell time |
 | 📜 Rules | Top rules by detection volume · rare rules (fired once) · rule onset (first/last seen) |
 | 🔑 Identity | Top principals by severe detections · kill-chain progression per principal · root-account activity profile · access keys behind detections (temporary vs long-lived) · unattributed & service-principal detections |
-| 🌍 Origin | Top source IPs by distinct rules · top user agents · multi-region activity per principal |
-| ⚠ Failures | Failed API calls by error family |
+| 🌍 Origin | Top source IPs by distinct rules · IP ↔ principal fan-out · source IP onset · user agent families · multi-region activity per principal |
+| ⚠ Failures | Failed API calls by error family · denied, then allowed · failure velocity per hour |
 | 🧬 ATT&CK | Technique coverage · tactic breakdown · rule × technique matrix |
 | 📕 Response | Impact detections → ransomware playbook · credential access → credential-compromise playbook · tactic coverage by playbook |
 

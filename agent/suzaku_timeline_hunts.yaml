@@ -473,27 +473,100 @@
     LIMIT 100
 
 - category: "\U0001f30d Origin"
-  label: "\U0001f6e0 Top User Agents"
-  description: "Hacking-distro and SDK user agents. An unexpected client string is a strong lead."
+  label: "\U0001f500 IP ↔ Principal Fan-Out"
+  description: "Source IPs and principals that do not pair one-to-one: one IP driving several identities is attacker infrastructure, one identity arriving from several IPs is a credential that travelled."
+  severity: "P2"
+  techniques:
+    - tid: "T1078"
+      name: "Valid Accounts"
+      summary: "A credential in the wrong hands keeps its identity but changes its origin; the pairing is what shows the change."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.html"
+  prompt: |
+    Pair each source IP with each principal in the Suzaku detections and show
+    how many principals share an IP and how many IPs a principal used, keeping
+    only pairs where either exceeds one.
+  sql: |
+    WITH pairs AS (
+        SELECT
+            "SrcIP",
+            "UserARN",
+            count(*)                                                 AS detections,
+            count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+            count(DISTINCT "RuleTitle")                              AS rules,
+            min("Timestamp")                                         AS first_seen,
+            max("Timestamp")                                         AS last_seen
+        FROM timeline
+        WHERE "SrcIP" IS NOT NULL AND "UserARN" IS NOT NULL
+        GROUP BY "SrcIP", "UserARN"
+    )
+    SELECT
+        "SrcIP",
+        "UserARN",
+        count(*) OVER (PARTITION BY "SrcIP")    AS principals_on_ip,
+        count(*) OVER (PARTITION BY "UserARN")  AS ips_for_principal,
+        detections,
+        severe,
+        rules,
+        first_seen,
+        last_seen
+    FROM pairs
+    QUALIFY principals_on_ip > 1 OR ips_for_principal > 1
+    ORDER BY principals_on_ip DESC, ips_for_principal DESC, severe DESC, "SrcIP"
+    LIMIT 200
+
+- category: "\U0001f30d Origin"
+  label: "\U0001f195 Source IP Onset"
+  description: "Every source IP by when it first appeared, newest first. Infrastructure that shows up partway through a dataset is either a new deployment or the attacker's."
+  severity: "P3"
+  prompt: |
+    For each source IP in the Suzaku detections show when it was first and last
+    seen, how long it stayed and how much it triggered, newest arrival first.
+  sql: |
+    SELECT
+        "SrcIP",
+        min("Timestamp")                                         AS first_seen,
+        max("Timestamp")                                         AS last_seen,
+        date_diff('day', min("Timestamp"), max("Timestamp"))     AS active_days,
+        count(*)                                                 AS detections,
+        count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "UserARN")                                AS principals,
+        count(DISTINCT "RuleTitle")                              AS rules
+    FROM timeline
+    WHERE "SrcIP" IS NOT NULL
+    GROUP BY "SrcIP"
+    ORDER BY first_seen DESC, severe DESC
+    LIMIT 100
+
+- category: "\U0001f30d Origin"
+  label: "\U0001f6e0 User Agent Families"
+  description: "Client families rather than exact strings: an SDK writes a new user agent every release, so grouping by the family is what makes a rare client visible."
   severity: "P4"
   techniques:
     - tid: "T1078"
       name: "Valid Accounts"
       summary: "Credential use from an unusual client is often the first sign of misuse."
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1078.html"
+  chart:
+    type: bar
+    x: "agent_family"
+    y: "detections"
   prompt: |
-    Rank user agent strings by Suzaku detections, showing how many principals
-    and IPs used each one.
+    Group Suzaku detections by user agent family — the part before the version —
+    showing how many variants, principals and IPs each family covers.
   sql: |
     SELECT
-        "UserAgent",
+        -- `[aws-cli/2.13.0 …]` and `aws-cli/1.29 …` are one client; the bracket
+        -- and the version are what split them into hundreds of rows.
+        trim(split_part(replace("UserAgent", '[', ''), '/', 1))  AS agent_family,
         count(*)                                                 AS detections,
         count(*) FILTER (WHERE "Level" >= 'high'::suzaku_level)   AS severe,
+        count(DISTINCT "UserAgent")                              AS variants,
         count(DISTINCT "UserARN")                                AS principals,
-        count(DISTINCT "SrcIP")                                  AS source_ips
+        count(DISTINCT "SrcIP")                                  AS source_ips,
+        arg_max("UserAgent", "Timestamp")                        AS last_user_agent
     FROM timeline
     WHERE "UserAgent" IS NOT NULL
-    GROUP BY "UserAgent"
+    GROUP BY agent_family
     ORDER BY severe DESC, detections DESC
     LIMIT 100
 
@@ -566,6 +639,86 @@
     WHERE "ErrorCode" IS NOT NULL
     GROUP BY "ErrorCode", error_family, "UserARN"
     ORDER BY failures DESC
+    LIMIT 100
+
+- category: "⚠ Failures"
+  label: "\U0001f513 Denied, Then Allowed"
+  description: "A principal denied an API action and later succeeding at it. Counting denials shows probing; this shows the probe being answered — the permission arrived between the two events."
+  severity: "P1"
+  techniques:
+    - tid: "T1098"
+      name: "Account Manipulation"
+      summary: "An adversary who gains a permission mid-investigation did so through a grant, a role assumption or an inherited policy — all of which leave the denial/success pair behind."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1098.html"
+  next_steps: >-
+    For each pair, find what changed in between: an AttachUserPolicy, a PutUserPolicy or an
+    AssumeRole on the Senrigan page around first_denied. That event, not the success, is
+    the escalation to contain.
+  prompt: |
+    Find principals whose Suzaku detections show an AWS error on an API action
+    and later a successful call of the same action, with the gap between them.
+  sql: |
+    WITH denied AS (
+        SELECT
+            "UserARN",
+            "EventName",
+            count(*)          AS denials,
+            min("Timestamp")  AS first_denied
+        FROM timeline
+        WHERE "ErrorCode" IS NOT NULL AND "UserARN" IS NOT NULL
+        GROUP BY "UserARN", "EventName"
+    ),
+    allowed AS (
+        SELECT
+            "UserARN",
+            "EventName",
+            min("Timestamp")                    AS first_success,
+            arg_min("EventID", "Timestamp")     AS success_event_id
+        FROM timeline
+        WHERE "ErrorCode" IS NULL AND "UserARN" IS NOT NULL
+        GROUP BY "UserARN", "EventName"
+    )
+    SELECT
+        d."UserARN",
+        d."EventName",
+        d.denials,
+        d.first_denied,
+        a.first_success,
+        date_diff('minute', d.first_denied, a.first_success)  AS minutes_to_success,
+        a.success_event_id
+    FROM denied d
+    JOIN allowed a USING ("UserARN", "EventName")
+    WHERE a.first_success > d.first_denied
+    ORDER BY minutes_to_success ASC, d.denials DESC, d."UserARN"
+    LIMIT 100
+
+- category: "⚠ Failures"
+  label: "\U0001f4c9 Failure Velocity per Hour"
+  description: "Principals producing five or more failures within one hour. Enumeration and brute force are defined by their rate, which a total failure count cannot express."
+  severity: "P2"
+  techniques:
+    - tid: "T1580"
+      name: "Cloud Infrastructure Discovery"
+      summary: "A tool mapping what a credential can reach produces its denials in bursts; a human hitting a permission boundary produces a handful."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1580.html"
+  prompt: |
+    Show principals whose failed Suzaku detections cluster into bursts within a
+    single hour, with how many distinct actions and error codes each burst
+    covers.
+  sql: |
+    SELECT
+        "UserARN",
+        date_trunc('hour', "Timestamp")   AS hour,
+        count(*)                          AS failures,
+        count(DISTINCT "EventName")       AS distinct_actions,
+        count(DISTINCT "ErrorCode")       AS distinct_errors,
+        count(DISTINCT "SrcIP")           AS source_ips,
+        arg_max("EventName", "Timestamp") AS last_action
+    FROM timeline
+    WHERE "ErrorCode" IS NOT NULL
+    GROUP BY "UserARN", hour
+    HAVING count(*) >= 5
+    ORDER BY failures DESC, hour DESC
     LIMIT 100
 
 # ===========================================================================

@@ -460,3 +460,48 @@ def test_the_access_key_hunt_says_which_keys_are_temporary(
     kinds = set(frame["key_type"])
     assert any("temporary" in kind for kind in kinds), kinds
     assert any("long-lived" in kind for kind in kinds), kinds
+
+
+# ---------------------------------------------------------------------------
+# Origin and failures — correlation, not ranking
+# ---------------------------------------------------------------------------
+
+
+def test_a_hunt_shows_credentials_and_infrastructure_being_shared(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """One IP with many identities, or one identity from many IPs, is the signal.
+
+    Ranking IPs and ranking principals separately cannot express either: both
+    are properties of the *pairing*, and both are how a credential compromise
+    looks from the log — the attacker's host driving several identities, or one
+    stolen key arriving from somewhere new.
+    """
+    hunt = next((h for h in HUNTS if "Fan-Out" in h["label"]), None)
+    assert hunt, "nothing correlates source IPs with the principals using them"
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    for column in ("principals_on_ip", "ips_for_principal"):
+        assert column in frame.columns, f"{column} missing — only one direction"
+    assert (
+        (frame["principals_on_ip"] > 1) | (frame["ips_for_principal"] > 1)
+    ).all(), "rows without any sharing are noise in this hunt"
+
+
+def test_a_hunt_pairs_a_denial_with_the_success_that_followed(
+    conn: duckdb.DuckDBPyConnection,
+) -> None:
+    """A denial that later succeeds is privilege escalation, confirmed.
+
+    Counting AccessDenied says someone probed. The same principal succeeding
+    afterwards on the same action says the probe was answered — the permission
+    was granted, assumed or inherited between the two events, which is the fact
+    an investigation needs and no failure ranking can show.
+    """
+    hunt = next((h for h in HUNTS if "Denied" in h["label"]), None)
+    assert hunt, "nothing pairs a denial with the later success"
+
+    frame = conn.execute(hunt["sql"]).fetchdf()
+    assert "minutes_to_success" in frame.columns, "the gap is not measured"
+    assert not frame.empty, "no denial/success pair found in the fixture"
+    assert (frame["minutes_to_success"] >= 0).all(), "a success predates its denial"
