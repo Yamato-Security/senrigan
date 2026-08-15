@@ -791,7 +791,11 @@ def _render_result_card(
                     "Add a `LIMIT` clause or narrow your query for more specific results."
                 )
             st.dataframe(entry.results, use_container_width=True)
-            render_chart(entry.results, entry.chart_config)
+            render_chart(
+                entry.results,
+                entry.chart_config,
+                key=f"{prefix}_chart_{query_idx}",
+            )
             # Containment guidance belongs with a hit, not with an empty result.
             if entry.next_steps:
                 st.warning(f"**Next steps** — {entry.next_steps}")

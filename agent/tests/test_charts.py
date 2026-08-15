@@ -196,3 +196,53 @@ def test_render_chart_timeseries_ignores_bucket_name_column():
 
     mock_line.assert_not_called()
     mock_plotly.assert_not_called()
+
+
+def test_render_chart_timeseries_plots_the_measure_of_a_pre_aggregated_result():
+    """A result already grouped per bucket must plot its measure, not its rows.
+
+    `_render_timeseries_chart` counts rows per bucket, which is right for a
+    row-level result — one row is one detection. A hunt that has already done
+    the GROUP BY returns exactly one row per bucket, so counting rows draws a
+    flat line at 1 and hides the very spike the hunt exists to show.
+    """
+    df = pd.DataFrame(
+        {
+            "day": pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"]),
+            "detections": [120, 4, 999],
+        }
+    )
+    with patch("streamlit.line_chart") as mock_line:
+        from app import render_chart
+
+        render_chart(df, {"type": "timeseries", "bucket": "day"})
+
+    mock_line.assert_called_once()
+    plotted = mock_line.call_args[0][0]
+    assert list(plotted["count"]) == [
+        120,
+        4,
+        999,
+    ], "the pre-aggregated measure was replaced by a row count of 1 per bucket"
+
+
+def test_render_chart_timeseries_still_counts_rows_of_a_row_level_result():
+    """Row-level results keep counting rows, even when a numeric column exists.
+
+    A detection listing carrying, say, a port number must not have that number
+    mistaken for the measure.
+    """
+    df = pd.DataFrame(
+        {
+            "event_time": pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"]),
+            "some_number": [443, 22, 8080],
+        }
+    )
+    with patch("streamlit.line_chart") as mock_line:
+        from app import render_chart
+
+        render_chart(df, {"type": "timeseries", "bucket": "day"})
+
+    mock_line.assert_called_once()
+    plotted = mock_line.call_args[0][0]
+    assert list(plotted["count"]) == [2, 1]

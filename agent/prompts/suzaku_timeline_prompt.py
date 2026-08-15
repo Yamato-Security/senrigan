@@ -65,6 +65,16 @@ rule carries none:
   -- Detections for one tactic, without unnesting
   WHERE list_contains("Tactics", 'PrivEsc')
 
+`"Tactics"` holds Suzaku's **abbreviations**, never the full ATT&CK tactic name. The
+complete set, from Suzaku's `config/mitre_tactics.txt`:
+
+  Recon, ResDev, InitAccess, Exec, Persis, PrivEsc, Stealth, DefImpair, CredAccess,
+  Disc, LatMov, Collect, C2, Exfil, Impact
+
+`Stealth` covers both `attack.stealth` and `attack.defense-evasion`. A filter written
+against a full name — `list_contains("Tactics", 'Credential Access')` — is valid SQL
+and matches no row, so it returns an empty result rather than an error.
+
 `"OtherTags"` holds the rule tags that are neither a tactic nor a technique.
 
 ## Row grain

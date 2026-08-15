@@ -153,8 +153,15 @@ def _hunts_with_playbook(path: pathlib.Path = YAML_PATH) -> list[dict[str, Any]]
     return [h for h in _load(path) if h.get("playbook")]
 
 
-def test_q2_playbook_entries_have_name_and_url() -> None:
-    for hunt in _hunts_with_playbook():
+# Both catalogues route detections to the same upstream playbooks, and a dead
+# link is as useless in one as in the other.
+PLAYBOOK_PATHS = [YAML_PATH, SUZAKU_YAML_PATH]
+PLAYBOOK_PATH_IDS = [path.stem for path in PLAYBOOK_PATHS]
+
+
+@pytest.mark.parametrize("path", PLAYBOOK_PATHS, ids=PLAYBOOK_PATH_IDS)
+def test_q2_playbook_entries_have_name_and_url(path: pathlib.Path) -> None:
+    for hunt in _hunts_with_playbook(path):
         playbook = hunt["playbook"]
         assert isinstance(
             playbook, dict
@@ -163,23 +170,44 @@ def test_q2_playbook_entries_have_name_and_url() -> None:
         assert playbook.get("url"), f"{hunt['label']}: playbook.url missing"
 
 
-def test_q2_playbook_names_exist_upstream() -> None:
+@pytest.mark.parametrize("path", PLAYBOOK_PATHS, ids=PLAYBOOK_PATH_IDS)
+def test_q2_playbook_names_exist_upstream(path: pathlib.Path) -> None:
     unknown = {
         h["label"]: h["playbook"]["name"]
-        for h in _hunts_with_playbook()
+        for h in _hunts_with_playbook(path)
         if h["playbook"]["name"] not in KNOWN_PLAYBOOKS
     }
     assert not unknown, f"These playbooks are not in the upstream repository: {unknown}"
 
 
-def test_q2_playbook_urls_point_at_the_upstream_repo() -> None:
-    for hunt in _hunts_with_playbook():
+@pytest.mark.parametrize("path", PLAYBOOK_PATHS, ids=PLAYBOOK_PATH_IDS)
+def test_q2_playbook_urls_point_at_the_upstream_repo(path: pathlib.Path) -> None:
+    for hunt in _hunts_with_playbook(path):
         url = hunt["playbook"]["url"]
         assert url.startswith(PLAYBOOK_BASE), f"{hunt['label']}: {url}"
         assert url.endswith(".md"), f"{hunt['label']}: {url}"
         assert (
             hunt["playbook"]["name"] in url
         ), f"{hunt['label']}: url does not reference {hunt['playbook']['name']}"
+
+
+def test_q3_a_suzaku_hunt_naming_a_playbook_says_what_to_do_first() -> None:
+    """A playbook link without next_steps leaves the responder to find the step.
+
+    The playbooks are long; the value of the mapping is that the hunt names the
+    containment action its rows feed, not merely the document that contains it.
+
+    Held over the Suzaku catalogue only: 49 of the 74 CloudTrail hunts that name
+    a playbook ship no next_steps, which is a backlog to work through rather
+    than a regression to guard, and filling them is not a change to make in
+    passing.
+    """
+    missing = [
+        hunt["label"]
+        for hunt in _hunts_with_playbook(SUZAKU_YAML_PATH)
+        if not hunt.get("next_steps")
+    ]
+    assert not missing, f"hunts linking a playbook with no next_steps: {missing}"
 
 
 def test_q2_signature_hunts_name_their_playbook() -> None:

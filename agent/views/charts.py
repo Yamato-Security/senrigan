@@ -16,7 +16,9 @@ import pandas as pd
 import streamlit as st
 
 
-def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
+def _render_bar_chart(
+    df: pd.DataFrame, chart_config: dict | None, key: str | None = None
+) -> None:
     """Render a Plotly Express horizontal bar chart.
 
     Uses the x/y keys from chart_config when provided; falls back to the first
@@ -25,6 +27,7 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
     Args:
         df:           The query result DataFrame.
         chart_config: Chart configuration dict, or None for auto-detection.
+        key:          Streamlit element key, unique per chart on the page.
     """
     import plotly.express as px
 
@@ -60,8 +63,13 @@ def _render_bar_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
 
     # Rendered inline, not in an expander: the caller (a result card) is already
     # an expander, and Streamlit forbids nesting them.
+    #
+    # The key is what keeps two cards holding the same result from colliding:
+    # Streamlit derives an element id from the type and the parameters, so two
+    # identical figures raise StreamlitDuplicateElementId and take the page with
+    # them.
     st.markdown("**📊 Bar Chart**")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 # Column names a time-series chart can bucket on, in priority order. Results come
@@ -109,6 +117,12 @@ def _find_time_column(df: pd.DataFrame) -> str | None:
 def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
     """Render a time-series chart by bucketing the result's time column.
 
+    Rows are counted per bucket, which is what a row-level result means: one row
+    is one event. A hunt that has already grouped by its bucket returns exactly
+    one row per bucket, so counting rows there would draw a flat line at 1 and
+    hide the spike the hunt exists to show — such a result plots its own first
+    measure instead.
+
     Skips rendering when the DataFrame has no recognisable time column, when the
     timestamps cannot be parsed, or when there is only one distinct bucket
     (a single-bar chart provides no visual value).
@@ -122,7 +136,8 @@ def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
         return
 
     bucket = chart_config.get("bucket", "day")
-    ts = pd.to_datetime(df[time_column], errors="coerce").dropna()
+    parsed = pd.to_datetime(df[time_column], errors="coerce")
+    ts = parsed.dropna()
     if ts.empty:
         return
 
@@ -133,11 +148,17 @@ def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
         bucketed = ts.dt.date.astype(str)
         title = "📈 Timeline (per day)"
 
-    counts = bucketed.value_counts().sort_index()
-    if len(counts) < 2:
+    measure = _pre_aggregated_measure(df, parsed, bucketed)
+    if measure is None:
+        series = bucketed.value_counts().sort_index()
+    else:
+        series = df[measure][parsed.notna()].groupby(bucketed).sum().sort_index()
+        title = f"{title} — {measure}"
+
+    if len(series) < 2:
         return
 
-    chart_df = counts.reset_index()
+    chart_df = series.reset_index()
     chart_df.columns = ["bucket", "count"]
 
     # Inline for the same reason as the bar chart: no expander nesting.
@@ -145,7 +166,34 @@ def _render_timeseries_chart(df: pd.DataFrame, chart_config: dict) -> None:
     st.line_chart(chart_df, x="bucket", y="count")
 
 
-def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
+def _pre_aggregated_measure(
+    df: pd.DataFrame, parsed: pd.Series, bucketed: pd.Series
+) -> str | None:
+    """Return the column to plot when *df* already holds one row per bucket.
+
+    One row per bucket means the query did the grouping, so the count this
+    function's caller would otherwise compute is 1 everywhere. The first numeric
+    column is the measure: hunts select their headline count immediately after
+    the bucket, and a result with no numeric column has nothing to plot but its
+    rows.
+
+    Args:
+        df:       The query result.
+        parsed:   ``df``'s time column, parsed (NaT where unparseable).
+        bucketed: The bucket label of every parseable row.
+
+    Returns:
+        The measure column's name, or ``None`` to fall back to counting rows.
+    """
+    if len(bucketed) != bucketed.nunique():
+        return None
+    numeric = df.loc[parsed.notna()].select_dtypes(include="number").columns
+    return numeric[0] if len(numeric) else None
+
+
+def render_chart(
+    df: pd.DataFrame, chart_config: dict | None, *, key: str | None = None
+) -> None:
     """Render a chart from the query result based on the chart configuration.
 
     Dispatch table:
@@ -158,6 +206,12 @@ def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
         df:           The query result DataFrame.
         chart_config: Chart configuration dict with 'type', 'x', 'y', 'bucket'
                       keys, or None for auto-detection.
+        key:          Streamlit element key. Two charts drawn from the same data
+                      share an auto-generated id and raise
+                      ``StreamlitDuplicateElementId``, so every caller that can
+                      render a chart more than once on one page passes what makes
+                      this one different — a result card its position, an
+                      explorer panel its own key.
     """
     if df is None or df.empty:
         return
@@ -172,10 +226,10 @@ def render_chart(df: pd.DataFrame, chart_config: dict | None) -> None:
         return
 
     if chart_type == "bar":
-        _render_bar_chart(df, chart_config)
+        _render_bar_chart(df, chart_config, key)
         return
 
     # Auto-detection: render a bar chart when at least one numeric column exists.
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     if numeric_cols:
-        _render_bar_chart(df, None)
+        _render_bar_chart(df, None, key)

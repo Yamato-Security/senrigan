@@ -20,6 +20,7 @@ import pandas as pd
 import pytest
 
 from app import render_chart
+from profiles import CLOUDTRAIL_PROFILE as PROFILE
 
 BAR_DF = pd.DataFrame({"RuleTitle": ["a", "b"], "detections": [5, 3]})
 DAY_DF = pd.DataFrame(
@@ -124,3 +125,70 @@ def test_timeseries_skips_a_single_bucket() -> None:
         render_chart(single, {"type": "timeseries"})
 
     assert not mock_line.called
+
+
+# ---------------------------------------------------------------------------
+# 3. Two cards, one chart id
+#
+# Streamlit derives an element id from the element type and its parameters, so
+# two Plotly charts drawn from the same data collide:
+#
+#   StreamlitDuplicateElementId: There are multiple `plotly_chart` elements with
+#   the same auto-generated ID.
+#
+# Which happens on a page as ordinary as running the same hunt twice, or two
+# hunts that summarise to the same shape. The whole page raises, not the chart.
+# ---------------------------------------------------------------------------
+
+
+def test_render_chart_forwards_its_key_to_plotly() -> None:
+    """The caller knows what makes a chart unique; the renderer must pass it on."""
+    with (
+        patch("streamlit.plotly_chart") as mock_plotly,
+        patch("streamlit.markdown"),
+    ):
+        render_chart(
+            BAR_DF,
+            {"type": "bar", "x": "RuleTitle", "y": ["detections"]},
+            key="cloudtrail_chart_3",
+        )
+
+    assert mock_plotly.call_args.kwargs.get("key") == "cloudtrail_chart_3"
+
+
+def test_two_result_cards_of_the_same_data_get_different_chart_keys() -> None:
+    """Running one hunt twice must not take the page down.
+
+    Both cards hold identical results and an identical chart config, so their
+    Plotly ids are identical too unless the card passes its own position.
+    """
+    import app
+    from report import ReportEntry
+    from tests.conftest import MockSessionState
+
+    entry = ReportEntry(
+        sql="SELECT 1",
+        results=BAR_DF,
+        chart_config={"type": "bar", "x": "RuleTitle", "y": ["detections"]},
+        label="🎯 Top Rules by Detection Volume",
+    )
+
+    with (
+        patch("app.render_chart") as mock_render,
+        patch("streamlit.expander"),
+        patch("streamlit.markdown"),
+        patch("streamlit.caption"),
+        patch("streamlit.code"),
+        patch("streamlit.dataframe"),
+        patch("streamlit.warning"),
+        patch(
+            "streamlit.session_state",
+            MockSessionState(row_limit=1000, analyst_notes={}, api_key=""),
+        ),
+    ):
+        app._render_result_card(0, entry, expanded=False, profile=PROFILE)
+        app._render_result_card(1, entry, expanded=False, profile=PROFILE)
+
+    keys = [call.kwargs.get("key") for call in mock_render.call_args_list]
+    assert len(keys) == 2 and all(keys), f"cards rendered without a key: {keys}"
+    assert keys[0] != keys[1], f"both cards used the chart id {keys[0]!r}"

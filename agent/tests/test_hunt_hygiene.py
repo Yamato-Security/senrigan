@@ -6,6 +6,10 @@ wall clock while a third filtered on the dataset, and how the same "write event"
 predicate acquired two incompatible spellings. These tests state the rules once
 and apply them to every entry, so the next hunt cannot reintroduce a defect the
 catalogue has already been cleaned of.
+
+The rules that never mention a column run over **both** catalogues (see
+``hunt_catalogue.py``); the ones that name a CloudTrail column stay on
+``builtin_hunts.yaml``, which is the only catalogue that has them.
 """
 
 from __future__ import annotations
@@ -16,24 +20,27 @@ import re
 import pytest
 import yaml
 
+from tests.hunt_catalogue import (
+    CATALOGUES,
+    NAMED_TIMEZONE_RE,
+    WALL_CLOCK_RE,
+    Catalogue,
+    hunt_params,
+)
+
 AGENT_DIR = pathlib.Path(__file__).parent.parent
 YAML_PATH = AGENT_DIR / "builtin_hunts.yaml"
 
 HUNTS: list[dict] = yaml.safe_load(YAML_PATH.read_text(encoding="utf-8"))
 
-# ``(label, sql)`` for every hunt that ships pre-built SQL, with the label
-# doubling as the test id so a failure names the hunt rather than echoing the
-# whole query.
+# ``(label, sql)`` for every CloudTrail hunt that ships pre-built SQL, with the
+# label doubling as the test id so a failure names the hunt rather than echoing
+# the whole query.
 SQL_HUNTS = [(hunt["label"], hunt["sql"]) for hunt in HUNTS if hunt.get("sql")]
 SQL_HUNT_IDS = [label for label, _ in SQL_HUNTS]
 
-
-# Functions that read the machine's clock. CloudTrail logs are historical by the
-# time they are ingested, so any of these silently empties a hunt.
-_WALL_CLOCK_RE = re.compile(
-    r"\b(now\(\)|current_timestamp|current_date|today\(\)|get_current_time)",
-    re.IGNORECASE,
-)
+# The same, across every catalogue, for the rules that are not CloudTrail's.
+ALL_SQL_HUNTS, ALL_SQL_IDS = hunt_params("sql")
 
 # ``read_only`` is NULL on every event whose CloudTrail record omitted the
 # field — the overwhelming majority in real data — so ``= false`` drops the
@@ -42,27 +49,20 @@ _UNSAFE_READ_ONLY_RE = re.compile(
     r"read_only\s*(=|!=|<>)\s*(true|false)", re.IGNORECASE
 )
 
-# A named zone hardcodes one team's working day into a tool shipped in 15
-# locales. Hunts report in UTC and say so in the column name.
-_NAMED_TIMEZONE_RE = re.compile(
-    r"AT TIME ZONE\s*'(?!UTC')[^']+'|'(?:Asia|Europe|America|Africa|Australia)/[^']+'",
-    re.IGNORECASE,
-)
 
-
-@pytest.mark.parametrize("label,sql", SQL_HUNTS, ids=SQL_HUNT_IDS)
-def test_hunt_sql_never_filters_on_the_wall_clock(label: str, sql: str):
-    """No hunt may bound ``event_time`` with the machine's current time.
+@pytest.mark.parametrize(("catalogue", "hunt"), ALL_SQL_HUNTS, ids=ALL_SQL_IDS)
+def test_hunt_sql_never_filters_on_the_wall_clock(catalogue: Catalogue, hunt: dict):
+    """No hunt may bound its time column with the machine's current time.
 
     A hunt written as ``event_time >= NOW() - INTERVAL '7 days'`` returns
     nothing at all unless the logs happen to have been generated this week,
     which for an incident investigation is precisely when they are not. The
     dataset's own ``MAX(event_time)`` is the only defensible "recent" anchor.
     """
-    found = _WALL_CLOCK_RE.findall(sql)
+    found = WALL_CLOCK_RE.findall(hunt["sql"])
     assert not found, (
-        f"{label!r} bounds time with {found!r}; use a MAX(event_time) CTE so the "
-        f"window is relative to the ingested data, not to the clock"
+        f"{hunt['label']!r} bounds time with {found!r}; anchor the window on the "
+        f"dataset's own MAX() so it follows the ingested data, not the clock"
     )
 
 
@@ -83,24 +83,25 @@ def test_hunt_sql_treats_a_missing_read_only_flag_as_a_write(label: str, sql: st
     )
 
 
-@pytest.mark.parametrize("label,sql", SQL_HUNTS, ids=SQL_HUNT_IDS)
-def test_hunt_sql_never_hardcodes_a_local_timezone(label: str, sql: str):
+@pytest.mark.parametrize(("catalogue", "hunt"), ALL_SQL_HUNTS, ids=ALL_SQL_IDS)
+def test_hunt_sql_never_hardcodes_a_local_timezone(catalogue: Catalogue, hunt: dict):
     """Hunts report in UTC; a named zone bakes in one team's calendar."""
-    found = _NAMED_TIMEZONE_RE.findall(sql)
+    found = NAMED_TIMEZONE_RE.findall(hunt["sql"])
     assert not found, (
-        f"{label!r} hardcodes the timezone {found!r}. Hunts report in UTC and "
-        f"name their hour columns accordingly"
+        f"{hunt['label']!r} hardcodes the timezone {found!r}. Hunts report in "
+        f"UTC and name their hour columns accordingly"
     )
 
 
-def test_every_hunt_runs_without_an_api_key():
+@pytest.mark.parametrize("catalogue", CATALOGUES, ids=[c.key for c in CATALOGUES])
+def test_every_hunt_runs_without_an_api_key(catalogue: Catalogue):
     """Every hunt ships SQL, so the catalogue works with no OpenAI key.
 
     A hunt with only a ``prompt`` is invisible to anyone running Senrigan
     offline — which is the mode the README leads with.
     """
-    missing = [hunt["label"] for hunt in HUNTS if not hunt.get("sql")]
-    assert not missing, f"hunts with no `sql` field: {missing}"
+    missing = [hunt["label"] for hunt in catalogue.hunts() if not hunt.get("sql")]
+    assert not missing, f"{catalogue.key} hunts with no `sql` field: {missing}"
 
 
 def test_console_origin_hunt_reads_the_ingested_column():
