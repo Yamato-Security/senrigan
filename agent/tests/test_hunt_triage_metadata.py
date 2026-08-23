@@ -325,6 +325,7 @@ def test_q4_bulk_queries_carry_the_triage_metadata() -> None:
 
 def test_q4_report_entry_accepts_the_triage_metadata() -> None:
     import pandas as pd
+
     from report import ReportEntry
 
     entry = ReportEntry(
@@ -343,6 +344,7 @@ def test_q4_report_entry_accepts_the_triage_metadata() -> None:
 
 def test_q4_markdown_report_includes_playbook_and_next_steps() -> None:
     import pandas as pd
+
     from report import ReportEntry, generate_report
 
     entry = ReportEntry(
@@ -364,6 +366,7 @@ def test_q4_markdown_report_includes_playbook_and_next_steps() -> None:
 
 def test_q4_html_report_includes_playbook_link() -> None:
     import pandas as pd
+
     from report import ReportEntry, generate_html_report
 
     entry = ReportEntry(

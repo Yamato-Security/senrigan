@@ -1,7 +1,8 @@
 """Shared pytest fixtures for the agent test suite."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 @pytest.fixture(autouse=True)

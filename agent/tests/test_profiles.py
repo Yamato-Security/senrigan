@@ -123,7 +123,7 @@ def test_explorer_profiles_refuse_the_chat_pipeline(profile: DatasetProfile) -> 
     OpenAI; raising makes it a test failure instead.
     """
     with pytest.raises(ValueError):
-        profile.hunts_path
+        _ = profile.hunts_path
     with pytest.raises(ValueError):
         profile.build_system_prompt()
 
@@ -391,7 +391,7 @@ def test_fix_sql_names_the_profile_table() -> None:
 
 def test_profile_is_frozen() -> None:
     """Profiles are module-level singletons; mutating one would leak globally."""
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         SUZAKU_TIMELINE_PROFILE.table = "other"  # type: ignore[misc]
 
 

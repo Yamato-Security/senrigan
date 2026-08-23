@@ -70,7 +70,7 @@ def _query(db_path: str, stamp: float, name: str, args: tuple, kwargs: tuple):
     Returns:
         Whatever the named function returns.
     """
-    from query import duckdb_connection  # noqa: PLC0415
+    from query import duckdb_connection
 
     with duckdb_connection(db_path) as conn:
         return getattr(queries, name)(conn, *args, **dict(kwargs))
@@ -407,7 +407,7 @@ def render() -> None:
     """Render the Suzaku metrics explorer page."""
     # Imported here rather than at module scope: ``app`` imports this module's
     # package to build the navigation, so a module-level import would be circular.
-    from app import (  # noqa: PLC0415
+    from app import (
         _get_duckdb_path,
         _init_session_state,
         _render_suzaku_db_selector,

@@ -172,7 +172,7 @@ def test_handle_direct_sql_no_api_key_shows_results(tmp_duckdb):
     last_sql must reflect the effective SQL (with row_limit applied), not the
     original SQL passed in.
     """
-    from query import apply_row_limit, DEFAULT_ROW_LIMIT
+    from query import DEFAULT_ROW_LIMIT, apply_row_limit
     from tests.conftest import MockSessionState
 
     sql = (
@@ -507,9 +507,8 @@ def test_conversation_context_max_size_enforced(tmp_duckdb):
 
     Test #CTX-4: oldest entries are dropped; the newest entry is at the end.
     """
-    from tests.conftest import MockSessionState
-
     from app import MAX_CONTEXT_TURNS
+    from tests.conftest import MockSessionState
 
     existing_context = [
         {"user_query": f"query {i}", "sql": f"SELECT {i}", "summary": f"summary {i}"}
@@ -1643,17 +1642,17 @@ def _geo_mock_state(**overrides):
     """Session state for the geo-enrichment handler tests."""
     from tests.conftest import MockSessionState
 
-    defaults = dict(
-        api_key="",
-        model="gpt-5.4",
-        messages=[],
-        query_history=[],
-        last_sql="",
-        last_results=None,
-        last_summary="",
-        date_start=None,
-        date_end=None,
-    )
+    defaults = {
+        "api_key": "",
+        "model": "gpt-5.4",
+        "messages": [],
+        "query_history": [],
+        "last_sql": "",
+        "last_results": None,
+        "last_summary": "",
+        "date_start": None,
+        "date_end": None,
+    }
     defaults.update(overrides)
     return MockSessionState(**defaults)
 

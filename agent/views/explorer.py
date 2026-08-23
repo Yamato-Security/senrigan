@@ -28,8 +28,8 @@ def db_directory() -> str:
     Read through the ``app`` module rather than ``config`` so a test that
     patches the path for the database selector patches this too.
     """
-    from app import get_duckdb_path_for_variant  # noqa: PLC0415
-    from config import DB_VARIANT_FULL  # noqa: PLC0415
+    from app import get_duckdb_path_for_variant
+    from config import DB_VARIANT_FULL
 
     return str(Path(get_duckdb_path_for_variant(DB_VARIANT_FULL)).parent)
 
@@ -89,7 +89,7 @@ def _inspect_cached(path: str, stamp: float) -> DbInfo:
     Returns:
         The :class:`~suzaku_db.DbInfo` for the file.
     """
-    from suzaku_db import inspect_db  # noqa: PLC0415
+    from suzaku_db import inspect_db
 
     return inspect_db(Path(path))
 
@@ -154,7 +154,7 @@ def render_sidebar_footer(profile: DatasetProfile) -> None:
     Args:
         profile: The page's dataset profile.
     """
-    from app import (  # noqa: PLC0415
+    from app import (
         render_api_section,
         render_report_section,
         render_session_section,
@@ -210,7 +210,7 @@ def render_panel(
         empty_message: Caption shown instead of the table when *df* is empty.
         show_table:    False renders the chart and actions only.
     """
-    from app import render_chart  # noqa: PLC0415
+    from app import render_chart
 
     st.markdown(f"##### {label}")
     if description:
@@ -297,7 +297,7 @@ def render_timeline_pivot(
         label:    Report label for the resulting query.
         category: Report category for the resulting query.
     """
-    from suzaku_queries import timeline_pivot_sql  # noqa: PLC0415
+    from suzaku_queries import timeline_pivot_sql
 
     if not value:
         return
@@ -324,8 +324,8 @@ def handoff_to_timeline(sql: str, *, label: str, category: str = "🕒 Pivot") -
         label:    Report label for the resulting entry.
         category: Report category for the resulting entry.
     """
-    from app import PAGES  # noqa: PLC0415
-    from profiles import SUZAKU_TIMELINE_PROFILE  # noqa: PLC0415
+    from app import PAGES
+    from profiles import SUZAKU_TIMELINE_PROFILE
 
     prefix = SUZAKU_TIMELINE_PROFILE.key
     st.session_state[f"_{prefix}_pending_direct_sql"] = sql
@@ -351,7 +351,7 @@ def _explain(df: pd.DataFrame, sql: str) -> str:
     Returns:
         Markdown bullets, or the error message ``generate_analysis`` returns.
     """
-    from llm import generate_analysis  # noqa: PLC0415
+    from llm import generate_analysis
 
     return generate_analysis(
         sql,

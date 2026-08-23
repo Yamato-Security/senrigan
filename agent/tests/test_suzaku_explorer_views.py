@@ -353,9 +353,9 @@ def _page_ui(state: MockSessionState, db_path: Path, **overrides):
     with (
         patch("app.get_duckdb_path_for_variant", return_value=str(db_path)),
         patch("app.render_chart"),
+        patch.multiple("streamlit", **patches),
     ):
-        with patch.multiple("streamlit", **patches):
-            yield patches
+        yield patches
 
 
 def test_summary_page_renders_against_the_fixture(tmp_path: Path) -> None:

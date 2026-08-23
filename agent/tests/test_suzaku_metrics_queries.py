@@ -9,9 +9,9 @@ as three blank charts.
 
 from __future__ import annotations
 
-from datetime import datetime
+from collections.abc import Iterator
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator
 
 import duckdb
 import pytest
@@ -118,14 +118,16 @@ def test_values_controls_compose(conn) -> None:
     capped = len(mq.values(conn, FIELD, limit=5).df)
     frequent = mq.values(conn, FIELD, limit=None, min_count=1_000).df
     searched = mq.values(conn, FIELD, limit=None, search="describe").df
-    recent = mq.values(conn, FIELD, limit=None, seen_after=datetime(2019, 1, 1)).df
+    recent = mq.values(
+        conn, FIELD, limit=None, seen_after=datetime(2019, 1, 1, tzinfo=timezone.utc)
+    ).df
     combined = mq.values(
         conn,
         FIELD,
         limit=None,
         min_count=1_000,
         search="describe",
-        seen_after=datetime(2019, 1, 1),
+        seen_after=datetime(2019, 1, 1, tzinfo=timezone.utc),
     ).df
 
     assert capped == 5
