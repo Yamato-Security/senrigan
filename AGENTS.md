@@ -247,6 +247,7 @@ senrigan/
 ├── tests/                     # Repository-level consistency suite (Makefile / compose / docs)
 ├── website/                   # Material for MkDocs site, 15 locales
 ├── Makefile                   # The command surface
+├── ruff.toml                  # Lint rule set, pinned so a Ruff release cannot change it
 ├── CLAUDE.md                  # Working rules for coding agents
 ├── README.md                  # Landing page → the documentation site
 └── OLD-README.md              # Frozen pre-site single-page README
