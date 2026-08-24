@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | Зміни членства в Organizations, що від'єднують акаунти від захисних бар'єрів чи переміщують їх під контрольовану зловмисником організацію. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Події, що відповідають тригерам ескалації TRIAGE_GUIDE із реакцією протягом 15 хвилин: використання root, втручання в журналювання чи виявлення, записки з вимогою викупу, реєстрація делегованого адміністратора. Ненульове значення — час пішов. |
 | 14 | P2 Escalation Triggers | Події, що відповідають умовам TRIAGE_GUIDE із реакцією протягом години: створення облікових даних, надання привілеїв, зміни політик довіри та міжоблікове прийняття ролей. Читати разом із карткою P1. |
-| 15 | Security Monitoring Posture Recon | Виклики, що запитують, чи спостерігають за обліковим записом (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Розвідка тут із подальшим втручанням у DSH-22 від того самого принципала — це послідовність для ескалації. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Принципали, які викликають ту саму назву API у 3+ регіонах (DSH-117). Відповідник Region Activity, що враховує й читання, тоді як той рахує лише записи; глобальні сервіси виключено. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | На принципала: читання S3, унікальні сегменти та приблизна кількість унікальних об'єктів. Дає показник, якого вимагає стаття 33 GDPR. Потребує подій даних CloudTrail. |
 | 17 | Cross-Account Object Copy | Виклики CopyObject у S3 та PutObject із заголовком x-amz-copy-source, із джерелом і призначенням. Діаграми реплікації охоплюють конфігурацію; ця — окремі копії. |
 | 18 | Ransom Note Placement | Виклики PutObject, ключ об'єкта яких схожий на записку з вимогою викупу. На відміну від інших панелей, ця підтверджує наслідки — будь-який рядок тут є P1. |
-| 19 | SES / SNS Sending Quota Abuse | Події квоти надсилання та масової розсилки (DSH-118): SetSMSAttributes із підвищенням MonthlySpendLimit, UpdateAccountSendingEnabled для повторного вмикання SES, SendRawEmail / SendBulkTemplatedEmail. Кожен — один виклик, тож порогові значення обсягу їх не досягають. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

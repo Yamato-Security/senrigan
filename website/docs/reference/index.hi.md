@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | Organizations membership परिवर्तन जो accounts को guardrails से अलग करते हैं या उन्हें हमलावर-नियंत्रित organization के तहत ले जाते हैं। Threat Technique Catalog for AWS: T1666.A002 / T1666.A003। |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE के उन वृद्धि ट्रिगर से मेल खाती घटनाएँ जिनमें 15 मिनट के भीतर प्रतिक्रिया आवश्यक है: root उपयोग, लॉगिंग या पहचान से छेड़छाड़, फिरौती नोट, प्रत्यायोजित व्यवस्थापक पंजीकरण। शून्य से भिन्न का अर्थ है घड़ी शुरू। |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE की उन शर्तों से मेल खाती घटनाएँ जिनमें एक घंटे में प्रतिक्रिया चाहिए: क्रेडेंशियल निर्माण, विशेषाधिकार अनुदान, ट्रस्ट नीति संपादन और क्रॉस-अकाउंट रोल ग्रहण। इसे P1 कार्ड के साथ पढ़ें। |
-| 15 | Security Monitoring Posture Recon | वे कॉल जो पूछती हैं कि खाता देखा जा रहा है या नहीं (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders। यहाँ टोह लेने के बाद उसी प्रिंसिपल द्वारा DSH-22 में छेड़छाड़ — यही वह क्रम है जिसे एस्केलेट करना चाहिए। Threat Technique Catalog for AWS: T1087, T1562.008। |
-| 16 | Single-API Multi-Region Fan-Out | वे प्रिंसिपल जो एक ही API नाम को 3+ क्षेत्रों में कॉल करते हैं (DSH-117)। यह Region Activity का पठन-सहित समकक्ष है, जो केवल लेखन गिनता है; वैश्विक सेवाएँ बाहर रखी गई हैं। Threat Technique Catalog for AWS: T1535। |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | प्रति प्रिंसिपल: S3 पठन कॉल, विशिष्ट बकेट और अनुमानित विशिष्ट ऑब्जेक्ट। GDPR अनुच्छेद 33 द्वारा अपेक्षित आँकड़ा देता है। बकेट पर CloudTrail डेटा इवेंट आवश्यक हैं। |
 | 17 | Cross-Account Object Copy | S3 CopyObject कॉल और x-amz-copy-source हेडर वाले PutObject कॉल, स्रोत और गंतव्य सहित। प्रतिकृति चार्ट विन्यास को कवर करते हैं; यह व्यक्तिगत प्रतियों को। |
 | 18 | Ransom Note Placement | वे PutObject कॉल जिनकी ऑब्जेक्ट कुंजी फिरौती नोट जैसी दिखती है। अन्य रैनसमवेयर पैनल के विपरीत यह प्रभाव की पुष्टि करता है — यहाँ कोई भी पंक्ति P1 है। |
-| 19 | SES / SNS Sending Quota Abuse | प्रेषण कोटा और बल्क-भेजने की घटनाएँ (DSH-118): MonthlySpendLimit बढ़ाने वाला SetSMSAttributes, SES को पुनः सक्रिय करने वाला UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail। हर एक अकेली कॉल है, इसलिए मात्रा-आधारित सीमाएँ इन तक कभी नहीं पहुँचतीं। Threat Technique Catalog for AWS: T1496.003, T1496.A001। |
 
 ### 🖥️ Computing
 

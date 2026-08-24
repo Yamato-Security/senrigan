@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | تغييرات عضوية Organizations التي تفصل الحسابات عن الضوابط الواقية أو تنقلها تحت مؤسسة يتحكم فيها المهاجم. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | الأحداث المطابقة لمحفّزات التصعيد في TRIAGE_GUIDE التي تتطلب استجابة خلال 15 دقيقة: استخدام root، والتلاعب بالتسجيل أو الكشف، ورسائل الفدية، وتسجيل مسؤول مفوَّض. القيمة غير الصفرية تعني بدء العدّ. |
 | 14 | P2 Escalation Triggers | الأحداث المطابقة لشروط TRIAGE_GUIDE للاستجابة خلال ساعة: إنشاء بيانات الاعتماد، ومنح الامتيازات، وتعديل سياسات الثقة، وتحمّل الأدوار عبر الحسابات. تُقرأ مع بطاقة P1 لا بمفردها. |
-| 15 | Security Monitoring Posture Recon | استدعاءات تسأل ما إذا كان الحساب مُراقَباً (DSH-116): DescribeTrails وGetTrailStatus وListDetectors وDescribeConfigurationRecorders. الاستطلاع هنا متبوعاً بالعبث في DSH-22 من الكيان نفسه هو التسلسل الذي يستوجب التصعيد. Threat Technique Catalog for AWS: T1087، T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | كيانات تستدعي اسم واجهة برمجية واحدة في 3 مناطق أو أكثر (DSH-117). النظير الشامل للقراءات للوحة Region Activity التي تَعُدّ عمليات الكتابة فقط؛ والخدمات العالمية مستثناة. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | لكل كيان: استدعاءات القراءة في S3 والحاويات المتمايزة والعدد التقريبي للكائنات المتمايزة. ينتج الرقم الذي تطلبه المادة 33 من اللائحة. يتطلب أحداث بيانات CloudTrail. |
 | 17 | Cross-Account Object Copy | استدعاءات CopyObject في S3 واستدعاءات PutObject التي تحمل ترويسة x-amz-copy-source، مع المصدر والوجهة. مخططات النسخ المتماثل تغطي الإعداد؛ وهذا يغطي النسخ الفردية. |
 | 18 | Ransom Note Placement | استدعاءات PutObject التي يبدو مفتاح الكائن فيها كرسالة فدية. بخلاف لوحات الفدية الأخرى، تؤكد هذه الأثر — أي صف هنا يُعد P1. |
-| 19 | SES / SNS Sending Quota Abuse | أحداث حصة الإرسال والإرسال المجمّع (DSH-118): SetSMSAttributes الذي يرفع MonthlySpendLimit، وUpdateAccountSendingEnabled الذي يعيد تفعيل SES، وSendRawEmail / SendBulkTemplatedEmail. كل منها استدعاء مفرد، فلا تصل إليه عتبات الحجم أبداً. Threat Technique Catalog for AWS: T1496.003، T1496.A001. |
 
 ### 🖥️ Computing
 

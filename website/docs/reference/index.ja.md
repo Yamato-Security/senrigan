@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | アカウントをガードレールから切り離したり、攻撃者が制御する組織の配下に移動させたりする Organizations のメンバーシップ変更。Threat Technique Catalog for AWS: T1666.A002 / T1666.A003。 |
 | 13 | P1 Escalation Triggers | 15 分以内の対応を要する TRIAGE_GUIDE のエスカレーション条件に一致するイベント数: root の使用、ロギングや検知の改ざん、身代金要求ファイル、委任管理者の登録。ゼロでなければ時計を回し始めます。 |
 | 14 | P2 Escalation Triggers | 1 時間以内の対応を要する TRIAGE_GUIDE の条件に一致するイベント数: 認証情報の作成、権限付与、信頼ポリシーの編集、クロスアカウントのロール引き受け。単独ではなく P1 カードと合わせて読みます。 |
-| 15 | Security Monitoring Posture Recon | アカウントが監視されているかを問い合わせる呼び出し (DSH-116): DescribeTrails、GetTrailStatus、ListDetectors、DescribeConfigurationRecorders。同一プリンシパルによるここでの偵察の後に DSH-22 の改ざんが続く並びは、エスカレーションすべきシーケンスです。Threat Technique Catalog for AWS: T1087、T1562.008。 |
-| 16 | Single-API Multi-Region Fan-Out | 同一の API 名を 3 つ以上のリージョンで呼び出すプリンシパル (DSH-117)。書き込み操作のみを数える Region Activity に対する、読み取りを含む対応版です。グローバルサービスは除外しています。Threat Technique Catalog for AWS: T1535。 |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | プリンシパルごとの S3 読み取り数、対象バケット数、概算オブジェクト数。GDPR 第 33 条が求める「おおよそのレコード件数」を算出します。バケットへの CloudTrail データイベントが必要です。 |
 | 17 | Cross-Account Object Copy | S3 CopyObject と x-amz-copy-source ヘッダーを伴う PutObject を、コピー元と先とともに表示します。レプリケーションのチャートは設定を、これは個々のコピーを扱います。 |
 | 18 | Ransom Note Placement | オブジェクトキーが身代金要求ファイルに見える PutObject。他のランサムウェアパネルと異なり被害を確定させます — ここに 1 行でもあれば P1 です。 |
-| 19 | SES / SNS Sending Quota Abuse | 送信クォータと一括送信のイベント (DSH-118): MonthlySpendLimit を引き上げる SetSMSAttributes、SES を再武装する UpdateAccountSendingEnabled、SendRawEmail / SendBulkTemplatedEmail。いずれも単発の呼び出しのため、量的しきい値では到達できません。Threat Technique Catalog for AWS: T1496.003、T1496.A001。 |
 
 ### 🖥️ Computing
 

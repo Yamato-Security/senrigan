@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | 계정을 가드레일에서 분리하거나 공격자가 제어하는 조직 아래로 이동시키는 Organizations 멤버십 변경. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | 15분 이내 대응이 필요한 TRIAGE_GUIDE 에스컬레이션 조건에 해당하는 이벤트: root 사용, 로깅·탐지 변조, 랜섬 노트, 위임 관리자 등록. 0이 아니면 시계를 돌리기 시작합니다. |
 | 14 | P2 Escalation Triggers | 1시간 이내 대응이 필요한 TRIAGE_GUIDE 조건에 해당하는 이벤트: 자격 증명 생성, 권한 부여, 신뢰 정책 편집, 계정 간 역할 수임. 단독이 아니라 P1 카드와 함께 읽습니다. |
-| 15 | Security Monitoring Posture Recon | 계정이 감시되고 있는지 묻는 호출 (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. 동일 주체가 여기서 정찰한 뒤 DSH-22에서 변조하는 순서는 에스컬레이션 대상입니다. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | 동일한 API 이름을 3개 이상 리전에서 호출하는 주체 (DSH-117). 쓰기 작업만 세는 Region Activity의 읽기 포함 대응판이며 글로벌 서비스는 제외됩니다. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | 프린시펄별 S3 읽기 호출, 고유 버킷, 대략적 고유 객체 수. GDPR 33조가 요구하는 수치를 산출합니다. 버킷에 CloudTrail 데이터 이벤트가 필요합니다. |
 | 17 | Cross-Account Object Copy | S3 CopyObject 호출과 x-amz-copy-source 헤더가 있는 PutObject를 원본·대상과 함께 표시합니다. 복제 차트는 설정을, 이것은 개별 복사를 다룹니다. |
 | 18 | Ransom Note Placement | 객체 키가 랜섬 노트처럼 보이는 PutObject 호출. 다른 랜섬웨어 패널과 달리 피해를 확정합니다 — 여기 한 줄이라도 있으면 P1입니다. |
-| 19 | SES / SNS Sending Quota Abuse | 발송 할당량 및 대량 발송 이벤트 (DSH-118): MonthlySpendLimit을 올리는 SetSMSAttributes, SES를 재무장하는 UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail. 모두 단발 호출이므로 양적 임계값으로는 도달할 수 없습니다. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

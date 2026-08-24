@@ -271,8 +271,6 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | Organization Membership Changes | Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Events matching the TRIAGE_GUIDE escalation triggers that demand a response within 15 minutes: root usage, logging or detection tampering, ransom notes, delegated-administrator registration. Non-zero means start the clock. |
 | 14 | P2 Escalation Triggers | Events matching the TRIAGE_GUIDE conditions for a response within the hour: credential creation, privilege grants, trust-policy edits and cross-account role assumption. Read it against the P1 card, not on its own. |
-| 15 | Security Monitoring Posture Recon | Calls that ask whether the account is being watched (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Recon here followed by tampering in DSH-22, from the same principal, is the sequence to escalate. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principals calling the same API name in 3+ regions (DSH-117). The read-inclusive counterpart to Region Activity, which counts write operations only; global services are excluded. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 16 | Data Access Scope (Breach Notification) | Per principal: S3 read calls, distinct buckets and approximate distinct objects. Produces the 'approximate number of records' figure GDPR Article 33 requires. Needs CloudTrail data events on the buckets. |
 | 17 | Cross-Account Object Copy | S3 CopyObject calls and PutObject calls carrying an x-amz-copy-source header, with source and destination. The replication charts cover configuration; this covers the individual copies. |
 | 18 | Ransom Note Placement | PutObject calls whose object key looks like a ransom note. Unlike the other ransomware panels this confirms impact rather than suggesting it — any row here is a P1. |
-| 19 | SES / SNS Sending Quota Abuse | Sending-quota and bulk-send events (DSH-118): SetSMSAttributes raising MonthlySpendLimit, UpdateAccountSendingEnabled re-arming SES, SendRawEmail / SendBulkTemplatedEmail. Each is a single call, so volume thresholds never reach it. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

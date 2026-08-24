@@ -271,8 +271,6 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 12 | Organization Membership Changes | Changements d'appartenance Organizations qui détachent des comptes des garde-fous ou les déplacent sous une organisation contrôlée par l'attaquant. Threat Technique Catalog for AWS : T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Événements correspondant aux déclencheurs d'escalade du TRIAGE_GUIDE exigeant une réponse en 15 minutes : usage root, altération de la journalisation ou de la détection, notes de rançon, enregistrement d'administrateur délégué. Non nul, le chronomètre démarre. |
 | 14 | P2 Escalation Triggers | Événements correspondant aux conditions du TRIAGE_GUIDE pour une réponse dans l'heure : création d'identifiants, octroi de privilèges, modifications de politique de confiance et assomption de rôle entre comptes. À lire avec la carte P1. |
-| 15 | Security Monitoring Posture Recon | Appels qui demandent si le compte est surveillé (DSH-116) : DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Une reconnaissance ici suivie d'une altération dans DSH-22, par le même principal, est la séquence à escalader. Threat Technique Catalog for AWS : T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principals appelant le même nom d'API dans 3 régions ou plus (DSH-117). Le pendant incluant les lectures de Region Activity, qui ne compte que les écritures ; les services globaux sont exclus. Threat Technique Catalog for AWS : T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 16 | Data Access Scope (Breach Notification) | Par principal : lectures S3, buckets distincts et objets distincts approximatifs. Produit le chiffre exigé par l'article 33 du RGPD. Nécessite les événements de données CloudTrail. |
 | 17 | Cross-Account Object Copy | Appels CopyObject S3 et PutObject portant un en-tête x-amz-copy-source, avec source et destination. Les graphiques de réplication couvrent la configuration ; celui-ci les copies individuelles. |
 | 18 | Ransom Note Placement | Appels PutObject dont la clé d'objet ressemble à une note de rançon. Contrairement aux autres panneaux rançongiciel, celui-ci confirme l'impact : toute ligne ici est un P1. |
-| 19 | SES / SNS Sending Quota Abuse | Événements de quota d'envoi et d'envoi en masse (DSH-118) : SetSMSAttributes relevant MonthlySpendLimit, UpdateAccountSendingEnabled réarmant SES, SendRawEmail / SendBulkTemplatedEmail. Chacun est un appel unique, hors de portée de tout seuil de volume. Threat Technique Catalog for AWS : T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 
