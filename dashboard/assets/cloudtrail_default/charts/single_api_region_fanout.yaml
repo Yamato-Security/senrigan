@@ -1,0 +1,62 @@
+# DSH-117: Single-API Multi-Region Fan-Out
+# Flags one principal repeating the same API across multiple regions. That is a
+# scripted sweep pattern the write-only region charts miss.
+# MITRE ATT&CK: T1535 Unused/Unsupported Cloud Regions
+uuid: e535ea95-a32b-46e4-93f8-88066177f560
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: Single-API Multi-Region Fan-Out
+viz_type: table
+description: >
+  Principal and API combinations that fan out across three or more regions
+  (DSH-117). This surfaces scripted enumeration or quota probing where a stolen
+  credential repeats one API across the estate.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT aws_region)"
+      label: distinct_regions
+      hasCustomLabel: true
+      optionName: metric_region_fanout_regions
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: call_count
+      hasCustomLabel: true
+      optionName: metric_region_fanout_calls
+    - expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT source_ip_address)"
+      label: distinct_source_ips
+      hasCustomLabel: true
+      optionName: metric_region_fanout_source_ips
+  groupby:
+    - expressionType: SQL
+      sqlExpression: "DATE_TRUNC('hour', event_time)"
+      label: hour_bucket
+      hasCustomLabel: true
+      optionName: col_region_fanout_hour
+    - user_identity_arn
+    - event_name
+    - event_source
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        user_identity_arn IS NOT NULL
+        AND aws_region IS NOT NULL
+        AND event_source NOT IN (
+          'iam.amazonaws.com', 'sts.amazonaws.com',
+          'signin.amazonaws.com', 'organizations.amazonaws.com',
+          'cloudfront.amazonaws.com', 'route53.amazonaws.com'
+        )
+      filterOptionName: filter_region_fanout_scope
+    - clause: HAVING
+      expressionType: SQL
+      sqlExpression: "COUNT(DISTINCT aws_region) >= 3"
+      filterOptionName: filter_region_fanout_threshold
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+cache_timeout: null
