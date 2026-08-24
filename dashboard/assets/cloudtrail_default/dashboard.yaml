@@ -197,8 +197,6 @@ position:
     - ROW-td-1
     - ROW-ttc-orgmember
     - ROW-pb-threat-1
-    - ROW-p9-posture
-    - ROW-p9-fanout
     meta:
       text: 🎯 Threat Detection
       defaultText: Threat Detection
@@ -648,7 +646,6 @@ position:
     - ROW-ttc-storreenc
     - ROW-pb-s3-rds-1
     - ROW-pb-s3-rds-2
-    - ROW-p9-sending
     meta:
       text: 🪣 S3 & RDS
       defaultText: S3 & RDS
@@ -2332,57 +2329,6 @@ position:
     - MARKDOWN-pb-playbooks
     meta:
       background: BACKGROUND_TRANSPARENT
-  ROW-p9-posture:
-    type: ROW
-    id: ROW-p9-posture
-    children:
-    - CHART-p9-posture
-    meta:
-      background: BACKGROUND_TRANSPARENT
-  CHART-p9-posture:
-    type: CHART
-    id: CHART-p9-posture
-    children: []
-    meta:
-      chartId: 126
-      uuid: 7f44f701-4dfb-4d75-bef4-87264473f7f4
-      width: 12
-      height: 50
-      sliceName: Security Monitoring Posture Recon
-  ROW-p9-fanout:
-    type: ROW
-    id: ROW-p9-fanout
-    children:
-    - CHART-p9-fanout
-    meta:
-      background: BACKGROUND_TRANSPARENT
-  CHART-p9-fanout:
-    type: CHART
-    id: CHART-p9-fanout
-    children: []
-    meta:
-      chartId: 127
-      uuid: e535ea95-a32b-46e4-93f8-88066177f560
-      width: 12
-      height: 50
-      sliceName: Single-API Multi-Region Fan-Out
-  ROW-p9-sending:
-    type: ROW
-    id: ROW-p9-sending
-    children:
-    - CHART-p9-sending
-    meta:
-      background: BACKGROUND_TRANSPARENT
-  CHART-p9-sending:
-    type: CHART
-    id: CHART-p9-sending
-    children: []
-    meta:
-      chartId: 128
-      uuid: 81c844b4-7578-404f-9a6c-94285a335eae
-      width: 12
-      height: 50
-      sliceName: SES / SNS Sending Quota Abuse
 metadata:
   cross_filters_enabled: true
   color_scheme: supersetColors

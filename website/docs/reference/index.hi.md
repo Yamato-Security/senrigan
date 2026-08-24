@@ -217,16 +217,16 @@
 
 ---
 
-## 📊 डैशबोर्ड चार्ट — 118 चार्ट
+## 📊 डैशबोर्ड चार्ट — 115 चार्ट
 
 | टैब | चार्ट | यह क्या दिखाता है |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (इवेंट, principals, IPs, root, MFA-रहित logins, access denied, defense evasion, countries, regions) + वैश्विक इवेंट-वॉल्यूम रुझान |
-| 🎯 Threat Detection | 16 | defense-evasion कैच-ऑल · logging gaps · VPC flow log/Config/EventBridge/WAF छेड़छाड़ · SCP/org-membership परिवर्तन · error और throttling रुझान · write/read अनुपात · P1/P2 वृद्धि ट्रिगर KPI कार्ड |
+| 🎯 Threat Detection | 14 | defense-evasion कैच-ऑल · logging gaps · VPC flow log/Config/EventBridge/WAF छेड़छाड़ · SCP/org-membership परिवर्तन · error और throttling रुझान · write/read अनुपात · P1/P2 वृद्धि ट्रिगर KPI कार्ड |
 | 🔑 Identity & Access | 36 | console logins · MFA रुझान · login heatmap · failed→success auth अनुक्रम · root उपयोग · IAM entity गतिविधि/विलोपन · privilege-escalation timeline · नए principals · SSO · cross-account AssumeRole · AssumeRoot उपयोग |
 | 🚨 High-Risk API Monitor | 5 | सुरक्षा-सेवा छेड़छाड़ & credential-retrieval API लॉग · शीर्ष high-risk calls · शीर्ष actors · समय के साथ high-risk call वॉल्यूम |
 | 📊 API Activity | 6 | शीर्ष APIs · access-denied actions · region वितरण · error-code संरचना · source IPs · user agents |
-| 🪣 S3 & RDS | 19 | S3 बल्क download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault विलोपन · KMS key विलोपन · RDS snapshot share / snapshot के बिना विलोपन · SSE-C ransomware एन्क्रिप्शन · lifecycle-triggered विलोपन · RDS query/instance हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · उल्लंघन अधिसूचना हेतु पहुँच दायरा · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · फिरौती नोट रखना |
+| 🪣 S3 & RDS | 18 | S3 बल्क download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault विलोपन · KMS key विलोपन · RDS snapshot share / snapshot के बिना विलोपन · SSE-C ransomware एन्क्रिप्शन · lifecycle-triggered विलोपन · RDS query/instance हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · उल्लंघन अधिसूचना हेतु पहुँच दायरा · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · फिरौती नोट रखना |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS कमजोर करना · AMI/snapshot विलोपन · WorkSpaces हाइजैकिंग |
 | 🤖 AI / LLM | 6 | Bedrock invocation रुझान · model access & logging परिवर्तन · विफल invocations · origin द्वारा callers (LLMjacking triage) · AgentCore टोकन जारी करना · गेटवे और नीति परिवर्तन |
 | 🌐 Network | 5 | security group परिवर्तन · NACL/route table परिवर्तन · VPC अवसंरचना · VPC peering/Transit Gateway · Route53 DNS परिवर्तन |
@@ -234,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | impossible travel (multi-country principals) · शीर्ष countries/cities/ASNs · विश्व मानचित्र · event_name × country |
 
 <details markdown="1">
-<summary>📋 पूरी सूची — सभी 118 चार्ट (विस्तृत करने के लिए क्लिक करें)</summary>
+<summary>📋 पूरी सूची — सभी 115 चार्ट (विस्तृत करने के लिए क्लिक करें)</summary>
 
 ## डैशबोर्ड चार्ट (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | Organizations membership परिवर्तन जो accounts को guardrails से अलग करते हैं या उन्हें हमलावर-नियंत्रित organization के तहत ले जाते हैं। Threat Technique Catalog for AWS: T1666.A002 / T1666.A003। |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE के उन वृद्धि ट्रिगर से मेल खाती घटनाएँ जिनमें 15 मिनट के भीतर प्रतिक्रिया आवश्यक है: root उपयोग, लॉगिंग या पहचान से छेड़छाड़, फिरौती नोट, प्रत्यायोजित व्यवस्थापक पंजीकरण। शून्य से भिन्न का अर्थ है घड़ी शुरू। |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE की उन शर्तों से मेल खाती घटनाएँ जिनमें एक घंटे में प्रतिक्रिया चाहिए: क्रेडेंशियल निर्माण, विशेषाधिकार अनुदान, ट्रस्ट नीति संपादन और क्रॉस-अकाउंट रोल ग्रहण। इसे P1 कार्ड के साथ पढ़ें। |
-| 15 | Security Monitoring Posture Recon | वे कॉल जो पूछती हैं कि खाता देखा जा रहा है या नहीं (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders। यहाँ टोह लेने के बाद उसी प्रिंसिपल द्वारा DSH-22 में छेड़छाड़ — यही वह क्रम है जिसे एस्केलेट करना चाहिए। Threat Technique Catalog for AWS: T1087, T1562.008। |
-| 16 | Single-API Multi-Region Fan-Out | वे प्रिंसिपल जो एक ही API नाम को 3+ क्षेत्रों में कॉल करते हैं (DSH-117)। यह Region Activity का पठन-सहित समकक्ष है, जो केवल लेखन गिनता है; वैश्विक सेवाएँ बाहर रखी गई हैं। Threat Technique Catalog for AWS: T1535। |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | प्रति प्रिंसिपल: S3 पठन कॉल, विशिष्ट बकेट और अनुमानित विशिष्ट ऑब्जेक्ट। GDPR अनुच्छेद 33 द्वारा अपेक्षित आँकड़ा देता है। बकेट पर CloudTrail डेटा इवेंट आवश्यक हैं। |
 | 17 | Cross-Account Object Copy | S3 CopyObject कॉल और x-amz-copy-source हेडर वाले PutObject कॉल, स्रोत और गंतव्य सहित। प्रतिकृति चार्ट विन्यास को कवर करते हैं; यह व्यक्तिगत प्रतियों को। |
 | 18 | Ransom Note Placement | वे PutObject कॉल जिनकी ऑब्जेक्ट कुंजी फिरौती नोट जैसी दिखती है। अन्य रैनसमवेयर पैनल के विपरीत यह प्रभाव की पुष्टि करता है — यहाँ कोई भी पंक्ति P1 है। |
-| 19 | SES / SNS Sending Quota Abuse | प्रेषण कोटा और बल्क-भेजने की घटनाएँ (DSH-118): MonthlySpendLimit बढ़ाने वाला SetSMSAttributes, SES को पुनः सक्रिय करने वाला UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail। हर एक अकेली कॉल है, इसलिए मात्रा-आधारित सीमाएँ इन तक कभी नहीं पहुँचतीं। Threat Technique Catalog for AWS: T1496.003, T1496.A001। |
 
 ### 🖥️ Computing
 

@@ -217,16 +217,16 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 
 ---
 
-## 📊 Graphiques des tableaux de bord — 118 graphiques
+## 📊 Graphiques des tableaux de bord — 115 graphiques
 
 | Onglet | Graphiques | Ce qu'il montre |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 cartes KPI de triage (événements, principaux, IP, root, connexions sans MFA, accès refusé, évasion de défense, pays, régions) + tendance globale du volume d'événements |
-| 🎯 Threat Detection | 16 | Détecteur général d'évasion de défense · brèches de journalisation · falsification VPC flow log/Config/EventBridge/WAF · changements de SCP/d'appartenance d'organisation · tendances d'erreurs et de throttling · ratio écriture/lecture · cartes KPI des déclencheurs d'escalade P1/P2 |
+| 🎯 Threat Detection | 14 | Détecteur général d'évasion de défense · brèches de journalisation · falsification VPC flow log/Config/EventBridge/WAF · changements de SCP/d'appartenance d'organisation · tendances d'erreurs et de throttling · ratio écriture/lecture · cartes KPI des déclencheurs d'escalade P1/P2 |
 | 🔑 Identity & Access | 36 | Connexions console · tendance MFA · heatmap de connexion · séquence d'authentification échec→succès · usage du root · activité/suppression d'entité IAM · chronologie d'élévation de privilèges · nouveaux principaux · SSO · AssumeRole inter-comptes · usage d'AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | Journaux de falsification de services de sécurité et de récupération d'identifiants via API · principaux appels à haut risque · principaux acteurs · volume d'appels à haut risque dans le temps |
 | 📊 API Activity | 6 | Top API · actions avec accès refusé · distribution par région · composition des codes d'erreur · IP sources · agents utilisateurs |
-| 🪣 S3 & RDS | 19 | Téléchargement/suppression en masse S3 · versioning/journalisation désactivés · réplication inter-comptes · politique/ACL de bucket · énumération · configuration de protection · suppression de coffre Backup · suppression de clé KMS · partage de snapshot RDS / suppression sans snapshot · chiffrement rançongiciel SSE-C S3 · suppression déclenchée par cycle de vie · manipulation de requêtes/instances RDS · re-chiffrement de stockage à impact · périmètre d'accès pour notification de violation · copie d'objets entre comptes · notes de rançon |
+| 🪣 S3 & RDS | 18 | Téléchargement/suppression en masse S3 · versioning/journalisation désactivés · réplication inter-comptes · politique/ACL de bucket · énumération · configuration de protection · suppression de coffre Backup · suppression de clé KMS · partage de snapshot RDS / suppression sans snapshot · chiffrement rançongiciel SSE-C S3 · suppression déclenchée par cycle de vie · manipulation de requêtes/instances RDS · re-chiffrement de stockage à impact · périmètre d'accès pour notification de violation · copie d'objets entre comptes · notes de rançon |
 | 🖥️ Computing | 17 | Lancements EC2/arrêt massif/paires de clés/profil d'instance/user-data/partage de snapshot/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · affaiblissement IMDS · suppression d'AMI/snapshot · détournement WorkSpaces |
 | 🤖 AI / LLM | 6 | Tendance des invocations Bedrock · changements d'accès aux modèles et de journalisation · invocations échouées · appelants par origine (triage LLMjacking) · émission de jetons AgentCore · changements de passerelle et de politiques |
 | 🌐 Network | 5 | Changements de groupe de sécurité · changements NACL/table de routage · infrastructure VPC · peering VPC/Transit Gateway · changements DNS Route53 |
@@ -234,7 +234,7 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 🌍 GeoIP Intelligence | 6 | Voyage impossible (principaux multi-pays) · top pays/villes/ASN · carte du monde · event_name × pays |
 
 <details markdown="1">
-<summary>📋 Liste complète — tous les 118 graphiques (cliquez pour développer)</summary>
+<summary>📋 Liste complète — tous les 115 graphiques (cliquez pour développer)</summary>
 
 ## Graphiques des tableaux de bord (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 12 | Organization Membership Changes | Changements d'appartenance Organizations qui détachent des comptes des garde-fous ou les déplacent sous une organisation contrôlée par l'attaquant. Threat Technique Catalog for AWS : T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Événements correspondant aux déclencheurs d'escalade du TRIAGE_GUIDE exigeant une réponse en 15 minutes : usage root, altération de la journalisation ou de la détection, notes de rançon, enregistrement d'administrateur délégué. Non nul, le chronomètre démarre. |
 | 14 | P2 Escalation Triggers | Événements correspondant aux conditions du TRIAGE_GUIDE pour une réponse dans l'heure : création d'identifiants, octroi de privilèges, modifications de politique de confiance et assomption de rôle entre comptes. À lire avec la carte P1. |
-| 15 | Security Monitoring Posture Recon | Appels qui demandent si le compte est surveillé (DSH-116) : DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Une reconnaissance ici suivie d'une altération dans DSH-22, par le même principal, est la séquence à escalader. Threat Technique Catalog for AWS : T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principals appelant le même nom d'API dans 3 régions ou plus (DSH-117). Le pendant incluant les lectures de Region Activity, qui ne compte que les écritures ; les services globaux sont exclus. Threat Technique Catalog for AWS : T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Les catégories sont classées par priorité de triage DFIR — vérifiez d'abor
 | 16 | Data Access Scope (Breach Notification) | Par principal : lectures S3, buckets distincts et objets distincts approximatifs. Produit le chiffre exigé par l'article 33 du RGPD. Nécessite les événements de données CloudTrail. |
 | 17 | Cross-Account Object Copy | Appels CopyObject S3 et PutObject portant un en-tête x-amz-copy-source, avec source et destination. Les graphiques de réplication couvrent la configuration ; celui-ci les copies individuelles. |
 | 18 | Ransom Note Placement | Appels PutObject dont la clé d'objet ressemble à une note de rançon. Contrairement aux autres panneaux rançongiciel, celui-ci confirme l'impact : toute ligne ici est un P1. |
-| 19 | SES / SNS Sending Quota Abuse | Événements de quota d'envoi et d'envoi en masse (DSH-118) : SetSMSAttributes relevant MonthlySpendLimit, UpdateAccountSendingEnabled réarmant SES, SendRawEmail / SendBulkTemplatedEmail. Chacun est un appel unique, hors de portée de tout seuil de volume. Threat Technique Catalog for AWS : T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

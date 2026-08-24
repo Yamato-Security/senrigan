@@ -217,16 +217,16 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 
 ---
 
-## 📊 Dashboard Charts — 118 charts
+## 📊 Dashboard Charts — 115 charts
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (events, principals, IPs, root, MFA-less logins, access denied, defense evasion, countries, regions) + global event-volume trend |
-| 🎯 Threat Detection | 16 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio · P1/P2 escalation-trigger KPI cards |
+| 🎯 Threat Detection | 14 | Defense-evasion catch-all · logging gaps · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership changes · error & throttling trends · write/read ratio · P1/P2 escalation-trigger KPI cards |
 | 🔑 Identity & Access | 36 | Console logins · MFA trend · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · new principals · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API logs · top high-risk calls · top actors · high-risk call volume over time |
 | 📊 API Activity | 6 | Top APIs · access-denied actions · region distribution · error-code composition · source IPs · user agents |
-| 🪣 S3 & RDS | 19 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact · breach-notification access scope · cross-account object copy · ransom note placement |
+| 🪣 S3 & RDS | 18 | S3 bulk download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / deleted without snapshot · SSE-C ransomware encryption · lifecycle-triggered deletion · RDS query/instance manipulation · storage re-encryption for impact · breach-notification access scope · cross-account object copy · ransom note placement |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS weakening · AMI/snapshot deletion · WorkSpaces hijacking |
 | 🤖 AI / LLM | 6 | Bedrock invocation trend · model access & logging changes · failed invocations · callers by origin (LLMjacking triage) · AgentCore token issuance · gateway & policy changes |
 | 🌐 Network | 5 | Security group changes · NACL/route table changes · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS changes |
@@ -234,7 +234,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 🌍 GeoIP Intelligence | 6 | Impossible travel (multi-country principals) · top countries/cities/ASNs · world map · event_name × country |
 
 <details markdown="1">
-<summary>📋 Full list — all 118 charts (click to expand)</summary>
+<summary>📋 Full list — all 115 charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | Organization Membership Changes | Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Events matching the TRIAGE_GUIDE escalation triggers that demand a response within 15 minutes: root usage, logging or detection tampering, ransom notes, delegated-administrator registration. Non-zero means start the clock. |
 | 14 | P2 Escalation Triggers | Events matching the TRIAGE_GUIDE conditions for a response within the hour: credential creation, privilege grants, trust-policy edits and cross-account role assumption. Read it against the P1 card, not on its own. |
-| 15 | Security Monitoring Posture Recon | Calls that ask whether the account is being watched (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Recon here followed by tampering in DSH-22, from the same principal, is the sequence to escalate. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principals calling the same API name in 3+ regions (DSH-117). The read-inclusive counterpart to Region Activity, which counts write operations only; global services are excluded. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 16 | Data Access Scope (Breach Notification) | Per principal: S3 read calls, distinct buckets and approximate distinct objects. Produces the 'approximate number of records' figure GDPR Article 33 requires. Needs CloudTrail data events on the buckets. |
 | 17 | Cross-Account Object Copy | S3 CopyObject calls and PutObject calls carrying an x-amz-copy-source header, with source and destination. The replication charts cover configuration; this covers the individual copies. |
 | 18 | Ransom Note Placement | PutObject calls whose object key looks like a ransom note. Unlike the other ransomware panels this confirms impact rather than suggesting it — any row here is a P1. |
-| 19 | SES / SNS Sending Quota Abuse | Sending-quota and bulk-send events (DSH-118): SetSMSAttributes raising MonthlySpendLimit, UpdateAccountSendingEnabled re-arming SES, SendRawEmail / SendBulkTemplatedEmail. Each is a single call, so volume thresholds never reach it. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

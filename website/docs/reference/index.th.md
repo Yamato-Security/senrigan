@@ -217,16 +217,16 @@
 
 ---
 
-## 📊 Dashboard Charts — 118 charts
+## 📊 Dashboard Charts — 115 charts
 
 | แท็บ | จำนวนแผนภูมิ | สิ่งที่แสดง |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | การ์ด KPI สำหรับ triage 9 รายการ (เหตุการณ์, principal, IP, root, การล็อกอินไม่มี MFA, access denied, การหลบเลี่ยงการป้องกัน, ประเทศ, ภูมิภาค) + แนวโน้มปริมาณเหตุการณ์ทั่วโลก |
-| 🎯 Threat Detection | 16 | จุดรวมการหลบเลี่ยงการป้องกัน · ช่องว่างของ logging · การดัดแปลง VPC flow log/Config/EventBridge/WAF · การเปลี่ยนแปลง SCP/สมาชิกภาพองค์กร · แนวโน้ม error และ throttling · อัตราส่วน write/read · การ์ด KPI ตัวกระตุ้นการยกระดับ P1/P2 |
+| 🎯 Threat Detection | 14 | จุดรวมการหลบเลี่ยงการป้องกัน · ช่องว่างของ logging · การดัดแปลง VPC flow log/Config/EventBridge/WAF · การเปลี่ยนแปลง SCP/สมาชิกภาพองค์กร · แนวโน้ม error และ throttling · อัตราส่วน write/read · การ์ด KPI ตัวกระตุ้นการยกระดับ P1/P2 |
 | 🔑 Identity & Access | 36 | การล็อกอินคอนโซล · แนวโน้ม MFA · heatmap การล็อกอิน · ลำดับเหตุการณ์ auth ล้มเหลว→สำเร็จ · การใช้ root · กิจกรรม/การลบของ IAM entity · ไทม์ไลน์การยกระดับสิทธิ์ · principal ใหม่ · SSO · AssumeRole ข้ามบัญชี · การใช้ AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | log เหตุการณ์การดัดแปลงบริการความปลอดภัยและการดึง credential · การเรียกความเสี่ยงสูงอันดับต้น · ผู้กระทำอันดับต้น · ปริมาณการเรียกความเสี่ยงสูงตามเวลา |
 | 📊 API Activity | 6 | API อันดับต้น · การกระทำที่ถูก access-denied · การกระจายตามภูมิภาค · องค์ประกอบของ error-code · source IP · user agent |
-| 🪣 S3 & RDS | 19 | การดาวน์โหลด/ลบ S3 จำนวนมาก · การปิดใช้งาน versioning/logging · การจำลองข้ามบัญชี · policy/ACL ของ bucket · การแจกแจง · การตั้งค่าการป้องกัน · การลบ Backup vault · การลบคีย์ KMS · การแชร์ snapshot RDS / การลบ RDS โดยไม่มี snapshot · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ query/instance ของ RDS · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ · ขอบเขตการเข้าถึงสำหรับการแจ้งเหตุละเมิด · การคัดลอกอ็อบเจกต์ข้ามบัญชี · การวางข้อความเรียกค่าไถ่ |
+| 🪣 S3 & RDS | 18 | การดาวน์โหลด/ลบ S3 จำนวนมาก · การปิดใช้งาน versioning/logging · การจำลองข้ามบัญชี · policy/ACL ของ bucket · การแจกแจง · การตั้งค่าการป้องกัน · การลบ Backup vault · การลบคีย์ KMS · การแชร์ snapshot RDS / การลบ RDS โดยไม่มี snapshot · การเข้ารหัส SSE-C แบบ ransomware · การลบที่กระตุ้นโดย lifecycle · การจัดการ query/instance ของ RDS · การเข้ารหัสที่จัดเก็บข้อมูลใหม่เพื่อสร้างผลกระทบ · ขอบเขตการเข้าถึงสำหรับการแจ้งเหตุละเมิด · การคัดลอกอ็อบเจกต์ข้ามบัญชี · การวางข้อความเรียกค่าไถ่ |
 | 🖥️ Computing | 17 | การเปิดใช้งาน EC2/หยุดจำนวนมาก/key pair/instance profile/user-data/การแชร์ snapshot/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · การลดความเข้มงวดของ IMDS · การลบ AMI/snapshot · การยึดครอง WorkSpaces |
 | 🤖 AI / LLM | 6 | แนวโน้มการเรียกใช้ Bedrock · การเปลี่ยนแปลงการเข้าถึงโมเดลและ logging · การเรียกใช้ที่ล้มเหลว · ผู้เรียกจัดกลุ่มตามแหล่งที่มา (triage สำหรับ LLMjacking) · การออกโทเค็น AgentCore · การเปลี่ยนแปลงเกตเวย์และนโยบาย |
 | 🌐 Network | 5 | การเปลี่ยนแปลง security group · การเปลี่ยนแปลง NACL/route table · โครงสร้างพื้นฐาน VPC · VPC peering/Transit Gateway · การเปลี่ยนแปลง DNS ของ Route53 |
@@ -234,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | การเดินทางที่เป็นไปไม่ได้ (principal หลายประเทศ) · ประเทศ/เมือง/ASN อันดับต้น · แผนที่โลก · event_name × country |
 
 <details markdown="1">
-<summary>📋 รายการทั้งหมด — ทุก chart ทั้ง 118 รายการ (คลิกเพื่อขยาย)</summary>
+<summary>📋 รายการทั้งหมด — ทุก chart ทั้ง 115 รายการ (คลิกเพื่อขยาย)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | การเปลี่ยนแปลงสมาชิกภาพของ Organizations ที่แยกบัญชีออกจาก guardrail หรือย้ายไปอยู่ภายใต้ organization ที่ผู้โจมตีควบคุม Threat Technique Catalog for AWS: T1666.A002 / T1666.A003 |
 | 13 | P1 Escalation Triggers | เหตุการณ์ที่ตรงกับตัวกระตุ้นการยกระดับของ TRIAGE_GUIDE ซึ่งต้องตอบสนองภายใน 15 นาที: การใช้ root, การแก้ไขบันทึกหรือการตรวจจับ, ข้อความเรียกค่าไถ่, การลงทะเบียนผู้ดูแลที่ได้รับมอบหมาย ค่าที่ไม่เป็นศูนย์หมายถึงเริ่มจับเวลา |
 | 14 | P2 Escalation Triggers | เหตุการณ์ที่ตรงกับเงื่อนไขของ TRIAGE_GUIDE สำหรับการตอบสนองภายในหนึ่งชั่วโมง: การสร้างข้อมูลรับรอง การให้สิทธิ์ การแก้ไขนโยบายความเชื่อถือ และการรับบทบาทข้ามบัญชี ควรอ่านคู่กับการ์ด P1 |
-| 15 | Security Monitoring Posture Recon | การเรียกที่ถามว่าบัญชีถูกเฝ้าดูอยู่หรือไม่ (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders การสอดแนมที่นี่ตามด้วยการแก้ไขใน DSH-22 โดย principal เดียวกัน คือลำดับที่ต้องยกระดับ Threat Technique Catalog for AWS: T1087, T1562.008 |
-| 16 | Single-API Multi-Region Fan-Out | principal ที่เรียกชื่อ API เดียวกันใน 3 ภูมิภาคขึ้นไป (DSH-117) เป็นคู่ขนานที่รวมการอ่านของ Region Activity ซึ่งนับเฉพาะการเขียน บริการระดับโลกถูกยกเว้น Threat Technique Catalog for AWS: T1535 |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | ต่อหลักการ: การเรียกอ่าน S3, บักเก็ตไม่ซ้ำ และอ็อบเจกต์ไม่ซ้ำโดยประมาณ ให้ตัวเลขที่ GDPR มาตรา 33 ต้องการ ต้องเปิดเหตุการณ์ข้อมูล CloudTrail บนบักเก็ต |
 | 17 | Cross-Account Object Copy | การเรียก CopyObject ของ S3 และ PutObject ที่มีส่วนหัว x-amz-copy-source พร้อมต้นทางและปลายทาง แผนภูมิการจำลองครอบคลุมการตั้งค่า ส่วนนี้ครอบคลุมการคัดลอกแต่ละครั้ง |
 | 18 | Ransom Note Placement | การเรียก PutObject ที่คีย์อ็อบเจกต์ดูเหมือนข้อความเรียกค่าไถ่ ต่างจากแผงแรนซัมแวร์อื่นตรงที่ยืนยันผลกระทบ — มีแถวใดแถวหนึ่งที่นี่ก็เป็น P1 |
-| 19 | SES / SNS Sending Quota Abuse | เหตุการณ์โควตาการส่งและการส่งจำนวนมาก (DSH-118): SetSMSAttributes ที่เพิ่ม MonthlySpendLimit, UpdateAccountSendingEnabled ที่เปิด SES อีกครั้ง, SendRawEmail / SendBulkTemplatedEmail แต่ละรายการเป็นการเรียกครั้งเดียว เกณฑ์ปริมาณจึงไม่มีวันเข้าถึง Threat Technique Catalog for AWS: T1496.003, T1496.A001 |
 
 ### 🖥️ Computing
 

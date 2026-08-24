@@ -217,16 +217,16 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 
 ---
 
-## 📊 Dashboard Charts — 118 charts
+## 📊 Dashboard Charts — 115 charts
 
 | Tab | Charts | Apa yang Ditampilkan |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 kartu KPI triase (event, principal, IP, root, login tanpa-MFA, access denied, penghindaran pertahanan, negara, region) + tren volume event global |
-| 🎯 Threat Detection | 16 | Catch-all penghindaran pertahanan · celah logging · manipulasi VPC flow log/Config/EventBridge/WAF · perubahan SCP/keanggotaan org · tren error & throttling · rasio tulis/baca · kartu KPI pemicu eskalasi P1/P2 |
+| 🎯 Threat Detection | 14 | Catch-all penghindaran pertahanan · celah logging · manipulasi VPC flow log/Config/EventBridge/WAF · perubahan SCP/keanggotaan org · tren error & throttling · rasio tulis/baca · kartu KPI pemicu eskalasi P1/P2 |
 | 🔑 Identity & Access | 36 | Login konsol · tren MFA · heatmap login · urutan auth gagal→berhasil · penggunaan root · aktivitas/penghapusan entitas IAM · timeline eskalasi hak istimewa · principal baru · SSO · AssumeRole lintas-akun · penggunaan AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | Log API manipulasi security-service & pengambilan kredensial · panggilan berisiko tinggi teratas · aktor teratas · volume panggilan berisiko tinggi dari waktu ke waktu |
 | 📊 API Activity | 6 | API teratas · tindakan access-denied · distribusi region · komposisi error-code · IP sumber · user agent |
-| 🪣 S3 & RDS | 19 | Unduhan/penghapusan massal S3 · versioning/logging dinonaktifkan · replikasi lintas-akun · bucket policy/ACL · enumerasi · konfigurasi proteksi · penghapusan Backup vault · penghapusan KMS key · berbagi snapshot RDS / dihapus tanpa snapshot · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi query/instance RDS · re-enkripsi storage untuk dampak · cakupan akses untuk notifikasi pelanggaran · penyalinan objek lintas akun · penempatan catatan tebusan |
+| 🪣 S3 & RDS | 18 | Unduhan/penghapusan massal S3 · versioning/logging dinonaktifkan · replikasi lintas-akun · bucket policy/ACL · enumerasi · konfigurasi proteksi · penghapusan Backup vault · penghapusan KMS key · berbagi snapshot RDS / dihapus tanpa snapshot · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi query/instance RDS · re-enkripsi storage untuk dampak · cakupan akses untuk notifikasi pelanggaran · penyalinan objek lintas akun · penempatan catatan tebusan |
 | 🖥️ Computing | 17 | Peluncuran/mass-stop/key pair/instance profile/user-data/berbagi snapshot/spot fleet EC2 · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · pelemahan IMDS · penghapusan AMI/snapshot · pembajakan WorkSpaces |
 | 🤖 AI / LLM | 6 | Tren invokasi Bedrock · perubahan akses model & logging · invokasi gagal · pemanggil berdasarkan asal (triase LLMjacking) · penerbitan token AgentCore · perubahan gateway dan kebijakan |
 | 🌐 Network | 5 | Perubahan security group · perubahan NACL/route table · infrastruktur VPC · VPC peering/Transit Gateway · perubahan DNS Route53 |
@@ -234,7 +234,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 🌍 GeoIP Intelligence | 6 | Perjalanan mustahil (principal multi-negara) · negara/kota/ASN teratas · peta dunia · event_name × country |
 
 <details markdown="1">
-<summary>📋 Daftar lengkap — semua 118 chart (klik untuk membuka)</summary>
+<summary>📋 Daftar lengkap — semua 115 chart (klik untuk membuka)</summary>
 
 ## Chart Dashboard (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 12 | Organization Membership Changes | Perubahan keanggotaan Organizations yang melepaskan akun dari guardrail atau memindahkannya di bawah organisasi yang dikendalikan penyerang. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Peristiwa yang cocok dengan pemicu eskalasi TRIAGE_GUIDE yang menuntut respons dalam 15 menit: penggunaan root, perusakan log atau deteksi, catatan tebusan, pendaftaran administrator terdelegasi. Bukan nol berarti mulai hitung waktu. |
 | 14 | P2 Escalation Triggers | Peristiwa yang cocok dengan kondisi TRIAGE_GUIDE untuk respons dalam satu jam: pembuatan kredensial, pemberian hak istimewa, penyuntingan kebijakan kepercayaan, dan pengambilan peran lintas akun. Baca bersama kartu P1. |
-| 15 | Security Monitoring Posture Recon | Panggilan yang menanyakan apakah akun sedang diawasi (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Pengintaian di sini yang diikuti perusakan di DSH-22 oleh principal yang sama adalah urutan yang harus dieskalasi. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principal yang memanggil nama API yang sama di 3+ region (DSH-117). Padanan yang menyertakan pembacaan dari Region Activity, yang hanya menghitung operasi tulis; layanan global dikecualikan. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 16 | Data Access Scope (Breach Notification) | Per principal: panggilan baca S3, bucket unik, dan perkiraan objek unik. Menghasilkan angka yang diminta Pasal 33 GDPR. Memerlukan peristiwa data CloudTrail pada bucket. |
 | 17 | Cross-Account Object Copy | Panggilan CopyObject S3 dan PutObject dengan header x-amz-copy-source, beserta sumber dan tujuan. Grafik replikasi mencakup konfigurasi; ini mencakup salinan individual. |
 | 18 | Ransom Note Placement | Panggilan PutObject yang kunci objeknya menyerupai catatan tebusan. Berbeda dari panel ransomware lain, ini memastikan dampak — satu baris di sini sudah P1. |
-| 19 | SES / SNS Sending Quota Abuse | Peristiwa kuota pengiriman dan pengiriman massal (DSH-118): SetSMSAttributes menaikkan MonthlySpendLimit, UpdateAccountSendingEnabled mengaktifkan kembali SES, SendRawEmail / SendBulkTemplatedEmail. Masing-masing satu panggilan, sehingga ambang volume tak pernah menjangkaunya. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

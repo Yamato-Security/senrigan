@@ -162,10 +162,6 @@ FILE_MAP = {
     "charts/ransom_note_placement.yaml": "charts/Ransom_Note_Placement.yaml",
     "charts/agentcore_token_issuance.yaml": "charts/AgentCore_Token_Issuance.yaml",
     "charts/agentcore_gateway_changes.yaml": "charts/AgentCore_Gateway_Policy_Changes.yaml",
-    # Monitoring-posture recon, region fan-out and sending-quota abuse (DSH-116 to DSH-118)
-    "charts/monitoring_posture_recon.yaml": "charts/Security_Monitoring_Posture_Recon.yaml",
-    "charts/single_api_region_fanout.yaml": "charts/Single_API_Multi_Region_Fan_Out.yaml",
-    "charts/ses_sns_sending_quota.yaml": "charts/SES_SNS_Sending_Quota_Abuse.yaml",
 }
 
 

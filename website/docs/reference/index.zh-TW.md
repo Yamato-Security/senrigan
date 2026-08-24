@@ -217,16 +217,16 @@
 
 ---
 
-## 📊 Dashboard Charts——118 個圖表
+## 📊 Dashboard Charts——115 個圖表
 
 | 分頁 | 圖表數 | 顯示內容 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 張分流 KPI 卡片（事件、主體、IP、root、無 MFA 登入、access denied、防禦規避、國家、區域）+ 全域事件量趨勢 |
-| 🎯 Threat Detection | 16 | 防禦規避總覽 · 日誌缺口 · VPC flow log/Config/EventBridge/WAF 竄改 · SCP/組織成員變更 · 錯誤及節流趨勢 · write/read 比率 · P1/P2 升級觸發條件 KPI 卡 |
+| 🎯 Threat Detection | 14 | 防禦規避總覽 · 日誌缺口 · VPC flow log/Config/EventBridge/WAF 竄改 · SCP/組織成員變更 · 錯誤及節流趨勢 · write/read 比率 · P1/P2 升級觸發條件 KPI 卡 |
 | 🔑 Identity & Access | 36 | 主控台登入 · MFA 趨勢 · 登入熱圖 · 失敗→成功驗證序列 · root 使用 · IAM 實體活動/刪除 · 權限提升時間軸 · 新主體 · SSO · 跨帳戶 AssumeRole · AssumeRoot 使用 |
 | 🚨 High-Risk API Monitor | 5 | 安全服務竄改及憑證擷取的 API 日誌 · 熱門高風險呼叫 · 熱門行為者 · 高風險呼叫量隨時間變化 |
 | 📊 API Activity | 6 | 熱門 API · access-denied 動作 · 區域分布 · 錯誤代碼組成 · 來源 IP · 使用者代理 |
-| 🪣 S3 & RDS | 19 | S3 大量下載/刪除 · 版本控制/日誌停用 · 跨帳戶複寫 · 儲存桶政策/ACL · 列舉 · 保護設定 · Backup vault 刪除 · KMS 金鑰刪除 · RDS 快照分享／未快照即刪除 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS 查詢/執行個體操弄 · 用於造成影響的儲存體再加密 · 外洩通報用存取範圍 · 跨帳戶物件複製 · 勒索訊息投放 |
+| 🪣 S3 & RDS | 18 | S3 大量下載/刪除 · 版本控制/日誌停用 · 跨帳戶複寫 · 儲存桶政策/ACL · 列舉 · 保護設定 · Backup vault 刪除 · KMS 金鑰刪除 · RDS 快照分享／未快照即刪除 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS 查詢/執行個體操弄 · 用於造成影響的儲存體再加密 · 外洩通報用存取範圍 · 跨帳戶物件複製 · 勒索訊息投放 |
 | 🖥️ Computing | 17 | EC2 啟動/大量停止/金鑰對/instance profile/user-data/快照分享/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS 削弱 · AMI/快照刪除 · WorkSpaces 劫持 |
 | 🤖 AI / LLM | 6 | Bedrock 呼叫趨勢 · 模型存取及日誌變更 · 失敗的呼叫 · 依來源分類的呼叫方（LLMjacking 分流） · AgentCore 權杖發放 · 閘道與政策變更 |
 | 🌐 Network | 5 | Security group 變更 · NACL/route table 變更 · VPC 基礎設施 · VPC peering/Transit Gateway · Route53 DNS 變更 |
@@ -234,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | 不可能的移動（多國主體）· 熱門國家/城市/ASN · 世界地圖 · event_name × country |
 
 <details markdown="1">
-<summary>📋 完整清單——全部 118 個圖表（點擊展開）</summary>
+<summary>📋 完整清單——全部 115 個圖表（點擊展開）</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | 將帳戶從防護機制中分離、或將其移至攻擊者控制的 organization 之下的 Organizations 成員變更。Threat Technique Catalog for AWS：T1666.A002 / T1666.A003。 |
 | 13 | P1 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於 15 分鐘內回應之升級觸發條件的事件：root 使用、記錄或偵測遭竄改、勒索訊息、委派管理員註冊。非零即代表計時開始。 |
 | 14 | P2 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於一小時內回應之條件的事件：憑證建立、權限授予、信任政策修改與跨帳戶角色擔任。應與 P1 卡一起判讀，而非單獨看。 |
-| 15 | Security Monitoring Posture Recon | 詢問帳戶是否受到監控的呼叫 (DSH-116): DescribeTrails、GetTrailStatus、ListDetectors、DescribeConfigurationRecorders。同一主體先在此偵察、隨後於 DSH-22 進行竄改的順序，正是應該升級處理的序列。Threat Technique Catalog for AWS: T1087、T1562.008。 |
-| 16 | Single-API Multi-Region Fan-Out | 在 3 個以上區域呼叫相同 API 名稱的主體 (DSH-117)。這是僅計算寫入操作的 Region Activity 的「含唯讀」對應版本，全域服務已排除。Threat Technique Catalog for AWS: T1535。 |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | 依主體呈現 S3 讀取呼叫、不重複儲存貯體與概略不重複物件數。可產出 GDPR 第 33 條要求的數字。需要儲存貯體的 CloudTrail 資料事件。 |
 | 17 | Cross-Account Object Copy | S3 CopyObject 呼叫以及帶有 x-amz-copy-source 標頭的 PutObject，並顯示來源與目的地。複寫圖表涵蓋設定；本圖表涵蓋個別複製行為。 |
 | 18 | Ransom Note Placement | 物件金鑰看似勒索訊息的 PutObject 呼叫。與其他勒索軟體面板不同，此圖表確認損害 — 只要出現一列即為 P1。 |
-| 19 | SES / SNS Sending Quota Abuse | 寄送配額與大量寄送事件 (DSH-118): 調高 MonthlySpendLimit 的 SetSMSAttributes、重新啟用 SES 的 UpdateAccountSendingEnabled、SendRawEmail / SendBulkTemplatedEmail。每個都是單次呼叫，數量門檻永遠觸及不到。Threat Technique Catalog for AWS: T1496.003、T1496.A001。 |
 
 ### 🖥️ Computing
 

@@ -147,6 +147,23 @@ def test_all_chart_yamls_referenced_in_dashboard() -> None:
     ), f"Chart YAML files not referenced in dashboard.yaml: {unreferenced_files}"
 
 
+@pytest.mark.parametrize(
+    ("position_id", "chart_uuid"),
+    [
+        ("ROW-p9-posture", "7f44f701-4dfb-4d75-bef4-87264473f7f4"),
+        ("ROW-p9-fanout", "e535ea95-a32b-46e4-93f8-88066177f560"),
+        ("ROW-p9-sending", "81c844b4-7578-404f-9a6c-94285a335eae"),
+    ],
+)
+def test_deprecated_chart_positions_removed(position_id: str, chart_uuid: str) -> None:
+    """Removed charts must not linger as dangling layout entries."""
+    dashboard = load_dashboard()
+    position = dashboard.get("position", {})
+
+    assert position_id not in position
+    assert chart_uuid not in get_chart_uuids_from_dashboard(dashboard)
+
+
 # ---------------------------------------------------------------------------
 # New-chart presence in dashboard layout
 # ---------------------------------------------------------------------------

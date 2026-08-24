@@ -217,16 +217,16 @@
 
 ---
 
-## 📊 Dashboard Charts — chart 118 ခု
+## 📊 Dashboard Charts — chart 115 ခု
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | triage KPI card ၉ ခု (event, principal, IP, root, MFA-less login, access denied, defense evasion, country, region) + global event-volume tren |
-| 🎯 Threat Detection | 16 | Defense-evasion catch-all · logging gap · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership ပြောင်းလဲမှု · error & throttling tren · write/read ratio · P1/P2 အဆင့်မြှင့် အခြေအနေ KPI ကတ်များ |
+| 🎯 Threat Detection | 14 | Defense-evasion catch-all · logging gap · VPC flow log/Config/EventBridge/WAF tampering · SCP/org-membership ပြောင်းလဲမှု · error & throttling tren · write/read ratio · P1/P2 အဆင့်မြှင့် အခြေအနေ KPI ကတ်များ |
 | 🔑 Identity & Access | 36 | Console login · MFA tren · login heatmap · failed→success auth sequence · root usage · IAM entity activity/deletion · privilege-escalation timeline · principal အသစ်များ · SSO · cross-account AssumeRole · AssumeRoot usage |
 | 🚨 High-Risk API Monitor | 5 | Security-service tampering & credential-retrieval API log · high-risk call အထိပ်ဆုံးများ · actor အထိပ်ဆုံးများ · အချိန်နှင့်အမျှ high-risk call ပမာဏ |
 | 📊 API Activity | 6 | API အထိပ်ဆုံးများ · access-denied action များ · region distribution · error-code composition · source IP များ · user agent များ |
-| 🪣 S3 & RDS | 19 | S3 အစုလိုက် download/deletion · versioning/logging ပိတ်ခြင်း · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / snapshot မပါဘဲ ဖျက်ခြင်း · SSE-C ransomware encryption · lifecycle-trigger ဖျက်ခြင်း · RDS query/instance manipulation · impact အတွက် storage re-encryption · ဖောက်ဖျက်မှု အသိပေးရန် ဝင်ရောက်မှု အတိုင်းအတာ · account ဖြတ်ကျော် object ကူးယူခြင်း · ငွေညှစ်စာ ချထားခြင်း |
+| 🪣 S3 & RDS | 18 | S3 အစုလိုက် download/deletion · versioning/logging ပိတ်ခြင်း · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault deletion · KMS key deletion · RDS snapshot share / snapshot မပါဘဲ ဖျက်ခြင်း · SSE-C ransomware encryption · lifecycle-trigger ဖျက်ခြင်း · RDS query/instance manipulation · impact အတွက် storage re-encryption · ဖောက်ဖျက်မှု အသိပေးရန် ဝင်ရောက်မှု အတိုင်းအတာ · account ဖြတ်ကျော် object ကူးယူခြင်း · ငွေညှစ်စာ ချထားခြင်း |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pair/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS weakening · AMI/snapshot deletion · WorkSpaces hijacking |
 | 🤖 AI / LLM | 6 | Bedrock invocation tren · model access & logging ပြောင်းလဲမှု · failed invocation · origin အလိုက် caller (LLMjacking triage) · AgentCore token ထုတ်ပေးခြင်း · gateway နှင့် policy ပြောင်းလဲမှုများ |
 | 🌐 Network | 5 | Security group ပြောင်းလဲမှု · NACL/route table ပြောင်းလဲမှု · VPC infrastructure · VPC peering/Transit Gateway · Route53 DNS ပြောင်းလဲမှု |
@@ -234,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | မဖြစ်နိုင်သော ခရီးသွားလာမှု (multi-country principal) · country/city/ASN အထိပ်ဆုံးများ · world map · event_name × country |
 
 <details markdown="1">
-<summary>📋 Full list — all 118 charts (click to expand)</summary>
+<summary>📋 Full list — all 115 charts (click to expand)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@
 | 12 | Organization Membership Changes | account များကို guardrail များမှ ခွာထုတ်ခြင်း သို့မဟုတ် တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော organization တစ်ခုအောက်သို့ ရွှေ့ပြောင်းသော Organizations membership ပြောင်းလဲမှုများ။ Threat Technique Catalog for AWS: T1666.A002 / T1666.A003။ |
 | 13 | P1 Escalation Triggers | မိနစ် ၁၅ အတွင်း တုံ့ပြန်ရန် လိုအပ်သော TRIAGE_GUIDE ၏ အဆင့်မြှင့် အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — root အသုံးပြုမှု၊ logging သို့မဟုတ် detection ဖျက်လိုဖျက်ဆီးလုပ်ခြင်း၊ ငွေညှစ်စာများ၊ လွှဲအပ်ထားသော စီမံခန့်ခွဲသူ မှတ်ပုံတင်ခြင်း။ သုည မဟုတ်လျှင် နာရီ စတင်ပါ။ |
 | 14 | P2 Escalation Triggers | တစ်နာရီအတွင်း တုံ့ပြန်ရန် TRIAGE_GUIDE ၏ အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — credential ဖန်တီးခြင်း၊ အခွင့်အရေး ပေးအပ်ခြင်း၊ trust policy ပြင်ဆင်ခြင်းနှင့် account ဖြတ်ကျော် role ရယူခြင်း။ P1 ကတ်နှင့်တွဲဖတ်ပါ။ |
-| 15 | Security Monitoring Posture Recon | အကောင့်ကို စောင့်ကြည့်ခံနေရသလားဟု မေးမြန်းသည့် ခေါ်ဆိုမှုများ (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders။ တူညီသော principal က ဤနေရာတွင် ထောက်လှမ်းပြီးနောက် DSH-22 တွင် ပြုပြင်ပြောင်းလဲမှုပြုလုပ်ခြင်းသည် အဆင့်မြှင့်တင်ရမည့် အစီအစဉ်ဖြစ်သည်။ Threat Technique Catalog for AWS: T1087, T1562.008။ |
-| 16 | Single-API Multi-Region Fan-Out | တူညီသော API အမည်ကို ဒေသ ၃ ခုနှင့်အထက်တွင် ခေါ်ဆိုသည့် principal များ (DSH-117)။ ရေးသားမှုများကိုသာ ရေတွက်သည့် Region Activity ၏ ဖတ်ရှုမှုပါဝင်သော ဘက်စုံပုံစံဖြစ်သည်။ ကမ္ဘာလုံးဆိုင်ရာ ဝန်ဆောင်မှုများကို ဖယ်ထုတ်ထားသည်။ Threat Technique Catalog for AWS: T1535။ |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@
 | 16 | Data Access Scope (Breach Notification) | principal အလိုက် — S3 ဖတ်ရှုမှုများ၊ ကွဲပြားသော bucket များနှင့် ခန့်မှန်း ကွဲပြားသော object များ။ GDPR အပိုဒ် ၃၃ တောင်းဆိုသည့် ကိန်းဂဏန်းကို ထုတ်ပေးသည်။ bucket များတွင် CloudTrail data event လိုအပ်သည်။ |
 | 17 | Cross-Account Object Copy | S3 CopyObject ခေါ်ဆိုမှုများနှင့် x-amz-copy-source header ပါသော PutObject ခေါ်ဆိုမှုများကို မူလနှင့် ဦးတည်ရာနှင့်အတူ ပြသည်။ replication ဇယားများက configuration ကို၊ ဤဟာက တစ်ခုချင်း ကူးယူမှုကို လွှမ်းခြုံသည်။ |
 | 18 | Ransom Note Placement | object key က ငွေညှစ်စာနှင့် တူသော PutObject ခေါ်ဆိုမှုများ။ အခြား ransomware panel များနှင့် မတူဘဲ အကျိုးသက်ရောက်မှုကို အတည်ပြုသည် — ဤနေရာတွင် စာကြောင်းတစ်ကြောင်းရှိလျှင် P1 ဖြစ်သည်။ |
-| 19 | SES / SNS Sending Quota Abuse | ပေးပို့မှုကန့်သတ်ချက်နှင့် အစုလိုက်ပေးပို့မှု အဖြစ်အပျက်များ (DSH-118): MonthlySpendLimit ကို တိုးမြှင့်သည့် SetSMSAttributes၊ SES ကို ပြန်ဖွင့်သည့် UpdateAccountSendingEnabled၊ SendRawEmail / SendBulkTemplatedEmail။ တစ်ခုချင်းစီမှာ တစ်ကြိမ်တည်း ခေါ်ဆိုမှုဖြစ်၍ ပမာဏသတ်မှတ်ချက်များက ဘယ်တော့မှ မမီပါ။ Threat Technique Catalog for AWS: T1496.003, T1496.A001။ |
 
 ### 🖥️ Computing
 

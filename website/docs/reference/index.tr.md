@@ -217,16 +217,16 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 
 ---
 
-## 📊 Dashboard Charts — 118 grafik
+## 📊 Dashboard Charts — 115 grafik
 
 | Sekme | Grafik Sayısı | Ne Gösterir |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triyaj KPI kartı (olaylar, principal'lar, IP'ler, root, MFA'sız oturum açmalar, erişim reddedildi, savunma atlatma, ülkeler, bölgeler) + küresel olay hacmi trendi |
-| 🎯 Threat Detection | 16 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
+| 🎯 Threat Detection | 14 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
 | 🔑 Identity & Access | 36 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
 | 🚨 High-Risk API Monitor | 5 | Güvenlik hizmeti kurcalaması & kimlik bilgisi alma API logları · en çok yüksek riskli çağrılar · en çok aktörler · zaman içinde yüksek riskli çağrı hacmi |
 | 📊 API Activity | 6 | En çok API'ler · erişim reddedilen eylemler · bölge dağılımı · hata kodu bileşimi · kaynak IP'ler · kullanıcı aracıları |
-| 🪣 S3 & RDS | 19 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |
+| 🪣 S3 & RDS | 18 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |
 | 🖥️ Computing | 17 | EC2 lansmanları/toplu durdurma/anahtar çiftleri/örnek profili/kullanıcı verisi/anlık görüntü paylaşımı/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
 | 🤖 AI / LLM | 6 | Bedrock çağrı trendi · model erişimi & loglama değişiklikleri · başarısız çağrılar · kökene göre çağıranlar (LLMjacking triyajı) · AgentCore token verme · ağ geçidi ve politika değişiklikleri |
 | 🌐 Network | 5 | Security group değişiklikleri · NACL/route table değişiklikleri · VPC altyapısı · VPC peering/Transit Gateway · Route53 DNS değişiklikleri |
@@ -234,7 +234,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 🌍 GeoIP Intelligence | 6 | İmkânsız seyahat (çok ülkeli principal'lar) · en çok ülkeler/şehirler/ASN'ler · dünya haritası · event_name × country |
 
 <details markdown="1">
-<summary>📋 Tam liste — 118 grafiğin tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 115 grafiğin tamamı (genişletmek için tıklayın)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -271,8 +271,6 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | Organization Membership Changes | Hesapları korkuluklardan ayıran veya saldırgan kontrolündeki bir organizasyon altına taşıyan Organizations üyelik değişiklikleri. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE'ın 15 dakika içinde yanıt gerektiren yükseltme tetikleyicileriyle eşleşen olaylar: root kullanımı, günlükleme veya tespit kurcalama, fidye notları, yetkilendirilmiş yönetici kaydı. Sıfırdan farklıysa saat işlemeye başlar. |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE'ın bir saat içinde yanıt koşullarıyla eşleşen olaylar: kimlik bilgisi oluşturma, yetki verme, güven politikası düzenlemeleri ve hesaplar arası rol üstlenme. Tek başına değil, P1 kartıyla birlikte okuyun. |
-| 15 | Security Monitoring Posture Recon | Hesabın izlenip izlenmediğini soran çağrılar (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Buradaki keşfin ardından aynı principal tarafından DSH-22'de yapılan kurcalama, yükseltilmesi gereken dizidir. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Aynı API adını 3+ bölgede çağıran principal'lar (DSH-117). Yalnızca yazma işlemlerini sayan Region Activity'nin okumaları da kapsayan karşılığı; global servisler hariç tutulur. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +341,6 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 16 | Data Access Scope (Breach Notification) | Principal başına: S3 okuma çağrıları, farklı kovalar ve yaklaşık farklı nesneler. GDPR 33. maddesinin istediği rakamı üretir. Kovalarda CloudTrail veri olayları gerekir. |
 | 17 | Cross-Account Object Copy | S3 CopyObject çağrıları ve x-amz-copy-source başlığı taşıyan PutObject çağrıları, kaynak ve hedefiyle. Çoğaltma grafikleri yapılandırmayı kapsar; bu, tek tek kopyaları. |
 | 18 | Ransom Note Placement | Nesne anahtarı fidye notuna benzeyen PutObject çağrıları. Diğer fidye yazılımı panellerinin aksine bu, etkiyi doğrular — buradaki her satır bir P1'dir. |
-| 19 | SES / SNS Sending Quota Abuse | Gönderim kotası ve toplu gönderim olayları (DSH-118): MonthlySpendLimit'i yükselten SetSMSAttributes, SES'i yeniden etkinleştiren UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail. Her biri tek bir çağrıdır, hacim eşikleri asla erişemez. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 
