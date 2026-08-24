@@ -10,7 +10,10 @@ slice_name: Security Monitoring & Control Changes
 viz_type: table
 description: >
   Comprehensive catch-all for all defense-evasion events (DSH-22).
-  Covers CloudTrail tampering (StopLogging, DeleteTrail), GuardDuty disabling,
+  Covers CloudTrail tampering (StopLogging, DeleteTrail), GuardDuty disabling
+  (UpdateDetector with enable=false — GuardDuty has no DisableDetector API),
+  GuardDuty finding suppression (CreateFilter/UpdateFilter, which leave the
+  detector healthy while archiving what it reports), log-retention cuts,
   AWS Config disabling, VPC Flow Log deletion, CloudWatch log deletion, and
   security service disabling (SecurityHub, IAM Access Analyzer).
   Any event here warrants immediate investigation.
@@ -40,11 +43,13 @@ params:
       expressionType: SQL
       sqlExpression: >-
         event_name IN (
-          'StopLogging', 'DeleteTrail', 'UpdateTrail', 'PutEventSelectors',
-          'DisableDetector', 'DeleteDetector', 'DeletePublishingDestination',
+          'StopLogging', 'DeleteTrail', 'UpdateTrail',
+          'PutEventSelectors', 'PutInsightSelectors',
+          'UpdateDetector', 'DeleteDetector', 'DeletePublishingDestination',
+          'CreateFilter', 'UpdateFilter',
           'DeleteConfigRule', 'StopConfigurationRecorder', 'DeleteDeliveryChannel',
           'DeleteFlowLogs',
-          'DeleteLogGroup', 'DeleteLogStream',
+          'DeleteLogGroup', 'DeleteLogStream', 'PutRetentionPolicy',
           'DisableSecurityHub', 'DeleteAnalyzer'
         )
       filterOptionName: filter_defense_evasion

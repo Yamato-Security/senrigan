@@ -520,8 +520,11 @@ def test_hunt_sql_runs(label: str, phase8_db: str) -> None:
 
 
 def test_total_hunt_count() -> None:
-    """151 after phase 8, less the 15 folded into a neighbouring hunt."""
-    assert len(_load()) == 136
+    """151 after phase 8, less the 15 folded into a neighbouring hunt.
+
+    Phase 9 adds three more; see test_builtin_hunts_phase9.py.
+    """
+    assert len(_load()) == 139
 
 
 # ---------------------------------------------------------------------------

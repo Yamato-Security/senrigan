@@ -2,25 +2,25 @@
 
 > 💡 SQL이나 깊은 AWS 지식이 필요 없습니다 — 드롭다운에서 헌트를 선택하기만 하면 즉시 결과를 얻을 수 있습니다.
 
-## 🎯 내장 헌트 — 136 쿼리
+## 🎯 내장 헌트 — 139 쿼리
 
 카테고리는 DFIR 트리아지 우선순위 순으로 정렬되어 있습니다 — 먼저 탐지 도구 변조를 확인하고, 그다음 자격 증명 남용, 그다음 데이터 영향을 확인하세요.
 
 | 카테고리 | 쿼리 | 다루는 주요 위협 |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | 감사 서비스 변조 (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 삭제 · 알람 억제 · 로그 유출 · 랜섬웨어 킬체인 상관 분석 |
+| 🛡 Detection & Response | 14 | 감사 서비스 변조 (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 삭제 · 알람 억제 · 로그 유출 · 랜섬웨어 킬체인 상관 분석 |
 | 🔑 Identity & Access | 36 | 루트 사용 · 콘솔 로그인/MFA · 권한 상승 · 신뢰 정책 백도어 · PassRole 남용 · 교차 계정 AssumeRole · SSO/SAML/OIDC · 자격 증명 열거 · IAM 엔티티 삭제 · AssumeRoot 탈취 · Cognito 사용자 풀/토큰 남용 · 지원 케이스 억제 · 역할 체이닝 · 세션 자격 증명 추적 · GetCallerIdentity 정찰 · 페더레이션 콘솔 로그인 · Identity Center 권한 세트 및 위임 관리자 · MFA 없는 API 호출 |
-| 🪣 Data & Storage | 30 | S3 대량 삭제/다운로드 · 시크릿 대량 읽기 · 백업 변조 · KMS 작업 · 스냅샷 공유 · EBS Direct API 유출 · DynamoDB 내보내기 · S3 교차 계정 복제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS Data API 조작 · 영향을 위한 스토리지 재암호화 · 랜섬 노트 배치 · 침해 통지 범위 산정 · 계정 간 객체 복사 · 사전 서명 URL 생성 |
+| 🪣 Data & Storage | 31 | S3 대량 삭제/다운로드 · 시크릿 대량 읽기 · 백업 변조 · KMS 작업 · 스냅샷 공유 · EBS Direct API 유출 · DynamoDB 내보내기 · S3 교차 계정 복제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS Data API 조작 · 영향을 위한 스토리지 재암호화 · 랜섬 노트 배치 · 침해 통지 범위 산정 · 계정 간 객체 복사 · 사전 서명 URL 생성 |
 | ⚡ Compute & Serverless | 17 | EC2 대량 중지/종료 · SSM 측면 이동 · Lambda/ECS/EKS/ECR 변조 · EventBridge 지속성 · 크립토마이닝 · Lightsail 남용 · IMDS/SSRF 약화 · AMI/스냅샷 삭제 · WorkSpaces 탈취 |
 | 🤖 AI & LLM Abuse | 10 | Bedrock 호출 급증 · 모델 액세스 활성화 · 호출 로깅 변조 · 리전 횡단 정찰 · 실패 호출 버스트 · AgentCore 토큰 볼트 · 게이트웨이 인가 우회 · 메모리 무결성 · 샌드박스 네트워크 모드 변경 · 관측성 변조 |
 | 🌐 Network & Infrastructure | 13 | SG 인터넷 개방 · VPC 흐름 로그 삭제 · CloudFront 하이재킹 · 은밀한 VPN/TGW 터널 · Elastic IP C2 · API Gateway 키 · Route 53/도메인 탈취 · DDoS 보호 약화 |
-| 🕵 Threat Patterns | 10 | 정찰 버스트 · 비정상 사용자 에이전트 · 다중 리전 확산 · 최초 API 호출 · 최초 관찰 리전 활동 · 업무 시간 외 활동 · 자기 권한 상승 · 일별 볼륨 편차 · 미사용 리전에서의 리소스 생성 · 대량 API 호출 |
+| 🕵 Threat Patterns | 11 | 정찰 버스트 · 비정상 사용자 에이전트 · 다중 리전 확산 · 최초 API 호출 · 최초 관찰 리전 활동 · 업무 시간 외 활동 · 자기 권한 상승 · 일별 볼륨 편차 · 미사용 리전에서의 리소스 생성 · 대량 API 호출 |
 | 📊 Activity & Baseline | 3 | 콘솔 쓰기 이벤트 · 오류 급증 · 최근 오류 |
 | 🌍 GeoIP Analysis | 2 | 국가별 콘솔 로그인/거부/쓰기 · 드문 국가에서의 접근 |
 | ☁ IaC & Platform | 2 | CI/CD 공급망 · CloudFormation 남용 |
 
 <details markdown="1">
-<summary>📋 전체 목록 — 전체 136 쿼리 (클릭하여 확장)</summary>
+<summary>📋 전체 목록 — 전체 139 쿼리 (클릭하여 확장)</summary>
 
 ## 내장 헌트
 
@@ -38,9 +38,10 @@
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | CW Logs 구독 필터 생성/삭제 및 로그 그룹 삭제를 탐지합니다. 공격자는 로그를 외부 대상으로 스트리밍하거나 그 자리에서 증거를 파괴합니다. |
 | 9 | 🏹 WAF WebACL Changes | timeseries | WAF WebACL 생성, 업데이트, 삭제를 탐지합니다. WebACL을 제거하거나 약화시키면 SQLi, XSS, DDoS 공격에 대한 보호가 비활성화됩니다. |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | 읽기 전용 GuardDuty API 호출을 탐지합니다. Pacu의 guardduty__list_findings 모듈은 활성 발견 항목을 읽어 방어자가 이미 탐지한 내용을 파악함으로써, 공격자가 전술을 조정하고 새로운 경보 발생을 피할 수 있게 합니다. |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets 및 Cost Anomaly 모니터의 삭제나 수정을 탐지합니다. 공격자는 크립토마이닝이나 리소스 집약적 작업을 숨기기 위해 예산 알림을 제거합니다. |
-| 12 | 🚫 Access Denied Errors | bar | AccessDenied 오류를 자격 증명 및 API별로 그룹화합니다. 상위 위반자는 자격 증명 오용을 나타낼 수 있습니다. |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | 랜섬웨어의 세 단계 — 복구 수단 제거, 보호 비활성화, 데이터 파괴 또는 암호화 — 를 프린시펄과 날짜별로 상관 분석합니다. 각 단계만 보면 운영 노이즈지만, 셋이 함께 나타나면 다릅니다. |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | 모니터링 스택 자체를 읽기 전용으로 탐색하는 행위를 탐지합니다 — 트레일이 동작 중인지, GuardDuty가 켜져 있는지, Config가 기록 중인지. 방어 회피 직전 단계이며 깨끗한 로그가 남는 마지막 기회입니다. |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets 및 Cost Anomaly 모니터의 삭제나 수정을 탐지합니다. 공격자는 크립토마이닝이나 리소스 집약적 작업을 숨기기 위해 예산 알림을 제거합니다. |
+| 13 | 🚫 Access Denied Errors | bar | AccessDenied 오류를 자격 증명 및 API별로 그룹화합니다. 상위 위반자는 자격 증명 오용을 나타낼 수 있습니다. |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | 랜섬웨어의 세 단계 — 복구 수단 제거, 보호 비활성화, 데이터 파괴 또는 암호화 — 를 프린시펄과 날짜별로 상관 분석합니다. 각 단계만 보면 운영 노이즈지만, 셋이 함께 나타나면 다릅니다. |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center 관리 작업을 탐지합니다. 공격자는 SSO를 악용해 백도어 권한 세트를 만들거나 공격자가 제어하는 사용자에게 계정을 할당합니다. |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC 자격 증명 공급자 변경을 탐지합니다. 공격자가 제어하는 메타데이터로 SAML 공급자를 업데이트하면 지속적인 인증 백도어가 생성됩니다. |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer의 모든 사용을 탐지합니다. 공격자는 사용자 지정 정찰 스크립트를 작성하지 않고도 외부에서 접근 가능한 리소스를 열거하기 위해 네이티브 AWS 분석기를 활용합니다. |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | 전체 IAM 환경을 매핑하는 IAM 열거 활동을 탐지합니다. 공격 초기 단계에서 흔히 발견됩니다. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | 누가 존재하고 무엇을 할 수 있는지 매핑하는 IAM 열거를 탐지합니다. 이런 호출이 몰려서, 특히 AccessDenied와 함께 나타나면 공격 초기 단계입니다. |
 | 19 | 🗝 Access Key Abuse | bar | 7일 내 3개 이상의 서로 다른 소스 IP에서 사용된 액세스 키를 탐지합니다. 키 유출의 강력한 지표입니다. |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations 계정 생성 및 위임 관리자 변경을 탐지합니다. 공격자는 메인 계정 밖에 지속적인 거점을 마련하기 위해 섀도 계정을 생성합니다. |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | 미인증 액세스가 활성화된 Cognito 자격 증명 풀을 탐지합니다. 익명 사용자가 미인증 IAM 역할의 권한으로 AWS API를 호출할 수 있게 합니다. |
@@ -90,7 +91,7 @@
 | 1 | 💣 S3 Bulk Object Deletion | bar | 고빈도 DeleteObject/DeleteObjects 호출(시간당 50회 이상)을 탐지합니다. 유출과는 다른 — 데이터 파괴 / 랜섬웨어 패턴입니다. |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Backup Vault/Plan/RecoveryPoint 삭제를 탐지합니다. 백업 파괴는 복구를 막기 위한 랜섬웨어 공격의 첫 단계입니다. |
 | 3 | 🔓 KMS Key Operations | timeseries | 키 삭제 및 대량 Decrypt 호출을 포함한 민감한 KMS 작업을 표시합니다. |
-| 4 | 🔓 S3 Public Access Block Disabled | — | S3 퍼블릭 액세스 차단 설정이 비활성화되는 것을 탐지합니다. 즉각적인 데이터 노출 위험입니다. |
+| 4 | 🔓 S3 Public Access Block Disabled | — | S3 퍼블릭 액세스 보호가 비활성화되거나 통째로 삭제되는 것을 탐지합니다. 즉각적인 데이터 노출 위험입니다. |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | S3 버킷 정책 및 ACL 변경을 탐지합니다. 버킷을 공개적으로 읽을 수 있게 만들거나 공격자가 제어하는 계정에 접근 권한을 부여할 수 있습니다. |
 | 6 | 🪣 S3 Data Access Anomalies | bar | 데이터 유출을 나타낼 수 있는 대량 GetObject 호출(시간당 100회 이상)을 탐지합니다. |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | 시크릿(DB 비밀번호, API 키 등)의 대량 검색을 탐지합니다. 한 시간에 10회 이상의 GetSecretValue 호출은 자격 증명 수집의 강력한 신호입니다. |
@@ -105,18 +106,19 @@
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | PutBucketReplication과 DeleteBucketReplication을 탐지합니다. 교차 계정 복제는 모든 새 객체를 공격자가 제어하는 버킷으로 조용히 복사합니다. |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | S3 버전 관리 중단 및 서버 액세스 로깅 비활성화를 탐지합니다. 버전 관리 비활성화는 데이터 파괴를 가능하게 하고, 로깅 비활성화는 접근 증거 흔적을 지웁니다. |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | SES 수신 규칙 및 자격 증명 구성 변경을 탐지합니다. 전달 규칙은 모든 수신 메일을 공격자 주소로 자동 중계할 수 있고, 검증된 자격 증명은 피싱 캠페인을 가능하게 합니다. |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 외부 계정에 접근 권한을 부여하는 SQS/SNS 큐/토픽 정책 변경을 탐지합니다. 대량 전송 경보를 유발하지 않고 조용한 유출 채널을 만듭니다. |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 공개적으로 공유된(group=all) EBS 스냅샷 또는 AMI를 탐지합니다. 누구나 디스크 이미지를 복사하고 데이터를 추출할 수 있게 됩니다. |
-| 21 | 📧 Data Exfiltration Channels | bar | 유출을 나타낼 수 있는 대량 SNS/SQS/SES/S3 PutObject 호출(시간당 50회 이상)을 탐지합니다. |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 공격자가 제공한 SSE-C 키로 재암호화된 S3 객체와 버킷 기본 암호화 설정 변경을 탐지합니다. 고객 키가 없으면 피해자는 복호화할 수 없습니다 — 클라우드 네이티브 랜섬웨어 패턴입니다. |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | 객체를 만료시키는 S3 수명 주기 규칙과 수명 주기 구성 삭제를 탐지합니다. 공격자는 DeleteObject 호출 없이 시간이 지남에 따라 데이터를 조용히 삭제하기 위해 짧은 만료 기간을 설정합니다. |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API 쿼리, 마스터 비밀번호 재설정, 스냅샷 복원을 탐지합니다. 공격자는 데이터를 직접 읽거나, 접근 권한을 얻기 위해 자격 증명을 재설정하거나, 스냅샷을 자신이 제어하는 인스턴스로 복원합니다. |
-| 25 | 🔎 S3 Bucket Enumeration | bar | 버킷 및 객체 메타데이터를 훑는 호출자를 탐지합니다(한 시간에 10회 이상의 List/GetBucket* 읽기). 유출 전 가치 있는 데이터를 찾는 흔한 초기 단계입니다. |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | 명시적 KMS 키로 재암호화된 EBS/RDS 스냅샷 및 볼륨과 기본 EBS 암호화 비활성화를 탐지합니다. 공격자가 보유한 키로 재암호화하면 데이터를 인질로 잡을 수 있습니다. |
-| 27 | 📝 Ransom Note Placement | timeseries | 객체 키가 랜섬 노트처럼 보이는 PutObject 호출을 탐지합니다. 다른 랜섬웨어 헌트와 달리 피해를 암시하는 것이 아니라 확정합니다 — 노트가 있다는 것은 이미 금전을 요구하고 있다는 뜻입니다. |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | 각 프린시펄이 하루에 무엇을 읽었는지 정량화합니다: 접근한 버킷 수와 대략적인 고유 객체 수. GDPR 33조 통지에 필요한 '대략적인 레코드 수'를 산출합니다. |
-| 29 | 📤 Cross-Account Object Copy | timeseries | x-amz-copy-source 헤더가 포함된 PutObject를 비롯해 버킷 간에 복사된 객체를 탐지합니다. 통제하지 않는 계정으로 데이터를 옮기는 행위는 이 흔적만 남깁니다. |
-| 30 | 🔗 Presigned URL Generation | bar | 프린시펄별 사전 서명 URL 생성 횟수를 셉니다. 사전 서명 URL은 링크를 가진 누구에게나 데이터를 전달하며, 추가 인증도 추가 CloudTrail 기록도 남기지 않습니다. |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | 스팸을 수익으로 만드는 사전 작업을 탐지합니다 — SMS 지출 한도 상향, SES 발송 재활성화, 대량 발송 API 사용. 모두 단발성 저빈도 호출이라 시간당 임계값으로는 결코 잡히지 않습니다. |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 외부 계정에 접근 권한을 부여하는 SQS/SNS 큐/토픽 정책 변경을 탐지합니다. 대량 전송 경보를 유발하지 않고 조용한 유출 채널을 만듭니다. |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 공개적으로 공유된(group=all) EBS 스냅샷 또는 AMI를 탐지합니다. 누구나 디스크 이미지를 복사하고 데이터를 추출할 수 있게 됩니다. |
+| 22 | 📧 Data Exfiltration Channels | bar | 유출을 나타낼 수 있는 대량 SNS/SQS/SES/S3 PutObject 호출(시간당 50회 이상)을 탐지합니다. |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 공격자가 제공한 SSE-C 키로 재암호화된 S3 객체와 버킷 기본 암호화 설정 변경을 탐지합니다. 고객 키가 없으면 피해자는 복호화할 수 없습니다 — 클라우드 네이티브 랜섬웨어 패턴입니다. |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | 객체를 만료시키는 S3 수명 주기 규칙과 수명 주기 구성 삭제를 탐지합니다. 공격자는 DeleteObject 호출 없이 시간이 지남에 따라 데이터를 조용히 삭제하기 위해 짧은 만료 기간을 설정합니다. |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API 쿼리, 마스터 비밀번호 재설정, 스냅샷 복원을 탐지합니다. 공격자는 데이터를 직접 읽거나, 접근 권한을 얻기 위해 자격 증명을 재설정하거나, 스냅샷을 자신이 제어하는 인스턴스로 복원합니다. |
+| 26 | 🔎 S3 Bucket Enumeration | bar | 버킷 및 객체 메타데이터를 훑는 호출자를 탐지합니다(한 시간에 10회 이상의 List/GetBucket* 읽기). 유출 전 가치 있는 데이터를 찾는 흔한 초기 단계입니다. |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | 명시적 KMS 키로 재암호화된 EBS/RDS 스냅샷 및 볼륨과 기본 EBS 암호화 비활성화를 탐지합니다. 공격자가 보유한 키로 재암호화하면 데이터를 인질로 잡을 수 있습니다. |
+| 28 | 📝 Ransom Note Placement | timeseries | 객체 키가 랜섬 노트처럼 보이는 PutObject 호출을 탐지합니다. 다른 랜섬웨어 헌트와 달리 피해를 암시하는 것이 아니라 확정합니다 — 노트가 있다는 것은 이미 금전을 요구하고 있다는 뜻입니다. |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | 각 프린시펄이 하루에 무엇을 읽었는지 정량화합니다: 접근한 버킷 수와 대략적인 고유 객체 수. GDPR 33조 통지에 필요한 '대략적인 레코드 수'를 산출합니다. |
+| 30 | 📤 Cross-Account Object Copy | timeseries | x-amz-copy-source 헤더가 포함된 PutObject를 비롯해 버킷 간에 복사된 객체를 탐지합니다. 통제하지 않는 계정으로 데이터를 옮기는 행위는 이 흔적만 남깁니다. |
+| 31 | 🔗 Presigned URL Generation | bar | 프린시펄별 사전 서명 URL 생성 횟수를 셉니다. 사전 서명 URL은 링크를 가진 누구에게나 데이터를 전달하며, 추가 인증도 추가 CloudTrail 기록도 남기지 않습니다. |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@
 | 1 | 🔍 Reconnaissance Pattern | bar | 한 시간에 10개 이상의 서로 다른 읽기 전용 API 호출을 수행한 호출자를 식별합니다. 일반적인 초기 공격 단계입니다. |
 | 2 | 🤖 Unusual User Agents | bar | 드문 사용자 에이전트(5개 미만의 이벤트)를 나열합니다. Pacu나 curl 같은 사용자 지정 도구는 공격자 도구를 나타낼 수 있습니다. |
 | 3 | 🌍 Multi-Region Activity | bar | 하루에 3개 이상의 리전에서 쓰기를 수행하는 자격 증명을 탐지합니다. 지리적 확산은 침해를 나타낼 수 있습니다. |
-| 4 | 🕵 First-Time API Calls (24h) | — | 지난 24시간 내에는 보였지만 이전에는 본 적 없는 API 호출을 찾습니다. 새로운 작업은 공격자 도구를 나타낼 수 있습니다. |
-| 5 | 🗺 First-Seen Region Activity | bar | 데이터셋의 지난 24시간 내에 사상 첫 활동이 발생한 AWS 리전을 찾습니다. 이전에 한 번도 사용된 적 없는 리전에서 작업하는 것은 리전 범위 모니터링으로부터 크립토마이닝이나 준비 작업을 숨기는 전형적인 방법입니다. |
-| 6 | 🌙 Off-Hours Activity | bar | 설정 가능한 업무 시간 외 구간에서 프린시펄과 시간대별로 활동을 묶습니다. 상위 내부자 위협 플레이북이 가장 먼저 제시하는 지표이며, 다른 어떤 헌트도 다루지 않습니다. |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | 프린시펄이 자신의 권한을 수정한 경우를 탐지합니다 — 호출자 ARN과 대상 사용자 또는 역할 이름이 일치합니다. 기존 권한 상승 헌트는 부여 자체는 보지만 그것이 자기 적용이었다는 사실을 놓칩니다. |
-| 8 | 📈 Principal Daily Volume Deviation | bar | 각 프린시펄의 일별 호출량을 자기 자신의 평균과 비교하며, 읽기와 쓰기를 나눠 표시합니다. 허용된 API만 사용하는 유출 — 이상이 행위가 아니라 양인 경우 — 를 포착합니다. |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | 계정이 거의 쓰지 않는 리전에서의 리소스 생성을 표시하며, 기준선은 하드코딩이 아니라 데이터에서 도출합니다. 크립토마이닝과 개인 프로젝트가 모두 여기에 나타납니다. |
-| 10 | 📞 High-Volume API Calls per Principal | bar | 성공한 호출이 50건을 넘는 프린시펄과 API 조합을 최초·최종 호출과 함께 나열합니다. 열거, 대량 추출, 대량 삭제가 모두 이 형태를 공유합니다. |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | 한 주체가 단일 API를 한 시간 안에 여러 리전에 걸쳐 반복하는 것을 표시합니다. 스크립트화된 스윕의 특징이며 다른 리전 헌트에는 보이지 않습니다. |
+| 5 | 🕵 First-Time API Calls (24h) | — | 지난 24시간 내에는 보였지만 이전에는 본 적 없는 API 호출을 찾습니다. 새로운 작업은 공격자 도구를 나타낼 수 있습니다. |
+| 6 | 🗺 First-Seen Region Activity | bar | 데이터셋의 지난 24시간 내에 사상 첫 활동이 발생한 AWS 리전을 찾습니다. 이전에 한 번도 사용된 적 없는 리전에서 작업하는 것은 리전 범위 모니터링으로부터 크립토마이닝이나 준비 작업을 숨기는 전형적인 방법입니다. |
+| 7 | 🌙 Off-Hours Activity | bar | 설정 가능한 업무 시간 외 구간에서 프린시펄과 시간대별로 활동을 묶습니다. 상위 내부자 위협 플레이북이 가장 먼저 제시하는 지표이며, 다른 어떤 헌트도 다루지 않습니다. |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | 프린시펄이 자신의 권한을 수정한 경우를 탐지합니다 — 호출자 ARN과 대상 사용자 또는 역할 이름이 일치합니다. 기존 권한 상승 헌트는 부여 자체는 보지만 그것이 자기 적용이었다는 사실을 놓칩니다. |
+| 9 | 📈 Principal Daily Volume Deviation | bar | 각 프린시펄의 일별 호출량을 자기 자신의 평균과 비교하며, 읽기와 쓰기를 나눠 표시합니다. 허용된 API만 사용하는 유출 — 이상이 행위가 아니라 양인 경우 — 를 포착합니다. |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | 계정이 거의 쓰지 않는 리전에서의 리소스 생성을 표시하며, 기준선은 하드코딩이 아니라 데이터에서 도출합니다. 크립토마이닝과 개인 프로젝트가 모두 여기에 나타납니다. |
+| 11 | 📞 High-Volume API Calls per Principal | bar | 성공한 호출이 50건을 넘는 프린시펄과 API 조합을 최초·최종 호출과 함께 나열합니다. 열거, 대량 추출, 대량 삭제가 모두 이 형태를 공유합니다. |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@
 
 ---
 
-## 📊 대시보드 차트 — 115 차트
+## 📊 대시보드 차트 — 118 차트
 
 | 탭 | 차트 | 표시 내용 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9개의 트리아지 KPI 카드(이벤트, 주체, IP, 루트, MFA 없는 로그인, 액세스 거부, 방어 회피, 국가, 리전) + 전역 이벤트량 추세 |
-| 🎯 Threat Detection | 14 | 방어 회피 종합 · 로깅 공백 · VPC 흐름 로그/Config/EventBridge/WAF 변조 · SCP/조직 멤버십 변경 · 오류 및 스로틀링 추세 · 쓰기/읽기 비율 · P1/P2 에스컬레이션 조건 KPI 카드 |
+| 🎯 Threat Detection | 16 | 방어 회피 종합 · 로깅 공백 · VPC 흐름 로그/Config/EventBridge/WAF 변조 · SCP/조직 멤버십 변경 · 오류 및 스로틀링 추세 · 쓰기/읽기 비율 · P1/P2 에스컬레이션 조건 KPI 카드 |
 | 🔑 Identity & Access | 36 | 콘솔 로그인 · MFA 추세 · 로그인 히트맵 · 실패→성공 인증 시퀀스 · 루트 사용 · IAM 엔티티 활동/삭제 · 권한 상승 타임라인 · 새 주체 · SSO · 교차 계정 AssumeRole · AssumeRoot 사용 |
 | 🚨 High-Risk API Monitor | 5 | 보안 서비스 변조 & 자격 증명 검색 API 로그 · 상위 고위험 호출 · 상위 행위자 · 시계열 고위험 호출량 |
 | 📊 API Activity | 6 | 상위 API · 액세스 거부 작업 · 리전 분포 · 오류 코드 구성 · 소스 IP · 사용자 에이전트 |
-| 🪣 S3 & RDS | 18 | S3 대량 다운로드/삭제 · 버전 관리/로깅 비활성화 · 교차 계정 복제 · 버킷 정책/ACL · 열거 · 보호 설정 · Backup vault 삭제 · KMS 키 삭제 · RDS 스냅샷 공유 / 스냅샷 없는 삭제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS 쿼리/인스턴스 조작 · 영향을 위한 스토리지 재암호화 · 침해 통지용 접근 범위 · 계정 간 객체 복사 · 랜섬 노트 배치 |
+| 🪣 S3 & RDS | 19 | S3 대량 다운로드/삭제 · 버전 관리/로깅 비활성화 · 교차 계정 복제 · 버킷 정책/ACL · 열거 · 보호 설정 · Backup vault 삭제 · KMS 키 삭제 · RDS 스냅샷 공유 / 스냅샷 없는 삭제 · SSE-C 랜섬웨어 암호화 · 수명 주기 트리거 삭제 · RDS 쿼리/인스턴스 조작 · 영향을 위한 스토리지 재암호화 · 침해 통지용 접근 범위 · 계정 간 객체 복사 · 랜섬 노트 배치 |
 | 🖥️ Computing | 17 | EC2 시작/대량 중지/키 페어/인스턴스 프로필/사용자 데이터/스냅샷 공유/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS 약화 · AMI/스냅샷 삭제 · WorkSpaces 탈취 |
 | 🤖 AI / LLM | 6 | Bedrock 호출 추세 · 모델 액세스 & 로그 변경 · 실패 호출 · 발신지별 호출자(LLMjacking 트리아지) · AgentCore 토큰 발급 · 게이트웨이 및 정책 변경 |
 | 🌐 Network | 5 | 보안 그룹 변경 · NACL/라우트 테이블 변경 · VPC 인프라 · VPC 피어링/Transit Gateway · Route53 DNS 변경 |
@@ -231,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | 불가능한 이동(다중 국가 주체) · 상위 국가/도시/ASN · 세계 지도 · event_name × country |
 
 <details markdown="1">
-<summary>📋 전체 목록 — 전체 115 차트 (클릭하여 확장)</summary>
+<summary>📋 전체 목록 — 전체 118 차트 (클릭하여 확장)</summary>
 
 ## 대시보드 차트 (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@
 | 12 | Organization Membership Changes | 계정을 가드레일에서 분리하거나 공격자가 제어하는 조직 아래로 이동시키는 Organizations 멤버십 변경. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | 15분 이내 대응이 필요한 TRIAGE_GUIDE 에스컬레이션 조건에 해당하는 이벤트: root 사용, 로깅·탐지 변조, 랜섬 노트, 위임 관리자 등록. 0이 아니면 시계를 돌리기 시작합니다. |
 | 14 | P2 Escalation Triggers | 1시간 이내 대응이 필요한 TRIAGE_GUIDE 조건에 해당하는 이벤트: 자격 증명 생성, 권한 부여, 신뢰 정책 편집, 계정 간 역할 수임. 단독이 아니라 P1 카드와 함께 읽습니다. |
+| 15 | Security Monitoring Posture Recon | 계정이 감시되고 있는지 묻는 호출 (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. 동일 주체가 여기서 정찰한 뒤 DSH-22에서 변조하는 순서는 에스컬레이션 대상입니다. Threat Technique Catalog for AWS: T1087, T1562.008. |
+| 16 | Single-API Multi-Region Fan-Out | 동일한 API 이름을 3개 이상 리전에서 호출하는 주체 (DSH-117). 쓰기 작업만 세는 Region Activity의 읽기 포함 대응판이며 글로벌 서비스는 제외됩니다. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | 프린시펄별 S3 읽기 호출, 고유 버킷, 대략적 고유 객체 수. GDPR 33조가 요구하는 수치를 산출합니다. 버킷에 CloudTrail 데이터 이벤트가 필요합니다. |
 | 17 | Cross-Account Object Copy | S3 CopyObject 호출과 x-amz-copy-source 헤더가 있는 PutObject를 원본·대상과 함께 표시합니다. 복제 차트는 설정을, 이것은 개별 복사를 다룹니다. |
 | 18 | Ransom Note Placement | 객체 키가 랜섬 노트처럼 보이는 PutObject 호출. 다른 랜섬웨어 패널과 달리 피해를 확정합니다 — 여기 한 줄이라도 있으면 P1입니다. |
+| 19 | SES / SNS Sending Quota Abuse | 발송 할당량 및 대량 발송 이벤트 (DSH-118): MonthlySpendLimit을 올리는 SetSMSAttributes, SES를 재무장하는 UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail. 모두 단발 호출이므로 양적 임계값으로는 도달할 수 없습니다. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

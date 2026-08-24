@@ -50,7 +50,7 @@ EXTENDED_COLUMN_CHARTS = {
     "permission_set_grants": "event_source",
 }
 
-TOTAL_CHARTS = 115
+TOTAL_CHARTS = 118
 
 
 def load(path: pathlib.Path) -> dict:

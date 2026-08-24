@@ -2,25 +2,25 @@
 
 > 💡 無需 SQL 或深入的 AWS 知識——只要從下拉選單中選擇一項獵捕，即可立即取得結果。
 
-## 🎯 內建獵捕——136 個查詢
+## 🎯 內建獵捕——139 個查詢
 
 類別依 DFIR 分流優先順序排列——先檢查偵測工具竄改，接著是身分濫用，再來是資料影響。
 
 | 類別 | 查詢數 | 涵蓋的主要威脅 |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | 稽核服務竄改（CloudTrail/GuardDuty/Config/SecurityHub/Macie）· SCP 刪除 · 警報抑制 · 日誌外洩 · 勒索軟體攻擊鏈關聯分析 |
+| 🛡 Detection & Response | 14 | 稽核服務竄改（CloudTrail/GuardDuty/Config/SecurityHub/Macie）· SCP 刪除 · 警報抑制 · 日誌外洩 · 勒索軟體攻擊鏈關聯分析 |
 | 🔑 Identity & Access | 36 | Root 使用 · 主控台登入/MFA · 權限提升 · 信任政策後門 · PassRole 濫用 · 跨帳戶 AssumeRole · SSO/SAML/OIDC · 憑證列舉 · IAM 實體刪除 · AssumeRoot 接管 · Cognito user pool/權杖濫用 · 支援案件壓制 · 角色串接 · 工作階段憑證追蹤 · GetCallerIdentity 偵查 · 聯合身分主控台登入 · Identity Center 權限集與委派管理員 · 無 MFA 的 API 呼叫 |
-| 🪣 Data & Storage | 30 | S3 大量刪除/下載 · 機密大量讀取 · 備份竄改 · KMS 操作 · 快照分享 · EBS Direct API 外洩 · DynamoDB 匯出 · S3 跨帳戶複寫 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS Data API 操弄 · 用於造成影響的儲存體再加密 · 勒索訊息投放 · 外洩通報範圍界定 · 跨帳戶物件複製 · 預簽章 URL 產生 |
+| 🪣 Data & Storage | 31 | S3 大量刪除/下載 · 機密大量讀取 · 備份竄改 · KMS 操作 · 快照分享 · EBS Direct API 外洩 · DynamoDB 匯出 · S3 跨帳戶複寫 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS Data API 操弄 · 用於造成影響的儲存體再加密 · 勒索訊息投放 · 外洩通報範圍界定 · 跨帳戶物件複製 · 預簽章 URL 產生 |
 | ⚡ Compute & Serverless | 17 | EC2 大量停止/終止 · SSM 橫向移動 · Lambda/ECS/EKS/ECR 竄改 · EventBridge 持續駐留 · 加密貨幣挖礦 · Lightsail 濫用 · IMDS/SSRF 削弱 · AMI/快照刪除 · WorkSpaces 劫持 |
 | 🤖 AI & LLM Abuse | 10 | Bedrock 呼叫量激增 · 模型存取啟用 · 呼叫日誌竄改 · 跨區域偵察掃描 · 失敗呼叫爆發 · AgentCore 權杖保管庫 · 閘道授權繞過 · 記憶體完整性 · 沙箱網路模式變更 · 可觀測性竄改 |
 | 🌐 Network & Infrastructure | 13 | SG 對網際網路開放 · VPC 流量日誌刪除 · CloudFront 劫持 · 隱蔽 VPN/TGW 通道 · Elastic IP C2 · API Gateway 金鑰 · Route 53/網域劫持 · DDoS 防護弱化 |
-| 🕵 Threat Patterns | 10 | 偵察爆發 · 異常使用者代理 · 多區域擴散 · 首次 API 呼叫 · 首次出現區域活動 · 非上班時間活動 · 自我權限提升 · 每日流量偏差 · 未使用區域的資源建立 · 大量 API 呼叫 |
+| 🕵 Threat Patterns | 11 | 偵察爆發 · 異常使用者代理 · 多區域擴散 · 首次 API 呼叫 · 首次出現區域活動 · 非上班時間活動 · 自我權限提升 · 每日流量偏差 · 未使用區域的資源建立 · 大量 API 呼叫 |
 | 📊 Activity & Baseline | 3 | 主控台寫入事件 · 錯誤激增 · 近期錯誤 |
 | 🌍 GeoIP Analysis | 2 | 依國家排序的主控台登入/拒絕/寫入 · 罕見國家存取 |
 | ☁ IaC & Platform | 2 | CI/CD 供應鏈 · CloudFormation 濫用 |
 
 <details markdown="1">
-<summary>📋 完整清單——全部 136 個查詢（點擊展開）</summary>
+<summary>📋 完整清單——全部 139 個查詢（點擊展開）</summary>
 
 ## 內建獵捕
 
@@ -38,9 +38,10 @@
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | 偵測 CW Logs 訂閱篩選器建立/刪除及日誌群組刪除。攻擊者會將日誌串流至外部目的地，或就地銷毀證據。 |
 | 9 | 🏹 WAF WebACL Changes | timeseries | 偵測 WAF WebACL 建立、更新及刪除。移除或削弱 WebACL 會停用對 SQLi、XSS 及 DDoS 攻擊的保護。 |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | 偵測唯讀的 GuardDuty API 呼叫。Pacu 的 guardduty__list_findings 模組會讀取現有的發現項目，以了解防禦方已偵測到什麼，讓攻擊者能調整戰術並避免觸發新警示。 |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | 偵測 AWS Budgets 及 Cost Anomaly 監控器的刪除或修改。攻擊者會移除預算警示以隱藏加密貨幣挖礦或高資源消耗的操作。 |
-| 12 | 🚫 Access Denied Errors | bar | 依身分及 API 將 AccessDenied 錯誤分組。排名最高者可能表示憑證遭濫用。 |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | 依主體與日期關聯勒索軟體的三個階段 — 移除復原手段、停用保護、破壞或加密資料。單一階段看似營運雜訊，三者同時出現則不然。 |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | 偵測對監控堆疊本身的唯讀探測 — 追蹤是否運作中、GuardDuty 是否啟用、Config 是否正在記錄。這是防禦規避的前一步，也是最後一次留下乾淨紀錄的機會。 |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | 偵測 AWS Budgets 及 Cost Anomaly 監控器的刪除或修改。攻擊者會移除預算警示以隱藏加密貨幣挖礦或高資源消耗的操作。 |
+| 13 | 🚫 Access Denied Errors | bar | 依身分及 API 將 AccessDenied 錯誤分組。排名最高者可能表示憑證遭濫用。 |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | 依主體與日期關聯勒索軟體的三個階段 — 移除復原手段、停用保護、破壞或加密資料。單一階段看似營運雜訊，三者同時出現則不然。 |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | 偵測 AWS IAM Identity Center 管理動作。攻擊者濫用 SSO 建立後門式權限集，或將帳戶指派給攻擊者控制的使用者。 |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | 偵測 SAML/OIDC 身分提供者變更。以攻擊者控制的中繼資料更新 SAML 提供者會建立持續性的驗證後門。 |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | 偵測任何 IAM Access Analyzer 的使用。攻擊者利用原生分析器列舉可從外部存取的資源，無需自行撰寫偵察腳本。 |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | 偵測繪製整個 IAM 版圖的 IAM 列舉活動。常見於攻擊的早期階段。 |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | 偵測用來盤點「有誰存在」以及「他們能做什麼」的 IAM 列舉行為。這類呼叫短時間內集中出現，尤其伴隨 AccessDenied 時，即是攻擊初期階段。 |
 | 19 | 🗝 Access Key Abuse | bar | 偵測在 7 天內從 3 個以上不同來源 IP 使用的存取金鑰。金鑰外洩的強烈指標。 |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | 偵測 Organizations 帳戶建立及委派管理員變更。攻擊者建立影子帳戶以在主帳戶之外建立持續性據點。 |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | 偵測啟用未經驗證存取的 Cognito Identity Pools。允許匿名使用者以未經驗證 IAM 角色的權限呼叫 AWS API。 |
@@ -90,7 +91,7 @@
 | 1 | 💣 S3 Bulk Object Deletion | bar | 偵測高流量的 DeleteObject/DeleteObjects 呼叫（每小時 ≥50 次）。與外洩不同——這是資料破壞/勒索軟體樣態。 |
 | 2 | 🔥 AWS Backup Tampering | timeseries | 偵測 Backup Vault/Plan/RecoveryPoint 刪除。摧毀備份是勒索軟體攻擊防止復原的第一步。 |
 | 3 | 🔓 KMS Key Operations | timeseries | 標記敏感的 KMS 操作，包括金鑰刪除及大量的 Decrypt 呼叫。 |
-| 4 | 🔓 S3 Public Access Block Disabled | — | 偵測 S3 公開存取封鎖設定遭停用。立即的資料曝險風險。 |
+| 4 | 🔓 S3 Public Access Block Disabled | — | 偵測 S3 公開存取保護被停用或直接刪除。屬於立即性的資料外洩風險。 |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | 偵測 S3 儲存桶政策及 ACL 修改。這些變更可能使儲存桶可被公開讀取，或授予攻擊者控制帳戶的存取權。 |
 | 6 | 🪣 S3 Data Access Anomalies | bar | 偵測可能表示資料外洩的大量 GetObject 呼叫（≥100/小時）。 |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | 偵測大量擷取機密（資料庫密碼、API 金鑰等）。一小時內十次以上的 GetSecretValue 呼叫是強烈的憑證竊取訊號。 |
@@ -105,18 +106,19 @@
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | 偵測 PutBucketReplication 及 DeleteBucketReplication。跨帳戶複寫會靜默地將所有新物件複製到攻擊者控制的儲存桶。 |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | 偵測 S3 版本控制暫停及伺服器存取日誌停用。停用版本控制會使永久刪除成為可能；停用日誌會清除存取的證據軌跡。 |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | 偵測 SES 接收規則及身分設定變更。轉寄規則可自動將所有收到的郵件轉送至攻擊者的地址；經驗證的身分可用於進行釣魚活動。 |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 偵測授予外部帳戶存取權的 SQS/SNS 佇列/主題政策變更。在不觸發大量傳送警示的情況下建立靜默的外洩通道。 |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 偵測公開分享（group=all）的 EBS 快照或 AMI。讓任何人都能複製你的磁碟映像並擷取資料。 |
-| 21 | 📧 Data Exfiltration Channels | bar | 偵測可能表示外洩的高流量 SNS/SQS/SES/S3 PutObject 呼叫（≥50/小時）。 |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 偵測以攻擊者提供的 SSE-C 金鑰重新加密的 S3 物件，以及儲存桶預設加密設定的變更。沒有客戶金鑰，受害者便無法解密——這是一種雲端原生的勒索軟體樣態。 |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | 偵測使物件過期的 S3 生命週期規則，以及生命週期設定的刪除。攻擊者設定短期到期時間，在不發出 DeleteObject 呼叫的情況下隨時間靜默清除資料。 |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | 偵測 RDS Data API 查詢、主密碼重設及快照還原。攻擊者直接讀取資料、重設憑證以取得存取權，或將快照還原至其控制的執行個體。 |
-| 25 | 🔎 S3 Bucket Enumeration | bar | 偵測掃描儲存桶及物件中繼資料的呼叫方（一小時內 ≥10 次 List/GetBucket* 讀取）。這是外洩前定位有價值資料的常見早期步驟。 |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | 偵測以明確指定的 KMS 金鑰重新加密的 EBS/RDS 快照及磁碟區，以及預設 EBS 加密的停用。以攻擊者持有的金鑰重新加密，即是以資料進行勒索。 |
-| 27 | 📝 Ransom Note Placement | timeseries | 偵測物件金鑰看似勒索訊息的 PutObject 呼叫。與其他勒索軟體獵捕不同，這項確認而非暗示損害 — 出現勒索訊息代表對方已在索取贖金。 |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | 量化每個主體每日讀取的內容：接觸的儲存貯體數與概略的不重複物件數。可產出 GDPR 第 33 條通報所需的「大略記錄筆數」。 |
-| 29 | 📤 Cross-Account Object Copy | timeseries | 偵測在儲存貯體之間複製的物件，包含帶有 x-amz-copy-source 標頭的 PutObject 呼叫。將資料暫存到你無法控制的帳戶只會留下這一種痕跡。 |
-| 30 | 🔗 Presigned URL Generation | bar | 統計每個主體產生預簽章 URL 的次數。預簽章 URL 會把資料交給任何持有連結的人，不需再次驗證，也不再留下 CloudTrail 記錄。 |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | 偵測讓垃圾訊息得以獲利的前置作業 — 調高 SMS 支出上限、重新啟用 SES 寄送、使用大量寄送 API。這些都是單次低頻呼叫，每小時門檻永遠無法觸及。 |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 偵測授予外部帳戶存取權的 SQS/SNS 佇列/主題政策變更。在不觸發大量傳送警示的情況下建立靜默的外洩通道。 |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 偵測公開分享（group=all）的 EBS 快照或 AMI。讓任何人都能複製你的磁碟映像並擷取資料。 |
+| 22 | 📧 Data Exfiltration Channels | bar | 偵測可能表示外洩的高流量 SNS/SQS/SES/S3 PutObject 呼叫（≥50/小時）。 |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 偵測以攻擊者提供的 SSE-C 金鑰重新加密的 S3 物件，以及儲存桶預設加密設定的變更。沒有客戶金鑰，受害者便無法解密——這是一種雲端原生的勒索軟體樣態。 |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | 偵測使物件過期的 S3 生命週期規則，以及生命週期設定的刪除。攻擊者設定短期到期時間，在不發出 DeleteObject 呼叫的情況下隨時間靜默清除資料。 |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | 偵測 RDS Data API 查詢、主密碼重設及快照還原。攻擊者直接讀取資料、重設憑證以取得存取權，或將快照還原至其控制的執行個體。 |
+| 26 | 🔎 S3 Bucket Enumeration | bar | 偵測掃描儲存桶及物件中繼資料的呼叫方（一小時內 ≥10 次 List/GetBucket* 讀取）。這是外洩前定位有價值資料的常見早期步驟。 |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | 偵測以明確指定的 KMS 金鑰重新加密的 EBS/RDS 快照及磁碟區，以及預設 EBS 加密的停用。以攻擊者持有的金鑰重新加密，即是以資料進行勒索。 |
+| 28 | 📝 Ransom Note Placement | timeseries | 偵測物件金鑰看似勒索訊息的 PutObject 呼叫。與其他勒索軟體獵捕不同，這項確認而非暗示損害 — 出現勒索訊息代表對方已在索取贖金。 |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | 量化每個主體每日讀取的內容：接觸的儲存貯體數與概略的不重複物件數。可產出 GDPR 第 33 條通報所需的「大略記錄筆數」。 |
+| 30 | 📤 Cross-Account Object Copy | timeseries | 偵測在儲存貯體之間複製的物件，包含帶有 x-amz-copy-source 標頭的 PutObject 呼叫。將資料暫存到你無法控制的帳戶只會留下這一種痕跡。 |
+| 31 | 🔗 Presigned URL Generation | bar | 統計每個主體產生預簽章 URL 的次數。預簽章 URL 會把資料交給任何持有連結的人，不需再次驗證，也不再留下 CloudTrail 記錄。 |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@
 | 1 | 🔍 Reconnaissance Pattern | bar | 識別在一小時內執行 10 個以上不同唯讀 API 呼叫的呼叫方。常見的早期攻擊階段。 |
 | 2 | 🤖 Unusual User Agents | bar | 列出罕見的使用者代理（少於 5 次事件）。像 Pacu 或 curl 這類自訂工具可能表示攻擊者的工具。 |
 | 3 | 🌍 Multi-Region Activity | bar | 偵測在一天內於 3 個以上區域執行寫入的身分。地理擴散可能表示遭入侵。 |
-| 4 | 🕵 First-Time API Calls (24h) | — | 找出在過去 24 小時內出現但先前從未見過的 API 呼叫。新穎的操作可能表示攻擊者的工具。 |
-| 5 | 🗺 First-Seen Region Activity | bar | 找出資料集中最近 24 小時內首次出現活動的 AWS 區域。在從未使用過的區域中操作，是躲避區域範圍監控以隱藏加密貨幣挖礦或前置作業的典型手法。 |
-| 6 | 🌙 Off-Hours Activity | bar | 在可設定的非上班時段區間內，依主體與時段將活動分組。這是上游內部威脅手冊最先列出的指標，也是其他獵捕完全未涵蓋的一項。 |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | 偵測主體修改自身權限 — 呼叫端 ARN 與目標使用者或角色名稱相同。既有的提權獵捕看得到授予行為，卻遺漏了那是自我套用的事實。 |
-| 8 | 📈 Principal Daily Volume Deviation | bar | 將每個主體的每日呼叫量與其自身平均值比較，並區分讀取與寫入。可捕捉僅使用被允許 API 的外洩，此時異常在於數量而非行為。 |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | 標記在帳戶幾乎不使用之區域建立資源的行為，基準值由資料推導而非寫死。加密貨幣挖礦與私人專案都會出現在這裡。 |
-| 10 | 📞 High-Volume API Calls per Principal | bar | 列出成功呼叫超過 50 次的主體與 API 組合，並附上首次與最後一次呼叫。列舉、大量擷取與大量刪除都具有相同形態。 |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | 標記單一主體在一小時內於多個區域重複呼叫同一個 API。這是腳本化掃描的特徵，其他區域類獵捕查詢完全看不到。 |
+| 5 | 🕵 First-Time API Calls (24h) | — | 找出在過去 24 小時內出現但先前從未見過的 API 呼叫。新穎的操作可能表示攻擊者的工具。 |
+| 6 | 🗺 First-Seen Region Activity | bar | 找出資料集中最近 24 小時內首次出現活動的 AWS 區域。在從未使用過的區域中操作，是躲避區域範圍監控以隱藏加密貨幣挖礦或前置作業的典型手法。 |
+| 7 | 🌙 Off-Hours Activity | bar | 在可設定的非上班時段區間內，依主體與時段將活動分組。這是上游內部威脅手冊最先列出的指標，也是其他獵捕完全未涵蓋的一項。 |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | 偵測主體修改自身權限 — 呼叫端 ARN 與目標使用者或角色名稱相同。既有的提權獵捕看得到授予行為，卻遺漏了那是自我套用的事實。 |
+| 9 | 📈 Principal Daily Volume Deviation | bar | 將每個主體的每日呼叫量與其自身平均值比較，並區分讀取與寫入。可捕捉僅使用被允許 API 的外洩，此時異常在於數量而非行為。 |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | 標記在帳戶幾乎不使用之區域建立資源的行為，基準值由資料推導而非寫死。加密貨幣挖礦與私人專案都會出現在這裡。 |
+| 11 | 📞 High-Volume API Calls per Principal | bar | 列出成功呼叫超過 50 次的主體與 API 組合，並附上首次與最後一次呼叫。列舉、大量擷取與大量刪除都具有相同形態。 |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@
 
 ---
 
-## 📊 Dashboard Charts——115 個圖表
+## 📊 Dashboard Charts——118 個圖表
 
 | 分頁 | 圖表數 | 顯示內容 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 張分流 KPI 卡片（事件、主體、IP、root、無 MFA 登入、access denied、防禦規避、國家、區域）+ 全域事件量趨勢 |
-| 🎯 Threat Detection | 14 | 防禦規避總覽 · 日誌缺口 · VPC flow log/Config/EventBridge/WAF 竄改 · SCP/組織成員變更 · 錯誤及節流趨勢 · write/read 比率 · P1/P2 升級觸發條件 KPI 卡 |
+| 🎯 Threat Detection | 16 | 防禦規避總覽 · 日誌缺口 · VPC flow log/Config/EventBridge/WAF 竄改 · SCP/組織成員變更 · 錯誤及節流趨勢 · write/read 比率 · P1/P2 升級觸發條件 KPI 卡 |
 | 🔑 Identity & Access | 36 | 主控台登入 · MFA 趨勢 · 登入熱圖 · 失敗→成功驗證序列 · root 使用 · IAM 實體活動/刪除 · 權限提升時間軸 · 新主體 · SSO · 跨帳戶 AssumeRole · AssumeRoot 使用 |
 | 🚨 High-Risk API Monitor | 5 | 安全服務竄改及憑證擷取的 API 日誌 · 熱門高風險呼叫 · 熱門行為者 · 高風險呼叫量隨時間變化 |
 | 📊 API Activity | 6 | 熱門 API · access-denied 動作 · 區域分布 · 錯誤代碼組成 · 來源 IP · 使用者代理 |
-| 🪣 S3 & RDS | 18 | S3 大量下載/刪除 · 版本控制/日誌停用 · 跨帳戶複寫 · 儲存桶政策/ACL · 列舉 · 保護設定 · Backup vault 刪除 · KMS 金鑰刪除 · RDS 快照分享／未快照即刪除 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS 查詢/執行個體操弄 · 用於造成影響的儲存體再加密 · 外洩通報用存取範圍 · 跨帳戶物件複製 · 勒索訊息投放 |
+| 🪣 S3 & RDS | 19 | S3 大量下載/刪除 · 版本控制/日誌停用 · 跨帳戶複寫 · 儲存桶政策/ACL · 列舉 · 保護設定 · Backup vault 刪除 · KMS 金鑰刪除 · RDS 快照分享／未快照即刪除 · SSE-C 勒索軟體加密 · 生命週期觸發刪除 · RDS 查詢/執行個體操弄 · 用於造成影響的儲存體再加密 · 外洩通報用存取範圍 · 跨帳戶物件複製 · 勒索訊息投放 |
 | 🖥️ Computing | 17 | EC2 啟動/大量停止/金鑰對/instance profile/user-data/快照分享/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS 削弱 · AMI/快照刪除 · WorkSpaces 劫持 |
 | 🤖 AI / LLM | 6 | Bedrock 呼叫趨勢 · 模型存取及日誌變更 · 失敗的呼叫 · 依來源分類的呼叫方（LLMjacking 分流） · AgentCore 權杖發放 · 閘道與政策變更 |
 | 🌐 Network | 5 | Security group 變更 · NACL/route table 變更 · VPC 基礎設施 · VPC peering/Transit Gateway · Route53 DNS 變更 |
@@ -231,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | 不可能的移動（多國主體）· 熱門國家/城市/ASN · 世界地圖 · event_name × country |
 
 <details markdown="1">
-<summary>📋 完整清單——全部 115 個圖表（點擊展開）</summary>
+<summary>📋 完整清單——全部 118 個圖表（點擊展開）</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@
 | 12 | Organization Membership Changes | 將帳戶從防護機制中分離、或將其移至攻擊者控制的 organization 之下的 Organizations 成員變更。Threat Technique Catalog for AWS：T1666.A002 / T1666.A003。 |
 | 13 | P1 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於 15 分鐘內回應之升級觸發條件的事件：root 使用、記錄或偵測遭竄改、勒索訊息、委派管理員註冊。非零即代表計時開始。 |
 | 14 | P2 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於一小時內回應之條件的事件：憑證建立、權限授予、信任政策修改與跨帳戶角色擔任。應與 P1 卡一起判讀，而非單獨看。 |
+| 15 | Security Monitoring Posture Recon | 詢問帳戶是否受到監控的呼叫 (DSH-116): DescribeTrails、GetTrailStatus、ListDetectors、DescribeConfigurationRecorders。同一主體先在此偵察、隨後於 DSH-22 進行竄改的順序，正是應該升級處理的序列。Threat Technique Catalog for AWS: T1087、T1562.008。 |
+| 16 | Single-API Multi-Region Fan-Out | 在 3 個以上區域呼叫相同 API 名稱的主體 (DSH-117)。這是僅計算寫入操作的 Region Activity 的「含唯讀」對應版本，全域服務已排除。Threat Technique Catalog for AWS: T1535。 |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | 依主體呈現 S3 讀取呼叫、不重複儲存貯體與概略不重複物件數。可產出 GDPR 第 33 條要求的數字。需要儲存貯體的 CloudTrail 資料事件。 |
 | 17 | Cross-Account Object Copy | S3 CopyObject 呼叫以及帶有 x-amz-copy-source 標頭的 PutObject，並顯示來源與目的地。複寫圖表涵蓋設定；本圖表涵蓋個別複製行為。 |
 | 18 | Ransom Note Placement | 物件金鑰看似勒索訊息的 PutObject 呼叫。與其他勒索軟體面板不同，此圖表確認損害 — 只要出現一列即為 P1。 |
+| 19 | SES / SNS Sending Quota Abuse | 寄送配額與大量寄送事件 (DSH-118): 調高 MonthlySpendLimit 的 SetSMSAttributes、重新啟用 SES 的 UpdateAccountSendingEnabled、SendRawEmail / SendBulkTemplatedEmail。每個都是單次呼叫，數量門檻永遠觸及不到。Threat Technique Catalog for AWS: T1496.003、T1496.A001。 |
 
 ### 🖥️ Computing
 

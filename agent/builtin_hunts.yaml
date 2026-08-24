@@ -90,9 +90,12 @@
     a detector is disabled with UpdateDetector and enable=false, so surface
     that flag alongside DeleteDetector, DeletePublishingDestination,
     CreateIPSet / CreateThreatIntelSet (attacker whitelisting their own IPs),
-    and DeleteIPSet / DeleteThreatIntelSet. GuardDuty changes during an
+    and DeleteIPSet / DeleteThreatIntelSet. Include CreateFilter and
+    UpdateFilter: a suppression rule leaves the detector enabled and healthy
+    while the findings it names are archived on arrival, so the console shows
+    a working GuardDuty and an empty findings list. GuardDuty changes during an
     incident are a strong defense evasion indicator. Show detector ID,
-    the enable flag, caller, region, and time.
+    the enable flag, the filter name and action, caller, region, and time.
   sql: |
     SELECT
         event_time,
@@ -101,6 +104,8 @@
         json_extract_string(request_parameters, '$.detectorId')    AS detector_id,
         json_extract_string(request_parameters, '$.enable')        AS enable_flag,
         json_extract_string(request_parameters, '$.destinationId') AS destination_id,
+        json_extract_string(request_parameters, '$.name')          AS filter_name,
+        json_extract_string(request_parameters, '$.action')        AS filter_action,
         source_ip_address,
         aws_region,
         error_code
@@ -111,7 +116,8 @@
           'DeletePublishingDestination',
           'CreateIPSet',              'DeleteIPSet',
           'CreateThreatIntelSet',     'DeleteThreatIntelSet',
-          'ArchiveFindings',          'UpdateFilter'
+          'CreateFilter',             'UpdateFilter',
+          'ArchiveFindings'
       )
     ORDER BY event_time DESC
     LIMIT 100
@@ -485,6 +491,71 @@
           'ListThreatIntelSets',  'GetThreatIntelSet',
           'GetMasterAccount',     'ListMembers'
       )
+    ORDER BY event_time DESC
+    LIMIT 200
+
+- category: "\U0001f6e1 Detection & Response"
+  label: "\U0001fa7a Security Monitoring Posture Recon"
+  description: "Detects read-only probing of the monitoring stack itself — is a trail running, is GuardDuty on, is Config recording. The step before defense evasion, and the last one that leaves a clean log."
+  severity: "P3"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  techniques:
+    - tid: "T1087"
+      name: "Account Discovery"
+      summary: "Adversaries enumerate the environment — here its detective controls — before acting on it."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1087.html"
+    - tid: "T1562.008"
+      name: "Impair Defenses: Disable Cloud Logs"
+      summary: "The technique this reconnaissance serves: once the trail's state is known, it is stopped or rerouted."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1562.008.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find read-only calls that inspect the account's own monitoring posture:
+    DescribeTrails / GetTrailStatus / GetEventSelectors / GetInsightSelectors
+    (is CloudTrail on, and is it recording what I am about to do),
+    ListDetectors / GetDetector / GetFindingsStatistics (is GuardDuty on and
+    what has it already seen), DescribeConfigurationRecorders and
+    DescribeConfigurationRecorderStatus, ListAnalyzers, DescribeFlowLogs, and
+    the Security Hub equivalents. None of these change anything, which is why
+    they are easy to miss — but an actor who runs them is deciding whether the
+    next step is safe. Pair a hit here with 🛑 CloudTrail Tampering and
+    🛡️ GuardDuty Detector Tampering in the following minutes. Unlike
+    🔍 Reconnaissance Pattern, which counts distinct read calls of any kind,
+    this is a named list restricted to the monitoring services themselves.
+    Show caller, region, source IP, and whether the call was denied.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        event_source,
+        user_identity_arn,
+        aws_region,
+        source_ip_address,
+        geo_country_code,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name IN (
+        -- CloudTrail: is anything recording me
+        'DescribeTrails',            'GetTrailStatus',
+        'GetEventSelectors',         'GetInsightSelectors',
+        'ListTrails',
+        -- GuardDuty: is the detector on, and what has it seen
+        'ListDetectors',             'GetDetector',
+        'GetFindingsStatistics',     'ListFindings',
+        'ListIPSets',                'ListThreatIntelSets',
+        -- Config / Access Analyzer / Security Hub / Flow Logs
+        'DescribeConfigurationRecorders',
+        'DescribeConfigurationRecorderStatus',
+        'DescribeDeliveryChannels',  'DescribeConfigRules',
+        'ListAnalyzers',             'DescribeHub',
+        'GetEnabledStandards',       'DescribeFlowLogs',
+        -- CloudWatch alarms and log retention
+        'DescribeAlarms',            'DescribeLogGroups'
+    )
     ORDER BY event_time DESC
     LIMIT 200
 
@@ -1366,7 +1437,7 @@
 
 - category: "\U0001f511 Identity & Access"
   label: "\U0001f504 Credential Report & Enumeration"
-  description: "Detects IAM enumeration activity that maps the entire IAM landscape. Common in early attack stages."
+  description: "Detects IAM enumeration that maps who exists and what they may do. A burst of these, especially with AccessDenied, is the early attack stage."
   severity: "P3"
   playbook:
     name: "IRP-CredCompromise"
@@ -1380,10 +1451,16 @@
     type: timeseries
     bucket: day
   prompt: |
-    Detect IAM enumeration activity: GenerateCredentialReport,
-    GetCredentialReport, ListUsers, ListRoles, ListPolicies,
-    GetAccountAuthorizationDetails. These calls collectively map the
-    entire IAM landscape. Group by caller and time window.
+    Detect IAM enumeration activity in two layers. The inventory calls —
+    GenerateCredentialReport, GetCredentialReport, ListUsers, ListRoles,
+    ListPolicies, GetAccountAuthorizationDetails — map who exists. The
+    permission calls — ListAttachedUserPolicies, ListAttachedRolePolicies,
+    ListGroupsForUser, GetPolicyVersion, ListAccessKeys — map what a
+    principal can already do, which is the question a stolen credential asks
+    first. Group by caller and time window, and read the error_code column:
+    AccessDenied on these calls means the actor is probing a boundary rather
+    than reading a permission they hold. This is a named-API list, not the
+    volume heuristic owned by 🔍 Reconnaissance Pattern.
   sql: |
     SELECT
         event_time,
@@ -1393,9 +1470,16 @@
         error_code
     FROM cloudtrail_events
     WHERE event_name IN (
+        -- who exists
         'GenerateCredentialReport', 'GetCredentialReport',
         'ListUsers', 'ListRoles', 'ListPolicies',
-        'GetAccountAuthorizationDetails'
+        'GetAccountAuthorizationDetails',
+        -- what they can do
+        'ListAttachedUserPolicies', 'ListAttachedRolePolicies',
+        'ListUserPolicies',         'ListRolePolicies',
+        'ListGroupsForUser',        'GetPolicyVersion',
+        'ListAccessKeys',           'ListInstanceProfiles',
+        'ListVirtualMFADevices'
     )
     ORDER BY event_time DESC
     LIMIT 200
@@ -1874,7 +1958,7 @@
 
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f513 S3 Public Access Block Disabled"
-  description: "Detects S3 public access block settings being disabled. Immediate data exposure risk."
+  description: "Detects S3 public access protection being disabled or deleted outright. Immediate data exposure risk."
   severity: "P1"
   playbook:
     name: "IRP-DataAccess"
@@ -1888,24 +1972,33 @@
       summary: "Adversaries download or expose S3 objects at scale."
       url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1530.A001.html"
   prompt: |
-    Find all PutPublicAccessBlock events where any of the four block settings
-    were set to false. This exposes S3 buckets to public access.
+    Find every event that removes S3 public-access protection: a
+    PutPublicAccessBlock setting any of the four block settings to false, and a
+    DeletePublicAccessBlock, which drops the configuration outright and leaves
+    no false flag to match on. Both end with the bucket exposed. Show the
+    bucket, the resulting configuration where there is one, caller and time.
   sql: |
     SELECT
         event_time,
+        event_name,
         user_identity_arn,
         aws_region,
         json_extract_string(request_parameters, '$.bucketName')                     AS bucket_name,
         json_extract_string(request_parameters, '$.PublicAccessBlockConfiguration') AS block_config,
         source_ip_address
     FROM cloudtrail_events
-    WHERE event_name = 'PutPublicAccessBlock'
-      AND (
-          request_parameters LIKE '%"blockPublicAcls":false%'
-          OR request_parameters LIKE '%"blockPublicPolicy":false%'
-          OR request_parameters LIKE '%"ignorePublicAcls":false%'
-          OR request_parameters LIKE '%"restrictPublicBuckets":false%'
-      )
+    -- DeletePublicAccessBlock carries no configuration to inspect: the call
+    -- itself is the exposure, so it is matched on the name alone.
+    WHERE event_name = 'DeletePublicAccessBlock'
+       OR (
+           event_name = 'PutPublicAccessBlock'
+           AND (
+               request_parameters LIKE '%"blockPublicAcls":false%'
+               OR request_parameters LIKE '%"blockPublicPolicy":false%'
+               OR request_parameters LIKE '%"ignorePublicAcls":false%'
+               OR request_parameters LIKE '%"restrictPublicBuckets":false%'
+           )
+       )
     ORDER BY event_time DESC
     LIMIT 100
 
@@ -2532,6 +2625,68 @@
       )
     ORDER BY event_time DESC
     LIMIT 100
+
+- category: "\U0001faa3 Data & Storage"
+  label: "\U0001f4e8 SES / SNS Sending Quota Abuse"
+  description: "Detects the plumbing that makes spam profitable — SMS spend limits raised, SES sending re-enabled, bulk send APIs used. Single low-volume calls a per-hour threshold can never see."
+  severity: "P2"
+  techniques:
+    - tid: "T1496.003"
+      name: "Resource Hijacking: SMS Pumping"
+      summary: "Adversaries abuse SNS SMS sending for revenue-generating message fraud."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.003.html"
+    - tid: "T1496.A001"
+      name: "Resource Hijacking: Cloud Service Hijacking - SES Messaging"
+      summary: "Adversaries abuse SES to send spam or phishing from the victim account."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1496.A001.html"
+  chart:
+    type: timeseries
+    bucket: day
+  prompt: |
+    Find the setup an actor needs before spam pays: SetSMSAttributes raising
+    MonthlySpendLimit or changing the default sender ID, OptInPhoneNumber and
+    CheckIfPhoneNumberIsOptedOut sweeping numbers back into scope,
+    UpdateAccountSendingEnabled / PutAccountSendingAttributes re-arming SES
+    after a suspension, PutAccountDetails requesting production access out of
+    the sandbox, and the bulk send APIs SendRawEmail / SendTemplatedEmail /
+    SendBulkTemplatedEmail. Two neighbours own the rest and should not be
+    duplicated here: 📧 SES Identity & Forwarding Config Changes owns identity
+    verification and receipt rules, and 📧 Data Exfiltration Channels owns
+    high-volume Publish / SendEmail. What is unique here is that each of these
+    is a single call, so a 50-per-hour floor never reaches it — the spend limit
+    is raised once and the damage follows.
+    Show the attribute changed, its new value, caller, region and time.
+  sql: |
+    SELECT
+        event_time,
+        event_name,
+        event_source,
+        user_identity_arn,
+        COALESCE(
+            json_extract_string(request_parameters, '$.attributes.MonthlySpendLimit'),
+            json_extract_string(request_parameters, '$.attributes.DefaultSenderID'),
+            json_extract_string(request_parameters, '$.enabled'),
+            json_extract_string(request_parameters, '$.sendingEnabled')
+        )                                                        AS new_value,
+        json_extract_string(request_parameters, '$.phoneNumber') AS phone_number,
+        source_ip_address,
+        aws_region,
+        geo_country_code,
+        error_code
+    FROM cloudtrail_events
+    WHERE event_name IN (
+        -- SNS: raise the ceiling, then reach the numbers
+        'SetSMSAttributes',            'OptInPhoneNumber',
+        'CheckIfPhoneNumberIsOptedOut',
+        -- SES: re-arm the account and leave the sandbox
+        'UpdateAccountSendingEnabled', 'PutAccountSendingAttributes',
+        'PutAccountDetails',           'UpdateConfigurationSetSendingEnabled',
+        -- SES: the bulk send paths
+        'SendRawEmail',                'SendTemplatedEmail',
+        'SendBulkTemplatedEmail',      'SendBulkEmail'
+    )
+    ORDER BY event_time DESC
+    LIMIT 200
 
 - category: "\U0001faa3 Data & Storage"
   label: "\U0001f4e1 SQS / SNS Cross-Account Policy Changes"
@@ -5472,6 +5627,58 @@
     HAVING COUNT(DISTINCT aws_region) >= 3
     ORDER BY distinct_regions DESC
     LIMIT 50
+
+- category: "\U0001f575 Threat Patterns"
+  label: "\U0001f9ed Single-API Multi-Region Fan-Out"
+  description: "Flags one principal repeating a single API across many regions in an hour. The signature of a scripted sweep, and invisible to the other region hunts."
+  severity: "P2"
+  playbook:
+    name: "IRP-CredCompromise"
+    url: "https://github.com/aws-samples/aws-incident-response-playbooks/blob/main/playbooks/IRP-CredCompromise.md"
+  techniques:
+    - tid: "T1535"
+      name: "Unused/Unsupported Cloud Regions"
+      summary: "Adversaries operate in regions the victim does not monitor."
+      url: "https://aws-samples.github.io/threat-technique-catalog-for-aws/Techniques/T1535.html"
+  chart:
+    type: bar
+    x: event_name
+    y:
+      - distinct_regions
+  prompt: |
+    Find a principal calling the SAME API name in 3 or more regions inside one
+    hour — a stolen credential enumerating every region for something worth
+    taking, or measuring a service quota before abusing it. The classic shape
+    is GetSMSAttributes or DescribeInstances repeated across ten regions from
+    one IP. This differs from its two neighbours in a way that matters:
+    🌍 Multi-Region Activity only looks at writes, so a read-only sweep never
+    reaches it, and 🔍 Reconnaissance Pattern needs ten *distinct* API names,
+    so a single name repeated across regions scores one and is dropped. Report
+    the API, the caller, how many regions, and which ones.
+  sql: |
+    SELECT
+        user_identity_arn,
+        event_name,
+        event_source,
+        DATE_TRUNC('hour', event_time)  AS hour_bucket,
+        COUNT(DISTINCT aws_region)      AS distinct_regions,
+        array_agg(DISTINCT aws_region)  AS regions,
+        COUNT(*)                        AS call_count,
+        COUNT(DISTINCT source_ip_address) AS distinct_source_ips
+    FROM cloudtrail_events
+    WHERE user_identity_arn IS NOT NULL
+      AND aws_region IS NOT NULL
+      -- Global services report a single region for every caller, so they can
+      -- never fan out and would only add noise.
+      AND event_source NOT IN (
+          'iam.amazonaws.com', 'sts.amazonaws.com',
+          'signin.amazonaws.com', 'organizations.amazonaws.com',
+          'cloudfront.amazonaws.com', 'route53.amazonaws.com'
+      )
+    GROUP BY user_identity_arn, event_name, event_source, hour_bucket
+    HAVING COUNT(DISTINCT aws_region) >= 3
+    ORDER BY distinct_regions DESC, call_count DESC
+    LIMIT 100
 
 - category: "\U0001f575 Threat Patterns"
   label: "\U0001f575 First-Time API Calls (24h)"

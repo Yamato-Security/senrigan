@@ -2,25 +2,25 @@
 
 > 💡 SQL veya derin AWS bilgisi gerekmez — açılır menüden bir av seçin ve sonuçları anında alın.
 
-## 🎯 Yerleşik Avlar — 136 sorgu
+## 🎯 Yerleşik Avlar — 139 sorgu
 
 Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit aracı kurcalamasını, ardından kimlik istismarını, sonra veri etkisini kontrol edin.
 
 | Kategori | Sorgu Sayısı | Kapsanan Başlıca Tehditler |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma · fidye yazılımı saldırı zinciri korelasyonu |
+| 🛡 Detection & Response | 14 | Denetim hizmeti kurcalaması (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP silme · alarm bastırma · log sızdırma · fidye yazılımı saldırı zinciri korelasyonu |
 | 🔑 Identity & Access | 36 | Root kullanımı · konsol oturum açma/MFA · ayrıcalık yükseltme · güven politikası arka kapısı · PassRole istismarı · hesaplar arası AssumeRole · SSO/SAML/OIDC · kimlik bilgisi numaralandırma · IAM varlık silme · AssumeRoot ele geçirme · Cognito user pool/token istismarı · destek vakası bastırma · rol zincirleme · oturum kimlik bilgisi izleme · GetCallerIdentity keşfi · federe konsol oturum açmaları · Identity Center izin kümeleri ve yetkilendirilmiş yönetici · MFA'sız API çağrıları |
-| 🪣 Data & Storage | 30 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme · fidye notu yerleştirme · ihlal bildirimi kapsam belirleme · hesaplar arası nesne kopyalama · önceden imzalanmış URL üretimi |
+| 🪣 Data & Storage | 31 | S3 toplu silme/indirme · gizli bilgilerin toplu okunması · yedek kurcalama · KMS işlemleri · anlık görüntü paylaşımı · EBS Direct API sızdırma · DynamoDB dışa aktarma · S3 hesaplar arası çoğaltma · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS Data API manipülasyonu · etki için depolama yeniden şifreleme · fidye notu yerleştirme · ihlal bildirimi kapsam belirleme · hesaplar arası nesne kopyalama · önceden imzalanmış URL üretimi |
 | ⚡ Compute & Serverless | 17 | EC2 toplu durdurma/sonlandırma · SSM yanal hareket · Lambda/ECS/EKS/ECR kurcalama · EventBridge kalıcılığı · kripto madenciliği · Lightsail istismarı · IMDS/SSRF zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
 | 🤖 AI & LLM Abuse | 10 | Bedrock çağrı hacminde ani artış · model erişiminin etkinleştirilmesi · çağrı loglama kurcalaması · bölgeler arası keşif taraması · başarısız çağrı patlamaları · AgentCore token kasası · ağ geçidi yetkilendirme atlatma · bellek bütünlüğü · korumalı alan ağ modu değişikliği · gözlemlenebilirlik kurcalama |
 | 🌐 Network & Infrastructure | 13 | SG'nin internete açılması · VPC akış logu silme · CloudFront ele geçirme · gizli VPN/TGW tünelleri · Elastic IP C2 · API Gateway anahtarları · Route 53/alan adı ele geçirme · DDoS korumasının zayıflatılması |
-| 🕵 Threat Patterns | 10 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği · mesai dışı etkinlik · kendi kendine yetki yükseltme · günlük hacim sapması · kullanılmayan bölgelerde kaynak oluşturma · yüksek hacimli API kullanımı |
+| 🕵 Threat Patterns | 11 | Keşif patlaması · olağandışı kullanıcı aracıları · çok bölgeli yayılma · ilk kez yapılan API çağrıları · ilk görülen bölge etkinliği · mesai dışı etkinlik · kendi kendine yetki yükseltme · günlük hacim sapması · kullanılmayan bölgelerde kaynak oluşturma · yüksek hacimli API kullanımı |
 | 📊 Activity & Baseline | 3 | Konsol yazma olayları · hata sıçramaları · son hatalar |
 | 🌍 GeoIP Analysis | 2 | Ülkeye göre konsol oturum açma/red/yazma · nadir ülke erişimi |
 | ☁ IaC & Platform | 2 | CI/CD tedarik zinciri · CloudFormation istismarı |
 
 <details markdown="1">
-<summary>📋 Tam liste — 136 sorgunun tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 139 sorgunun tamamı (genişletmek için tıklayın)</summary>
 
 ## Yerleşik Avlar
 
@@ -38,9 +38,10 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | CW Logs abonelik filtresi oluşturma/silme ve log grubu silmeyi tespit eder. Saldırganlar logları harici bir hedefe akıtır veya kanıtları yerinde yok eder. |
 | 9 | 🏹 WAF WebACL Changes | timeseries | WAF WebACL oluşturma, güncelleme ve silmeyi tespit eder. Bir WebACL'yi kaldırmak veya zayıflatmak, SQLi, XSS ve DDoS saldırılarına karşı korumayı devre dışı bırakır. |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Salt okunur GuardDuty API çağrılarını tespit eder. Pacu'nun guardduty__list_findings modülü, savunmacının zaten neyi tespit ettiğini anlamak için etkin bulguları okur; bu, saldırganın taktiklerini uyarlamasına ve yeni uyarıları tetiklemekten kaçınmasına olanak tanır. |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets ve Cost Anomaly monitörlerinin silinmesini veya değiştirilmesini tespit eder. Saldırganlar, kripto madenciliğini veya kaynak yoğun işlemleri gizlemek için bütçe uyarılarını kaldırır. |
-| 12 | 🚫 Access Denied Errors | bar | AccessDenied hatalarını kimliğe ve API'ye göre gruplar. En çok ihlal yapanlar kimlik bilgisi kötüye kullanımına işaret edebilir. |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Fidye yazılımının üç aşamasını — kurtarma kaldırıldı, koruma devre dışı bırakıldı, veri yok edildi ya da şifrelendi — principal ve gün bazında ilişkilendirir. Her aşama tek başına operasyonel gürültüdür; üçü birlikte değildir. |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | İzleme yığınının kendisine yönelik salt okunur yoklamayı tespit eder — bir trail çalışıyor mu, GuardDuty açık mı, Config kayıt alıyor mu. Savunma atlatmadan önceki adım ve temiz bir kayıt bırakan sonuncusu. |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets ve Cost Anomaly monitörlerinin silinmesini veya değiştirilmesini tespit eder. Saldırganlar, kripto madenciliğini veya kaynak yoğun işlemleri gizlemek için bütçe uyarılarını kaldırır. |
+| 13 | 🚫 Access Denied Errors | bar | AccessDenied hatalarını kimliğe ve API'ye göre gruplar. En çok ihlal yapanlar kimlik bilgisi kötüye kullanımına işaret edebilir. |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | Fidye yazılımının üç aşamasını — kurtarma kaldırıldı, koruma devre dışı bırakıldı, veri yok edildi ya da şifrelendi — principal ve gün bazında ilişkilendirir. Her aşama tek başına operasyonel gürültüdür; üçü birlikte değildir. |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center yönetim işlemlerini tespit eder. Saldırganlar SSO'yu, arka kapı izin setleri oluşturmak veya hesapları saldırgan kontrolündeki kullanıcılara atamak için istismar eder. |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC kimlik sağlayıcı değişikliklerini tespit eder. Bir SAML sağlayıcısını saldırgan kontrolündeki meta verilerle güncellemek kalıcı bir kimlik doğrulama arka kapısı oluşturur. |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer'ın herhangi bir kullanımını tespit eder. Saldırganlar, özel keşif betikleri yazmadan harici erişilebilir kaynakları numaralandırmak için AWS'nin yerel analizöründen yararlanır. |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | Tüm IAM ortamını haritalayan IAM numaralandırma etkinliğini tespit eder. Saldırının erken aşamalarında yaygındır. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Kimlerin var olduğunu ve neler yapabildiklerini haritalayan IAM numaralandırmasını tespit eder. Bunların yoğunlaşması, özellikle AccessDenied ile birlikte, saldırının erken aşamasıdır. |
 | 19 | 🗝 Access Key Abuse | bar | 7 gün içinde 3 veya daha fazla farklı kaynak IP'den kullanılan erişim anahtarlarını tespit eder. Anahtar sızıntısının güçlü göstergesi. |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations hesap oluşturma ve delege edilmiş yönetici değişikliklerini tespit eder. Saldırganlar, ana hesabın dışında kalıcı dayanak noktaları oluşturmak için gölge hesaplar oluşturur. |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | Kimlik doğrulamasız erişimin etkin olduğu Cognito Identity Pools'u tespit eder. Anonim kullanıcıların, kimlik doğrulamasız IAM rolünün izinleriyle AWS API'lerini çağırmasına olanak tanır. |
@@ -90,7 +91,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 1 | 💣 S3 Bulk Object Deletion | bar | Yüksek hacimli DeleteObject/DeleteObjects çağrılarını (≥50/saat) tespit eder. Sızdırmadan farklıdır — bu bir veri imha / fidye yazılımı kalıbıdır. |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Backup Vault/Plan/RecoveryPoint silmeyi tespit eder. Yedekleri yok etmek, kurtarmayı önlemek için fidye yazılımı saldırılarının ilk adımıdır. |
 | 3 | 🔓 KMS Key Operations | timeseries | Anahtar silme ve yüksek hacimli Decrypt çağrıları dahil olmak üzere hassas KMS işlemlerini işaretler. |
-| 4 | 🔓 S3 Public Access Block Disabled | — | S3 genel erişim engeli ayarlarının devre dışı bırakılmasını tespit eder. Anında veri açığa çıkması riski. |
+| 4 | 🔓 S3 Public Access Block Disabled | — | S3 genel erişim korumasının devre dışı bırakılmasını veya tümüyle silinmesini tespit eder. Anında veri ifşası riski. |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | S3 bucket politikası ve ACL değişikliklerini tespit eder. Bunlar bir bucket'ı herkese açık okunabilir hale getirebilir veya saldırgan kontrolündeki hesaplara erişim sağlayabilir. |
 | 6 | 🪣 S3 Data Access Anomalies | bar | Veri sızdırmaya işaret edebilecek toplu GetObject çağrılarını (≥100/saat) tespit eder. |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Gizli bilgilerin (DB parolaları, API anahtarları vb.) toplu olarak alınmasını tespit eder. Bir saatte on veya daha fazla GetSecretValue çağrısı güçlü bir kimlik bilgisi toplama sinyalidir. |
@@ -105,18 +106,19 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | PutBucketReplication ve DeleteBucketReplication'ı tespit eder. Hesaplar arası çoğaltma, tüm yeni nesneleri saldırgan kontrolündeki bir bucket'a sessizce kopyalar. |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | S3 sürüm oluşturmanın askıya alınmasını ve sunucu erişim loglamasının devre dışı bırakılmasını tespit eder. Sürüm oluşturmayı devre dışı bırakmak veri imhasını mümkün kılar; loglamayı devre dışı bırakmak erişim kanıt izini siler. |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | SES alım kuralı ve kimlik yapılandırma değişikliklerini tespit eder. Yönlendirme kuralları tüm gelen postayı otomatik olarak saldırgan adreslerine iletebilir; doğrulanmış kimlikler kimlik avı kampanyalarını mümkün kılar. |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Harici hesaplara erişim veren SQS/SNS kuyruk/konu politikası değişikliklerini tespit eder. Yüksek hacimli gönderim uyarılarını tetiklemeden sessiz bir sızdırma kanalı oluşturur. |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Herkese açık paylaşılan (group=all) EBS anlık görüntülerini veya AMI'leri tespit eder. Herkesin disk görüntülerinizi kopyalamasına ve veri çıkarmasına olanak tanır. |
-| 21 | 📧 Data Exfiltration Channels | bar | Sızdırmaya işaret edebilecek yüksek hacimli SNS/SQS/SES/S3 PutObject çağrılarını (≥50/saat) tespit eder. |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Saldırgan tarafından sağlanan SSE-C anahtarlarıyla yeniden şifrelenen S3 nesnelerini, ayrıca bucket varsayılan şifreleme değişikliklerini tespit eder. Müşteri anahtarı olmadan mağdur şifreyi çözemez — buluta özgü bir fidye yazılımı kalıbı. |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Nesnelerin süresini dolduran S3 lifecycle kurallarını, ayrıca lifecycle yapılandırma silmeyi tespit eder. Saldırganlar, DeleteObject çağrıları yapmadan zamanla verileri sessizce temizlemek için kısa bir son kullanma tarihi ayarlar. |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API sorgularını, master parola sıfırlamalarını ve anlık görüntü geri yüklemelerini tespit eder. Saldırganlar veriyi doğrudan okur, erişim kazanmak için kimlik bilgilerini sıfırlar veya anlık görüntüleri kontrol ettikleri örneklere geri yükler. |
-| 25 | 🔎 S3 Bucket Enumeration | bar | Bucket ve nesne meta verilerini tarayan çağıranları tespit eder (bir saatte ≥10 List/GetBucket* okuması). Sızdırmadan önce değerli veriyi bulmak için yaygın bir erken adım. |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Açık bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntülerini ve volume'lerini, ayrıca varsayılan EBS şifrelemesinin devre dışı bırakılmasını tespit eder. Saldırganın elinde tuttuğu bir anahtarla yeniden şifreleme veriyi fidye için rehin tutar. |
-| 27 | 📝 Ransom Note Placement | timeseries | Nesne anahtarı fidye notuna benzeyen PutObject çağrılarını tespit eder. Diğer fidye yazılımı avlarının aksine bu, etkiyi ima etmek yerine doğrular — bir not, ödemenin çoktan talep edildiği anlamına gelir. |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | Her principal'ın günde ne okuduğunu ölçer: dokunulan kovalar ve yaklaşık farklı nesne sayısı. GDPR 33. maddesinin istediği «yaklaşık kayıt sayısı» rakamını üretir. |
-| 29 | 📤 Cross-Account Object Copy | timeseries | Kovalar arasında kopyalanan nesneleri, x-amz-copy-source başlığı taşıyan PutObject çağrıları dahil tespit eder. Kontrol etmediğiniz bir hesaba veri hazırlamak yalnızca bu izi bırakır. |
-| 30 | 🔗 Presigned URL Generation | bar | Principal başına önceden imzalanmış URL üretimini sayar. Önceden imzalanmış bir URL, bağlantıyı elinde tutan herkese veriyi teslim eder; ek kimlik doğrulama da ek CloudTrail kaydı da yoktur. |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | Spam'i kârlı kılan altyapıyı tespit eder — yükseltilen SMS harcama limitleri, yeniden etkinleştirilen SES gönderimi, toplu gönderim API'leri. Saatlik eşiğin asla ulaşamayacağı tek ve düşük hacimli çağrılar. |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Harici hesaplara erişim veren SQS/SNS kuyruk/konu politikası değişikliklerini tespit eder. Yüksek hacimli gönderim uyarılarını tetiklemeden sessiz bir sızdırma kanalı oluşturur. |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Herkese açık paylaşılan (group=all) EBS anlık görüntülerini veya AMI'leri tespit eder. Herkesin disk görüntülerinizi kopyalamasına ve veri çıkarmasına olanak tanır. |
+| 22 | 📧 Data Exfiltration Channels | bar | Sızdırmaya işaret edebilecek yüksek hacimli SNS/SQS/SES/S3 PutObject çağrılarını (≥50/saat) tespit eder. |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Saldırgan tarafından sağlanan SSE-C anahtarlarıyla yeniden şifrelenen S3 nesnelerini, ayrıca bucket varsayılan şifreleme değişikliklerini tespit eder. Müşteri anahtarı olmadan mağdur şifreyi çözemez — buluta özgü bir fidye yazılımı kalıbı. |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Nesnelerin süresini dolduran S3 lifecycle kurallarını, ayrıca lifecycle yapılandırma silmeyi tespit eder. Saldırganlar, DeleteObject çağrıları yapmadan zamanla verileri sessizce temizlemek için kısa bir son kullanma tarihi ayarlar. |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API sorgularını, master parola sıfırlamalarını ve anlık görüntü geri yüklemelerini tespit eder. Saldırganlar veriyi doğrudan okur, erişim kazanmak için kimlik bilgilerini sıfırlar veya anlık görüntüleri kontrol ettikleri örneklere geri yükler. |
+| 26 | 🔎 S3 Bucket Enumeration | bar | Bucket ve nesne meta verilerini tarayan çağıranları tespit eder (bir saatte ≥10 List/GetBucket* okuması). Sızdırmadan önce değerli veriyi bulmak için yaygın bir erken adım. |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | Açık bir KMS anahtarıyla yeniden şifrelenen EBS/RDS anlık görüntülerini ve volume'lerini, ayrıca varsayılan EBS şifrelemesinin devre dışı bırakılmasını tespit eder. Saldırganın elinde tuttuğu bir anahtarla yeniden şifreleme veriyi fidye için rehin tutar. |
+| 28 | 📝 Ransom Note Placement | timeseries | Nesne anahtarı fidye notuna benzeyen PutObject çağrılarını tespit eder. Diğer fidye yazılımı avlarının aksine bu, etkiyi ima etmek yerine doğrular — bir not, ödemenin çoktan talep edildiği anlamına gelir. |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | Her principal'ın günde ne okuduğunu ölçer: dokunulan kovalar ve yaklaşık farklı nesne sayısı. GDPR 33. maddesinin istediği «yaklaşık kayıt sayısı» rakamını üretir. |
+| 30 | 📤 Cross-Account Object Copy | timeseries | Kovalar arasında kopyalanan nesneleri, x-amz-copy-source başlığı taşıyan PutObject çağrıları dahil tespit eder. Kontrol etmediğiniz bir hesaba veri hazırlamak yalnızca bu izi bırakır. |
+| 31 | 🔗 Presigned URL Generation | bar | Principal başına önceden imzalanmış URL üretimini sayar. Önceden imzalanmış bir URL, bağlantıyı elinde tutan herkese veriyi teslim eder; ek kimlik doğrulama da ek CloudTrail kaydı da yoktur. |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 1 | 🔍 Reconnaissance Pattern | bar | Bir saatte 10 veya daha fazla farklı salt okunur API çağrısı yapan çağıranları tanımlar. Yaygın erken saldırı aşaması. |
 | 2 | 🤖 Unusual User Agents | bar | Nadir kullanıcı aracılarını (<5 olay) listeler. Pacu veya curl gibi özel araçlar saldırgan araçlarına işaret edebilir. |
 | 3 | 🌍 Multi-Region Activity | bar | Bir günde 3 veya daha fazla bölgede yazma işlemi yapan kimlikleri tespit eder. Coğrafi yayılma ele geçirilmeye işaret edebilir. |
-| 4 | 🕵 First-Time API Calls (24h) | — | Son 24 saatte görülen ancak daha önce hiç görülmeyen API çağrılarını bulur. Yeni işlemler saldırgan araçlarına işaret edebilir. |
-| 5 | 🗺 First-Seen Region Activity | bar | İlk etkinliği veri kümesinin son 24 saatine düşen AWS bölgelerini bulur. Daha önce hiç kullanılmamış bir bölgede faaliyet göstermek, kripto madenciliğini veya hazırlığı bölgeye özgü izlemeden gizlemenin klasik bir yoludur. |
-| 6 | 🌙 Off-Hours Activity | bar | Yapılandırılabilir bir mesai dışı pencerede etkinliği principal ve günün saatine göre gruplar. İçeriden tehdit kılavuzunun ilk sıraladığı ve başka hiçbir avın kapsamadığı gösterge. |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Bir principal'ın kendi izinlerini değiştirmesini tespit eder — çağıran ARN ile hedef kullanıcı veya rol adı aynıdır. Mevcut yükseltme avları verilen izni görür ama bunun kendine uygulandığı gerçeğini kaçırır. |
-| 8 | 📈 Principal Daily Volume Deviation | bar | Her principal'ın günlük çağrı hacmini kendi ortalamasıyla karşılaştırır, okumaları yazmalardan ayırır. Yalnızca izin verilen API'leri kullanan sızdırmayı yakalar; burada anomali eylem değil miktardır. |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Hesabın neredeyse hiç kullanmadığı bölgelerde kaynak oluşturulmasını işaretler; temel değer sabit kodlanmak yerine verilerden türetilir. Kripto madenciliği de kişisel projeler de burada belirir. |
-| 10 | 📞 High-Volume API Calls per Principal | bar | 50 başarılı çağrıyı aşan principal-API eşleşmelerini ilk ve son çağrılarıyla listeler. Numaralandırma, toplu çıkarma ve toplu silme aynı şekle sahiptir. |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | Bir principal'ın tek bir API'yi bir saat içinde birçok bölgede tekrarlamasını işaretler. Betikle yapılan taramanın imzası ve diğer bölge avlarına görünmez. |
+| 5 | 🕵 First-Time API Calls (24h) | — | Son 24 saatte görülen ancak daha önce hiç görülmeyen API çağrılarını bulur. Yeni işlemler saldırgan araçlarına işaret edebilir. |
+| 6 | 🗺 First-Seen Region Activity | bar | İlk etkinliği veri kümesinin son 24 saatine düşen AWS bölgelerini bulur. Daha önce hiç kullanılmamış bir bölgede faaliyet göstermek, kripto madenciliğini veya hazırlığı bölgeye özgü izlemeden gizlemenin klasik bir yoludur. |
+| 7 | 🌙 Off-Hours Activity | bar | Yapılandırılabilir bir mesai dışı pencerede etkinliği principal ve günün saatine göre gruplar. İçeriden tehdit kılavuzunun ilk sıraladığı ve başka hiçbir avın kapsamadığı gösterge. |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | Bir principal'ın kendi izinlerini değiştirmesini tespit eder — çağıran ARN ile hedef kullanıcı veya rol adı aynıdır. Mevcut yükseltme avları verilen izni görür ama bunun kendine uygulandığı gerçeğini kaçırır. |
+| 9 | 📈 Principal Daily Volume Deviation | bar | Her principal'ın günlük çağrı hacmini kendi ortalamasıyla karşılaştırır, okumaları yazmalardan ayırır. Yalnızca izin verilen API'leri kullanan sızdırmayı yakalar; burada anomali eylem değil miktardır. |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | Hesabın neredeyse hiç kullanmadığı bölgelerde kaynak oluşturulmasını işaretler; temel değer sabit kodlanmak yerine verilerden türetilir. Kripto madenciliği de kişisel projeler de burada belirir. |
+| 11 | 📞 High-Volume API Calls per Principal | bar | 50 başarılı çağrıyı aşan principal-API eşleşmelerini ilk ve son çağrılarıyla listeler. Numaralandırma, toplu çıkarma ve toplu silme aynı şekle sahiptir. |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 
 ---
 
-## 📊 Dashboard Charts — 115 grafik
+## 📊 Dashboard Charts — 118 grafik
 
 | Sekme | Grafik Sayısı | Ne Gösterir |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triyaj KPI kartı (olaylar, principal'lar, IP'ler, root, MFA'sız oturum açmalar, erişim reddedildi, savunma atlatma, ülkeler, bölgeler) + küresel olay hacmi trendi |
-| 🎯 Threat Detection | 14 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
+| 🎯 Threat Detection | 16 | Savunma atlatma toplu göstergesi · loglama boşlukları · VPC flow log/Config/EventBridge/WAF kurcalaması · SCP/organizasyon üyeliği değişiklikleri · hata ve kısıtlama trendleri · yazma/okuma oranı · P1/P2 yükseltme tetikleyicisi KPI kartları |
 | 🔑 Identity & Access | 36 | Konsol oturum açmaları · MFA trendi · oturum açma ısı haritası · başarısız→başarılı auth dizisi · root kullanımı · IAM varlık etkinliği/silme · ayrıcalık yükseltme zaman çizelgesi · yeni principal'lar · SSO · hesaplar arası AssumeRole · AssumeRoot kullanımı |
 | 🚨 High-Risk API Monitor | 5 | Güvenlik hizmeti kurcalaması & kimlik bilgisi alma API logları · en çok yüksek riskli çağrılar · en çok aktörler · zaman içinde yüksek riskli çağrı hacmi |
 | 📊 API Activity | 6 | En çok API'ler · erişim reddedilen eylemler · bölge dağılımı · hata kodu bileşimi · kaynak IP'ler · kullanıcı aracıları |
-| 🪣 S3 & RDS | 18 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |
+| 🪣 S3 & RDS | 19 | S3 toplu indirme/silme · versiyonlama/loglama devre dışı · hesaplar arası çoğaltma · bucket politikası/ACL · numaralandırma · koruma yapılandırması · Backup vault silme · KMS anahtar silme · RDS anlık görüntü paylaşımı / snapshot'sız silme · SSE-C fidye yazılımı şifrelemesi · lifecycle tetiklemeli silme · RDS sorgu/örnek manipülasyonu · etki için depolama yeniden şifreleme · ihlal bildirimi için erişim kapsamı · hesaplar arası nesne kopyalama · fidye notu yerleştirme |
 | 🖥️ Computing | 17 | EC2 lansmanları/toplu durdurma/anahtar çiftleri/örnek profili/kullanıcı verisi/anlık görüntü paylaşımı/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS zayıflatma · AMI/anlık görüntü silme · WorkSpaces ele geçirme |
 | 🤖 AI / LLM | 6 | Bedrock çağrı trendi · model erişimi & loglama değişiklikleri · başarısız çağrılar · kökene göre çağıranlar (LLMjacking triyajı) · AgentCore token verme · ağ geçidi ve politika değişiklikleri |
 | 🌐 Network | 5 | Security group değişiklikleri · NACL/route table değişiklikleri · VPC altyapısı · VPC peering/Transit Gateway · Route53 DNS değişiklikleri |
@@ -231,7 +234,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 🌍 GeoIP Intelligence | 6 | İmkânsız seyahat (çok ülkeli principal'lar) · en çok ülkeler/şehirler/ASN'ler · dünya haritası · event_name × country |
 
 <details markdown="1">
-<summary>📋 Tam liste — 115 grafiğin tamamı (genişletmek için tıklayın)</summary>
+<summary>📋 Tam liste — 118 grafiğin tamamı (genişletmek için tıklayın)</summary>
 
 ## Dashboard Charts (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | Organization Membership Changes | Hesapları korkuluklardan ayıran veya saldırgan kontrolündeki bir organizasyon altına taşıyan Organizations üyelik değişiklikleri. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE'ın 15 dakika içinde yanıt gerektiren yükseltme tetikleyicileriyle eşleşen olaylar: root kullanımı, günlükleme veya tespit kurcalama, fidye notları, yetkilendirilmiş yönetici kaydı. Sıfırdan farklıysa saat işlemeye başlar. |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE'ın bir saat içinde yanıt koşullarıyla eşleşen olaylar: kimlik bilgisi oluşturma, yetki verme, güven politikası düzenlemeleri ve hesaplar arası rol üstlenme. Tek başına değil, P1 kartıyla birlikte okuyun. |
+| 15 | Security Monitoring Posture Recon | Hesabın izlenip izlenmediğini soran çağrılar (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Buradaki keşfin ardından aynı principal tarafından DSH-22'de yapılan kurcalama, yükseltilmesi gereken dizidir. Threat Technique Catalog for AWS: T1087, T1562.008. |
+| 16 | Single-API Multi-Region Fan-Out | Aynı API adını 3+ bölgede çağıran principal'lar (DSH-117). Yalnızca yazma işlemlerini sayan Region Activity'nin okumaları da kapsayan karşılığı; global servisler hariç tutulur. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 16 | Data Access Scope (Breach Notification) | Principal başına: S3 okuma çağrıları, farklı kovalar ve yaklaşık farklı nesneler. GDPR 33. maddesinin istediği rakamı üretir. Kovalarda CloudTrail veri olayları gerekir. |
 | 17 | Cross-Account Object Copy | S3 CopyObject çağrıları ve x-amz-copy-source başlığı taşıyan PutObject çağrıları, kaynak ve hedefiyle. Çoğaltma grafikleri yapılandırmayı kapsar; bu, tek tek kopyaları. |
 | 18 | Ransom Note Placement | Nesne anahtarı fidye notuna benzeyen PutObject çağrıları. Diğer fidye yazılımı panellerinin aksine bu, etkiyi doğrular — buradaki her satır bir P1'dir. |
+| 19 | SES / SNS Sending Quota Abuse | Gönderim kotası ve toplu gönderim olayları (DSH-118): MonthlySpendLimit'i yükselten SetSMSAttributes, SES'i yeniden etkinleştiren UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail. Her biri tek bir çağrıdır, hacim eşikleri asla erişemez. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

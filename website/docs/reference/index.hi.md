@@ -2,25 +2,25 @@
 
 > 💡 किसी SQL या गहन AWS ज्ञान की आवश्यकता नहीं — बस ड्रॉपडाउन से एक hunt चुनें और तुरंत परिणाम प्राप्त करें।
 
-## 🎯 बिल्ट-इन Hunts — 136 क्वेरीज़
+## 🎯 बिल्ट-इन Hunts — 139 क्वेरीज़
 
 श्रेणियाँ DFIR triage प्राथमिकता के अनुसार क्रमबद्ध हैं — पहले डिटेक्शन-टूल छेड़छाड़ की जाँच करें, फिर पहचान दुरुपयोग, फिर डेटा प्रभाव।
 
 | श्रेणी | क्वेरीज़ | कवर किए गए प्रमुख खतरे |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | ऑडिट-सेवा छेड़छाड़ (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP विलोपन · अलार्म दमन · लॉग एक्सफिल्ट्रेशन · रैनसमवेयर किल-चेन सहसंबंध |
+| 🛡 Detection & Response | 14 | ऑडिट-सेवा छेड़छाड़ (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP विलोपन · अलार्म दमन · लॉग एक्सफिल्ट्रेशन · रैनसमवेयर किल-चेन सहसंबंध |
 | 🔑 Identity & Access | 36 | Root उपयोग · console लॉगिन/MFA · विशेषाधिकार वृद्धि · trust policy में बैकडोर · PassRole दुरुपयोग · cross-account AssumeRole · SSO/SAML/OIDC · क्रेडेंशियल गणना · IAM entity विलोपन · AssumeRoot टेकओवर · Cognito user-pool/token दुरुपयोग · Support केस दमन · रोल चेनिंग · सत्र क्रेडेंशियल ट्रेसिंग · GetCallerIdentity टोही · फ़ेडरेटेड कंसोल लॉगिन · Identity Center परमिशन सेट और प्रत्यायोजित व्यवस्थापक · बिना MFA के API कॉल |
-| 🪣 Data & Storage | 30 | S3 बल्क विलोपन/डाउनलोड · secrets बल्क रीड · backup छेड़छाड़ · KMS ops · snapshot साझाकरण · EBS Direct API एक्सफिल्ट्रेशन · DynamoDB export · S3 cross-account replication · SSE-C ransomware एन्क्रिप्शन · lifecycle-ट्रिगर विलोपन · RDS Data API हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · फिरौती नोट रखना · उल्लंघन अधिसूचना हेतु दायरा निर्धारण · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · प्रीसाइन्ड URL निर्माण |
+| 🪣 Data & Storage | 31 | S3 बल्क विलोपन/डाउनलोड · secrets बल्क रीड · backup छेड़छाड़ · KMS ops · snapshot साझाकरण · EBS Direct API एक्सफिल्ट्रेशन · DynamoDB export · S3 cross-account replication · SSE-C ransomware एन्क्रिप्शन · lifecycle-ट्रिगर विलोपन · RDS Data API हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · फिरौती नोट रखना · उल्लंघन अधिसूचना हेतु दायरा निर्धारण · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · प्रीसाइन्ड URL निर्माण |
 | ⚡ Compute & Serverless | 17 | EC2 मास stop/terminate · SSM लेटरल मूवमेंट · Lambda/ECS/EKS/ECR छेड़छाड़ · EventBridge परसिस्टेंस · cryptomining · Lightsail दुरुपयोग · IMDS/SSRF कमजोर करना · AMI/snapshot विलोपन · WorkSpaces हाइजैकिंग |
 | 🤖 AI & LLM Abuse | 10 | Bedrock invocation स्पाइक्स · model access सक्षमकरण · invocation-logging छेड़छाड़ · region-व्यापी recon · विफल invocation बर्स्ट · AgentCore टोकन वॉल्ट · गेटवे प्राधिकरण बायपास · मेमोरी अखंडता · सैंडबॉक्स नेटवर्क मोड परिवर्तन · ऑब्ज़र्वेबिलिटी छेड़छाड़ |
 | 🌐 Network & Infrastructure | 13 | SG इंटरनेट के लिए खुला · VPC flow log विलोपन · CloudFront हाइजैक · गुप्त VPN/TGW टनल · Elastic IP C2 · API Gateway keys · Route 53/domain हाइजैक · DDoS सुरक्षा का कमजोर होना |
-| 🕵 Threat Patterns | 10 | recon बर्स्ट · असामान्य user agents · multi-region प्रसार · पहली-बार API कॉल · पहली बार देखी गई region गतिविधि · कार्यसमय के बाहर गतिविधि · स्वयं विशेषाधिकार वृद्धि · दैनिक मात्रा विचलन · अप्रयुक्त क्षेत्रों में संसाधन निर्माण · उच्च-मात्रा API उपयोग |
+| 🕵 Threat Patterns | 11 | recon बर्स्ट · असामान्य user agents · multi-region प्रसार · पहली-बार API कॉल · पहली बार देखी गई region गतिविधि · कार्यसमय के बाहर गतिविधि · स्वयं विशेषाधिकार वृद्धि · दैनिक मात्रा विचलन · अप्रयुक्त क्षेत्रों में संसाधन निर्माण · उच्च-मात्रा API उपयोग |
 | 📊 Activity & Baseline | 3 | Console राइट इवेंट · error स्पाइक्स · हाल की errors |
 | 🌍 GeoIP Analysis | 2 | country के अनुसार console लॉगिन/denials/राइट्स · दुर्लभ-देश पहुँच |
 | ☁ IaC & Platform | 2 | CI/CD आपूर्ति श्रृंखला · CloudFormation दुरुपयोग |
 
 <details markdown="1">
-<summary>📋 पूरी सूची — सभी 136 क्वेरीज़ (विस्तृत करने के लिए क्लिक करें)</summary>
+<summary>📋 पूरी सूची — सभी 139 क्वेरीज़ (विस्तृत करने के लिए क्लिक करें)</summary>
 
 ## बिल्ट-इन Hunts
 
@@ -38,9 +38,10 @@
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | CW Logs subscription filter निर्माण/विलोपन और log group विलोपन का पता लगाता है। हमलावर logs को बाहरी destination पर स्ट्रीम करते हैं या सबूत को वहीं नष्ट कर देते हैं। |
 | 9 | 🏹 WAF WebACL Changes | timeseries | WAF WebACL निर्माण, अद्यतन, और विलोपन का पता लगाता है। WebACL को हटाना या कमजोर करना SQLi, XSS, और DDoS हमलों के खिलाफ सुरक्षा को निष्क्रिय कर देता है। |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | केवल-पठनीय GuardDuty API कॉल का पता लगाता है। Pacu का guardduty__list_findings मॉड्यूल सक्रिय findings पढ़ता है ताकि यह समझा जा सके कि defender ने पहले से क्या पता लगाया है, जिससे हमलावर अपनी रणनीति अनुकूलित कर सके और नए alerts ट्रिगर करने से बच सके। |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets और Cost Anomaly monitors के विलोपन या संशोधन का पता लगाता है। हमलावर cryptomining या संसाधन-गहन operations छिपाने के लिए budget alerts हटा देते हैं। |
-| 12 | 🚫 Access Denied Errors | bar | AccessDenied errors को identity और API के अनुसार समूहित करता है। शीर्ष अपराधी क्रेडेंशियल दुरुपयोग का संकेत दे सकते हैं। |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | रैनसमवेयर के तीन चरणों — पुनर्प्राप्ति हटाना, सुरक्षा निष्क्रिय करना, डेटा नष्ट या एन्क्रिप्ट करना — को प्रिंसिपल और दिन के अनुसार सहसंबंधित करता है। अकेला हर चरण परिचालन शोर है; तीनों साथ हों तो नहीं। |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | निगरानी स्टैक की स्वयं की केवल-पठन जाँच का पता लगाता है — क्या कोई ट्रेल चल रहा है, क्या GuardDuty चालू है, क्या Config रिकॉर्ड कर रहा है। यह रक्षा-चोरी से पहले का चरण है, और साफ़ लॉग छोड़ने वाला अंतिम चरण। |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets और Cost Anomaly monitors के विलोपन या संशोधन का पता लगाता है। हमलावर cryptomining या संसाधन-गहन operations छिपाने के लिए budget alerts हटा देते हैं। |
+| 13 | 🚫 Access Denied Errors | bar | AccessDenied errors को identity और API के अनुसार समूहित करता है। शीर्ष अपराधी क्रेडेंशियल दुरुपयोग का संकेत दे सकते हैं। |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | रैनसमवेयर के तीन चरणों — पुनर्प्राप्ति हटाना, सुरक्षा निष्क्रिय करना, डेटा नष्ट या एन्क्रिप्ट करना — को प्रिंसिपल और दिन के अनुसार सहसंबंधित करता है। अकेला हर चरण परिचालन शोर है; तीनों साथ हों तो नहीं। |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center प्रबंधन क्रियाओं का पता लगाता है। हमलावर SSO का दुरुपयोग बैकडोर permission sets बनाने या accounts को हमलावर-नियंत्रित users को असाइन करने के लिए करते हैं। |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC identity provider परिवर्तनों का पता लगाता है। हमलावर-नियंत्रित metadata के साथ SAML provider को अद्यतन करने से एक स्थायी प्रमाणीकरण बैकडोर बनता है। |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer के किसी भी उपयोग का पता लगाता है। हमलावर कस्टम recon स्क्रिप्ट लिखे बिना बाहरी रूप से सुलभ संसाधनों की गणना करने के लिए नेटिव AWS analyzer का उपयोग करते हैं। |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | पूरे IAM परिदृश्य को मैप करने वाली IAM गणना गतिविधि का पता लगाता है। प्रारंभिक हमले के चरणों में आम। |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | उस IAM एन्युमरेशन का पता लगाता है जो यह मानचित्रित करता है कि कौन मौजूद है और वे क्या कर सकते हैं। इनका झुंड, विशेषकर AccessDenied के साथ, हमले का आरंभिक चरण है। |
 | 19 | 🗝 Access Key Abuse | bar | 7 दिनों में 3+ अलग source IPs से उपयोग की गई access keys का पता लगाता है। key लीक का मजबूत संकेतक। |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations account निर्माण और प्रत्यायोजित administrator परिवर्तनों का पता लगाता है। हमलावर मुख्य account के बाहर स्थायी पकड़ स्थापित करने के लिए शैडो accounts बनाते हैं। |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | unauthenticated access सक्षम वाले Cognito Identity Pools का पता लगाता है। इससे अनाम users unauthenticated IAM role की permissions के साथ AWS APIs कॉल कर सकते हैं। |
@@ -90,7 +91,7 @@
 | 1 | 💣 S3 Bulk Object Deletion | bar | उच्च-वॉल्यूम DeleteObject/DeleteObjects कॉल (≥50/घंटा) का पता लगाता है। एक्सफिल्ट्रेशन से अलग — यह डेटा विनाश / ransomware पैटर्न है। |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Backup Vault/Plan/RecoveryPoint विलोपन का पता लगाता है। बैकअप को नष्ट करना ransomware हमलों में recovery रोकने का पहला कदम है। |
 | 3 | 🔓 KMS Key Operations | timeseries | key विलोपन और उच्च-वॉल्यूम Decrypt कॉल सहित संवेदनशील KMS संचालन को फ़्लैग करता है। |
-| 4 | 🔓 S3 Public Access Block Disabled | — | S3 public access block सेटिंग्स को disable किए जाने का पता लगाता है। तत्काल डेटा एक्सपोज़र जोखिम। |
+| 4 | 🔓 S3 Public Access Block Disabled | — | S3 सार्वजनिक-पहुँच सुरक्षा के निष्क्रिय किए जाने या पूरी तरह हटा दिए जाने का पता लगाता है। तत्काल डेटा-उजागर जोखिम। |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | S3 bucket policy और ACL संशोधनों का पता लगाता है। ये किसी bucket को सार्वजनिक रूप से पठनीय बना सकते हैं या हमलावर-नियंत्रित accounts को पहुँच प्रदान कर सकते हैं। |
 | 6 | 🪣 S3 Data Access Anomalies | bar | बल्क GetObject कॉल (≥100/घंटा) का पता लगाता है जो डेटा एक्सफिल्ट्रेशन का संकेत दे सकते हैं। |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | secrets (DB passwords, API keys, आदि) के बल्क रिट्रीवल का पता लगाता है। एक घंटे में दस या अधिक GetSecretValue कॉल एक मजबूत क्रेडेंशियल-संग्रह संकेत है। |
@@ -105,18 +106,19 @@
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | PutBucketReplication और DeleteBucketReplication का पता लगाता है। cross-account replication चुपचाप सभी नई objects को हमलावर-नियंत्रित bucket में कॉपी कर देता है। |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | S3 versioning निलंबन और server access logging disable का पता लगाता है। versioning disable करने से डेटा विनाश संभव होता है; logging disable करने से पहुँच साक्ष्य ट्रेल मिट जाता है। |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | SES receipt rule और identity कॉन्फ़िगरेशन परिवर्तनों का पता लगाता है। forwarding rules सभी inbound मेल को हमलावर पतों पर स्वतः रिले कर सकते हैं; verified identities फ़िशिंग अभियानों को सक्षम करती हैं। |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | SQS/SNS queue/topic policy परिवर्तनों का पता लगाता है जो बाहरी accounts को पहुँच प्रदान करते हैं। उच्च-वॉल्यूम भेजने के अलर्ट को ट्रिगर किए बिना एक मौन एक्सफिल्ट्रेशन चैनल बनाता है। |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | सार्वजनिक रूप से साझा किए गए EBS snapshots या AMIs (group=all) का पता लगाता है। किसी को भी आपकी disk images कॉपी करने और डेटा निकालने की अनुमति देता है। |
-| 21 | 📧 Data Exfiltration Channels | bar | उच्च-वॉल्यूम SNS/SQS/SES/S3 PutObject कॉल (≥50/घंटा) का पता लगाता है जो एक्सफिल्ट्रेशन का संकेत दे सकते हैं। |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | हमलावर-प्रदत्त SSE-C keys के साथ पुनः-एन्क्रिप्ट की गई S3 objects, साथ ही bucket default-encryption परिवर्तनों का पता लगाता है। customer key के बिना पीड़ित decrypt नहीं कर सकता — एक cloud-native ransomware पैटर्न। |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | S3 lifecycle rules का पता लगाता है जो objects को expire करते हैं, साथ ही lifecycle-config विलोपन। हमलावर DeleteObject कॉल जारी किए बिना समय के साथ चुपचाप डेटा हटाने के लिए एक छोटी expiration सेट करते हैं। |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API queries, master-password resets, और snapshot restores का पता लगाता है। हमलावर सीधे डेटा पढ़ते हैं, पहुँच प्राप्त करने के लिए क्रेडेंशियल रीसेट करते हैं, या snapshots को उनके नियंत्रित instances में restore करते हैं। |
-| 25 | 🔎 S3 Bucket Enumeration | bar | उन callers का पता लगाता है जो bucket और object metadata को खंगालते हैं (एक घंटे में ≥10 List/GetBucket* reads)। एक्सफिल्ट्रेशन से पहले मूल्यवान डेटा का पता लगाने का एक सामान्य प्रारंभिक चरण। |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | एक स्पष्ट KMS key के साथ पुनः-एन्क्रिप्ट किए गए EBS/RDS snapshots और volumes, साथ ही default EBS encryption को disable करने का पता लगाता है। हमलावर-नियंत्रित key के साथ पुनः-एन्क्रिप्शन डेटा को फिरौती के लिए रोकता है। |
-| 27 | 📝 Ransom Note Placement | timeseries | उन PutObject कॉल का पता लगाता है जिनकी ऑब्जेक्ट कुंजी फिरौती नोट जैसी दिखती है। अन्य रैनसमवेयर हंट के विपरीत यह प्रभाव का संकेत नहीं, पुष्टि करता है — नोट का अर्थ है कि भुगतान की माँग पहले ही की जा चुकी है। |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | मापता है कि प्रत्येक प्रिंसिपल ने प्रतिदिन क्या पढ़ा: छुए गए बकेट और अनुमानित विशिष्ट ऑब्जेक्ट संख्या। यह GDPR अनुच्छेद 33 द्वारा अपेक्षित «रिकॉर्ड की अनुमानित संख्या» देता है। |
-| 29 | 📤 Cross-Account Object Copy | timeseries | बकेट के बीच कॉपी किए गए ऑब्जेक्ट का पता लगाता है, जिसमें x-amz-copy-source हेडर वाले PutObject कॉल भी शामिल हैं। जिस खाते पर आपका नियंत्रण नहीं, वहाँ डेटा रखने से केवल यही निशान बचता है। |
-| 30 | 🔗 Presigned URL Generation | bar | प्रति प्रिंसिपल प्रीसाइन्ड URL निर्माण गिनता है। प्रीसाइन्ड URL लिंक रखने वाले किसी को भी डेटा सौंप देता है — बिना किसी और प्रमाणीकरण और बिना किसी और CloudTrail रिकॉर्ड के। |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | उस तैयारी का पता लगाता है जो स्पैम को लाभदायक बनाती है — SMS व्यय सीमा बढ़ाना, SES प्रेषण पुनः सक्षम करना, बल्क भेजने वाले API का उपयोग। ये सभी एकल, कम-मात्रा कॉल हैं जिन तक प्रति-घंटा सीमा कभी नहीं पहुँच सकती। |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | SQS/SNS queue/topic policy परिवर्तनों का पता लगाता है जो बाहरी accounts को पहुँच प्रदान करते हैं। उच्च-वॉल्यूम भेजने के अलर्ट को ट्रिगर किए बिना एक मौन एक्सफिल्ट्रेशन चैनल बनाता है। |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | सार्वजनिक रूप से साझा किए गए EBS snapshots या AMIs (group=all) का पता लगाता है। किसी को भी आपकी disk images कॉपी करने और डेटा निकालने की अनुमति देता है। |
+| 22 | 📧 Data Exfiltration Channels | bar | उच्च-वॉल्यूम SNS/SQS/SES/S3 PutObject कॉल (≥50/घंटा) का पता लगाता है जो एक्सफिल्ट्रेशन का संकेत दे सकते हैं। |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | हमलावर-प्रदत्त SSE-C keys के साथ पुनः-एन्क्रिप्ट की गई S3 objects, साथ ही bucket default-encryption परिवर्तनों का पता लगाता है। customer key के बिना पीड़ित decrypt नहीं कर सकता — एक cloud-native ransomware पैटर्न। |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | S3 lifecycle rules का पता लगाता है जो objects को expire करते हैं, साथ ही lifecycle-config विलोपन। हमलावर DeleteObject कॉल जारी किए बिना समय के साथ चुपचाप डेटा हटाने के लिए एक छोटी expiration सेट करते हैं। |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API queries, master-password resets, और snapshot restores का पता लगाता है। हमलावर सीधे डेटा पढ़ते हैं, पहुँच प्राप्त करने के लिए क्रेडेंशियल रीसेट करते हैं, या snapshots को उनके नियंत्रित instances में restore करते हैं। |
+| 26 | 🔎 S3 Bucket Enumeration | bar | उन callers का पता लगाता है जो bucket और object metadata को खंगालते हैं (एक घंटे में ≥10 List/GetBucket* reads)। एक्सफिल्ट्रेशन से पहले मूल्यवान डेटा का पता लगाने का एक सामान्य प्रारंभिक चरण। |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | एक स्पष्ट KMS key के साथ पुनः-एन्क्रिप्ट किए गए EBS/RDS snapshots और volumes, साथ ही default EBS encryption को disable करने का पता लगाता है। हमलावर-नियंत्रित key के साथ पुनः-एन्क्रिप्शन डेटा को फिरौती के लिए रोकता है। |
+| 28 | 📝 Ransom Note Placement | timeseries | उन PutObject कॉल का पता लगाता है जिनकी ऑब्जेक्ट कुंजी फिरौती नोट जैसी दिखती है। अन्य रैनसमवेयर हंट के विपरीत यह प्रभाव का संकेत नहीं, पुष्टि करता है — नोट का अर्थ है कि भुगतान की माँग पहले ही की जा चुकी है। |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | मापता है कि प्रत्येक प्रिंसिपल ने प्रतिदिन क्या पढ़ा: छुए गए बकेट और अनुमानित विशिष्ट ऑब्जेक्ट संख्या। यह GDPR अनुच्छेद 33 द्वारा अपेक्षित «रिकॉर्ड की अनुमानित संख्या» देता है। |
+| 30 | 📤 Cross-Account Object Copy | timeseries | बकेट के बीच कॉपी किए गए ऑब्जेक्ट का पता लगाता है, जिसमें x-amz-copy-source हेडर वाले PutObject कॉल भी शामिल हैं। जिस खाते पर आपका नियंत्रण नहीं, वहाँ डेटा रखने से केवल यही निशान बचता है। |
+| 31 | 🔗 Presigned URL Generation | bar | प्रति प्रिंसिपल प्रीसाइन्ड URL निर्माण गिनता है। प्रीसाइन्ड URL लिंक रखने वाले किसी को भी डेटा सौंप देता है — बिना किसी और प्रमाणीकरण और बिना किसी और CloudTrail रिकॉर्ड के। |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@
 | 1 | 🔍 Reconnaissance Pattern | bar | उन callers की पहचान करता है जिन्होंने एक घंटे में 10+ अलग केवल-पठनीय API कॉल चलाईं। सामान्य प्रारंभिक हमला चरण। |
 | 2 | 🤖 Unusual User Agents | bar | दुर्लभ user agents (<5 इवेंट) को सूचीबद्ध करता है। Pacu या curl जैसे कस्टम टूलिंग हमलावर टूलिंग का संकेत दे सकते हैं। |
 | 3 | 🌍 Multi-Region Activity | bar | एक दिन में 3+ regions में राइट्स करने वाली identities का पता लगाता है। भौगोलिक प्रसार समझौते का संकेत दे सकता है। |
-| 4 | 🕵 First-Time API Calls (24h) | — | पिछले 24h में देखी गई लेकिन पहले कभी नहीं देखी गई API कॉल खोजता है। नवीन संचालन हमलावर टूलिंग का संकेत दे सकते हैं। |
-| 5 | 🗺 First-Seen Region Activity | bar | उन AWS regions को खोजता है जिनकी पहली-कभी गतिविधि dataset के अंतिम 24h में आती है। कभी उपयोग न की गई region में संचालन करना region-आधारित निगरानी से cryptomining या staging छिपाने का एक क्लासिक तरीका है। |
-| 6 | 🌙 Off-Hours Activity | bar | विन्यास-योग्य कार्यसमय-बाह्य विंडो में गतिविधि को प्रिंसिपल और दिन के घंटे के अनुसार समूहित करता है। यह आंतरिक खतरा प्लेबुक का पहला संकेतक है, जिसे कोई अन्य हंट कवर नहीं करता। |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | किसी प्रिंसिपल द्वारा अपनी ही अनुमतियाँ बदलने का पता लगाता है — कॉल करने वाला ARN और लक्ष्य उपयोगकर्ता या रोल नाम समान होते हैं। मौजूदा वृद्धि हंट अनुदान तो देखते हैं पर यह चूक जाते हैं कि वह स्वयं पर लागू था। |
-| 8 | 📈 Principal Daily Volume Deviation | bar | प्रत्येक प्रिंसिपल की दैनिक कॉल मात्रा की तुलना उसके अपने औसत से करता है, पठन और लेखन को अलग करते हुए। यह उस निष्कासन को पकड़ता है जो केवल अनुमत API उपयोग करता है, जहाँ विसंगति क्रिया नहीं मात्रा है। |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | उन क्षेत्रों में संसाधन निर्माण को चिह्नित करता है जिनका खाता शायद ही उपयोग करता है, जहाँ आधाररेखा हार्डकोड के बजाय डेटा से ली जाती है। क्रिप्टोमाइनिंग और निजी परियोजनाएँ दोनों यहीं दिखती हैं। |
-| 10 | 📞 High-Volume API Calls per Principal | bar | 50 से अधिक सफल कॉल वाले प्रिंसिपल-API युग्मों को पहली और अंतिम कॉल सहित सूचीबद्ध करता है। गणना, थोक निष्कर्षण और थोक विलोपन — तीनों का यही आकार है। |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | एक ही प्रिंसिपल द्वारा एक ही API को एक घंटे में कई क्षेत्रों में दोहराने को चिह्नित करता है। स्क्रिप्टेड स्वीप का हस्ताक्षर, जो अन्य क्षेत्रीय हंट्स को दिखाई नहीं देता। |
+| 5 | 🕵 First-Time API Calls (24h) | — | पिछले 24h में देखी गई लेकिन पहले कभी नहीं देखी गई API कॉल खोजता है। नवीन संचालन हमलावर टूलिंग का संकेत दे सकते हैं। |
+| 6 | 🗺 First-Seen Region Activity | bar | उन AWS regions को खोजता है जिनकी पहली-कभी गतिविधि dataset के अंतिम 24h में आती है। कभी उपयोग न की गई region में संचालन करना region-आधारित निगरानी से cryptomining या staging छिपाने का एक क्लासिक तरीका है। |
+| 7 | 🌙 Off-Hours Activity | bar | विन्यास-योग्य कार्यसमय-बाह्य विंडो में गतिविधि को प्रिंसिपल और दिन के घंटे के अनुसार समूहित करता है। यह आंतरिक खतरा प्लेबुक का पहला संकेतक है, जिसे कोई अन्य हंट कवर नहीं करता। |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | किसी प्रिंसिपल द्वारा अपनी ही अनुमतियाँ बदलने का पता लगाता है — कॉल करने वाला ARN और लक्ष्य उपयोगकर्ता या रोल नाम समान होते हैं। मौजूदा वृद्धि हंट अनुदान तो देखते हैं पर यह चूक जाते हैं कि वह स्वयं पर लागू था। |
+| 9 | 📈 Principal Daily Volume Deviation | bar | प्रत्येक प्रिंसिपल की दैनिक कॉल मात्रा की तुलना उसके अपने औसत से करता है, पठन और लेखन को अलग करते हुए। यह उस निष्कासन को पकड़ता है जो केवल अनुमत API उपयोग करता है, जहाँ विसंगति क्रिया नहीं मात्रा है। |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | उन क्षेत्रों में संसाधन निर्माण को चिह्नित करता है जिनका खाता शायद ही उपयोग करता है, जहाँ आधाररेखा हार्डकोड के बजाय डेटा से ली जाती है। क्रिप्टोमाइनिंग और निजी परियोजनाएँ दोनों यहीं दिखती हैं। |
+| 11 | 📞 High-Volume API Calls per Principal | bar | 50 से अधिक सफल कॉल वाले प्रिंसिपल-API युग्मों को पहली और अंतिम कॉल सहित सूचीबद्ध करता है। गणना, थोक निष्कर्षण और थोक विलोपन — तीनों का यही आकार है। |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@
 
 ---
 
-## 📊 डैशबोर्ड चार्ट — 115 चार्ट
+## 📊 डैशबोर्ड चार्ट — 118 चार्ट
 
 | टैब | चार्ट | यह क्या दिखाता है |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 triage KPI cards (इवेंट, principals, IPs, root, MFA-रहित logins, access denied, defense evasion, countries, regions) + वैश्विक इवेंट-वॉल्यूम रुझान |
-| 🎯 Threat Detection | 14 | defense-evasion कैच-ऑल · logging gaps · VPC flow log/Config/EventBridge/WAF छेड़छाड़ · SCP/org-membership परिवर्तन · error और throttling रुझान · write/read अनुपात · P1/P2 वृद्धि ट्रिगर KPI कार्ड |
+| 🎯 Threat Detection | 16 | defense-evasion कैच-ऑल · logging gaps · VPC flow log/Config/EventBridge/WAF छेड़छाड़ · SCP/org-membership परिवर्तन · error और throttling रुझान · write/read अनुपात · P1/P2 वृद्धि ट्रिगर KPI कार्ड |
 | 🔑 Identity & Access | 36 | console logins · MFA रुझान · login heatmap · failed→success auth अनुक्रम · root उपयोग · IAM entity गतिविधि/विलोपन · privilege-escalation timeline · नए principals · SSO · cross-account AssumeRole · AssumeRoot उपयोग |
 | 🚨 High-Risk API Monitor | 5 | सुरक्षा-सेवा छेड़छाड़ & credential-retrieval API लॉग · शीर्ष high-risk calls · शीर्ष actors · समय के साथ high-risk call वॉल्यूम |
 | 📊 API Activity | 6 | शीर्ष APIs · access-denied actions · region वितरण · error-code संरचना · source IPs · user agents |
-| 🪣 S3 & RDS | 18 | S3 बल्क download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault विलोपन · KMS key विलोपन · RDS snapshot share / snapshot के बिना विलोपन · SSE-C ransomware एन्क्रिप्शन · lifecycle-triggered विलोपन · RDS query/instance हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · उल्लंघन अधिसूचना हेतु पहुँच दायरा · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · फिरौती नोट रखना |
+| 🪣 S3 & RDS | 19 | S3 बल्क download/deletion · versioning/logging disabled · cross-account replication · bucket policy/ACL · enumeration · protection config · Backup vault विलोपन · KMS key विलोपन · RDS snapshot share / snapshot के बिना विलोपन · SSE-C ransomware एन्क्रिप्शन · lifecycle-triggered विलोपन · RDS query/instance हेरफेर · प्रभाव के लिए storage पुनः-एन्क्रिप्शन · उल्लंघन अधिसूचना हेतु पहुँच दायरा · क्रॉस-अकाउंट ऑब्जेक्ट कॉपी · फिरौती नोट रखना |
 | 🖥️ Computing | 17 | EC2 launches/mass-stop/key pairs/instance profile/user-data/snapshot sharing/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS कमजोर करना · AMI/snapshot विलोपन · WorkSpaces हाइजैकिंग |
 | 🤖 AI / LLM | 6 | Bedrock invocation रुझान · model access & logging परिवर्तन · विफल invocations · origin द्वारा callers (LLMjacking triage) · AgentCore टोकन जारी करना · गेटवे और नीति परिवर्तन |
 | 🌐 Network | 5 | security group परिवर्तन · NACL/route table परिवर्तन · VPC अवसंरचना · VPC peering/Transit Gateway · Route53 DNS परिवर्तन |
@@ -231,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | impossible travel (multi-country principals) · शीर्ष countries/cities/ASNs · विश्व मानचित्र · event_name × country |
 
 <details markdown="1">
-<summary>📋 पूरी सूची — सभी 115 चार्ट (विस्तृत करने के लिए क्लिक करें)</summary>
+<summary>📋 पूरी सूची — सभी 118 चार्ट (विस्तृत करने के लिए क्लिक करें)</summary>
 
 ## डैशबोर्ड चार्ट (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@
 | 12 | Organization Membership Changes | Organizations membership परिवर्तन जो accounts को guardrails से अलग करते हैं या उन्हें हमलावर-नियंत्रित organization के तहत ले जाते हैं। Threat Technique Catalog for AWS: T1666.A002 / T1666.A003। |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE के उन वृद्धि ट्रिगर से मेल खाती घटनाएँ जिनमें 15 मिनट के भीतर प्रतिक्रिया आवश्यक है: root उपयोग, लॉगिंग या पहचान से छेड़छाड़, फिरौती नोट, प्रत्यायोजित व्यवस्थापक पंजीकरण। शून्य से भिन्न का अर्थ है घड़ी शुरू। |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE की उन शर्तों से मेल खाती घटनाएँ जिनमें एक घंटे में प्रतिक्रिया चाहिए: क्रेडेंशियल निर्माण, विशेषाधिकार अनुदान, ट्रस्ट नीति संपादन और क्रॉस-अकाउंट रोल ग्रहण। इसे P1 कार्ड के साथ पढ़ें। |
+| 15 | Security Monitoring Posture Recon | वे कॉल जो पूछती हैं कि खाता देखा जा रहा है या नहीं (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders। यहाँ टोह लेने के बाद उसी प्रिंसिपल द्वारा DSH-22 में छेड़छाड़ — यही वह क्रम है जिसे एस्केलेट करना चाहिए। Threat Technique Catalog for AWS: T1087, T1562.008। |
+| 16 | Single-API Multi-Region Fan-Out | वे प्रिंसिपल जो एक ही API नाम को 3+ क्षेत्रों में कॉल करते हैं (DSH-117)। यह Region Activity का पठन-सहित समकक्ष है, जो केवल लेखन गिनता है; वैश्विक सेवाएँ बाहर रखी गई हैं। Threat Technique Catalog for AWS: T1535। |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | प्रति प्रिंसिपल: S3 पठन कॉल, विशिष्ट बकेट और अनुमानित विशिष्ट ऑब्जेक्ट। GDPR अनुच्छेद 33 द्वारा अपेक्षित आँकड़ा देता है। बकेट पर CloudTrail डेटा इवेंट आवश्यक हैं। |
 | 17 | Cross-Account Object Copy | S3 CopyObject कॉल और x-amz-copy-source हेडर वाले PutObject कॉल, स्रोत और गंतव्य सहित। प्रतिकृति चार्ट विन्यास को कवर करते हैं; यह व्यक्तिगत प्रतियों को। |
 | 18 | Ransom Note Placement | वे PutObject कॉल जिनकी ऑब्जेक्ट कुंजी फिरौती नोट जैसी दिखती है। अन्य रैनसमवेयर पैनल के विपरीत यह प्रभाव की पुष्टि करता है — यहाँ कोई भी पंक्ति P1 है। |
+| 19 | SES / SNS Sending Quota Abuse | प्रेषण कोटा और बल्क-भेजने की घटनाएँ (DSH-118): MonthlySpendLimit बढ़ाने वाला SetSMSAttributes, SES को पुनः सक्रिय करने वाला UpdateAccountSendingEnabled, SendRawEmail / SendBulkTemplatedEmail। हर एक अकेली कॉल है, इसलिए मात्रा-आधारित सीमाएँ इन तक कभी नहीं पहुँचतीं। Threat Technique Catalog for AWS: T1496.003, T1496.A001। |
 
 ### 🖥️ Computing
 

@@ -2,7 +2,9 @@
 # Count of audit/monitoring tampering events (CloudTrail/GuardDuty/Config/Flow
 # Log/SecurityHub disabling). The single highest-priority triage number — any
 # non-zero value means detection capability may have been degraded.
-# Event list mirrors the Security Monitoring & Control Changes chart (DSH-22).
+# Event list mirrors the Security Monitoring & Control Changes chart (DSH-22),
+# except that UpdateDetector counts only when it disables the detector
+# (enable=false) — a re-enable must not inflate the triage number.
 # MITRE ATT&CK: TA0005 Defense Evasion
 uuid: 87a1b2c3-d4e5-6f70-8123-456789000087
 version: 1.0.0
@@ -21,11 +23,18 @@ params:
     sqlExpression: >-
       COUNT(*) FILTER (
         WHERE event_name IN (
-          'StopLogging', 'DeleteTrail', 'UpdateTrail', 'PutEventSelectors',
-          'DisableDetector', 'DeleteDetector', 'DeletePublishingDestination',
+          'StopLogging', 'DeleteTrail', 'UpdateTrail',
+          'PutEventSelectors', 'PutInsightSelectors',
+          'DeleteDetector', 'DeletePublishingDestination',
+          'CreateFilter', 'UpdateFilter',
           'DeleteConfigRule', 'StopConfigurationRecorder', 'DeleteDeliveryChannel',
           'DeleteFlowLogs', 'DeleteLogGroup', 'DeleteLogStream',
+          'PutRetentionPolicy',
           'DisableSecurityHub', 'DeleteAnalyzer'
+        )
+        OR (
+          event_name = 'UpdateDetector'
+          AND request_parameters LIKE '%"enable":false%'
         )
       )
     label: defense_evasion_hits
@@ -39,5 +48,7 @@ params:
   y_axis_format: SMART_NUMBER
 cache_timeout: null
 
-# SQL: SELECT COUNT(*) FILTER (WHERE event_name IN ( ...15 tampering APIs... ))
+# SQL: SELECT COUNT(*) FILTER (WHERE event_name IN ( ...18 tampering APIs... )
+#                                OR (event_name = 'UpdateDetector'
+#                                    AND request_parameters LIKE '%"enable":false%'))
 #      FROM cloudtrail_events

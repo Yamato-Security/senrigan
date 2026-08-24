@@ -1,6 +1,8 @@
 # PB-06: P1 Escalation Triggers (Triage KPI card)
 # The upstream TRIAGE_GUIDE escalates these regardless of the initial
 # assessment, so the card counts them directly rather than scoring severity.
+# UpdateDetector with enable=false is counted alongside DeleteDetector: the
+# guide lists the deletion, and disabling ends GuardDuty the same way.
 # Playbook: TRIAGE_GUIDE
 uuid: c1a10006-0000-4000-8000-0000000c1a06
 version: 1.0.0
@@ -24,6 +26,10 @@ params:
               'DisableSecurityHub', 'StopConfigurationRecorder',
               'DeleteBackupVault', 'ScheduleKeyDeletion',
               'RegisterDelegatedAdministrator', 'AssumeRoot'
+           )
+           OR (
+              event_name = 'UpdateDetector'
+              AND request_parameters LIKE '%"enable":false%'
            )
       )
     label: p1_triggers

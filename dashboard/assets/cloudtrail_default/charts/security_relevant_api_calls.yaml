@@ -67,7 +67,7 @@ params:
           'RunInstances', 'CreateFunction',
           'CreateBucket', 'DeleteBucket',
           'DeactivateMFADevice', 'DeleteVirtualMFADevice',
-          'DisableDetector', 'DeleteDetector',
+          'UpdateDetector', 'DeleteDetector',
           'DeleteConfigRule', 'StopConfigurationRecorder',
           'DisableSecurityHub', 'DeleteAnalyzer',
           'GetSecretValue', 'GetParameter', 'GetParametersByPath',

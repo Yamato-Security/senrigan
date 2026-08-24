@@ -2,25 +2,25 @@
 
 > 💡 SQL や AWS の深い知識は不要 — ドロップダウンからハントを選択するだけで即座に結果が得られます。
 
-## 🎯 組み込みハント — 136 クエリ
+## 🎯 組み込みハント — 139 クエリ
 
 カテゴリは DFIR トリアージの優先度順に並んでいます — まず検知ツールの改ざんを確認し、次に ID 悪用、その後にデータへの影響を確認します。
 
 | カテゴリ | クエリ数 | カバーする主な脅威 |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | 監査サービスの改ざん (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 削除 · アラーム抑制 · ログの持ち出し · ランサムウェアのキルチェーン相関 |
+| 🛡 Detection & Response | 14 | 監査サービスの改ざん (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · SCP 削除 · アラーム抑制 · ログの持ち出し · ランサムウェアのキルチェーン相関 |
 | 🔑 Identity & Access | 36 | root の使用 · コンソールログイン/MFA · 権限昇格 · 信頼ポリシーのバックドア · PassRole 悪用 · クロスアカウント AssumeRole · SSO/SAML/OIDC · 認証情報の列挙 · IAM エンティティ削除 · AssumeRoot 乗っ取り · Cognito ユーザープール/トークン悪用 · サポートケース抑制 · ロールチェーン · セッション認証情報の追跡 · GetCallerIdentity 偵察 · フェデレーテッドコンソールログイン · Identity Center の権限セットと委任管理者 · MFA なしの API 呼び出し |
-| 🪣 Data & Storage | 30 | S3 一括削除/ダウンロード · シークレットの一括読み取り · バックアップ改ざん · KMS 操作 · スナップショット共有 · EBS Direct API 持ち出し · DynamoDB エクスポート · S3 クロスアカウントレプリケーション · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS Data API 操作 · 影響のためのストレージ再暗号化 · 身代金要求ファイルの設置 · 侵害通知のための範囲特定 · クロスアカウントのオブジェクトコピー · 署名付き URL の生成 |
+| 🪣 Data & Storage | 31 | S3 一括削除/ダウンロード · シークレットの一括読み取り · バックアップ改ざん · KMS 操作 · スナップショット共有 · EBS Direct API 持ち出し · DynamoDB エクスポート · S3 クロスアカウントレプリケーション · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS Data API 操作 · 影響のためのストレージ再暗号化 · 身代金要求ファイルの設置 · 侵害通知のための範囲特定 · クロスアカウントのオブジェクトコピー · 署名付き URL の生成 |
 | ⚡ Compute & Serverless | 17 | EC2 大量停止/終了 · SSM 横展開 · Lambda/ECS/EKS/ECR 改ざん · EventBridge 永続化 · クリプトマイニング · Lightsail 悪用 · IMDS/SSRF 弱体化 · AMI/スナップショット削除 · WorkSpaces ハイジャック |
 | 🤖 AI & LLM Abuse | 10 | Bedrock 呼び出しの急増 · モデルアクセスの有効化 · 呼び出しログの改ざん · リージョン横断偵察 · 失敗呼び出しのバースト · AgentCore トークンボールト · ゲートウェイ認可バイパス · メモリ完全性 · サンドボックスのネットワークモード変更 · 可観測性の改ざん |
 | 🌐 Network & Infrastructure | 13 | SG のインターネット公開 · VPC フローログ削除 · CloudFront ハイジャック · 秘匿 VPN/TGW トンネル · Elastic IP C2 · API Gateway キー · Route 53/ドメインハイジャック · DDoS 防御の弱体化 |
-| 🕵 Threat Patterns | 10 | 偵察バースト · 異常なユーザーエージェント · マルチリージョン拡散 · 初回 API 呼び出し · 初検出リージョンアクティビティ · 業務時間外の活動 · 自己権限昇格 · 日次ボリュームの乖離 · 未使用リージョンでのリソース作成 · 大量 API 呼び出し |
+| 🕵 Threat Patterns | 11 | 偵察バースト · 異常なユーザーエージェント · マルチリージョン拡散 · 初回 API 呼び出し · 初検出リージョンアクティビティ · 業務時間外の活動 · 自己権限昇格 · 日次ボリュームの乖離 · 未使用リージョンでのリソース作成 · 大量 API 呼び出し |
 | 📊 Activity & Baseline | 3 | コンソール書き込みイベント · エラー急増 · 直近のエラー |
 | 🌍 GeoIP Analysis | 2 | 国別のコンソールログイン/拒否/書き込み · まれな国からのアクセス |
 | ☁ IaC & Platform | 2 | CI/CD サプライチェーン · CloudFormation 悪用 |
 
 <details markdown="1">
-<summary>📋 全リスト — 全 136 クエリ (クリックで展開)</summary>
+<summary>📋 全リスト — 全 139 クエリ (クリックで展開)</summary>
 
 ## 組み込みハント
 
@@ -38,9 +38,10 @@
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | CW Logs サブスクリプションフィルターの作成/削除とロググループの削除を検知します。攻撃者はログを外部の宛先にストリーミングするか、その場で証拠を破棄します。 |
 | 9 | 🏹 WAF WebACL Changes | timeseries | WAF WebACL の作成、更新、削除を検知します。WebACL の削除や弱体化は、SQLi、XSS、DDoS 攻撃に対する防御を無効化します。 |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | 読み取り専用の GuardDuty API 呼び出しを検知します。Pacu の guardduty__list_findings モジュールはアクティブな検出結果を読み取り、防御側がすでに何を検知したかを把握することで、攻撃者が戦術を適応させ新たなアラートのトリガーを回避できるようにします。 |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets および Cost Anomaly モニターの削除や変更を検知します。攻撃者はクリプトマイニングやリソース集約的な操作を隠すために予算アラートを削除します。 |
-| 12 | 🚫 Access Denied Errors | bar | AccessDenied エラーを ID と API ごとにグループ化します。上位の違反者は認証情報の悪用を示す可能性があります。 |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | ランサムウェアの 3 段階 — 復旧手段の削除、保護の無効化、データの破壊または暗号化 — をプリンシパルと日付ごとに相関させます。各段階単体は運用ノイズに見えますが、3 つ揃えば違います。 |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | 監視スタック自体を読み取りで探る動きを検知します — 証跡は動いているか、GuardDuty は有効か、Config は記録中か。防御回避の直前の段階であり、きれいなログが残る最後の機会です。 |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | AWS Budgets および Cost Anomaly モニターの削除や変更を検知します。攻撃者はクリプトマイニングやリソース集約的な操作を隠すために予算アラートを削除します。 |
+| 13 | 🚫 Access Denied Errors | bar | AccessDenied エラーを ID と API ごとにグループ化します。上位の違反者は認証情報の悪用を示す可能性があります。 |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | ランサムウェアの 3 段階 — 復旧手段の削除、保護の無効化、データの破壊または暗号化 — をプリンシパルと日付ごとに相関させます。各段階単体は運用ノイズに見えますが、3 つ揃えば違います。 |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | AWS IAM Identity Center の管理アクションを検知します。攻撃者は SSO を悪用してバックドアの権限セットを作成したり、攻撃者が制御するユーザーにアカウントを割り当てたりします。 |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | SAML/OIDC ID プロバイダーの変更を検知します。攻撃者が制御するメタデータで SAML プロバイダーを更新すると、永続的な認証バックドアが作られます。 |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | IAM Access Analyzer のあらゆる使用を検知します。攻撃者はネイティブの AWS アナライザーを利用して、カスタムの偵察スクリプトを書かずに外部からアクセス可能なリソースを列挙します。 |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | IAM の全体像をマッピングする IAM 列挙アクティビティを検知します。攻撃初期段階でよく見られます。 |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | 誰が存在し、何ができるのかをマッピングする IAM 列挙を検知します。これらが短時間に集中する、とりわけ AccessDenied を伴う場合は攻撃の初期段階です。 |
 | 19 | 🗝 Access Key Abuse | bar | 7 日間に 3 つ以上の異なるソース IP から使用されたアクセスキーを検知します。キー漏洩の強い指標です。 |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Organizations のアカウント作成と委任管理者の変更を検知します。攻撃者はメインアカウントの外に永続的な足場を築くためにシャドーアカウントを作成します。 |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | 未認証アクセスが有効になっている Cognito ID プールを検知します。匿名ユーザーが未認証 IAM ロールの権限で AWS API を呼び出せるようになります。 |
@@ -90,7 +91,7 @@
 | 1 | 💣 S3 Bulk Object Deletion | bar | 高頻度の DeleteObject/DeleteObjects 呼び出し (1 時間あたり 50 回以上) を検知します。持ち出しとは異なる — データ破壊 / ランサムウェアのパターンです。 |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Backup Vault/Plan/RecoveryPoint の削除を検知します。バックアップの破壊はランサムウェア攻撃の最初のステップで、復旧を防ぎます。 |
 | 3 | 🔓 KMS Key Operations | timeseries | キー削除や大量の Decrypt 呼び出しを含む機微な KMS 操作にフラグを立てます。 |
-| 4 | 🔓 S3 Public Access Block Disabled | — | S3 パブリックアクセスブロック設定が無効化されるのを検知します。即座のデータ露出リスクです。 |
+| 4 | 🔓 S3 Public Access Block Disabled | — | S3 のパブリックアクセス保護が無効化される、あるいは丸ごと削除されるのを検知します。即座のデータ露出リスクです。 |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | S3 バケットポリシーと ACL の変更を検知します。バケットを公開読み取り可能にしたり、攻撃者が制御するアカウントにアクセス権を付与したりする可能性があります。 |
 | 6 | 🪣 S3 Data Access Anomalies | bar | データ持ち出しを示す可能性のある大量の GetObject 呼び出し (1 時間あたり 100 回以上) を検知します。 |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | シークレット (DB パスワード、API キーなど) の一括取得を検知します。1 時間に 10 回以上の GetSecretValue 呼び出しは、認証情報収集の強いシグナルです。 |
@@ -105,18 +106,19 @@
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | PutBucketReplication と DeleteBucketReplication を検知します。クロスアカウントレプリケーションは、新規オブジェクトすべてを攻撃者が制御するバケットに密かにコピーします。 |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | S3 バージョニングの停止とサーバーアクセスログの無効化を検知します。バージョニングの無効化はデータ破壊を可能にし、ログの無効化はアクセス証跡を消去します。 |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | SES 受信ルールと ID 設定の変更を検知します。転送ルールはすべての受信メールを攻撃者アドレスに自動中継でき、検証済み ID はフィッシングキャンペーンを可能にします。 |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 外部アカウントへのアクセスを許可する SQS/SNS のキュー/トピックポリシー変更を検知します。大量送信アラートを発生させずに密かな持ち出し経路を作ります。 |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 公開共有された (group=all) EBS スナップショットまたは AMI を検知します。誰でもディスクイメージをコピーしてデータを抽出できるようになります。 |
-| 21 | 📧 Data Exfiltration Channels | bar | 持ち出しを示す可能性のある大量の SNS/SQS/SES/S3 PutObject 呼び出し (1 時間あたり 50 回以上) を検知します。 |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 攻撃者が提供した SSE-C キーで再暗号化された S3 オブジェクトと、バケットのデフォルト暗号化設定の変更を検知します。顧客キーがなければ被害者は復号できません — クラウドネイティブなランサムウェアのパターンです。 |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | オブジェクトを期限切れにする S3 ライフサイクルルールと、ライフサイクル設定の削除を検知します。攻撃者は短い有効期限を設定することで、DeleteObject 呼び出しを発行せずに時間をかけてデータを密かに消去します。 |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API のクエリ、マスターパスワードのリセット、スナップショットの復元を検知します。攻撃者はデータを直接読み取ったり、アクセスを得るために認証情報をリセットしたり、スナップショットを自分が制御するインスタンスに復元したりします。 |
-| 25 | 🔎 S3 Bucket Enumeration | bar | バケットとオブジェクトのメタデータを走査する呼び出し元を検知します (1 時間に 10 回以上の List/GetBucket* 読み取り)。持ち出し前に価値あるデータの場所を特定する一般的な初期ステップです。 |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | 明示的な KMS キーで再暗号化された EBS/RDS スナップショットとボリューム、およびデフォルトの EBS 暗号化の無効化を検知します。攻撃者が保有するキーで再暗号化することで、データを人質に取ります。 |
-| 27 | 📝 Ransom Note Placement | timeseries | オブジェクトキーが身代金要求ファイルに見える PutObject 呼び出しを検出します。他のランサムウェアハントと異なり、示唆ではなく被害を確定させます — ノートがあるということは、攻撃者は既に支払いを要求しています。 |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | 各プリンシパルが 1 日に何を読んだか — 触れたバケット数と概算のオブジェクト数 — を定量化します。GDPR 第 33 条の通知が求める「おおよそのレコード件数」を算出します。 |
-| 29 | 📤 Cross-Account Object Copy | timeseries | バケット間でコピーされたオブジェクトを、x-amz-copy-source ヘッダーを伴う PutObject を含めて検出します。自分の管理下にないアカウントへデータを退避させる操作は、この痕跡しか残しません。 |
-| 30 | 🔗 Presigned URL Generation | bar | プリンシパルごとの署名付き URL 生成回数を数えます。署名付き URL はリンクを持つ誰にでもデータを渡し、それ以上の認証も CloudTrail の記録も残しません。 |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | スパムを収益化するための下準備を検知します — SMS 支出上限の引き上げ、SES 送信の再有効化、一括送信 API の使用。いずれも単発の低頻度呼び出しで、時間あたりのしきい値では決して捉えられません。 |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | 外部アカウントへのアクセスを許可する SQS/SNS のキュー/トピックポリシー変更を検知します。大量送信アラートを発生させずに密かな持ち出し経路を作ります。 |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | 公開共有された (group=all) EBS スナップショットまたは AMI を検知します。誰でもディスクイメージをコピーしてデータを抽出できるようになります。 |
+| 22 | 📧 Data Exfiltration Channels | bar | 持ち出しを示す可能性のある大量の SNS/SQS/SES/S3 PutObject 呼び出し (1 時間あたり 50 回以上) を検知します。 |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | 攻撃者が提供した SSE-C キーで再暗号化された S3 オブジェクトと、バケットのデフォルト暗号化設定の変更を検知します。顧客キーがなければ被害者は復号できません — クラウドネイティブなランサムウェアのパターンです。 |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | オブジェクトを期限切れにする S3 ライフサイクルルールと、ライフサイクル設定の削除を検知します。攻撃者は短い有効期限を設定することで、DeleteObject 呼び出しを発行せずに時間をかけてデータを密かに消去します。 |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | RDS Data API のクエリ、マスターパスワードのリセット、スナップショットの復元を検知します。攻撃者はデータを直接読み取ったり、アクセスを得るために認証情報をリセットしたり、スナップショットを自分が制御するインスタンスに復元したりします。 |
+| 26 | 🔎 S3 Bucket Enumeration | bar | バケットとオブジェクトのメタデータを走査する呼び出し元を検知します (1 時間に 10 回以上の List/GetBucket* 読み取り)。持ち出し前に価値あるデータの場所を特定する一般的な初期ステップです。 |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | 明示的な KMS キーで再暗号化された EBS/RDS スナップショットとボリューム、およびデフォルトの EBS 暗号化の無効化を検知します。攻撃者が保有するキーで再暗号化することで、データを人質に取ります。 |
+| 28 | 📝 Ransom Note Placement | timeseries | オブジェクトキーが身代金要求ファイルに見える PutObject 呼び出しを検出します。他のランサムウェアハントと異なり、示唆ではなく被害を確定させます — ノートがあるということは、攻撃者は既に支払いを要求しています。 |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | 各プリンシパルが 1 日に何を読んだか — 触れたバケット数と概算のオブジェクト数 — を定量化します。GDPR 第 33 条の通知が求める「おおよそのレコード件数」を算出します。 |
+| 30 | 📤 Cross-Account Object Copy | timeseries | バケット間でコピーされたオブジェクトを、x-amz-copy-source ヘッダーを伴う PutObject を含めて検出します。自分の管理下にないアカウントへデータを退避させる操作は、この痕跡しか残しません。 |
+| 31 | 🔗 Presigned URL Generation | bar | プリンシパルごとの署名付き URL 生成回数を数えます。署名付き URL はリンクを持つ誰にでもデータを渡し、それ以上の認証も CloudTrail の記録も残しません。 |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@
 | 1 | 🔍 Reconnaissance Pattern | bar | 1 時間に 10 個以上の異なる読み取り専用 API 呼び出しを行った呼び出し元を特定します。一般的な攻撃初期段階です。 |
 | 2 | 🤖 Unusual User Agents | bar | まれなユーザーエージェント (5 イベント未満) を一覧表示します。Pacu や curl のようなカスタムツールは攻撃者のツールを示す可能性があります。 |
 | 3 | 🌍 Multi-Region Activity | bar | 1 日に 3 つ以上のリージョンで書き込みを行う ID を検知します。地理的な拡散は侵害を示す可能性があります。 |
-| 4 | 🕵 First-Time API Calls (24h) | — | 過去 24 時間に見られたが、それ以前には一度も見られなかった API 呼び出しを検出します。新規の操作は攻撃者ツールを示す可能性があります。 |
-| 5 | 🗺 First-Seen Region Activity | bar | データセットの直近 24 時間に初めての活動が発生した AWS リージョンを見つけます。これまで使用されたことのないリージョンで活動することは、リージョン限定の監視からクリプトマイニングやステージングを隠す典型的な手法です。 |
-| 6 | 🌙 Off-Hours Activity | bar | 設定可能な時間外ウィンドウ内で、プリンシパルと時刻帯ごとに活動をグループ化します。上流の内部不正プレイブックが最初に挙げる指標であり、他のどのハントもカバーしていません。 |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | プリンシパルが自分自身の権限を変更した操作 — 呼び出し元 ARN と対象のユーザー名またはロール名が一致するもの — を検出します。既存の昇格ハントは付与自体は見えますが、それが自己適用だった事実を落とします。 |
-| 8 | 📈 Principal Daily Volume Deviation | bar | 各プリンシパルの日次呼び出し量をそのプリンシパル自身の平均と比較し、読み取りと書き込みを分けて示します。許可された API しか使わない持ち出し — 異常が行為ではなく量である場合 — を捉えます。 |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | アカウントがほとんど使っていないリージョンでのリソース作成を、ハードコードではなくデータから導いたベースラインで検出します。クリプトマイニングも私的な環境構築もここに現れます。 |
-| 10 | 📞 High-Volume API Calls per Principal | bar | 成功した呼び出しが 50 件を超えるプリンシパルと API の組み合わせを、初回と最終の呼び出しとともに一覧します。列挙、一括抽出、一括削除はいずれもこの形をしています。 |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | 1 つのプリンシパルが単一の API を 1 時間に多数のリージョンへ繰り返す動きを検出します。スクリプト化された横断スキャンの特徴で、他のリージョン系ハントからは見えません。 |
+| 5 | 🕵 First-Time API Calls (24h) | — | 過去 24 時間に見られたが、それ以前には一度も見られなかった API 呼び出しを検出します。新規の操作は攻撃者ツールを示す可能性があります。 |
+| 6 | 🗺 First-Seen Region Activity | bar | データセットの直近 24 時間に初めての活動が発生した AWS リージョンを見つけます。これまで使用されたことのないリージョンで活動することは、リージョン限定の監視からクリプトマイニングやステージングを隠す典型的な手法です。 |
+| 7 | 🌙 Off-Hours Activity | bar | 設定可能な時間外ウィンドウ内で、プリンシパルと時刻帯ごとに活動をグループ化します。上流の内部不正プレイブックが最初に挙げる指標であり、他のどのハントもカバーしていません。 |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | プリンシパルが自分自身の権限を変更した操作 — 呼び出し元 ARN と対象のユーザー名またはロール名が一致するもの — を検出します。既存の昇格ハントは付与自体は見えますが、それが自己適用だった事実を落とします。 |
+| 9 | 📈 Principal Daily Volume Deviation | bar | 各プリンシパルの日次呼び出し量をそのプリンシパル自身の平均と比較し、読み取りと書き込みを分けて示します。許可された API しか使わない持ち出し — 異常が行為ではなく量である場合 — を捉えます。 |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | アカウントがほとんど使っていないリージョンでのリソース作成を、ハードコードではなくデータから導いたベースラインで検出します。クリプトマイニングも私的な環境構築もここに現れます。 |
+| 11 | 📞 High-Volume API Calls per Principal | bar | 成功した呼び出しが 50 件を超えるプリンシパルと API の組み合わせを、初回と最終の呼び出しとともに一覧します。列挙、一括抽出、一括削除はいずれもこの形をしています。 |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@
 
 ---
 
-## 📊 ダッシュボードチャート — 115 チャート
+## 📊 ダッシュボードチャート — 118 チャート
 
 | タブ | チャート数 | 表示内容 |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 種類のトリアージ KPI カード (イベント、プリンシパル、IP、root、MFA なしログイン、アクセス拒否、防御回避、国、リージョン) + グローバルなイベント量の推移 |
-| 🎯 Threat Detection | 14 | 防御回避のキャッチオール · ロギングギャップ · VPC フローログ/Config/EventBridge/WAF の改ざん · SCP/組織メンバーシップの変更 · エラー/スロットリングの推移 · 書き込み/読み取り比率 · P1/P2 エスカレーション条件の KPI カード |
+| 🎯 Threat Detection | 16 | 防御回避のキャッチオール · ロギングギャップ · VPC フローログ/Config/EventBridge/WAF の改ざん · SCP/組織メンバーシップの変更 · エラー/スロットリングの推移 · 書き込み/読み取り比率 · P1/P2 エスカレーション条件の KPI カード |
 | 🔑 Identity & Access | 36 | コンソールログイン · MFA 推移 · ログインヒートマップ · 失敗→成功の認証シーケンス · root の使用 · IAM エンティティのアクティビティ/削除 · 権限昇格タイムライン · 新規プリンシパル · SSO · クロスアカウント AssumeRole · AssumeRoot の使用 |
 | 🚨 High-Risk API Monitor | 5 | セキュリティサービス改ざん & 認証情報取得 API のログ · 上位の高リスク呼び出し · 上位アクター · 時系列の高リスク呼び出し量 |
 | 📊 API Activity | 6 | 上位 API · アクセス拒否アクション · リージョン分布 · エラーコードの構成 · ソース IP · ユーザーエージェント |
-| 🪣 S3 & RDS | 18 | S3 一括ダウンロード/削除 · バージョニング/ロギングの無効化 · クロスアカウントレプリケーション · バケットポリシー/ACL · 列挙 · 保護設定 · Backup vault の削除 · KMS キーの削除 · RDS スナップショット共有 / スナップショットなしの削除 · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS クエリ/インスタンス操作 · 影響のためのストレージ再暗号化 · 侵害通知のためのアクセス範囲 · クロスアカウントのオブジェクトコピー · 身代金要求ファイルの設置 |
+| 🪣 S3 & RDS | 19 | S3 一括ダウンロード/削除 · バージョニング/ロギングの無効化 · クロスアカウントレプリケーション · バケットポリシー/ACL · 列挙 · 保護設定 · Backup vault の削除 · KMS キーの削除 · RDS スナップショット共有 / スナップショットなしの削除 · SSE-C ランサムウェア暗号化 · ライフサイクルトリガー削除 · RDS クエリ/インスタンス操作 · 影響のためのストレージ再暗号化 · 侵害通知のためのアクセス範囲 · クロスアカウントのオブジェクトコピー · 身代金要求ファイルの設置 |
 | 🖥️ Computing | 17 | EC2 起動/大量停止/キーペア/インスタンスプロファイル/ユーザーデータ/スナップショット共有/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · IMDS の弱体化 · AMI/スナップショット削除 · WorkSpaces ハイジャック |
 | 🤖 AI / LLM | 6 | Bedrock 呼び出しの推移 · モデルアクセス & ログ変更 · 失敗呼び出し · 発信元別の呼び出し元 (LLMjacking トリアージ) · AgentCore トークン発行 · ゲートウェイ & ポリシー変更 |
 | 🌐 Network | 5 | セキュリティグループの変更 · NACL/ルートテーブルの変更 · VPC インフラ · VPC ピアリング/Transit Gateway · Route53 DNS の変更 |
@@ -231,7 +234,7 @@
 | 🌍 GeoIP Intelligence | 6 | 移動不可能な旅程 (複数国のプリンシパル) · 上位国/都市/ASN · 世界地図 · event_name × country |
 
 <details markdown="1">
-<summary>📋 全リスト — 全 115 チャート (クリックで展開)</summary>
+<summary>📋 全リスト — 全 118 チャート (クリックで展開)</summary>
 
 ## ダッシュボードチャート (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@
 | 12 | Organization Membership Changes | アカウントをガードレールから切り離したり、攻撃者が制御する組織の配下に移動させたりする Organizations のメンバーシップ変更。Threat Technique Catalog for AWS: T1666.A002 / T1666.A003。 |
 | 13 | P1 Escalation Triggers | 15 分以内の対応を要する TRIAGE_GUIDE のエスカレーション条件に一致するイベント数: root の使用、ロギングや検知の改ざん、身代金要求ファイル、委任管理者の登録。ゼロでなければ時計を回し始めます。 |
 | 14 | P2 Escalation Triggers | 1 時間以内の対応を要する TRIAGE_GUIDE の条件に一致するイベント数: 認証情報の作成、権限付与、信頼ポリシーの編集、クロスアカウントのロール引き受け。単独ではなく P1 カードと合わせて読みます。 |
+| 15 | Security Monitoring Posture Recon | アカウントが監視されているかを問い合わせる呼び出し (DSH-116): DescribeTrails、GetTrailStatus、ListDetectors、DescribeConfigurationRecorders。同一プリンシパルによるここでの偵察の後に DSH-22 の改ざんが続く並びは、エスカレーションすべきシーケンスです。Threat Technique Catalog for AWS: T1087、T1562.008。 |
+| 16 | Single-API Multi-Region Fan-Out | 同一の API 名を 3 つ以上のリージョンで呼び出すプリンシパル (DSH-117)。書き込み操作のみを数える Region Activity に対する、読み取りを含む対応版です。グローバルサービスは除外しています。Threat Technique Catalog for AWS: T1535。 |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | プリンシパルごとの S3 読み取り数、対象バケット数、概算オブジェクト数。GDPR 第 33 条が求める「おおよそのレコード件数」を算出します。バケットへの CloudTrail データイベントが必要です。 |
 | 17 | Cross-Account Object Copy | S3 CopyObject と x-amz-copy-source ヘッダーを伴う PutObject を、コピー元と先とともに表示します。レプリケーションのチャートは設定を、これは個々のコピーを扱います。 |
 | 18 | Ransom Note Placement | オブジェクトキーが身代金要求ファイルに見える PutObject。他のランサムウェアパネルと異なり被害を確定させます — ここに 1 行でもあれば P1 です。 |
+| 19 | SES / SNS Sending Quota Abuse | 送信クォータと一括送信のイベント (DSH-118): MonthlySpendLimit を引き上げる SetSMSAttributes、SES を再武装する UpdateAccountSendingEnabled、SendRawEmail / SendBulkTemplatedEmail。いずれも単発の呼び出しのため、量的しきい値では到達できません。Threat Technique Catalog for AWS: T1496.003、T1496.A001。 |
 
 ### 🖥️ Computing
 

@@ -416,3 +416,208 @@ def test_ip_table_includes_geo_columns(fname: str, chart: dict) -> None:
     assert (
         "geo_city" in groupby or "geo_org" in groupby
     ), f"{fname}: table showing source_ip_address must include geo_city or geo_org"
+
+
+# ---------------------------------------------------------------------------
+# Event-name hygiene — a filter naming a non-existent API can never match
+# ---------------------------------------------------------------------------
+
+# CloudTrail records an ``eventName`` per API action actually invoked. These
+# names look plausible but are never emitted, so a filter listing one is dead
+# weight that silently shrinks the chart's coverage:
+#
+#   DisableDetector  GuardDuty has no such API. A detector is disabled with
+#                    UpdateDetector and enable=false — the form the agent's
+#                    "GuardDuty Detector Tampering" hunt already looks for.
+#   PassRole         iam:PassRole is an IAM *permission*, authorised inside
+#                    RunInstances / CreateFunction / CreateDevEndpoint. It is
+#                    never an event of its own; the passed role shows up in the
+#                    caller's requestParameters instead.
+_NON_EVENT_NAMES: frozenset[str] = frozenset({"DisableDetector", "PassRole"})
+
+_EVENT_NAME_IN_RE = re.compile(r"event_name\s+IN\s*\(([^)]*)\)", re.I)
+_EVENT_NAME_EQ_RE = re.compile(r"event_name\s*=\s*'([^']+)'", re.I)
+_QUOTED_RE = re.compile(r"'([^']+)'")
+
+
+def _filtered_event_names(chart: dict) -> set[str]:
+    """Return every literal event_name a chart restricts itself to.
+
+    Charts express the same restriction three ways: a SIMPLE adhoc filter
+    carrying a ``comparator`` list, a SQL adhoc filter carrying an
+    ``event_name IN (...)`` clause, and — on the KPI cards, which have no
+    filters — a ``COUNT(*) FILTER (WHERE event_name IN (...))`` metric. All
+    three have to be read or the check only covers part of the deck.
+    """
+    params = chart.get("params") or {}
+    names: set[str] = set()
+    expressions: list[str] = []
+
+    for flt in params.get("adhoc_filters") or []:
+        if not isinstance(flt, dict):
+            continue
+        if flt.get("subject") == "event_name":
+            comparator = flt.get("comparator")
+            if isinstance(comparator, list):
+                names.update(str(value) for value in comparator)
+        expressions.append(flt.get("sqlExpression") or "")
+
+    metrics = params.get("metrics") or []
+    if not isinstance(metrics, list):
+        metrics = [metrics]
+    for metric in [params.get("metric"), *metrics]:
+        if isinstance(metric, dict):
+            expressions.append(metric.get("sqlExpression") or "")
+
+    for expression in expressions:
+        for clause in _EVENT_NAME_IN_RE.findall(expression):
+            names.update(_QUOTED_RE.findall(clause))
+        # A name singled out for an extra condition — the KPI card qualifies
+        # UpdateDetector with enable=false — is still part of the chart's set.
+        names.update(_EVENT_NAME_EQ_RE.findall(expression))
+    return names
+
+
+@pytest.mark.parametrize("fname, chart", load_all_charts())
+def test_chart_filters_no_non_existent_event_names(fname: str, chart: dict) -> None:
+    """No chart may filter on an eventName CloudTrail never emits."""
+    dead = _filtered_event_names(chart) & _NON_EVENT_NAMES
+    assert not dead, (
+        f"{fname}: filters on event names AWS never emits: {sorted(dead)} — "
+        "the filter can never match, so the chart under-reports"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Duplicated watchlists — Superset has no shared list, so agreement is asserted
+# ---------------------------------------------------------------------------
+
+# Superset chart YAML cannot reference a shared constant: each chart repeats the
+# event list it filters on. Two groups are meant to stay identical, and nothing
+# in the import pipeline notices when one drifts, so the agreement is pinned
+# here. Editing one member of a group and running the suite names the rest.
+_MIRRORED_EVENT_LISTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "defense-evasion watchlist",
+        (
+            "kpi_audit_tampering.yaml",
+            "security_monitoring_changes.yaml",
+        ),
+    ),
+    (
+        "high-risk API watchlist (HRM)",
+        (
+            "hrm_top_calls.yaml",
+            "hrm_top_actors.yaml",
+            "hrm_timeseries.yaml",
+        ),
+    ),
+)
+
+
+@pytest.mark.parametrize("group, filenames", _MIRRORED_EVENT_LISTS)
+def test_mirrored_event_lists_agree(group: str, filenames: tuple[str, ...]) -> None:
+    """Charts sharing a watchlist must filter on exactly the same event names."""
+    charts = dict(load_all_charts())
+    reference = filenames[0]
+    expected = _filtered_event_names(charts[reference])
+    assert expected, f"{reference}: no event_name filter found — helper is stale"
+
+    for fname in filenames[1:]:
+        actual = _filtered_event_names(charts[fname])
+        assert actual == expected, (
+            f"{group}: {fname} has drifted from {reference} — "
+            f"only in {fname}: {sorted(actual - expected)}; "
+            f"only in {reference}: {sorted(expected - actual)}"
+        )
+
+
+def test_hrm_top_calls_row_limit_covers_the_whole_watchlist() -> None:
+    """HRM-40 ranks the watchlist, so its row_limit must not truncate it.
+
+    The limit was sized to the list by hand; adding an API without raising it
+    silently drops the least-called entry off the bottom of the chart.
+    """
+    charts = dict(load_all_charts())
+    chart = charts["hrm_top_calls.yaml"]
+    watchlist = _filtered_event_names(chart)
+    row_limit = chart["params"]["row_limit"]
+    assert row_limit >= len(watchlist), (
+        f"hrm_top_calls.yaml: row_limit {row_limit} is below the "
+        f"{len(watchlist)}-entry watchlist — the chart truncates itself"
+    )
+
+
+def _charts_filtering_on(event_name: str) -> list[tuple[str, dict]]:
+    """Return every chart whose event_name filter includes ``event_name``."""
+    return [
+        (fname, chart)
+        for fname, chart in load_all_charts()
+        if event_name in _filtered_event_names(chart)
+    ]
+
+
+@pytest.mark.parametrize("fname, chart", _charts_filtering_on("DeleteDetector"))
+def test_guardduty_disable_path_accompanies_deletion(fname: str, chart: dict) -> None:
+    """A chart counting DeleteDetector must also cover the disable path.
+
+    Deleting a detector and setting ``enable=false`` on it end the same way —
+    GuardDuty stops producing findings — and an adversary reaches for whichever
+    the credential permits. Listing only the deletion leaves the quieter half
+    of the technique uncounted.
+    """
+    assert "UpdateDetector" in _filtered_event_names(chart), (
+        f"{fname}: counts DeleteDetector but not UpdateDetector — a detector "
+        "disabled with enable=false goes unnoticed"
+    )
+
+
+# The defense-evasion watchlist has to cover the quiet forms of each control's
+# removal, not just the loud one. Each entry here is a technique whose obvious
+# API was already listed while the subtler sibling was not, which left the
+# card reading zero through the very actions an adversary prefers.
+_DEFENSE_EVASION_REQUIRED: frozenset[str] = frozenset(
+    {
+        # GuardDuty keeps running; the findings it names are archived on arrival.
+        "CreateFilter",
+        "UpdateFilter",
+        # The log group survives; its retention is cut to the shortest window.
+        "PutRetentionPolicy",
+        # The trail survives; Insights stop being recorded.
+        "PutInsightSelectors",
+    }
+)
+
+
+@pytest.mark.parametrize(
+    "fname",
+    ["kpi_audit_tampering.yaml", "security_monitoring_changes.yaml"],
+)
+def test_defense_evasion_watchlist_covers_the_quiet_forms(fname: str) -> None:
+    """Suppressing, shortening and narrowing are evasion as much as deleting."""
+    charts = dict(load_all_charts())
+    missing = _DEFENSE_EVASION_REQUIRED - _filtered_event_names(charts[fname])
+    assert not missing, (
+        f"{fname}: defense-evasion watchlist misses {sorted(missing)} — "
+        "each leaves the control in place while ending its effect"
+    )
+
+
+def test_s3_protection_chart_covers_public_access_block_removal() -> None:
+    """Deleting the block and setting it false expose the bucket alike."""
+    charts = dict(load_all_charts())
+    names = _filtered_event_names(charts["s3_protection_changes.yaml"])
+    assert "DeletePublicAccessBlock" in names, (
+        "s3_protection_changes.yaml tracks PutPublicAccessBlock but not "
+        "DeletePublicAccessBlock, which removes the guardrail outright"
+    )
+
+
+def test_hrm_watchlist_covers_permission_enumeration() -> None:
+    """A stolen credential asks what it may do before it does anything."""
+    charts = dict(load_all_charts())
+    names = _filtered_event_names(charts["hrm_top_calls.yaml"])
+    missing = {"ListAttachedUserPolicies", "GetAccountAuthorizationDetails"} - names
+    assert (
+        not missing
+    ), f"HRM watchlist misses permission enumeration: {sorted(missing)}"

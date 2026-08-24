@@ -45,6 +45,7 @@ params:
         - DetachPolicy
         - GetAccessKeyLastUsed
         - GetBucketAcl
+        - GetAccountAuthorizationDetails
         - GetBucketPolicy
         - GetCallerIdentity
         - GetParameter
@@ -52,13 +53,13 @@ params:
         - GetSecretValue
         - InvokeFunction
         - ListAccessKeys
+        - ListAttachedUserPolicies
         - ListBuckets
         - ListGroups
         - ListParameters
         - ListRoles
         - ListSecrets
         - ListUsers
-        - PassRole
         - PutBucketPolicy
         - PutEventSelectors
         - PutRolePolicy
@@ -83,7 +84,7 @@ cache_timeout: null
 # SQL used to power this chart:
 # SELECT user_identity_arn, COUNT(*) AS event_count
 # FROM cloudtrail_events
-# WHERE event_name IN ( ... 42 APIs ... )
+# WHERE event_name IN ( ... 43 APIs ... )
 # GROUP BY user_identity_arn
 # ORDER BY event_count DESC
 # LIMIT 20

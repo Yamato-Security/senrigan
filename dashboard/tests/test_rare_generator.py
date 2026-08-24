@@ -127,7 +127,7 @@ def test_transform_chart_corpus_properties() -> None:
     charts get a sort-by metric, and derived uuids are unique and disjoint
     from the source uuid set."""
     charts = _load_all_charts()
-    assert len(charts) == 115
+    assert len(charts) == 118
     src_uuids = {doc["uuid"] for doc in charts.values()}
     derived_uuids = set()
     flipped = 0
@@ -148,8 +148,8 @@ def test_transform_chart_corpus_properties() -> None:
                 assert "timeseries_limit_metric" not in out["params"], fname
         else:
             assert out["params"] == doc["params"], fname
-    assert flipped == 93
-    assert sorted_tables == 79
+    assert flipped == 96
+    assert sorted_tables == 82
     assert len(derived_uuids) == len(charts)
     assert derived_uuids.isdisjoint(src_uuids)
 
@@ -288,7 +288,7 @@ def test_build_rare_files_structure() -> None:
     chart_arcs = [n for n in files if n.startswith("charts/")]
     # 93 of the 115 source charts declare order_desc; the rest have no rare
     # reading and are not mirrored (see has_rare_variant).
-    assert len(chart_arcs) == 93
+    assert len(chart_arcs) == 96
 
 
 def test_build_rare_files_shared_objects_verbatim() -> None:
@@ -339,7 +339,7 @@ def test_only_ordered_charts_have_a_rare_variant() -> None:
     }
     declares = {f for f, doc in charts.items() if "order_desc" in doc["params"]}
     assert eligible == declares
-    assert len(eligible) == 93
+    assert len(eligible) == 96
 
 
 def test_rare_bundle_omits_charts_with_no_rare_reading() -> None:
@@ -351,7 +351,7 @@ def test_rare_bundle_omits_charts_with_no_rare_reading() -> None:
     """
     files = rebuild_rare_zip.build_rare_files()
     chart_files = [arc for arc in files if arc.startswith("charts/")]
-    assert len(chart_files) == 93
+    assert len(chart_files) == 96
 
     names = {yaml.safe_load(files[arc])["slice_name"] for arc in chart_files}
     assert not [
@@ -380,7 +380,7 @@ def test_rare_dashboard_positions_only_the_charts_it_ships() -> None:
         for key, node in position.items()
         if isinstance(node, dict) and node.get("type") == "CHART"
     }
-    assert len(chart_nodes) == 93
+    assert len(chart_nodes) == 96
     assert all(node["meta"]["uuid"] in shipped for node in chart_nodes.values())
 
     for key, node in position.items():

@@ -1,5 +1,5 @@
 # HRM-40: Top High-Risk API Calls (Bar Chart)
-# Ranks the 42 abuse-prone API actions by total call count.
+# Ranks the 43 abuse-prone API actions by total call count.
 # Identifies which high-risk APIs are most frequently invoked in the environment.
 # MITRE ATT&CK: multiple tactics
 uuid: 40b2c3d4-e5f6-7890-bcde-f01234567840
@@ -45,6 +45,7 @@ params:
         - DetachPolicy
         - GetAccessKeyLastUsed
         - GetBucketAcl
+        - GetAccountAuthorizationDetails
         - GetBucketPolicy
         - GetCallerIdentity
         - GetParameter
@@ -52,13 +53,13 @@ params:
         - GetSecretValue
         - InvokeFunction
         - ListAccessKeys
+        - ListAttachedUserPolicies
         - ListBuckets
         - ListGroups
         - ListParameters
         - ListRoles
         - ListSecrets
         - ListUsers
-        - PassRole
         - PutBucketPolicy
         - PutEventSelectors
         - PutRolePolicy
@@ -73,7 +74,7 @@ params:
       filterOptionName: filter_hrm_top
   granularity_sqla: event_time
   time_range: "No filter"
-  row_limit: 42
+  row_limit: 43
   order_desc: true
   x_axis_title: API Action
   y_axis_title: Event Count
@@ -83,8 +84,8 @@ cache_timeout: null
 # SQL used to power this chart:
 # SELECT event_name, COUNT(*) AS event_count
 # FROM cloudtrail_events
-# WHERE event_name IN ( ... 42 APIs ... )
+# WHERE event_name IN ( ... 43 APIs ... )
 # GROUP BY event_name
 # ORDER BY event_count DESC
-# LIMIT 42
+# LIMIT 43
 

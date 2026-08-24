@@ -2,25 +2,25 @@
 
 > 💡 No se requiere SQL ni conocimientos profundos de AWS — simplemente selecciona una búsqueda del menú desplegable y obtén resultados al instante.
 
-## 🎯 Búsquedas integradas — 136 consultas
+## 🎯 Búsquedas integradas — 139 consultas
 
 Las categorías están ordenadas por prioridad de triaje DFIR — primero verifica la manipulación de herramientas de detección, luego el abuso de identidad y, por último, el impacto sobre los datos.
 
 | Categoría | Consultas | Principales amenazas cubiertas |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | Manipulación de servicios de auditoría (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · eliminación de SCP · supresión de alarmas · exfiltración de registros · correlación de la cadena de ataque de ransomware |
+| 🛡 Detection & Response | 14 | Manipulación de servicios de auditoría (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · eliminación de SCP · supresión de alarmas · exfiltración de registros · correlación de la cadena de ataque de ransomware |
 | 🔑 Identity & Access | 36 | Uso de root · inicio de sesión en consola/MFA · escalada de privilegios · puerta trasera en política de confianza · abuso de PassRole · AssumeRole entre cuentas · SSO/SAML/OIDC · enumeración de credenciales · eliminación de entidades IAM · toma de control mediante AssumeRoot · abuso de grupos de usuarios/tokens de Cognito · supresión de casos de soporte · encadenamiento de roles · rastreo de credenciales de sesión · reconocimiento con GetCallerIdentity · inicios de sesión federados en la consola · conjuntos de permisos de Identity Center y administrador delegado · llamadas API sin MFA |
-| 🪣 Data & Storage | 30 | Eliminación/descarga masiva en S3 · lectura masiva de secretos · manipulación de copias de seguridad · operaciones de KMS · uso compartido de instantáneas · exfiltración por EBS Direct API · exportación de DynamoDB · replicación entre cuentas de S3 · cifrado ransomware SSE-C · eliminación activada por ciclo de vida · manipulación de RDS Data API · re-cifrado de almacenamiento para impacto · colocación de nota de rescate · alcance para la notificación de brechas · copia de objetos entre cuentas · generación de URL prefirmadas |
+| 🪣 Data & Storage | 31 | Eliminación/descarga masiva en S3 · lectura masiva de secretos · manipulación de copias de seguridad · operaciones de KMS · uso compartido de instantáneas · exfiltración por EBS Direct API · exportación de DynamoDB · replicación entre cuentas de S3 · cifrado ransomware SSE-C · eliminación activada por ciclo de vida · manipulación de RDS Data API · re-cifrado de almacenamiento para impacto · colocación de nota de rescate · alcance para la notificación de brechas · copia de objetos entre cuentas · generación de URL prefirmadas |
 | ⚡ Compute & Serverless | 17 | Detención/terminación masiva de EC2 · movimiento lateral por SSM · manipulación de Lambda/ECS/EKS/ECR · persistencia por EventBridge · criptominería · abuso de Lightsail · debilitamiento de IMDS/SSRF · eliminación de AMI/instantáneas · secuestro de WorkSpaces |
 | 🤖 AI & LLM Abuse | 10 | Picos de invocación de Bedrock · habilitación de acceso a modelos · manipulación del registro de invocaciones · reconocimiento por barrido de regiones · ráfagas de invocaciones fallidas · bóveda de tokens de AgentCore · elusión de autorización del gateway · integridad de la memoria · cambio de modo de red del sandbox · manipulación de la observabilidad |
 | 🌐 Network & Infrastructure | 13 | SG abierto a Internet · eliminación de registros de flujo de VPC · secuestro de CloudFront · túneles encubiertos VPN/TGW · IP elástica para C2 · claves de API Gateway · secuestro de Route 53/dominios · debilitamiento de la protección DDoS |
-| 🕵 Threat Patterns | 10 | Ráfaga de reconocimiento · agentes de usuario inusuales · propagación multirregión · primeras llamadas a la API · actividad en región vista por primera vez · actividad fuera del horario laboral · autoescalada de privilegios · desviación del volumen diario · creación de recursos en regiones no usadas · uso masivo de API |
+| 🕵 Threat Patterns | 11 | Ráfaga de reconocimiento · agentes de usuario inusuales · propagación multirregión · primeras llamadas a la API · actividad en región vista por primera vez · actividad fuera del horario laboral · autoescalada de privilegios · desviación del volumen diario · creación de recursos en regiones no usadas · uso masivo de API |
 | 📊 Activity & Baseline | 3 | Eventos de escritura en consola · picos de errores · errores recientes |
 | 🌍 GeoIP Analysis | 2 | Inicios de sesión/denegaciones/escrituras en consola por país · acceso desde países poco frecuentes |
 | ☁ IaC & Platform | 2 | Cadena de suministro CI/CD · abuso de CloudFormation |
 
 <details markdown="1">
-<summary>📋 Lista completa — todas las 136 consultas (haz clic para expandir)</summary>
+<summary>📋 Lista completa — todas las 139 consultas (haz clic para expandir)</summary>
 
 ## Búsquedas integradas
 
@@ -38,9 +38,10 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | Detecta la creación/eliminación de filtros de suscripción de CW Logs y la eliminación de grupos de registros. Los atacantes transmiten registros a un destino externo o destruyen la evidencia in situ. |
 | 9 | 🏹 WAF WebACL Changes | timeseries | Detecta la creación, actualización y eliminación de WAF WebACL. Eliminar o debilitar una WebACL desactiva la protección contra ataques de SQLi, XSS y DDoS. |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Detecta llamadas de solo lectura a la API de GuardDuty. El módulo guardduty__list_findings de Pacu lee los hallazgos activos para entender qué ha detectado ya el defensor, lo que permite al atacante adaptar sus tácticas y evitar activar nuevas alertas. |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Detecta la eliminación o modificación de AWS Budgets y de los monitores de Cost Anomaly. Los atacantes eliminan las alertas de presupuesto para ocultar la criptominería u operaciones que consumen muchos recursos. |
-| 12 | 🚫 Access Denied Errors | bar | Agrupa los errores AccessDenied por identidad y API. Los principales infractores pueden indicar un uso indebido de credenciales. |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Correlaciona las tres fases del ransomware — recuperación eliminada, protección deshabilitada, datos destruidos o cifrados — por principal y día. Cada fase por separado es ruido operativo; las tres juntas no lo son. |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | Detecta el sondeo de solo lectura de la propia pila de monitorización: ¿hay un trail activo?, ¿está GuardDuty encendido?, ¿Config está grabando? El paso previo a la evasión defensiva y el último que deja un registro limpio. |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | Detecta la eliminación o modificación de AWS Budgets y de los monitores de Cost Anomaly. Los atacantes eliminan las alertas de presupuesto para ocultar la criptominería u operaciones que consumen muchos recursos. |
+| 13 | 🚫 Access Denied Errors | bar | Agrupa los errores AccessDenied por identidad y API. Los principales infractores pueden indicar un uso indebido de credenciales. |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | Correlaciona las tres fases del ransomware — recuperación eliminada, protección deshabilitada, datos destruidos o cifrados — por principal y día. Cada fase por separado es ruido operativo; las tres juntas no lo son. |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | Detecta acciones de administración de AWS IAM Identity Center. Los atacantes abusan del SSO para crear conjuntos de permisos con puertas traseras o asignar cuentas a usuarios controlados por ellos. |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | Detecta cambios en proveedores de identidad SAML/OIDC. Actualizar un proveedor SAML con metadatos controlados por el atacante crea una puerta trasera de autenticación persistente. |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | Detecta cualquier uso de IAM Access Analyzer. Los atacantes utilizan el analizador nativo de AWS para enumerar recursos accesibles externamente sin necesidad de escribir scripts de reconocimiento personalizados. |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | Detecta actividad de enumeración de IAM que mapea todo el panorama de IAM. Común en las primeras etapas de un ataque. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Detecta la enumeración de IAM que mapea quién existe y qué puede hacer. Una ráfaga de estas llamadas, sobre todo con AccessDenied, es la fase temprana del ataque. |
 | 19 | 🗝 Access Key Abuse | bar | Detecta claves de acceso usadas desde 3 o más IP de origen distintas en 7 días. Fuerte indicador de filtración de claves. |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Detecta la creación de cuentas de Organizations y los cambios de administrador delegado. Los atacantes crean cuentas en la sombra para establecer puntos de apoyo persistentes fuera de la cuenta principal. |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | Detecta grupos de identidades de Cognito con acceso no autenticado habilitado. Permite que usuarios anónimos llamen a las API de AWS con los permisos del rol de IAM no autenticado. |
@@ -90,7 +91,7 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 1 | 💣 S3 Bulk Object Deletion | bar | Detecta llamadas de alto volumen a DeleteObject/DeleteObjects (≥50/hora). Distinto de la exfiltración: este es un patrón de destrucción de datos / ransomware. |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Detecta la eliminación de Backup Vault/Plan/RecoveryPoint. Destruir las copias de seguridad es el primer paso en los ataques de ransomware para impedir la recuperación. |
 | 3 | 🔓 KMS Key Operations | timeseries | Marca operaciones sensibles de KMS, incluida la eliminación de claves y las llamadas Decrypt de alto volumen. |
-| 4 | 🔓 S3 Public Access Block Disabled | — | Detecta la desactivación de la configuración de bloqueo de acceso público de S3. Riesgo inmediato de exposición de datos. |
+| 4 | 🔓 S3 Public Access Block Disabled | — | Detecta la desactivación o la eliminación completa de la protección de acceso público de S3. Riesgo inmediato de exposición de datos. |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | Detecta modificaciones de políticas de bucket y ACL de S3. Estas pueden hacer que un bucket sea legible públicamente u otorgar acceso a cuentas controladas por el atacante. |
 | 6 | 🪣 S3 Data Access Anomalies | bar | Detecta llamadas masivas a GetObject (≥100/hora) que pueden indicar exfiltración de datos. |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Detecta la recuperación masiva de secretos (contraseñas de bases de datos, claves de API, etc.). Diez o más llamadas a GetSecretValue en una hora es una fuerte señal de recolección de credenciales. |
@@ -105,18 +106,19 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | Detecta PutBucketReplication y DeleteBucketReplication. La replicación entre cuentas copia silenciosamente todos los objetos nuevos a un bucket controlado por el atacante. |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | Detecta la suspensión del control de versiones de S3 y la desactivación del registro de acceso del servidor. Desactivar el control de versiones habilita la destrucción de datos; desactivar el registro elimina el rastro de evidencia de acceso. |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | Detecta cambios en las reglas de recepción y en la configuración de identidades de SES. Las reglas de reenvío pueden retransmitir automáticamente todo el correo entrante a direcciones del atacante; las identidades verificadas habilitan campañas de phishing. |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Detecta cambios de políticas de colas/temas de SQS/SNS que otorgan acceso a cuentas externas. Crea un canal de exfiltración silencioso sin activar alertas de envío de alto volumen. |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Detecta instantáneas de EBS o AMI compartidas públicamente (group=all). Permite que cualquiera copie las imágenes de disco y extraiga datos. |
-| 21 | 📧 Data Exfiltration Channels | bar | Detecta llamadas de alto volumen a SNS/SQS/SES/S3 PutObject (≥50/hora) que pueden indicar exfiltración. |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Detecta objetos de S3 re-cifrados con claves SSE-C suministradas por el atacante, además de cambios en el cifrado predeterminado del bucket. Sin la clave del cliente, la víctima no puede descifrar — un patrón de ransomware nativo de la nube. |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Detecta reglas de ciclo de vida de S3 que expiran objetos, además de la eliminación de la configuración de ciclo de vida. Los atacantes establecen una expiración corta para purgar datos silenciosamente con el tiempo sin emitir llamadas a DeleteObject. |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | Detecta consultas de la RDS Data API, restablecimientos de la contraseña maestra y restauraciones de instantáneas. Los atacantes leen datos directamente, restablecen credenciales para obtener acceso o restauran instantáneas en instancias que controlan. |
-| 25 | 🔎 S3 Bucket Enumeration | bar | Detecta llamantes que rastrean metadatos de buckets y objetos (≥10 lecturas List/GetBucket* en una hora). Un paso temprano común para localizar datos valiosos antes de la exfiltración. |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Detecta instantáneas y volúmenes de EBS/RDS re-cifrados con una clave KMS explícita, además de la desactivación del cifrado predeterminado de EBS. Re-cifrar con una clave en poder del atacante retiene los datos para pedir un rescate. |
-| 27 | 📝 Ransom Note Placement | timeseries | Detecta llamadas PutObject cuya clave de objeto parece una nota de rescate. A diferencia de las demás búsquedas de ransomware, esta confirma el impacto en lugar de sugerirlo: una nota significa que ya se exige el pago. |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | Cuantifica lo que cada principal leyó por día: buckets tocados y número aproximado de objetos distintos. Produce la cifra de «número aproximado de registros» que exige el artículo 33 del RGPD. |
-| 29 | 📤 Cross-Account Object Copy | timeseries | Detecta objetos copiados entre buckets, incluidas las llamadas PutObject que llevan una cabecera x-amz-copy-source. Preparar datos en una cuenta que no controlas deja este rastro y ningún otro. |
-| 30 | 🔗 Presigned URL Generation | bar | Cuenta la generación de URL prefirmadas por principal. Una URL prefirmada entrega los datos a cualquiera que tenga el enlace, sin más autenticación y sin más registro en CloudTrail. |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | Detecta la fontanería que hace rentable el spam: límites de gasto de SMS elevados, envío de SES reactivado, API de envío masivo. Llamadas únicas de bajo volumen que un umbral por hora nunca alcanza. |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Detecta cambios de políticas de colas/temas de SQS/SNS que otorgan acceso a cuentas externas. Crea un canal de exfiltración silencioso sin activar alertas de envío de alto volumen. |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Detecta instantáneas de EBS o AMI compartidas públicamente (group=all). Permite que cualquiera copie las imágenes de disco y extraiga datos. |
+| 22 | 📧 Data Exfiltration Channels | bar | Detecta llamadas de alto volumen a SNS/SQS/SES/S3 PutObject (≥50/hora) que pueden indicar exfiltración. |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Detecta objetos de S3 re-cifrados con claves SSE-C suministradas por el atacante, además de cambios en el cifrado predeterminado del bucket. Sin la clave del cliente, la víctima no puede descifrar — un patrón de ransomware nativo de la nube. |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Detecta reglas de ciclo de vida de S3 que expiran objetos, además de la eliminación de la configuración de ciclo de vida. Los atacantes establecen una expiración corta para purgar datos silenciosamente con el tiempo sin emitir llamadas a DeleteObject. |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | Detecta consultas de la RDS Data API, restablecimientos de la contraseña maestra y restauraciones de instantáneas. Los atacantes leen datos directamente, restablecen credenciales para obtener acceso o restauran instantáneas en instancias que controlan. |
+| 26 | 🔎 S3 Bucket Enumeration | bar | Detecta llamantes que rastrean metadatos de buckets y objetos (≥10 lecturas List/GetBucket* en una hora). Un paso temprano común para localizar datos valiosos antes de la exfiltración. |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | Detecta instantáneas y volúmenes de EBS/RDS re-cifrados con una clave KMS explícita, además de la desactivación del cifrado predeterminado de EBS. Re-cifrar con una clave en poder del atacante retiene los datos para pedir un rescate. |
+| 28 | 📝 Ransom Note Placement | timeseries | Detecta llamadas PutObject cuya clave de objeto parece una nota de rescate. A diferencia de las demás búsquedas de ransomware, esta confirma el impacto en lugar de sugerirlo: una nota significa que ya se exige el pago. |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | Cuantifica lo que cada principal leyó por día: buckets tocados y número aproximado de objetos distintos. Produce la cifra de «número aproximado de registros» que exige el artículo 33 del RGPD. |
+| 30 | 📤 Cross-Account Object Copy | timeseries | Detecta objetos copiados entre buckets, incluidas las llamadas PutObject que llevan una cabecera x-amz-copy-source. Preparar datos en una cuenta que no controlas deja este rastro y ningún otro. |
+| 31 | 🔗 Presigned URL Generation | bar | Cuenta la generación de URL prefirmadas por principal. Una URL prefirmada entrega los datos a cualquiera que tenga el enlace, sin más autenticación y sin más registro en CloudTrail. |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 1 | 🔍 Reconnaissance Pattern | bar | Identifica llamantes que ejecutaron 10 o más llamadas distintas a API de solo lectura en una hora. Fase temprana común de un ataque. |
 | 2 | 🤖 Unusual User Agents | bar | Lista agentes de usuario raros (<5 eventos). Herramientas personalizadas como Pacu o curl pueden indicar herramientas de atacante. |
 | 3 | 🌍 Multi-Region Activity | bar | Detecta identidades que realizan escrituras en 3 o más regiones en un día. La dispersión geográfica puede indicar compromiso. |
-| 4 | 🕵 First-Time API Calls (24h) | — | Encuentra llamadas a la API vistas en las últimas 24 h pero nunca antes. Las operaciones novedosas pueden indicar herramientas de atacante. |
-| 5 | 🗺 First-Seen Region Activity | bar | Encuentra regiones de AWS cuya primera actividad registrada cae dentro de las últimas 24 h del conjunto de datos. Operar en una región nunca antes utilizada es una forma clásica de ocultar la criptominería o la preparación de un ataque del monitoreo con alcance regional. |
-| 6 | 🌙 Off-Hours Activity | bar | Agrupa la actividad por principal y hora del día dentro de una ventana fuera del horario laboral configurable. El primer indicador del playbook de amenaza interna, y uno que ninguna otra búsqueda cubre. |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Detecta que un principal modifique sus propios permisos: el ARN que llama y el nombre de usuario o rol de destino coinciden. Las búsquedas de escalada existentes ven la concesión pero pierden que fue autoaplicada. |
-| 8 | 📈 Principal Daily Volume Deviation | bar | Compara el volumen diario de llamadas de cada principal con su propia media, separando lecturas de escrituras. Detecta la exfiltración que solo usa API permitidas, donde la anomalía es la cantidad y no la acción. |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Señala la creación de recursos en regiones que la cuenta apenas usa, con la línea base derivada de los datos en lugar de codificada. Aquí aterrizan tanto el criptominado como los proyectos personales. |
-| 10 | 📞 High-Volume API Calls per Principal | bar | Lista los pares principal-API que superan 50 llamadas correctas, con la primera y la última llamada. La enumeración, la extracción masiva y el borrado masivo comparten esta forma. |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | Señala a un principal que repite una misma API en muchas regiones en una hora. La firma de un barrido automatizado, invisible para las demás cacerías regionales. |
+| 5 | 🕵 First-Time API Calls (24h) | — | Encuentra llamadas a la API vistas en las últimas 24 h pero nunca antes. Las operaciones novedosas pueden indicar herramientas de atacante. |
+| 6 | 🗺 First-Seen Region Activity | bar | Encuentra regiones de AWS cuya primera actividad registrada cae dentro de las últimas 24 h del conjunto de datos. Operar en una región nunca antes utilizada es una forma clásica de ocultar la criptominería o la preparación de un ataque del monitoreo con alcance regional. |
+| 7 | 🌙 Off-Hours Activity | bar | Agrupa la actividad por principal y hora del día dentro de una ventana fuera del horario laboral configurable. El primer indicador del playbook de amenaza interna, y uno que ninguna otra búsqueda cubre. |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | Detecta que un principal modifique sus propios permisos: el ARN que llama y el nombre de usuario o rol de destino coinciden. Las búsquedas de escalada existentes ven la concesión pero pierden que fue autoaplicada. |
+| 9 | 📈 Principal Daily Volume Deviation | bar | Compara el volumen diario de llamadas de cada principal con su propia media, separando lecturas de escrituras. Detecta la exfiltración que solo usa API permitidas, donde la anomalía es la cantidad y no la acción. |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | Señala la creación de recursos en regiones que la cuenta apenas usa, con la línea base derivada de los datos en lugar de codificada. Aquí aterrizan tanto el criptominado como los proyectos personales. |
+| 11 | 📞 High-Volume API Calls per Principal | bar | Lista los pares principal-API que superan 50 llamadas correctas, con la primera y la última llamada. La enumeración, la extracción masiva y el borrado masivo comparten esta forma. |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 
 ---
 
-## 📊 Gráficos de panel — 115 gráficos
+## 📊 Gráficos de panel — 118 gráficos
 
 | Tab | Charts | What It Shows |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 tarjetas KPI de triaje (eventos, entidades principales, IP, root, inicios de sesión sin MFA, acceso denegado, evasión de defensas, países, regiones) + tendencia global del volumen de eventos |
-| 🎯 Threat Detection | 14 | Detector general de evasión de defensas · brechas en el registro · manipulación de VPC flow log/Config/EventBridge/WAF · cambios de SCP/membresía de organización · tendencias de errores y throttling · relación escritura/lectura · tarjetas KPI de disparadores de escalada P1/P2 |
+| 🎯 Threat Detection | 16 | Detector general de evasión de defensas · brechas en el registro · manipulación de VPC flow log/Config/EventBridge/WAF · cambios de SCP/membresía de organización · tendencias de errores y throttling · relación escritura/lectura · tarjetas KPI de disparadores de escalada P1/P2 |
 | 🔑 Identity & Access | 36 | Inicios de sesión en consola · tendencia de MFA · mapa de calor de inicios de sesión · secuencia de autenticación fallo→éxito · uso de root · actividad/eliminación de entidades de IAM · cronología de escalada de privilegios · nuevas entidades principales · SSO · AssumeRole entre cuentas · uso de AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | Registros de manipulación de servicios de seguridad y recuperación de credenciales mediante API · principales llamadas de alto riesgo · principales actores · volumen de llamadas de alto riesgo a lo largo del tiempo |
 | 📊 API Activity | 6 | Principales API · acciones con acceso denegado · distribución por región · composición de códigos de error · IP de origen · agentes de usuario |
-| 🪣 S3 & RDS | 18 | Descarga/eliminación masiva de S3 · control de versiones/registro desactivado · replicación entre cuentas · política/ACL de bucket · enumeración · configuración de protección · eliminación de bóveda de Backup · eliminación de clave KMS · uso compartido de instantáneas de RDS / eliminación sin instantánea · cifrado ransomware SSE-C · eliminación activada por ciclo de vida · manipulación de consultas/instancias de RDS · re-cifrado de almacenamiento para impacto · alcance de acceso para notificación de brechas · copia de objetos entre cuentas · notas de rescate |
+| 🪣 S3 & RDS | 19 | Descarga/eliminación masiva de S3 · control de versiones/registro desactivado · replicación entre cuentas · política/ACL de bucket · enumeración · configuración de protección · eliminación de bóveda de Backup · eliminación de clave KMS · uso compartido de instantáneas de RDS / eliminación sin instantánea · cifrado ransomware SSE-C · eliminación activada por ciclo de vida · manipulación de consultas/instancias de RDS · re-cifrado de almacenamiento para impacto · alcance de acceso para notificación de brechas · copia de objetos entre cuentas · notas de rescate |
 | 🖥️ Computing | 17 | Lanzamientos de EC2/detención masiva/pares de claves/perfil de instancia/user-data/uso compartido de instantáneas/spot fleet · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · debilitamiento de IMDS · eliminación de AMI/instantáneas · secuestro de WorkSpaces |
 | 🤖 AI / LLM | 6 | Tendencia de invocaciones de Bedrock · cambios de acceso a modelos y registro · invocaciones fallidas · llamantes por origen (triaje de LLMjacking) · emisión de tokens de AgentCore · cambios de gateway y políticas |
 | 🌐 Network | 5 | Cambios de grupos de seguridad · cambios de NACL/tabla de rutas · infraestructura de VPC · emparejamiento de VPC/Transit Gateway · cambios de DNS de Route 53 |
@@ -231,7 +234,7 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 🌍 GeoIP Intelligence | 6 | Viaje imposible (entidades principales en varios países) · principales países/ciudades/ASN · mapa mundial · event_name × país |
 
 <details markdown="1">
-<summary>📋 Lista completa — todos los 115 gráficos (haz clic para expandir)</summary>
+<summary>📋 Lista completa — todos los 118 gráficos (haz clic para expandir)</summary>
 
 ## Gráficos de panel (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 12 | Organization Membership Changes | Cambios de membresía de Organizations que separan cuentas de las barreras de protección o las trasladan bajo una organización controlada por el atacante. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Eventos que coinciden con los disparadores de escalada del TRIAGE_GUIDE que exigen respuesta en 15 minutos: uso de root, manipulación de registro o detección, notas de rescate, registro de administrador delegado. Distinto de cero significa poner el reloj en marcha. |
 | 14 | P2 Escalation Triggers | Eventos que coinciden con las condiciones del TRIAGE_GUIDE para responder en una hora: creación de credenciales, concesión de privilegios, cambios de política de confianza y asunción de roles entre cuentas. Léalo junto a la tarjeta P1. |
+| 15 | Security Monitoring Posture Recon | Llamadas que preguntan si la cuenta está siendo vigilada (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Reconocimiento aquí seguido de manipulación en DSH-22, por el mismo principal, es la secuencia que hay que escalar. Threat Technique Catalog for AWS: T1087, T1562.008. |
+| 16 | Single-API Multi-Region Fan-Out | Principals que llaman al mismo nombre de API en 3 o más regiones (DSH-117). La contraparte que incluye lecturas de Region Activity, que solo cuenta escrituras; los servicios globales quedan excluidos. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@ Las categorías están ordenadas por prioridad de triaje DFIR — primero verifi
 | 16 | Data Access Scope (Breach Notification) | Por principal: lecturas de S3, buckets distintos y objetos distintos aproximados. Produce la cifra que exige el artículo 33 del RGPD. Requiere eventos de datos de CloudTrail. |
 | 17 | Cross-Account Object Copy | Llamadas CopyObject de S3 y PutObject con cabecera x-amz-copy-source, con origen y destino. Los gráficos de replicación cubren la configuración; este cubre las copias individuales. |
 | 18 | Ransom Note Placement | Llamadas PutObject cuya clave de objeto parece una nota de rescate. A diferencia de los demás paneles de ransomware, confirma el impacto: cualquier fila aquí es un P1. |
+| 19 | SES / SNS Sending Quota Abuse | Eventos de cuota de envío y envío masivo (DSH-118): SetSMSAttributes elevando MonthlySpendLimit, UpdateAccountSendingEnabled rearmando SES, SendRawEmail / SendBulkTemplatedEmail. Cada uno es una sola llamada, fuera del alcance de cualquier umbral de volumen. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 

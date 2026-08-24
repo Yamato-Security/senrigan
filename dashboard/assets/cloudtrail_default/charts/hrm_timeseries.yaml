@@ -49,6 +49,7 @@ params:
         - DetachPolicy
         - GetAccessKeyLastUsed
         - GetBucketAcl
+        - GetAccountAuthorizationDetails
         - GetBucketPolicy
         - GetCallerIdentity
         - GetParameter
@@ -56,13 +57,13 @@ params:
         - GetSecretValue
         - InvokeFunction
         - ListAccessKeys
+        - ListAttachedUserPolicies
         - ListBuckets
         - ListGroups
         - ListParameters
         - ListRoles
         - ListSecrets
         - ListUsers
-        - PassRole
         - PutBucketPolicy
         - PutEventSelectors
         - PutRolePolicy
@@ -91,7 +92,7 @@ cache_timeout: null
 #     event_name,
 #     COUNT(*) AS event_count
 # FROM cloudtrail_events
-# WHERE event_name IN ( ... 42 APIs ... )
+# WHERE event_name IN ( ... 43 APIs ... )
 # GROUP BY 1, 2
 # ORDER BY event_time DESC, event_count DESC
 

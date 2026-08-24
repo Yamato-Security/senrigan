@@ -2,25 +2,25 @@
 
 > 💡 Tidak memerlukan SQL atau pengetahuan AWS yang mendalam — cukup pilih sebuah perburuan dari menu dropdown dan dapatkan hasilnya secara instan.
 
-## 🎯 Perburuan Bawaan — 136 kueri
+## 🎯 Perburuan Bawaan — 139 kueri
 
 Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu manipulasi alat deteksi, lalu penyalahgunaan identitas, kemudian dampak terhadap data.
 
 | Kategori | Kueri | Ancaman Utama yang Dicakup |
 |----------|:-------:|---------------------|
-| 🛡 Detection & Response | 13 | Manipulasi layanan audit (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · penghapusan SCP · penekanan alarm · eksfiltrasi log · korelasi rantai serangan ransomware |
+| 🛡 Detection & Response | 14 | Manipulasi layanan audit (CloudTrail/GuardDuty/Config/SecurityHub/Macie) · penghapusan SCP · penekanan alarm · eksfiltrasi log · korelasi rantai serangan ransomware |
 | 🔑 Identity & Access | 36 | Penggunaan root · login konsol/MFA · eskalasi hak istimewa · backdoor trust policy · penyalahgunaan PassRole · AssumeRole lintas-akun · SSO/SAML/OIDC · enumerasi kredensial · penghapusan entitas IAM · pengambilalihan AssumeRoot · penyalahgunaan user-pool/token Cognito · penekanan support case · perantaian peran · pelacakan kredensial sesi · pengintaian GetCallerIdentity · login konsol terfederasi · set izin Identity Center dan administrator terdelegasi · panggilan API tanpa MFA |
-| 🪣 Data & Storage | 30 | Penghapusan/unduhan massal S3 · pembacaan massal secrets · manipulasi backup · operasi KMS · berbagi snapshot · eksfiltrasi EBS Direct API · ekspor DynamoDB · replikasi lintas-akun S3 · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi RDS Data API · re-enkripsi storage untuk dampak · penempatan catatan tebusan · penentuan cakupan notifikasi pelanggaran · penyalinan objek lintas akun · pembuatan URL prasign |
+| 🪣 Data & Storage | 31 | Penghapusan/unduhan massal S3 · pembacaan massal secrets · manipulasi backup · operasi KMS · berbagi snapshot · eksfiltrasi EBS Direct API · ekspor DynamoDB · replikasi lintas-akun S3 · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi RDS Data API · re-enkripsi storage untuk dampak · penempatan catatan tebusan · penentuan cakupan notifikasi pelanggaran · penyalinan objek lintas akun · pembuatan URL prasign |
 | ⚡ Compute & Serverless | 17 | Penghentian/terminasi massal EC2 · pergerakan lateral SSM · manipulasi Lambda/ECS/EKS/ECR · persistensi EventBridge · cryptomining · penyalahgunaan Lightsail · pelemahan IMDS/SSRF · penghapusan AMI/snapshot · pembajakan WorkSpaces |
 | 🤖 AI & LLM Abuse | 10 | Lonjakan invokasi Bedrock · pengaktifan akses model · manipulasi invocation-logging · reconnaissance penyapuan region · ledakan invokasi gagal · brankas token AgentCore · pengabaian otorisasi gateway · integritas memori · perubahan mode jaringan sandbox · perusakan observabilitas |
 | 🌐 Network & Infrastructure | 13 | SG terbuka ke internet · penghapusan VPC flow log · pembajakan CloudFront · terowongan VPN/TGW tersembunyi · Elastic IP C2 · kunci API Gateway · pembajakan Route 53/domain · pelemahan perlindungan DDoS |
-| 🕵 Threat Patterns | 10 | Ledakan reconnaissance · user agent tidak biasa · penyebaran multi-region · panggilan API pertama kali · aktivitas region yang baru terlihat · aktivitas di luar jam kerja · eskalasi hak istimewa mandiri · penyimpangan volume harian · pembuatan sumber daya di region tak terpakai · panggilan API bervolume tinggi |
+| 🕵 Threat Patterns | 11 | Ledakan reconnaissance · user agent tidak biasa · penyebaran multi-region · panggilan API pertama kali · aktivitas region yang baru terlihat · aktivitas di luar jam kerja · eskalasi hak istimewa mandiri · penyimpangan volume harian · pembuatan sumber daya di region tak terpakai · panggilan API bervolume tinggi |
 | 📊 Activity & Baseline | 3 | Event penulisan konsol · lonjakan error · error terbaru |
 | 🌍 GeoIP Analysis | 2 | Login/penolakan/penulisan konsol berdasarkan negara · akses negara langka |
 | ☁ IaC & Platform | 2 | Rantai pasok CI/CD · penyalahgunaan CloudFormation |
 
 <details markdown="1">
-<summary>📋 Daftar lengkap — semua 136 kueri (klik untuk membuka)</summary>
+<summary>📋 Daftar lengkap — semua 139 kueri (klik untuk membuka)</summary>
 
 ## Perburuan Bawaan
 
@@ -38,9 +38,10 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 8 | 📜 CloudWatch Logs Subscription Changes | timeseries | Mendeteksi pembuatan/penghapusan subscription filter CW Logs dan penghapusan log group. Penyerang men-stream log ke tujuan eksternal atau menghancurkan bukti di tempat. |
 | 9 | 🏹 WAF WebACL Changes | timeseries | Mendeteksi pembuatan, pembaruan, dan penghapusan WAF WebACL. Menghapus atau melemahkan WebACL menonaktifkan proteksi terhadap serangan SQLi, XSS, dan DDoS. |
 | 10 | 🔍 GuardDuty Findings Read | timeseries | Mendeteksi panggilan API GuardDuty yang hanya-baca. Modul guardduty__list_findings milik Pacu membaca finding aktif untuk memahami apa yang telah dideteksi oleh defender, sehingga penyerang dapat menyesuaikan taktiknya dan menghindari pemicu alert baru. |
-| 11 | 💰 Budget / Cost Anomaly Changes | timeseries | Mendeteksi penghapusan atau modifikasi AWS Budgets dan Cost Anomaly monitor. Penyerang menghapus alert budget untuk menyembunyikan cryptomining atau operasi yang boros sumber daya. |
-| 12 | 🚫 Access Denied Errors | bar | Mengelompokkan error AccessDenied berdasarkan identity dan API. Pelanggar teratas dapat menandakan penyalahgunaan kredensial. |
-| 13 | ⛓ Ransomware Kill-Chain Sequence | bar | Mengorelasikan tiga tahap ransomware — pemulihan dihapus, perlindungan dinonaktifkan, data dirusak atau dienkripsi — per principal dan hari. Setiap tahap sendirian adalah derau operasional; ketiganya bersama-sama tidak. |
+| 11 | 🩺 Security Monitoring Posture Recon | timeseries | Mendeteksi penyelidikan baca-saja terhadap tumpukan pemantauan itu sendiri — apakah trail berjalan, apakah GuardDuty aktif, apakah Config merekam. Langkah sebelum pengelakan pertahanan, dan yang terakhir meninggalkan log bersih. |
+| 12 | 💰 Budget / Cost Anomaly Changes | timeseries | Mendeteksi penghapusan atau modifikasi AWS Budgets dan Cost Anomaly monitor. Penyerang menghapus alert budget untuk menyembunyikan cryptomining atau operasi yang boros sumber daya. |
+| 13 | 🚫 Access Denied Errors | bar | Mengelompokkan error AccessDenied berdasarkan identity dan API. Pelanggar teratas dapat menandakan penyalahgunaan kredensial. |
+| 14 | ⛓ Ransomware Kill-Chain Sequence | bar | Mengorelasikan tiga tahap ransomware — pemulihan dihapus, perlindungan dinonaktifkan, data dirusak atau dienkripsi — per principal dan hari. Setiap tahap sendirian adalah derau operasional; ketiganya bersama-sama tidak. |
 
 ### 🔑 Identity & Access
 
@@ -63,7 +64,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 15 | 🆔 IAM Identity Center (SSO) Events | timeseries | Mendeteksi tindakan manajemen AWS IAM Identity Center. Penyerang menyalahgunakan SSO untuk membuat permission set backdoor atau menetapkan akun ke pengguna yang dikendalikan penyerang. |
 | 16 | 🔗 SAML / OIDC Provider Updates | timeseries | Mendeteksi perubahan identity provider SAML/OIDC. Memperbarui provider SAML dengan metadata yang dikendalikan penyerang menciptakan backdoor autentikasi yang persisten. |
 | 17 | 🧐 IAM Access Analyzer Calls | timeseries | Mendeteksi penggunaan IAM Access Analyzer apa pun. Penyerang menggunakan analyzer native AWS untuk mengenumerasi resource yang dapat diakses secara eksternal tanpa menulis skrip recon khusus. |
-| 18 | 🔄 Credential Report & Enumeration | timeseries | Mendeteksi aktivitas enumerasi IAM yang memetakan seluruh lanskap IAM. Umum terjadi pada tahap awal serangan. |
+| 18 | 🔄 Credential Report & Enumeration | timeseries | Mendeteksi enumerasi IAM yang memetakan siapa yang ada dan apa yang boleh mereka lakukan. Ledakan panggilan ini, terutama dengan AccessDenied, adalah tahap awal serangan. |
 | 19 | 🗝 Access Key Abuse | bar | Mendeteksi access key yang digunakan dari 3+ IP sumber berbeda dalam 7 hari. Indikator kuat kebocoran kunci. |
 | 20 | 📰 AWS Organizations Account Creation | timeseries | Mendeteksi pembuatan akun Organizations dan perubahan administrator yang didelegasikan. Penyerang membuat akun bayangan untuk membangun pijakan yang persisten di luar akun utama. |
 | 21 | 👥 Cognito Unauthenticated Access | timeseries | Mendeteksi Cognito Identity Pools dengan akses tanpa autentikasi yang diaktifkan. Memungkinkan pengguna anonim memanggil AWS API dengan izin dari IAM role tanpa autentikasi. |
@@ -90,7 +91,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 1 | 💣 S3 Bulk Object Deletion | bar | Mendeteksi panggilan DeleteObject/DeleteObjects volume tinggi (>=50/jam). Berbeda dari eksfiltrasi — ini adalah pola penghancuran data / ransomware. |
 | 2 | 🔥 AWS Backup Tampering | timeseries | Mendeteksi penghapusan Backup Vault/Plan/RecoveryPoint. Menghancurkan backup adalah langkah pertama dalam serangan ransomware untuk mencegah pemulihan. |
 | 3 | 🔓 KMS Key Operations | timeseries | Menandai operasi KMS sensitif termasuk penghapusan key dan panggilan Decrypt volume tinggi. |
-| 4 | 🔓 S3 Public Access Block Disabled | — | Mendeteksi pengaturan public access block S3 yang dinonaktifkan. Risiko paparan data yang langsung. |
+| 4 | 🔓 S3 Public Access Block Disabled | — | Mendeteksi perlindungan akses publik S3 yang dinonaktifkan atau dihapus sepenuhnya. Risiko paparan data seketika. |
 | 5 | 🪣 S3 Bucket Policy / ACL Changes | timeseries | Mendeteksi modifikasi bucket policy dan ACL S3. Ini dapat membuat sebuah bucket dapat dibaca secara publik atau memberikan akses ke akun yang dikendalikan penyerang. |
 | 6 | 🪣 S3 Data Access Anomalies | bar | Mendeteksi panggilan GetObject massal (>=100/jam) yang dapat menandakan eksfiltrasi data. |
 | 7 | 🔐 Secrets Manager Bulk GetSecretValue | bar | Mendeteksi pengambilan massal secrets (kata sandi DB, API key, dll.). Sepuluh atau lebih panggilan GetSecretValue dalam satu jam merupakan sinyal kuat panen kredensial. |
@@ -105,18 +106,19 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 16 | 🔁 S3 Cross-Account Replication | timeseries | Mendeteksi PutBucketReplication dan DeleteBucketReplication. Replikasi lintas-akun secara diam-diam menyalin semua objek baru ke bucket yang dikendalikan penyerang. |
 | 17 | 📂 S3 Versioning / Logging Disabled | timeseries | Mendeteksi penangguhan versioning S3 dan penonaktifan server access logging. Menonaktifkan versioning memungkinkan penghancuran data; menonaktifkan logging menghapus jejak bukti akses. |
 | 18 | 📧 SES Identity & Forwarding Config Changes | timeseries | Mendeteksi perubahan receipt rule SES dan konfigurasi identitas. Forwarding rule dapat secara otomatis meneruskan semua surat masuk ke alamat penyerang; identitas yang terverifikasi memungkinkan kampanye phishing. |
-| 19 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Mendeteksi perubahan policy queue/topic SQS/SNS yang memberikan akses ke akun eksternal. Menciptakan saluran eksfiltrasi diam-diam tanpa memicu alert pengiriman volume tinggi. |
-| 20 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Mendeteksi snapshot EBS atau AMI yang dibagikan secara publik (group=all). Memungkinkan siapa pun menyalin image disk Anda dan mengekstrak data. |
-| 21 | 📧 Data Exfiltration Channels | bar | Mendeteksi panggilan SNS/SQS/SES/S3 PutObject volume tinggi (>=50/jam) yang dapat menandakan eksfiltrasi. |
-| 22 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Mendeteksi objek S3 yang dienkripsi ulang dengan kunci SSE-C yang disediakan penyerang, ditambah perubahan default-encryption bucket. Tanpa kunci pelanggan, korban tidak dapat mendekripsi — pola ransomware yang cloud-native. |
-| 23 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Mendeteksi lifecycle rule S3 yang mengekspirasi objek, ditambah penghapusan lifecycle-config. Penyerang menetapkan expirasi yang singkat untuk menghapus data secara diam-diam seiring waktu tanpa mengeluarkan panggilan DeleteObject. |
-| 24 | 🗃 RDS Query & Instance Manipulation | timeseries | Mendeteksi query RDS Data API, reset master-password, dan pemulihan snapshot. Penyerang membaca data secara langsung, mereset kredensial untuk mendapatkan akses, atau memulihkan snapshot ke instance yang mereka kendalikan. |
-| 25 | 🔎 S3 Bucket Enumeration | bar | Mendeteksi pemanggil yang menyapu metadata bucket dan objek (≥10 pembacaan List/GetBucket* dalam satu jam). Langkah awal yang umum untuk menemukan data berharga sebelum eksfiltrasi. |
-| 26 | 🔑 Storage Re-Encryption for Impact | timeseries | Mendeteksi snapshot dan volume EBS/RDS yang dienkripsi ulang dengan KMS key eksplisit, ditambah penonaktifan enkripsi default EBS. Mengenkripsi ulang dengan kunci yang dipegang penyerang menyandera data untuk tebusan. |
-| 27 | 📝 Ransom Note Placement | timeseries | Mendeteksi panggilan PutObject yang kunci objeknya menyerupai catatan tebusan. Berbeda dari perburuan ransomware lain, yang ini memastikan dampaknya alih-alih menyiratkannya — adanya catatan berarti pembayaran sudah dituntut. |
-| 28 | 📐 Data Access Scope (Breach Notification) | bar | Mengukur apa yang dibaca setiap principal per hari: bucket yang disentuh dan perkiraan jumlah objek unik. Menghasilkan angka «perkiraan jumlah catatan» yang diminta Pasal 33 GDPR. |
-| 29 | 📤 Cross-Account Object Copy | timeseries | Mendeteksi objek yang disalin antar-bucket, termasuk panggilan PutObject yang membawa header x-amz-copy-source. Menyiapkan data di akun yang tidak Anda kendalikan hanya meninggalkan jejak ini. |
-| 30 | 🔗 Presigned URL Generation | bar | Menghitung pembuatan URL prasign per principal. URL prasign menyerahkan data kepada siapa pun yang memegang tautannya, tanpa autentikasi lanjutan dan tanpa catatan CloudTrail lagi. |
+| 19 | 📨 SES / SNS Sending Quota Abuse | timeseries | Mendeteksi persiapan yang membuat spam menguntungkan — batas pengeluaran SMS dinaikkan, pengiriman SES diaktifkan kembali, API pengiriman massal dipakai. Panggilan tunggal bervolume rendah yang tak pernah tercapai ambang per jam. |
+| 20 | 📡 SQS / SNS Cross-Account Policy Changes | timeseries | Mendeteksi perubahan policy queue/topic SQS/SNS yang memberikan akses ke akun eksternal. Menciptakan saluran eksfiltrasi diam-diam tanpa memicu alert pengiriman volume tinggi. |
+| 21 | 📸 EC2 Public Snapshot / AMI Sharing | timeseries | Mendeteksi snapshot EBS atau AMI yang dibagikan secara publik (group=all). Memungkinkan siapa pun menyalin image disk Anda dan mengekstrak data. |
+| 22 | 📧 Data Exfiltration Channels | bar | Mendeteksi panggilan SNS/SQS/SES/S3 PutObject volume tinggi (>=50/jam) yang dapat menandakan eksfiltrasi. |
+| 23 | 🔐 S3 SSE-C Encryption (Ransomware) | timeseries | Mendeteksi objek S3 yang dienkripsi ulang dengan kunci SSE-C yang disediakan penyerang, ditambah perubahan default-encryption bucket. Tanpa kunci pelanggan, korban tidak dapat mendekripsi — pola ransomware yang cloud-native. |
+| 24 | ⏳ S3 Lifecycle-Triggered Deletion | timeseries | Mendeteksi lifecycle rule S3 yang mengekspirasi objek, ditambah penghapusan lifecycle-config. Penyerang menetapkan expirasi yang singkat untuk menghapus data secara diam-diam seiring waktu tanpa mengeluarkan panggilan DeleteObject. |
+| 25 | 🗃 RDS Query & Instance Manipulation | timeseries | Mendeteksi query RDS Data API, reset master-password, dan pemulihan snapshot. Penyerang membaca data secara langsung, mereset kredensial untuk mendapatkan akses, atau memulihkan snapshot ke instance yang mereka kendalikan. |
+| 26 | 🔎 S3 Bucket Enumeration | bar | Mendeteksi pemanggil yang menyapu metadata bucket dan objek (≥10 pembacaan List/GetBucket* dalam satu jam). Langkah awal yang umum untuk menemukan data berharga sebelum eksfiltrasi. |
+| 27 | 🔑 Storage Re-Encryption for Impact | timeseries | Mendeteksi snapshot dan volume EBS/RDS yang dienkripsi ulang dengan KMS key eksplisit, ditambah penonaktifan enkripsi default EBS. Mengenkripsi ulang dengan kunci yang dipegang penyerang menyandera data untuk tebusan. |
+| 28 | 📝 Ransom Note Placement | timeseries | Mendeteksi panggilan PutObject yang kunci objeknya menyerupai catatan tebusan. Berbeda dari perburuan ransomware lain, yang ini memastikan dampaknya alih-alih menyiratkannya — adanya catatan berarti pembayaran sudah dituntut. |
+| 29 | 📐 Data Access Scope (Breach Notification) | bar | Mengukur apa yang dibaca setiap principal per hari: bucket yang disentuh dan perkiraan jumlah objek unik. Menghasilkan angka «perkiraan jumlah catatan» yang diminta Pasal 33 GDPR. |
+| 30 | 📤 Cross-Account Object Copy | timeseries | Mendeteksi objek yang disalin antar-bucket, termasuk panggilan PutObject yang membawa header x-amz-copy-source. Menyiapkan data di akun yang tidak Anda kendalikan hanya meninggalkan jejak ini. |
+| 31 | 🔗 Presigned URL Generation | bar | Menghitung pembuatan URL prasign per principal. URL prasign menyerahkan data kepada siapa pun yang memegang tautannya, tanpa autentikasi lanjutan dan tanpa catatan CloudTrail lagi. |
 
 ### ⚡ Compute & Serverless
 
@@ -180,13 +182,14 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 1 | 🔍 Reconnaissance Pattern | bar | Mengidentifikasi pemanggil yang menjalankan 10+ panggilan API hanya-baca yang berbeda dalam satu jam. Fase awal serangan yang umum. |
 | 2 | 🤖 Unusual User Agents | bar | Mencantumkan user agent yang langka (<5 event). Tooling khusus seperti Pacu atau curl dapat menandakan tooling penyerang. |
 | 3 | 🌍 Multi-Region Activity | bar | Mendeteksi identity yang melakukan penulisan di 3+ region dalam satu hari. Penyebaran geografis dapat menandakan kompromi. |
-| 4 | 🕵 First-Time API Calls (24h) | — | Menemukan panggilan API yang terlihat dalam 24 jam terakhir tetapi tidak pernah sebelumnya. Operasi baru dapat menandakan tooling penyerang. |
-| 5 | 🗺 First-Seen Region Activity | bar | Menemukan region AWS yang aktivitas pertamanya jatuh dalam 24 jam terakhir dari dataset. Beroperasi di region yang belum pernah digunakan sebelumnya adalah cara klasik untuk menyembunyikan cryptomining atau staging dari monitoring yang terbatas pada region tertentu. |
-| 6 | 🌙 Off-Hours Activity | bar | Mengelompokkan aktivitas per principal dan jam dalam jendela di luar jam kerja yang dapat dikonfigurasi. Indikator pertama yang disebut playbook ancaman internal, dan satu-satunya yang tak dicakup perburuan lain. |
-| 7 | 🪞 Self-Service Privilege Escalation | timeseries | Mendeteksi principal yang mengubah izinnya sendiri — ARN pemanggil dan nama pengguna atau peran target sama. Perburuan eskalasi yang ada melihat pemberiannya tetapi kehilangan fakta bahwa itu diterapkan pada diri sendiri. |
-| 8 | 📈 Principal Daily Volume Deviation | bar | Membandingkan volume panggilan harian setiap principal dengan rata-ratanya sendiri, memisahkan baca dari tulis. Menangkap eksfiltrasi yang hanya memakai API yang diizinkan, ketika anomalinya adalah jumlah, bukan tindakan. |
-| 9 | 🗺 Resource Creation Outside Normal Regions | bar | Menandai pembuatan sumber daya di region yang nyaris tak dipakai akun, dengan baseline diturunkan dari data alih-alih ditulis keras. Kriptomining dan proyek pribadi sama-sama mendarat di sini. |
-| 10 | 📞 High-Volume API Calls per Principal | bar | Mencantumkan pasangan principal-API yang melampaui 50 panggilan sukses, beserta panggilan pertama dan terakhir. Enumerasi, ekstraksi massal, dan penghapusan massal semuanya berbentuk sama. |
+| 4 | 🧭 Single-API Multi-Region Fan-Out | bar | Menandai satu principal yang mengulang satu API di banyak region dalam satu jam. Ciri khas penyapuan berskrip, dan tak terlihat oleh hunt region lainnya. |
+| 5 | 🕵 First-Time API Calls (24h) | — | Menemukan panggilan API yang terlihat dalam 24 jam terakhir tetapi tidak pernah sebelumnya. Operasi baru dapat menandakan tooling penyerang. |
+| 6 | 🗺 First-Seen Region Activity | bar | Menemukan region AWS yang aktivitas pertamanya jatuh dalam 24 jam terakhir dari dataset. Beroperasi di region yang belum pernah digunakan sebelumnya adalah cara klasik untuk menyembunyikan cryptomining atau staging dari monitoring yang terbatas pada region tertentu. |
+| 7 | 🌙 Off-Hours Activity | bar | Mengelompokkan aktivitas per principal dan jam dalam jendela di luar jam kerja yang dapat dikonfigurasi. Indikator pertama yang disebut playbook ancaman internal, dan satu-satunya yang tak dicakup perburuan lain. |
+| 8 | 🪞 Self-Service Privilege Escalation | timeseries | Mendeteksi principal yang mengubah izinnya sendiri — ARN pemanggil dan nama pengguna atau peran target sama. Perburuan eskalasi yang ada melihat pemberiannya tetapi kehilangan fakta bahwa itu diterapkan pada diri sendiri. |
+| 9 | 📈 Principal Daily Volume Deviation | bar | Membandingkan volume panggilan harian setiap principal dengan rata-ratanya sendiri, memisahkan baca dari tulis. Menangkap eksfiltrasi yang hanya memakai API yang diizinkan, ketika anomalinya adalah jumlah, bukan tindakan. |
+| 10 | 🗺 Resource Creation Outside Normal Regions | bar | Menandai pembuatan sumber daya di region yang nyaris tak dipakai akun, dengan baseline diturunkan dari data alih-alih ditulis keras. Kriptomining dan proyek pribadi sama-sama mendarat di sini. |
+| 11 | 📞 High-Volume API Calls per Principal | bar | Mencantumkan pasangan principal-API yang melampaui 50 panggilan sukses, beserta panggilan pertama dan terakhir. Enumerasi, ekstraksi massal, dan penghapusan massal semuanya berbentuk sama. |
 
 ### 📊 Activity & Baseline
 
@@ -214,16 +217,16 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 
 ---
 
-## 📊 Dashboard Charts — 115 charts
+## 📊 Dashboard Charts — 118 charts
 
 | Tab | Charts | Apa yang Ditampilkan |
 |-----|:------:|---------------|
 | 🚦 Overview | 10 | 9 kartu KPI triase (event, principal, IP, root, login tanpa-MFA, access denied, penghindaran pertahanan, negara, region) + tren volume event global |
-| 🎯 Threat Detection | 14 | Catch-all penghindaran pertahanan · celah logging · manipulasi VPC flow log/Config/EventBridge/WAF · perubahan SCP/keanggotaan org · tren error & throttling · rasio tulis/baca · kartu KPI pemicu eskalasi P1/P2 |
+| 🎯 Threat Detection | 16 | Catch-all penghindaran pertahanan · celah logging · manipulasi VPC flow log/Config/EventBridge/WAF · perubahan SCP/keanggotaan org · tren error & throttling · rasio tulis/baca · kartu KPI pemicu eskalasi P1/P2 |
 | 🔑 Identity & Access | 36 | Login konsol · tren MFA · heatmap login · urutan auth gagal→berhasil · penggunaan root · aktivitas/penghapusan entitas IAM · timeline eskalasi hak istimewa · principal baru · SSO · AssumeRole lintas-akun · penggunaan AssumeRoot |
 | 🚨 High-Risk API Monitor | 5 | Log API manipulasi security-service & pengambilan kredensial · panggilan berisiko tinggi teratas · aktor teratas · volume panggilan berisiko tinggi dari waktu ke waktu |
 | 📊 API Activity | 6 | API teratas · tindakan access-denied · distribusi region · komposisi error-code · IP sumber · user agent |
-| 🪣 S3 & RDS | 18 | Unduhan/penghapusan massal S3 · versioning/logging dinonaktifkan · replikasi lintas-akun · bucket policy/ACL · enumerasi · konfigurasi proteksi · penghapusan Backup vault · penghapusan KMS key · berbagi snapshot RDS / dihapus tanpa snapshot · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi query/instance RDS · re-enkripsi storage untuk dampak · cakupan akses untuk notifikasi pelanggaran · penyalinan objek lintas akun · penempatan catatan tebusan |
+| 🪣 S3 & RDS | 19 | Unduhan/penghapusan massal S3 · versioning/logging dinonaktifkan · replikasi lintas-akun · bucket policy/ACL · enumerasi · konfigurasi proteksi · penghapusan Backup vault · penghapusan KMS key · berbagi snapshot RDS / dihapus tanpa snapshot · enkripsi ransomware SSE-C · penghapusan yang dipicu lifecycle · manipulasi query/instance RDS · re-enkripsi storage untuk dampak · cakupan akses untuk notifikasi pelanggaran · penyalinan objek lintas akun · penempatan catatan tebusan |
 | 🖥️ Computing | 17 | Peluncuran/mass-stop/key pair/instance profile/user-data/berbagi snapshot/spot fleet EC2 · ECS/Lambda/SSM/EBS Direct API/EKS-ECR/CloudFormation · pelemahan IMDS · penghapusan AMI/snapshot · pembajakan WorkSpaces |
 | 🤖 AI / LLM | 6 | Tren invokasi Bedrock · perubahan akses model & logging · invokasi gagal · pemanggil berdasarkan asal (triase LLMjacking) · penerbitan token AgentCore · perubahan gateway dan kebijakan |
 | 🌐 Network | 5 | Perubahan security group · perubahan NACL/route table · infrastruktur VPC · VPC peering/Transit Gateway · perubahan DNS Route53 |
@@ -231,7 +234,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 🌍 GeoIP Intelligence | 6 | Perjalanan mustahil (principal multi-negara) · negara/kota/ASN teratas · peta dunia · event_name × country |
 
 <details markdown="1">
-<summary>📋 Daftar lengkap — semua 115 chart (klik untuk membuka)</summary>
+<summary>📋 Daftar lengkap — semua 118 chart (klik untuk membuka)</summary>
 
 ## Chart Dashboard (Apache Superset — `dashboard/`)
 
@@ -268,6 +271,8 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 12 | Organization Membership Changes | Perubahan keanggotaan Organizations yang melepaskan akun dari guardrail atau memindahkannya di bawah organisasi yang dikendalikan penyerang. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Peristiwa yang cocok dengan pemicu eskalasi TRIAGE_GUIDE yang menuntut respons dalam 15 menit: penggunaan root, perusakan log atau deteksi, catatan tebusan, pendaftaran administrator terdelegasi. Bukan nol berarti mulai hitung waktu. |
 | 14 | P2 Escalation Triggers | Peristiwa yang cocok dengan kondisi TRIAGE_GUIDE untuk respons dalam satu jam: pembuatan kredensial, pemberian hak istimewa, penyuntingan kebijakan kepercayaan, dan pengambilan peran lintas akun. Baca bersama kartu P1. |
+| 15 | Security Monitoring Posture Recon | Panggilan yang menanyakan apakah akun sedang diawasi (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Pengintaian di sini yang diikuti perusakan di DSH-22 oleh principal yang sama adalah urutan yang harus dieskalasi. Threat Technique Catalog for AWS: T1087, T1562.008. |
+| 16 | Single-API Multi-Region Fan-Out | Principal yang memanggil nama API yang sama di 3+ region (DSH-117). Padanan yang menyertakan pembacaan dari Region Activity, yang hanya menghitung operasi tulis; layanan global dikecualikan. Threat Technique Catalog for AWS: T1535. |
 
 ### 🔑 Identity & Access
 
@@ -338,6 +343,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 16 | Data Access Scope (Breach Notification) | Per principal: panggilan baca S3, bucket unik, dan perkiraan objek unik. Menghasilkan angka yang diminta Pasal 33 GDPR. Memerlukan peristiwa data CloudTrail pada bucket. |
 | 17 | Cross-Account Object Copy | Panggilan CopyObject S3 dan PutObject dengan header x-amz-copy-source, beserta sumber dan tujuan. Grafik replikasi mencakup konfigurasi; ini mencakup salinan individual. |
 | 18 | Ransom Note Placement | Panggilan PutObject yang kunci objeknya menyerupai catatan tebusan. Berbeda dari panel ransomware lain, ini memastikan dampak — satu baris di sini sudah P1. |
+| 19 | SES / SNS Sending Quota Abuse | Peristiwa kuota pengiriman dan pengiriman massal (DSH-118): SetSMSAttributes menaikkan MonthlySpendLimit, UpdateAccountSendingEnabled mengaktifkan kembali SES, SendRawEmail / SendBulkTemplatedEmail. Masing-masing satu panggilan, sehingga ambang volume tak pernah menjangkaunya. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
 
 ### 🖥️ Computing
 
