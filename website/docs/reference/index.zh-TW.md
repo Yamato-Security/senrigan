@@ -271,8 +271,8 @@
 | 12 | Organization Membership Changes | 將帳戶從防護機制中分離、或將其移至攻擊者控制的 organization 之下的 Organizations 成員變更。Threat Technique Catalog for AWS：T1666.A002 / T1666.A003。 |
 | 13 | P1 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於 15 分鐘內回應之升級觸發條件的事件：root 使用、記錄或偵測遭竄改、勒索訊息、委派管理員註冊。非零即代表計時開始。 |
 | 14 | P2 Escalation Triggers | 符合 TRIAGE_GUIDE 中須於一小時內回應之條件的事件：憑證建立、權限授予、信任政策修改與跨帳戶角色擔任。應與 P1 卡一起判讀，而非單獨看。 |
-| 15 | Security Monitoring Posture Recon | 詢問帳戶是否受到監控的呼叫 (DSH-116): DescribeTrails、GetTrailStatus、ListDetectors、DescribeConfigurationRecorders。同一主體先在此偵察、隨後於 DSH-22 進行竄改的順序，正是應該升級處理的序列。Threat Technique Catalog for AWS: T1087、T1562.008。 |
-| 16 | Single-API Multi-Region Fan-Out | 在 3 個以上區域呼叫相同 API 名稱的主體 (DSH-117)。這是僅計算寫入操作的 Region Activity 的「含唯讀」對應版本，全域服務已排除。Threat Technique Catalog for AWS: T1535。 |
+| 15 | Security Monitoring Posture Recon | 偵測對監控堆疊本身的唯讀探測 — 追蹤是否運作中、GuardDuty 是否啟用、Config 是否正在記錄。這是防禦規避的前一步，也是最後一次留下乾淨紀錄的機會。 |
+| 16 | Single-API Multi-Region Fan-Out | 標記單一主體在一小時內於多個區域重複呼叫同一個 API。這是腳本化掃描的特徵，其他區域類獵捕查詢完全看不到。 |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | 依主體呈現 S3 讀取呼叫、不重複儲存貯體與概略不重複物件數。可產出 GDPR 第 33 條要求的數字。需要儲存貯體的 CloudTrail 資料事件。 |
 | 17 | Cross-Account Object Copy | S3 CopyObject 呼叫以及帶有 x-amz-copy-source 標頭的 PutObject，並顯示來源與目的地。複寫圖表涵蓋設定；本圖表涵蓋個別複製行為。 |
 | 18 | Ransom Note Placement | 物件金鑰看似勒索訊息的 PutObject 呼叫。與其他勒索軟體面板不同，此圖表確認損害 — 只要出現一列即為 P1。 |
-| 19 | SES / SNS Sending Quota Abuse | 寄送配額與大量寄送事件 (DSH-118): 調高 MonthlySpendLimit 的 SetSMSAttributes、重新啟用 SES 的 UpdateAccountSendingEnabled、SendRawEmail / SendBulkTemplatedEmail。每個都是單次呼叫，數量門檻永遠觸及不到。Threat Technique Catalog for AWS: T1496.003、T1496.A001。 |
+| 19 | SES / SNS Sending Quota Abuse | 偵測讓垃圾訊息得以獲利的前置作業 — 調高 SMS 支出上限、重新啟用 SES 寄送、使用大量寄送 API。這些都是單次低頻呼叫，每小時門檻永遠無法觸及。 |
 
 ### 🖥️ Computing
 

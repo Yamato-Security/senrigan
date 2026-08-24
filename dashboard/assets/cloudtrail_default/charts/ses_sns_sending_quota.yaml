@@ -1,0 +1,63 @@
+# DSH-118: SES / SNS Sending Quota Abuse
+# Detects the one-off setup that makes spam and SMS pumping profitable:
+# increasing quotas, re-enabling sending, or invoking bulk-send APIs.
+# MITRE ATT&CK: T1496.003 / T1496.A001
+uuid: 81c844b4-7578-404f-9a6c-94285a335eae
+version: 1.0.0
+dataset_uuid: d8444b4a-ac55-4710-a777-a5b940bebabe
+slice_name: SES / SNS Sending Quota Abuse
+viz_type: table
+description: >
+  SES and SNS sending-enablement activity over time (DSH-118). It highlights
+  quota changes, sending re-enablement, production-access requests, and bulk
+  send APIs that often precede spam or SMS pumping abuse.
+query_context: ""
+params:
+  metrics:
+    - expressionType: SQL
+      sqlExpression: "COUNT(*)"
+      label: send_enablement_events
+      hasCustomLabel: true
+      optionName: metric_sending_quota_events
+  groupby:
+    - event_source
+    - event_time
+    - event_name
+    - user_identity_arn
+    - expressionType: SQL
+      sqlExpression: >-
+        COALESCE(
+          json_extract_string(request_parameters, '$.attributes.MonthlySpendLimit'),
+          json_extract_string(request_parameters, '$.attributes.DefaultSenderID'),
+          json_extract_string(request_parameters, '$.enabled'),
+          json_extract_string(request_parameters, '$.sendingEnabled'),
+          json_extract_string(request_parameters, '$.phoneNumber')
+        )
+      label: changed_value
+      hasCustomLabel: true
+      optionName: col_sending_quota_value
+    - source_ip_address
+    - aws_region
+    - geo_country_code
+    - geo_city
+    - error_code
+  adhoc_filters:
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: >-
+        event_name IN (
+          'SetSMSAttributes', 'OptInPhoneNumber',
+          'CheckIfPhoneNumberIsOptedOut',
+          'UpdateAccountSendingEnabled', 'PutAccountSendingAttributes',
+          'PutAccountDetails', 'UpdateConfigurationSetSendingEnabled',
+          'SendRawEmail', 'SendTemplatedEmail',
+          'SendBulkTemplatedEmail', 'SendBulkEmail'
+        )
+      filterOptionName: filter_sending_quota
+  granularity_sqla: event_time
+  time_range: "No filter"
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

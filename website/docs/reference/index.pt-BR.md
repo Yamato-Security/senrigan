@@ -271,8 +271,8 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 12 | Organization Membership Changes | Alterações de associação do Organizations que desvinculam contas de guardrails ou as movem para sob uma organização controlada pelo atacante. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Eventos que correspondem aos gatilhos de escalonamento do TRIAGE_GUIDE que exigem resposta em 15 minutos: uso de root, adulteração de log ou detecção, notas de resgate, registro de administrador delegado. Diferente de zero significa iniciar o cronômetro. |
 | 14 | P2 Escalation Triggers | Eventos que correspondem às condições do TRIAGE_GUIDE para resposta em uma hora: criação de credenciais, concessão de privilégios, edições de política de confiança e assunção de função entre contas. Leia junto ao cartão P1. |
-| 15 | Security Monitoring Posture Recon | Chamadas que perguntam se a conta está sendo observada (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders. Reconhecimento aqui seguido de adulteração no DSH-22, pelo mesmo principal, é a sequência a escalar. Threat Technique Catalog for AWS: T1087, T1562.008. |
-| 16 | Single-API Multi-Region Fan-Out | Principals chamando o mesmo nome de API em 3+ regiões (DSH-117). A contraparte que inclui leituras do Region Activity, que conta apenas escritas; serviços globais são excluídos. Threat Technique Catalog for AWS: T1535. |
+| 15 | Security Monitoring Posture Recon | Detecta a sondagem somente leitura da própria pilha de monitoramento — há um trail ativo, o GuardDuty está ligado, o Config está gravando. O passo anterior à evasão de defesas e o último que deixa um log limpo. |
+| 16 | Single-API Multi-Region Fan-Out | Sinaliza um principal repetindo uma única API em várias regiões em uma hora. A assinatura de uma varredura automatizada, invisível para as outras caças regionais. |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +343,7 @@ As categorias são ordenadas por prioridade de triagem DFIR — verifique primei
 | 16 | Data Access Scope (Breach Notification) | Por principal: leituras do S3, buckets distintos e objetos distintos aproximados. Produz o número exigido pelo artigo 33 do GDPR. Requer eventos de dados do CloudTrail. |
 | 17 | Cross-Account Object Copy | Chamadas CopyObject do S3 e PutObject com cabeçalho x-amz-copy-source, com origem e destino. Os gráficos de replicação cobrem a configuração; este cobre as cópias individuais. |
 | 18 | Ransom Note Placement | Chamadas PutObject cuja chave de objeto parece uma nota de resgate. Diferente dos outros painéis de ransomware, este confirma o impacto — qualquer linha aqui é um P1. |
-| 19 | SES / SNS Sending Quota Abuse | Eventos de cota de envio e envio em massa (DSH-118): SetSMSAttributes elevando MonthlySpendLimit, UpdateAccountSendingEnabled rearmando o SES, SendRawEmail / SendBulkTemplatedEmail. Cada um é uma única chamada, fora do alcance de qualquer limiar de volume. Threat Technique Catalog for AWS: T1496.003, T1496.A001. |
+| 19 | SES / SNS Sending Quota Abuse | Detecta o encanamento que torna o spam lucrativo — limites de gasto de SMS elevados, envio do SES reativado, APIs de envio em massa. Chamadas únicas e de baixo volume que um limiar por hora nunca alcança. |
 
 ### 🖥️ Computing
 

@@ -271,8 +271,8 @@
 | 12 | Organization Membership Changes | การเปลี่ยนแปลงสมาชิกภาพของ Organizations ที่แยกบัญชีออกจาก guardrail หรือย้ายไปอยู่ภายใต้ organization ที่ผู้โจมตีควบคุม Threat Technique Catalog for AWS: T1666.A002 / T1666.A003 |
 | 13 | P1 Escalation Triggers | เหตุการณ์ที่ตรงกับตัวกระตุ้นการยกระดับของ TRIAGE_GUIDE ซึ่งต้องตอบสนองภายใน 15 นาที: การใช้ root, การแก้ไขบันทึกหรือการตรวจจับ, ข้อความเรียกค่าไถ่, การลงทะเบียนผู้ดูแลที่ได้รับมอบหมาย ค่าที่ไม่เป็นศูนย์หมายถึงเริ่มจับเวลา |
 | 14 | P2 Escalation Triggers | เหตุการณ์ที่ตรงกับเงื่อนไขของ TRIAGE_GUIDE สำหรับการตอบสนองภายในหนึ่งชั่วโมง: การสร้างข้อมูลรับรอง การให้สิทธิ์ การแก้ไขนโยบายความเชื่อถือ และการรับบทบาทข้ามบัญชี ควรอ่านคู่กับการ์ด P1 |
-| 15 | Security Monitoring Posture Recon | การเรียกที่ถามว่าบัญชีถูกเฝ้าดูอยู่หรือไม่ (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders การสอดแนมที่นี่ตามด้วยการแก้ไขใน DSH-22 โดย principal เดียวกัน คือลำดับที่ต้องยกระดับ Threat Technique Catalog for AWS: T1087, T1562.008 |
-| 16 | Single-API Multi-Region Fan-Out | principal ที่เรียกชื่อ API เดียวกันใน 3 ภูมิภาคขึ้นไป (DSH-117) เป็นคู่ขนานที่รวมการอ่านของ Region Activity ซึ่งนับเฉพาะการเขียน บริการระดับโลกถูกยกเว้น Threat Technique Catalog for AWS: T1535 |
+| 15 | Security Monitoring Posture Recon | ตรวจจับการสำรวจแบบอ่านอย่างเดียวต่อระบบตรวจสอบเอง — trail ทำงานอยู่หรือไม่ GuardDuty เปิดอยู่หรือไม่ Config กำลังบันทึกหรือไม่ เป็นขั้นก่อนการหลบเลี่ยงการป้องกัน และเป็นครั้งสุดท้ายที่ยังทิ้งบันทึกที่สะอาดไว้ |
+| 16 | Single-API Multi-Region Fan-Out | ระบุ principal ที่เรียก API เดียวซ้ำข้ามหลายภูมิภาคภายในหนึ่งชั่วโมง เป็นลายเซ็นของการกวาดด้วยสคริปต์ และมองไม่เห็นจากการล่าภูมิภาคอื่น |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | ต่อหลักการ: การเรียกอ่าน S3, บักเก็ตไม่ซ้ำ และอ็อบเจกต์ไม่ซ้ำโดยประมาณ ให้ตัวเลขที่ GDPR มาตรา 33 ต้องการ ต้องเปิดเหตุการณ์ข้อมูล CloudTrail บนบักเก็ต |
 | 17 | Cross-Account Object Copy | การเรียก CopyObject ของ S3 และ PutObject ที่มีส่วนหัว x-amz-copy-source พร้อมต้นทางและปลายทาง แผนภูมิการจำลองครอบคลุมการตั้งค่า ส่วนนี้ครอบคลุมการคัดลอกแต่ละครั้ง |
 | 18 | Ransom Note Placement | การเรียก PutObject ที่คีย์อ็อบเจกต์ดูเหมือนข้อความเรียกค่าไถ่ ต่างจากแผงแรนซัมแวร์อื่นตรงที่ยืนยันผลกระทบ — มีแถวใดแถวหนึ่งที่นี่ก็เป็น P1 |
-| 19 | SES / SNS Sending Quota Abuse | เหตุการณ์โควตาการส่งและการส่งจำนวนมาก (DSH-118): SetSMSAttributes ที่เพิ่ม MonthlySpendLimit, UpdateAccountSendingEnabled ที่เปิด SES อีกครั้ง, SendRawEmail / SendBulkTemplatedEmail แต่ละรายการเป็นการเรียกครั้งเดียว เกณฑ์ปริมาณจึงไม่มีวันเข้าถึง Threat Technique Catalog for AWS: T1496.003, T1496.A001 |
+| 19 | SES / SNS Sending Quota Abuse | ตรวจจับการเตรียมการที่ทำให้สแปมทำเงินได้ — เพิ่มวงเงิน SMS เปิดการส่ง SES อีกครั้ง ใช้ API ส่งจำนวนมาก ล้วนเป็นการเรียกครั้งเดียวปริมาณต่ำที่เกณฑ์ต่อชั่วโมงไม่มีวันจับได้ |
 
 ### 🖥️ Computing
 

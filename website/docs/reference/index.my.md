@@ -271,8 +271,8 @@
 | 12 | Organization Membership Changes | account များကို guardrail များမှ ခွာထုတ်ခြင်း သို့မဟုတ် တိုက်ခိုက်သူ ထိန်းချုပ်ထားသော organization တစ်ခုအောက်သို့ ရွှေ့ပြောင်းသော Organizations membership ပြောင်းလဲမှုများ။ Threat Technique Catalog for AWS: T1666.A002 / T1666.A003။ |
 | 13 | P1 Escalation Triggers | မိနစ် ၁၅ အတွင်း တုံ့ပြန်ရန် လိုအပ်သော TRIAGE_GUIDE ၏ အဆင့်မြှင့် အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — root အသုံးပြုမှု၊ logging သို့မဟုတ် detection ဖျက်လိုဖျက်ဆီးလုပ်ခြင်း၊ ငွေညှစ်စာများ၊ လွှဲအပ်ထားသော စီမံခန့်ခွဲသူ မှတ်ပုံတင်ခြင်း။ သုည မဟုတ်လျှင် နာရီ စတင်ပါ။ |
 | 14 | P2 Escalation Triggers | တစ်နာရီအတွင်း တုံ့ပြန်ရန် TRIAGE_GUIDE ၏ အခြေအနေများနှင့် ကိုက်ညီသည့် event များ — credential ဖန်တီးခြင်း၊ အခွင့်အရေး ပေးအပ်ခြင်း၊ trust policy ပြင်ဆင်ခြင်းနှင့် account ဖြတ်ကျော် role ရယူခြင်း။ P1 ကတ်နှင့်တွဲဖတ်ပါ။ |
-| 15 | Security Monitoring Posture Recon | အကောင့်ကို စောင့်ကြည့်ခံနေရသလားဟု မေးမြန်းသည့် ခေါ်ဆိုမှုများ (DSH-116): DescribeTrails, GetTrailStatus, ListDetectors, DescribeConfigurationRecorders။ တူညီသော principal က ဤနေရာတွင် ထောက်လှမ်းပြီးနောက် DSH-22 တွင် ပြုပြင်ပြောင်းလဲမှုပြုလုပ်ခြင်းသည် အဆင့်မြှင့်တင်ရမည့် အစီအစဉ်ဖြစ်သည်။ Threat Technique Catalog for AWS: T1087, T1562.008။ |
-| 16 | Single-API Multi-Region Fan-Out | တူညီသော API အမည်ကို ဒေသ ၃ ခုနှင့်အထက်တွင် ခေါ်ဆိုသည့် principal များ (DSH-117)။ ရေးသားမှုများကိုသာ ရေတွက်သည့် Region Activity ၏ ဖတ်ရှုမှုပါဝင်သော ဘက်စုံပုံစံဖြစ်သည်။ ကမ္ဘာလုံးဆိုင်ရာ ဝန်ဆောင်မှုများကို ဖယ်ထုတ်ထားသည်။ Threat Technique Catalog for AWS: T1535။ |
+| 15 | Security Monitoring Posture Recon | စောင့်ကြည့်မှုစနစ်ကိုယ်တိုင်ကို ဖတ်ရုံသက်သက် စူးစမ်းမှုကို ရှာဖွေဖော်ထုတ်သည် — trail လည်ပတ်နေသလား၊ GuardDuty ဖွင့်ထားသလား၊ Config မှတ်တမ်းတင်နေသလား။ ခုခံမှုရှောင်တိမ်းခြင်း၏ ရှေ့တစ်ဆင့်ဖြစ်ပြီး သန့်ရှင်းသော မှတ်တမ်းကျန်ရစ်စေသည့် နောက်ဆုံးအဆင့်ဖြစ်သည်။ |
+| 16 | Single-API Multi-Region Fan-Out | principal တစ်ခုတည်းက API တစ်ခုတည်းကို တစ်နာရီအတွင်း ဒေသများစွာတွင် ထပ်ခါထပ်ခါ ခေါ်ဆိုမှုကို အမှတ်အသားပြုသည်။ script ဖြင့် စစ်ဆေးမှု၏ လက္ခဏာဖြစ်ပြီး အခြားဒေသဆိုင်ရာ hunt များက မမြင်နိုင်ပါ။ |
 
 ### 🔑 Identity & Access
 
@@ -343,7 +343,7 @@
 | 16 | Data Access Scope (Breach Notification) | principal အလိုက် — S3 ဖတ်ရှုမှုများ၊ ကွဲပြားသော bucket များနှင့် ခန့်မှန်း ကွဲပြားသော object များ။ GDPR အပိုဒ် ၃၃ တောင်းဆိုသည့် ကိန်းဂဏန်းကို ထုတ်ပေးသည်။ bucket များတွင် CloudTrail data event လိုအပ်သည်။ |
 | 17 | Cross-Account Object Copy | S3 CopyObject ခေါ်ဆိုမှုများနှင့် x-amz-copy-source header ပါသော PutObject ခေါ်ဆိုမှုများကို မူလနှင့် ဦးတည်ရာနှင့်အတူ ပြသည်။ replication ဇယားများက configuration ကို၊ ဤဟာက တစ်ခုချင်း ကူးယူမှုကို လွှမ်းခြုံသည်။ |
 | 18 | Ransom Note Placement | object key က ငွေညှစ်စာနှင့် တူသော PutObject ခေါ်ဆိုမှုများ။ အခြား ransomware panel များနှင့် မတူဘဲ အကျိုးသက်ရောက်မှုကို အတည်ပြုသည် — ဤနေရာတွင် စာကြောင်းတစ်ကြောင်းရှိလျှင် P1 ဖြစ်သည်။ |
-| 19 | SES / SNS Sending Quota Abuse | ပေးပို့မှုကန့်သတ်ချက်နှင့် အစုလိုက်ပေးပို့မှု အဖြစ်အပျက်များ (DSH-118): MonthlySpendLimit ကို တိုးမြှင့်သည့် SetSMSAttributes၊ SES ကို ပြန်ဖွင့်သည့် UpdateAccountSendingEnabled၊ SendRawEmail / SendBulkTemplatedEmail။ တစ်ခုချင်းစီမှာ တစ်ကြိမ်တည်း ခေါ်ဆိုမှုဖြစ်၍ ပမာဏသတ်မှတ်ချက်များက ဘယ်တော့မှ မမီပါ။ Threat Technique Catalog for AWS: T1496.003, T1496.A001။ |
+| 19 | SES / SNS Sending Quota Abuse | spam ကို အမြတ်ထွက်စေသည့် ကြိုတင်ပြင်ဆင်မှုကို ရှာဖွေဖော်ထုတ်သည် — SMS သုံးစွဲမှုကန့်သတ်ချက် တိုးမြှင့်ခြင်း၊ SES ပေးပို့မှု ပြန်ဖွင့်ခြင်း၊ အစုလိုက်ပေးပို့သည့် API များ အသုံးပြုခြင်း။ အားလုံးမှာ တစ်ကြိမ်တည်း ပမာဏနည်းသော ခေါ်ဆိုမှုများဖြစ်ရာ နာရီအလိုက် သတ်မှတ်ချက်ဖြင့် ဘယ်တော့မှ မဖမ်းမိပါ။ |
 
 ### 🖥️ Computing
 
