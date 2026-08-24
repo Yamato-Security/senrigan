@@ -41,8 +41,10 @@ ALLOWED = [
     "SELECT * FROM cloudtrail_events WHERE event_name LIKE 'Create%'",
     "SELECT * FROM cloudtrail_events WHERE event_name LIKE 'Delete%'",
     "SELECT * FROM cloudtrail_events WHERE event_name IN ('CreateUser', 'UpdateUser')",
-    "SELECT json_extract_string(request_parameters, '$.\"x-amz-copy-source\"') "
-    "FROM cloudtrail_events",
+    (
+        "SELECT json_extract_string(request_parameters, '$.\"x-amz-copy-source\"') "
+        "FROM cloudtrail_events"
+    ),
     "SELECT * FROM cloudtrail_events WHERE request_parameters LIKE '%copy-source%'",
     "SELECT 'read_csv is only a word here' AS note FROM cloudtrail_events",
 ]

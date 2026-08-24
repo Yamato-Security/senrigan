@@ -57,7 +57,9 @@ and root `tests/` (Python), `config_viz/frontend/src/__tests__/` (TypeScript).
 - **Rust:** `cargo fmt`, `cargo clippy -- -D warnings` (zero warnings), `anyhow::Result` with
   `.with_context(...)`, DB writes **always** via `duckdb::Appender`, temp DBs in tests
   (keep the `NamedTempFile` handle alive).
-- **Python:** `black` (88) + `ruff`, type hints everywhere, Google docstrings. Patch OpenAI as
+- **Python:** `black` (88) + `ruff` (rule set pinned in root `ruff.toml` — a lint failure after a
+  Ruff upgrade is fixed in the code or by a deliberate `select` change, never by suppression),
+  type hints everywhere, Google docstrings. Patch OpenAI as
   `llm.OpenAI`, **not** `agent.llm.OpenAI` (`pytest.ini` sets `pythonpath = .`). Use the
   `tmp_duckdb` / `tmp_db_*` fixtures, never a shared file. **Real OpenAI calls in tests are
   forbidden.**

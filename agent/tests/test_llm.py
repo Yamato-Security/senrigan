@@ -1,8 +1,9 @@
 """Tests for llm.py — OpenAI API integration for SQL generation and analysis."""
 
+from unittest.mock import MagicMock, patch
+
 import openai
 import pandas as pd
-from unittest.mock import MagicMock, patch
 
 from llm import (
     MAX_CONTEXT_TURNS,

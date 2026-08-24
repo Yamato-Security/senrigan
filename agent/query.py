@@ -7,9 +7,9 @@ EXPLAIN validation, result limiting, and timeout protection.
 import concurrent.futures
 import logging
 import re
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from datetime import date
-from typing import Generator, Sequence
 
 import duckdb
 import pandas as pd

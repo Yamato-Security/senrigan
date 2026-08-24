@@ -390,11 +390,13 @@ def test_execute_with_retry_raises_after_max_retries_exceeded(tmp_duckdb):
     bad_sql = "SELECT * FROM nonexistent_table"
 
     # fix_sql returns the same bad SQL on every attempt
-    with patch("query.fix_sql_with_llm", return_value=bad_sql) as mock_fix:
-        with pytest.raises(QueryValidationError):
-            execute_with_retry(
-                conn, bad_sql, api_key="sk-test", model="gpt-5.4", max_retries=1
-            )
+    with (
+        patch("query.fix_sql_with_llm", return_value=bad_sql) as mock_fix,
+        pytest.raises(QueryValidationError),
+    ):
+        execute_with_retry(
+            conn, bad_sql, api_key="sk-test", model="gpt-5.4", max_retries=1
+        )
 
     assert mock_fix.call_count == 1  # one correction attempt was made
     conn.close()
@@ -408,9 +410,9 @@ def test_execute_with_retry_does_not_retry_on_timeout(tmp_duckdb):
     with (
         patch("query.execute_query", side_effect=TimeoutError("timed out")),
         patch("query.fix_sql_with_llm") as mock_fix,
+        pytest.raises(TimeoutError),
     ):
-        with pytest.raises(TimeoutError):
-            execute_with_retry(conn, sql, api_key="sk-test", model="gpt-5.4")
+        execute_with_retry(conn, sql, api_key="sk-test", model="gpt-5.4")
 
     mock_fix.assert_not_called()
     conn.close()

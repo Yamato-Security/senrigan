@@ -80,7 +80,7 @@ def event_name_literals(hunt: dict[str, Any]) -> set[str]:
     sql = hunt.get("sql") or ""
     names: set[str] = set()
     for match in re.finditer(
-        r"event_name\s+(?:NOT\s+)?IN\s*\(([^)]*)\)", sql, re.S | re.I
+        r"event_name\s+(?:NOT\s+)?IN\s*\(([^)]*)\)", sql, re.DOTALL | re.IGNORECASE
     ):
         names |= set(re.findall(r"'([A-Za-z0-9_*]+)'", match.group(1)))
     for match in re.finditer(r"event_name\s*=\s*'([A-Za-z0-9_*]+)'", sql):

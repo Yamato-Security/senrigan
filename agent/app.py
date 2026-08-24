@@ -4,7 +4,7 @@ Provides an interactive chat UI for AI-assisted threat hunting on
 AWS CloudTrail logs stored in DuckDB.
 """
 
-from datetime import date
+from datetime import datetime, timezone
 from pathlib import Path
 
 import streamlit as st
@@ -30,7 +30,7 @@ from profiles import (
     DatasetProfile,
 )
 from query import DEFAULT_ROW_LIMIT
-from report import ReportEntry, generate_report, generate_html_report
+from report import ReportEntry, generate_html_report, generate_report
 
 # Re-exported alongside their own use: these names are imported from ``app`` by
 # the test suite and, for ``render_chart``, resolved through this module at call
@@ -217,29 +217,28 @@ def _render_bulk_run_buttons(
         ):
             st.session_state[f"_{prefix}_pending_bulk_queries"] = all_sql_queries
             st.rerun()
-    elif sql_queries:
+    elif sql_queries and st.button(
+        f"⚡ Run All ({len(sql_queries)} queries)",
+        use_container_width=True,
+        key=f"_{prefix}_run_all_category",
+        help="Run all queries in this category",
+    ):
         # "Run All" — runs every SQL query in the selected category
-        if st.button(
-            f"⚡ Run All ({len(sql_queries)} queries)",
-            use_container_width=True,
-            key=f"_{prefix}_run_all_category",
-            help="Run all queries in this category",
-        ):
-            st.session_state[f"_{prefix}_pending_bulk_queries"] = [
-                {
-                    "sql": p["sql"].strip(),
-                    "description": p.get("description", ""),
-                    "chart_config": p.get("chart"),
-                    "techniques": p.get("techniques") or [],
-                    "label": p["label"],
-                    "category": p.get("category", ""),
-                    "severity": p.get("severity", ""),
-                    "playbook": p.get("playbook") or {},
-                    "next_steps": p.get("next_steps", ""),
-                }
-                for p in sql_queries
-            ]
-            st.rerun()
+        st.session_state[f"_{prefix}_pending_bulk_queries"] = [
+            {
+                "sql": p["sql"].strip(),
+                "description": p.get("description", ""),
+                "chart_config": p.get("chart"),
+                "techniques": p.get("techniques") or [],
+                "label": p["label"],
+                "category": p.get("category", ""),
+                "severity": p.get("severity", ""),
+                "playbook": p.get("playbook") or {},
+                "next_steps": p.get("next_steps", ""),
+            }
+            for p in sql_queries
+        ]
+        st.rerun()
 
 
 def _render_preset_section(profile: DatasetProfile) -> None:
@@ -390,7 +389,7 @@ def _render_date_filter(profile: DatasetProfile) -> None:
 
     # Date range filter — placed below preset queries
     st.subheader("📅 Date Range Filter")
-    today = date.today()
+    today = datetime.now(tz=timezone.utc).date()
     dc1, dc2 = st.columns(2)
     with dc1:
         new_start = st.date_input(
@@ -653,9 +652,7 @@ def _apply_entry_filter(
         if result_filter == "⬜ No results" and has_results:
             continue
         if kw:
-            searchable = " ".join(
-                [entry.label, entry.category, entry.description]
-            ).lower()
+            searchable = f"{entry.label} {entry.category} {entry.description}".lower()
             if kw not in searchable:
                 continue
         out.append((idx, entry))
@@ -1018,21 +1015,21 @@ def _chat_page() -> None:
 
 def _suzaku_timeline_page() -> None:
     """Render the Suzaku ``aws-ct-timeline`` hunting page."""
-    from views.suzaku_timeline import render  # noqa: PLC0415
+    from views.suzaku_timeline import render
 
     render()
 
 
 def _suzaku_summary_page() -> None:
     """Render the Suzaku ``aws-ct-summary`` explorer page."""
-    from views.suzaku_summary import render  # noqa: PLC0415
+    from views.suzaku_summary import render
 
     render()
 
 
 def _suzaku_metrics_page() -> None:
     """Render the Suzaku ``aws-ct-metrics`` explorer page."""
-    from views.suzaku_metrics import render  # noqa: PLC0415
+    from views.suzaku_metrics import render
 
     render()
 

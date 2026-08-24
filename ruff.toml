@@ -1,0 +1,14 @@
+# Ruff configuration for every Python tree in the repository (agent, config_viz,
+# dashboard, tests, sample). Ruff walks up from each file, so the per-module
+# `ruff check .` invocations in the Makefile and CI all resolve to this file.
+#
+# The rule set is pinned on purpose. Without it Ruff lints against whatever its
+# current release considers the default, and that set changes between releases:
+# 0.16.0 expanded it from ~40 rules to 415, which turned a green CI red without a
+# single line of project code changing. Widening `select` is a deliberate choice
+# made in a commit of its own, never a side effect of a dependency bump.
+line-length = 88
+
+[lint]
+# Ruff's historical default: pycodestyle errors + Pyflakes.
+select = ["E4", "E7", "E9", "F"]

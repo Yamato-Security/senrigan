@@ -46,7 +46,7 @@ def render() -> None:
     """Render the Suzaku timeline hunting page."""
     # Imported here rather than at module scope: ``app`` imports this module's
     # package to build the navigation, so a module-level import would be circular.
-    from app import (  # noqa: PLC0415
+    from app import (
         _get_duckdb_path,
         _init_session_state,
         _render_suzaku_db_selector,
