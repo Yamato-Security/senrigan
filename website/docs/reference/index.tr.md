@@ -271,6 +271,8 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 12 | Organization Membership Changes | Hesapları korkuluklardan ayıran veya saldırgan kontrolündeki bir organizasyon altına taşıyan Organizations üyelik değişiklikleri. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | TRIAGE_GUIDE'ın 15 dakika içinde yanıt gerektiren yükseltme tetikleyicileriyle eşleşen olaylar: root kullanımı, günlükleme veya tespit kurcalama, fidye notları, yetkilendirilmiş yönetici kaydı. Sıfırdan farklıysa saat işlemeye başlar. |
 | 14 | P2 Escalation Triggers | TRIAGE_GUIDE'ın bir saat içinde yanıt koşullarıyla eşleşen olaylar: kimlik bilgisi oluşturma, yetki verme, güven politikası düzenlemeleri ve hesaplar arası rol üstlenme. Tek başına değil, P1 kartıyla birlikte okuyun. |
+| 15 | Security Monitoring Posture Recon | İzleme yığınının kendisine yönelik salt okunur yoklamayı tespit eder — bir trail çalışıyor mu, GuardDuty açık mı, Config kayıt alıyor mu. Savunma atlatmadan önceki adım ve temiz bir kayıt bırakan sonuncusu. |
+| 16 | Single-API Multi-Region Fan-Out | Bir principal'ın tek bir API'yi bir saat içinde birçok bölgede tekrarlamasını işaretler. Betikle yapılan taramanın imzası ve diğer bölge avlarına görünmez. |
 
 ### 🔑 Identity & Access
 
@@ -341,6 +343,7 @@ Kategoriler DFIR triyaj önceliğine göre sıralanmıştır — önce tespit ar
 | 16 | Data Access Scope (Breach Notification) | Principal başına: S3 okuma çağrıları, farklı kovalar ve yaklaşık farklı nesneler. GDPR 33. maddesinin istediği rakamı üretir. Kovalarda CloudTrail veri olayları gerekir. |
 | 17 | Cross-Account Object Copy | S3 CopyObject çağrıları ve x-amz-copy-source başlığı taşıyan PutObject çağrıları, kaynak ve hedefiyle. Çoğaltma grafikleri yapılandırmayı kapsar; bu, tek tek kopyaları. |
 | 18 | Ransom Note Placement | Nesne anahtarı fidye notuna benzeyen PutObject çağrıları. Diğer fidye yazılımı panellerinin aksine bu, etkiyi doğrular — buradaki her satır bir P1'dir. |
+| 19 | SES / SNS Sending Quota Abuse | Spam'i kârlı kılan altyapıyı tespit eder — yükseltilen SMS harcama limitleri, yeniden etkinleştirilen SES gönderimi, toplu gönderim API'leri. Saatlik eşiğin asla ulaşamayacağı tek ve düşük hacimli çağrılar. |
 
 ### 🖥️ Computing
 

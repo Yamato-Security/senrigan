@@ -271,6 +271,8 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 12 | Organization Membership Changes | Organizations-Mitgliedschaftsänderungen, die Konten von Schutzmaßnahmen abkoppeln oder sie unter eine angreiferkontrollierte Organisation verschieben. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Ereignisse, die den TRIAGE_GUIDE-Eskalationsauslösern mit 15-Minuten-Frist entsprechen: Root-Nutzung, Manipulation von Protokollierung oder Erkennung, Erpressernachrichten, Registrierung delegierter Administratoren. Ungleich null heißt: die Uhr läuft. |
 | 14 | P2 Escalation Triggers | Ereignisse, die den TRIAGE_GUIDE-Bedingungen für eine Reaktion binnen einer Stunde entsprechen: Erstellung von Anmeldeinformationen, Rechtevergabe, Änderungen an Vertrauensrichtlinien und kontoübergreifende Rollenannahme. Immer zusammen mit der P1-Karte lesen. |
+| 15 | Security Monitoring Posture Recon | Erkennt lesende Sondierung des Monitoring-Stacks selbst — läuft ein Trail, ist GuardDuty aktiv, zeichnet Config auf. Der Schritt vor der Abwehrumgehung und der letzte, der ein sauberes Log hinterlässt. |
+| 16 | Single-API Multi-Region Fan-Out | Markiert einen Principal, der dieselbe API innerhalb einer Stunde über viele Regionen hinweg wiederholt. Die Signatur eines skriptgesteuerten Sweeps — für die anderen Regions-Hunts unsichtbar. |
 
 ### 🔑 Identity & Access
 
@@ -341,6 +343,7 @@ Die Kategorien sind nach DFIR-Triage-Priorität geordnet — prüfen Sie zuerst 
 | 16 | Data Access Scope (Breach Notification) | Pro Principal: S3-Lesevorgänge, betroffene Buckets und ungefähre Anzahl unterschiedlicher Objekte. Liefert die von DSGVO Art. 33 geforderte Zahl. Benötigt CloudTrail-Datenereignisse. |
 | 17 | Cross-Account Object Copy | S3-CopyObject-Aufrufe und PutObject-Aufrufe mit x-amz-copy-source-Header, mit Quelle und Ziel. Die Replikationsdiagramme decken die Konfiguration ab, dieses die einzelnen Kopien. |
 | 18 | Ransom Note Placement | PutObject-Aufrufe, deren Objektschlüssel wie eine Erpressernachricht aussieht. Anders als die übrigen Ransomware-Panels bestätigt dies den Schaden — jede Zeile hier ist ein P1. |
+| 19 | SES / SNS Sending Quota Abuse | Erkennt die Vorbereitung, die Spam profitabel macht — angehobene SMS-Ausgabenlimits, wieder aktiviertes SES-Versenden, Massenversand-APIs. Einzelne Aufrufe mit geringem Volumen, die ein Stundenschwellenwert nie erreicht. |
 
 ### 🖥️ Computing
 

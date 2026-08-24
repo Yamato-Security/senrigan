@@ -271,6 +271,8 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 12 | Organization Membership Changes | Organizations membership changes that detach accounts from guardrails or move them under an attacker-controlled organization. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Events matching the TRIAGE_GUIDE escalation triggers that demand a response within 15 minutes: root usage, logging or detection tampering, ransom notes, delegated-administrator registration. Non-zero means start the clock. |
 | 14 | P2 Escalation Triggers | Events matching the TRIAGE_GUIDE conditions for a response within the hour: credential creation, privilege grants, trust-policy edits and cross-account role assumption. Read it against the P1 card, not on its own. |
+| 15 | Security Monitoring Posture Recon | Read-only monitoring-service reconnaissance over time (DSH-116). Catches callers checking whether CloudTrail, GuardDuty, Config, Security Hub, Access Analyzer, Flow Logs, or CloudWatch alarms are active before a follow-on defense-evasion step. MITRE ATT&CK: TA0007 Discovery / TA0005 Defense Evasion. |
+| 16 | Single-API Multi-Region Fan-Out | Principal and API combinations that fan out across three or more regions (DSH-117). Surfaces scripted enumeration or quota probing where a stolen credential repeats one API across the estate. MITRE ATT&CK: TA0007 Discovery. |
 
 ### 🔑 Identity & Access
 
@@ -341,6 +343,7 @@ Categories are ordered by DFIR triage priority — check detection-tool tamperin
 | 16 | Data Access Scope (Breach Notification) | Per principal: S3 read calls, distinct buckets and approximate distinct objects. Produces the 'approximate number of records' figure GDPR Article 33 requires. Needs CloudTrail data events on the buckets. |
 | 17 | Cross-Account Object Copy | S3 CopyObject calls and PutObject calls carrying an x-amz-copy-source header, with source and destination. The replication charts cover configuration; this covers the individual copies. |
 | 18 | Ransom Note Placement | PutObject calls whose object key looks like a ransom note. Unlike the other ransomware panels this confirms impact rather than suggesting it — any row here is a P1. |
+| 19 | SES / SNS Sending Quota Abuse | SES and SNS sending-enablement activity over time (DSH-118). Highlights quota changes, sending re-enablement, production-access requests, and bulk send APIs that often precede spam or SMS pumping abuse. MITRE ATT&CK: TA0009 Collection / TA0040 Impact. |
 
 ### 🖥️ Computing
 

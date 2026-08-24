@@ -271,6 +271,8 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 12 | Organization Membership Changes | Perubahan keanggotaan Organizations yang melepaskan akun dari guardrail atau memindahkannya di bawah organisasi yang dikendalikan penyerang. Threat Technique Catalog for AWS: T1666.A002 / T1666.A003. |
 | 13 | P1 Escalation Triggers | Peristiwa yang cocok dengan pemicu eskalasi TRIAGE_GUIDE yang menuntut respons dalam 15 menit: penggunaan root, perusakan log atau deteksi, catatan tebusan, pendaftaran administrator terdelegasi. Bukan nol berarti mulai hitung waktu. |
 | 14 | P2 Escalation Triggers | Peristiwa yang cocok dengan kondisi TRIAGE_GUIDE untuk respons dalam satu jam: pembuatan kredensial, pemberian hak istimewa, penyuntingan kebijakan kepercayaan, dan pengambilan peran lintas akun. Baca bersama kartu P1. |
+| 15 | Security Monitoring Posture Recon | Mendeteksi penyelidikan baca-saja terhadap tumpukan pemantauan itu sendiri — apakah trail berjalan, apakah GuardDuty aktif, apakah Config merekam. Langkah sebelum pengelakan pertahanan, dan yang terakhir meninggalkan log bersih. |
+| 16 | Single-API Multi-Region Fan-Out | Menandai satu principal yang mengulang satu API di banyak region dalam satu jam. Ciri khas penyapuan berskrip, dan tak terlihat oleh hunt region lainnya. |
 
 ### 🔑 Identity & Access
 
@@ -341,6 +343,7 @@ Kategori diurutkan berdasarkan prioritas triase DFIR — periksa terlebih dahulu
 | 16 | Data Access Scope (Breach Notification) | Per principal: panggilan baca S3, bucket unik, dan perkiraan objek unik. Menghasilkan angka yang diminta Pasal 33 GDPR. Memerlukan peristiwa data CloudTrail pada bucket. |
 | 17 | Cross-Account Object Copy | Panggilan CopyObject S3 dan PutObject dengan header x-amz-copy-source, beserta sumber dan tujuan. Grafik replikasi mencakup konfigurasi; ini mencakup salinan individual. |
 | 18 | Ransom Note Placement | Panggilan PutObject yang kunci objeknya menyerupai catatan tebusan. Berbeda dari panel ransomware lain, ini memastikan dampak — satu baris di sini sudah P1. |
+| 19 | SES / SNS Sending Quota Abuse | Mendeteksi persiapan yang membuat spam menguntungkan — batas pengeluaran SMS dinaikkan, pengiriman SES diaktifkan kembali, API pengiriman massal dipakai. Panggilan tunggal bervolume rendah yang tak pernah tercapai ambang per jam. |
 
 ### 🖥️ Computing
 
