@@ -5,7 +5,7 @@
 # Global ARG — must be redeclared in each stage that requires network access.
 ARG CUSTOM_CA_CERT_BASE64=""
 
-FROM rust:1.97.1-slim AS builder
+FROM rust:1.98.0-slim AS builder
 
 ARG CUSTOM_CA_CERT_BASE64
 RUN if [ -n "$CUSTOM_CA_CERT_BASE64" ]; then \
