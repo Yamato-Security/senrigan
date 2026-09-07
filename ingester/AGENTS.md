@@ -1,8 +1,16 @@
+---
+paths:
+  - "ingester/**/*.rs"
+  - "ingester/Cargo.toml"
+---
+
 # AGENTS.md — Ingester Module (Rust)
 
 > Module-specific TDD context for the `ingester` crate.
 > For project-wide instructions, see the root [AGENTS.md](../AGENTS.md).
 > For feature requirements, see [doc/PRD.md](../doc/PRD.md).
+> Linked from `.claude/rules/ingester.md`, so Claude Code loads it on demand when
+> a file under `ingester/` is opened — the `paths:` header above is what scopes it.
 
 ## Module Purpose
 

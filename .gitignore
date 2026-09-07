@@ -100,3 +100,9 @@ coverage.xml
 
 # MkDocs documentation site build output
 /website/site/
+
+# ── Coding agents ────────────────────────────────────
+# Shared agent configuration is committed (.claude/settings.json, hooks, rules,
+# skills); anything per-developer is not.
+.claude/settings.local.json
+CLAUDE.local.md

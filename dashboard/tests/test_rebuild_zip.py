@@ -89,16 +89,100 @@ def test_zip_contains_required_files() -> None:
         assert required in names, f"ZIP missing required file: {required}"
 
 
-def test_zip_has_no_missing_sources() -> None:
-    """rebuild_zip.py must not report any MISSING source files."""
-    result = subprocess.run(
-        [sys.executable, REBUILD_ZIP_SCRIPT],
-        capture_output=True,
-        text=True,
-    )
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets")
+
+
+def _rebuild_zip_module():
+    """Import rebuild_zip with assets/ importable, for FILE_MAP and SOURCE_DIR."""
+    sys.path.insert(0, os.path.abspath(ASSETS_DIR))
+    try:
+        return importlib.import_module("rebuild_zip")
+    finally:
+        sys.path.remove(os.path.abspath(ASSETS_DIR))
+
+
+def _build_zip():
+    """Return ``zip_builder.build_zip``, the shared deterministic packager."""
+    sys.path.insert(0, os.path.abspath(ASSETS_DIR))
+    try:
+        from zip_builder import build_zip
+
+        return build_zip
+    finally:
+        sys.path.remove(os.path.abspath(ASSETS_DIR))
+
+
+def test_committed_zip_uses_the_fixed_timestamp() -> None:
+    """Every entry must carry the pinned timestamp, not its source's mtime.
+
+    `zf.write()` stamps each entry with the mtime of the file on disk, which
+    is the checkout time on a fresh clone. That made every rebuild of this
+    bundle a diff: running the dashboard suite rewrote the committed ZIP and
+    left the working tree dirty, and it made "is this ZIP stale?" unanswerable
+    by comparing bytes — which is exactly how the Suzaku bundles answer it.
+    """
+    sys.path.insert(0, os.path.abspath(ASSETS_DIR))
+    try:
+        from zip_builder import FIXED_DATE_TIME
+    finally:
+        sys.path.remove(os.path.abspath(ASSETS_DIR))
+
+    with zipfile.ZipFile(OUTPUT_ZIP) as zf:
+        stamped = {info.filename: info.date_time for info in zf.infolist()}
+        modes = {info.filename: info.external_attr for info in zf.infolist()}
+
+    drifting = {n: t for n, t in stamped.items() if t != FIXED_DATE_TIME}
+    assert not drifting, f"entries carry a filesystem mtime: {sorted(drifting)[:5]}"
+
+    wrong_mode = {n: m for n, m in modes.items() if m != 0o644 << 16}
+    assert not wrong_mode, f"entries carry a source file mode: {sorted(wrong_mode)[:5]}"
+
+
+def test_shipped_zip_is_up_to_date(tmp_path) -> None:
+    """The committed ZIP must match the current sources, byte for byte.
+
+    Superset applies the ZIP, not the YAML, so editing the bundle without
+    rebuilding leaves the running dashboard silently out of date.
+    """
+    module = _rebuild_zip_module()
+    rebuilt = tmp_path / "rebuilt.zip"
+    _build_zip()(module.SOURCE_DIR, str(rebuilt), module.FILE_MAP, verbose=False)
+
+    with open(OUTPUT_ZIP, "rb") as fh:
+        committed = fh.read()
     assert (
-        "MISSING:" not in result.stdout
-    ), f"rebuild_zip.py reports missing source files:\n{result.stdout}"
+        committed == rebuilt.read_bytes()
+    ), "cloudtrail_default.zip is stale — run: python3 assets/rebuild_zip.py"
+
+
+def test_rebuild_is_byte_deterministic(tmp_path) -> None:
+    """Two rebuilds of unchanged sources must produce the same bytes."""
+    module = _rebuild_zip_module()
+    build_zip = _build_zip()
+
+    first, second = tmp_path / "a.zip", tmp_path / "b.zip"
+    build_zip(module.SOURCE_DIR, str(first), module.FILE_MAP, verbose=False)
+    build_zip(module.SOURCE_DIR, str(second), module.FILE_MAP, verbose=False)
+
+    assert first.read_bytes() == second.read_bytes()
+
+
+def test_missing_source_file_fails_loudly(tmp_path) -> None:
+    """A mapped file that does not exist must stop the build, not be skipped.
+
+    The old builder printed `MISSING:` and carried on, which ships a dashboard
+    referencing a chart that is not in the bundle — Superset renders "There is
+    no chart definition associated with this component" for every reference.
+    """
+    module = _rebuild_zip_module()
+
+    with pytest.raises(FileNotFoundError):
+        _build_zip()(
+            module.SOURCE_DIR,
+            str(tmp_path / "x.zip"),
+            {**module.FILE_MAP, "charts/does_not_exist.yaml": "charts/x.yaml"},
+            verbose=False,
+        )
 
 
 @pytest.mark.parametrize("fragment", NEW_CHART_FRAGMENTS)

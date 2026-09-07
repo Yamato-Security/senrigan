@@ -181,60 +181,32 @@ def test_every_locale_ships_a_reference_page():
     assert {page.name for page in REFERENCE_PAGES} == expected
 
 
-def test_test_count_lines_agree_across_the_agent_context_files():
-    """`CLAUDE.md` and `AGENTS.md` state suite sizes; they must state the same.
+_SUITE_SIZE_RE = re.compile(r"≈\s*\d+|\b\d+\s+tests?\b")
 
-    Both warn that a stale count causes false regression alarms, and both are
-    edited by hand — this is the failure mode that warning describes.
+
+@pytest.mark.parametrize(
+    "name",
+    ("CLAUDE.md", "AGENTS.md", "agent/AGENTS.md", "ingester/AGENTS.md"),
+)
+def test_agent_context_files_state_no_suite_size(name: str):
+    """The suites own their own size, and nothing else may quote it.
+
+    These two files used to carry the number in prose, guarded only by a test
+    that they agreed with *each other*. They duly drifted together: `agent`
+    read 2240 against a real 2213, `dashboard` 1368 against 1349 — while the
+    same paragraph told the reader a count "must not decrease in a PR". An
+    agent following that rule would open a session by concluding a regression
+    had already happened.
+
+    The module guides had the same problem one level down: `agent/AGENTS.md`
+    annotated every heading with a per-file count and opened with "825 tests
+    across 24 test files" against a suite of 2213, and no test checked any of
+    it.
+
+    A suite size changes in every PR that adds a test, which makes it exactly
+    the kind of fact that cannot survive being written down. `make check` is
+    the gate; `pytest --collect-only -q` is how you read a count.
     """
-    pattern = re.compile(
-        r"ingester ≈ (\d+).*?agent ≈ (\d+).*?config_viz ≈ (\d+) backend \+\s*"
-        r"(\d+) frontend.*?dashboard ≈ (\d+).*?root `tests/` ≈ (\d+)",
-        re.DOTALL,
-    )
-    counts = []
-    for name in ("CLAUDE.md", "AGENTS.md"):
-        match = pattern.search((REPO_ROOT / name).read_text(encoding="utf-8"))
-        assert match, f"{name} has no parseable test-total line"
-        counts.append(match.groups())
+    stated = _SUITE_SIZE_RE.findall((REPO_ROOT / name).read_text(encoding="utf-8"))
 
-    assert counts[0] == counts[1], "CLAUDE.md and AGENTS.md disagree on suite sizes"
-
-
-def test_inline_suite_sizes_agree_with_the_totals_line():
-    """`AGENTS.md` also annotates its per-module commands with a suite size.
-
-    Three copies of the same number in one file is how `dashboard` ended up
-    quoting 605 tests long after the suite had grown to 793.
-    """
-    text = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    inline = {
-        label: int(count) for count, label in re.findall(r"\((\d+) (\w+) tests\)", text)
-    }
-    assert set(inline) >= {
-        "backend",
-        "frontend",
-        "dashboard",
-    }, f"AGENTS.md no longer labels its inline suite sizes: {sorted(inline)}"
-
-    totals = dict(
-        zip(
-            ("ingester", "agent", "backend", "frontend", "dashboard", "root"),
-            (
-                int(n)
-                for n in re.search(
-                    r"ingester ≈ (\d+).*?agent ≈ (\d+).*?config_viz ≈ (\d+) backend \+\s*"
-                    r"(\d+) frontend.*?dashboard ≈ (\d+).*?root `tests/` ≈ (\d+)",
-                    text,
-                    re.DOTALL,
-                ).groups()
-            ),
-        )
-    )
-
-    mismatched = {
-        label: (count, totals[label])
-        for label, count in inline.items()
-        if label in totals and count != totals[label]
-    }
-    assert not mismatched, f"inline count vs totals line: {mismatched}"
+    assert not stated, f"{name} quotes suite sizes that will go stale: {stated}"

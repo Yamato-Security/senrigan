@@ -164,15 +164,22 @@ Superset's native time-range and filter bar controls.
 ### Rare Events dashboard
 
 A second dashboard, **CloudTrail Threat Hunting — Rare Events**
-(`cloudtrail_rare.zip`), mirrors the exact tab/chart layout of the default
-**CloudTrail Threat Hunting — Top Events** dashboard but flips every frequency-ranked chart to **ascending (bottom-N)
+(`cloudtrail_rare.zip`), takes the tab layout of the default
+**CloudTrail Threat Hunting — Top Events** dashboard and flips every frequency-ranked chart to **ascending (bottom-N)
 order**, surfacing the least frequent — and therefore potentially most
 anomalous — values. It is generated from `cloudtrail_default/` by
 `assets/rebuild_rare_zip.py` (never edited by hand): chart/dashboard uuids
-are derived deterministically via `uuid5`, slice names get a ` (Rare)`
-suffix, and charts without an ordering knob (KPI cards, timeseries, world
-map, heatmap) are mirrored unchanged. Both dashboards share the same
-database and dataset objects.
+are derived deterministically via `uuid5` and slice names get a ` (Rare)`
+suffix.
+
+It is a **subset**, not a mirror. Only a chart declaring `params.order_desc`
+has an ordering to invert, so charts without one — KPI cards, time series,
+the world map, the heatmaps (`RARE_EXCLUDED_VIZ_TYPES`) — read identically in
+both dashboards and are skipped rather than shipped again under a "(Rare)"
+name that would mean nothing. A tab whose whole subtree was skipped is
+dropped along with its markdown instead of shipping as an empty page. The
+committed bundles show it: 118 chart files in the default ZIP, 96 in the rare
+one. Both dashboards share the same database and dataset objects.
 
 ---
 

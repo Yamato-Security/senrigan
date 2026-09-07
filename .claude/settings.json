@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cargo test:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(black:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(make check:*)",
+      "Bash(make lint:*)",
+      "Bash(make fmt-check:*)",
+      "Bash(make test:*)",
+      "Bash(make test-agent:*)",
+      "Bash(make test-config-viz:*)",
+      "Bash(make test-dashboard:*)",
+      "Bash(make test-frontend:*)",
+      "Bash(make test-ingester:*)",
+      "Bash(make test-repo:*)",
+      "Bash(make status:*)",
+      "Bash(make help:*)",
+      "Bash(make help-all:*)"
+    ],
+    "deny": [
+      "Edit(/OLD-README.md)",
+      "Edit(/dashboard/assets/*.zip)",
+      "Edit(/config_viz/static/assets/**)",
+      "Edit(/docker/data/**)",
+      "Read(**/.env)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format_edited_file.py",
+            "timeout": 180,
+            "statusMessage": "Formatting the edited file"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/dashboard_assets_reminder.py"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/doc_consistency_reminder.py"
+          }
+        ]
+      }
+    ]
+  }
+}
