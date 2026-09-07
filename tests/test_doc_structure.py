@@ -29,12 +29,17 @@ LINKING_DOCS = sorted(
     }
 )
 
-# Files carrying an ASCII tree of the repository.
-TREE_DOCS = [REPO_ROOT / "AGENTS.md", REPO_ROOT / "CLAUDE.md"]
+# The file carrying an ASCII tree of the repository. There is exactly one.
+TREE_DOCS = [REPO_ROOT / "AGENTS.md"]
 
-# The two files an agent reads before touching anything. They describe the same
-# repository twice, so they are the pair most likely to disagree.
-AGENT_CONTEXT_DOCS = [REPO_ROOT / "AGENTS.md", REPO_ROOT / "CLAUDE.md"]
+# `AGENTS.md` is the reference: architecture, commands, schema, CLI, env vars.
+# `CLAUDE.md` is the working rules, and links here rather than restating.
+AGENT_CONTEXT_DOCS = [REPO_ROOT / "AGENTS.md"]
+
+# Claude Code loads `CLAUDE.md` into every session. The official guidance puts
+# the ceiling at 200 lines: past that, adherence drops because the rules that
+# matter are competing with the ones that could have been a link.
+CLAUDE_MD_LINE_BUDGET = 200
 
 # `├── name` / `└── name`, preceded by one four-character unit per nesting level.
 _TREE_ENTRY_RE = re.compile(r"^((?:[│ ]   )*)(?:├──|└──) (\S+)")
@@ -140,3 +145,43 @@ def test_documented_command_count_matches_the_block(doc: Path):
     )
     assert match, f"{doc.name} no longer states how many commands `make` prints"
     assert words[match.group(1)] == len(essential_commands_block(doc))
+
+
+def substantial_lines(doc: Path) -> set[str]:
+    """Return the lines of ``doc`` that would be a restatement if shared.
+
+    A line of nothing but links is a pointer, which is the behaviour this rule
+    asks for — both files legitimately open by listing the same background
+    reading. What counts is prose, so links are stripped before measuring.
+    """
+    lines = set()
+    for line in doc.read_text(encoding="utf-8").splitlines():
+        prose = _MARKDOWN_LINK_RE.sub("", line).strip(" ·-|")
+        if len(line.strip()) > 40 and len(prose) > 10:
+            lines.add(line.strip())
+    return lines
+
+
+def test_claude_md_does_not_restate_what_agents_md_owns():
+    """One owner per fact, applied to the pair that broke the rule hardest.
+
+    These two files described the same repository twice — the container table,
+    the five commands, the `make ingest` paragraph, the ZIP rebuild block, the
+    SQL guards and the security summary all appeared in both, several of them
+    word for word, on either side of a sentence declaring that a fact lives in
+    one place. Both were hand-edited, so the copies drifted.
+    """
+    duplicated = substantial_lines(REPO_ROOT / "CLAUDE.md") & substantial_lines(
+        REPO_ROOT / "AGENTS.md"
+    )
+
+    assert not duplicated, "CLAUDE.md restates AGENTS.md:\n" + "\n".join(
+        sorted(duplicated)
+    )
+
+
+def test_claude_md_fits_in_the_context_it_costs():
+    """Every session pays for this file, whatever the task turns out to be."""
+    lines = len((REPO_ROOT / "CLAUDE.md").read_text(encoding="utf-8").splitlines())
+
+    assert lines <= CLAUDE_MD_LINE_BUDGET, f"CLAUDE.md is {lines} lines"
