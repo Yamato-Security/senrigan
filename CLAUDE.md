@@ -106,10 +106,9 @@ cd ../../docker && docker compose run --rm superset-init   # re-import (idempote
 time series, the world map and the heatmaps are not mirrored and a tab left with no chart is
 dropped. `dashboard/tests/test_rebuild_suzaku_zips.py` fails on a stale committed Suzaku ZIP.
 
-Suite sizes (must not decrease in a PR): ingester ≈ 187 (Rust), agent ≈ 2240 (pytest),
-config_viz ≈ 67 backend + 114 frontend, dashboard ≈ 1368 (`make test-dashboard`), root `tests/` ≈ 238
-(`make test-repo`). A PR that changes a count updates this line **and** [AGENTS.md](AGENTS.md)
-together — stale counts cause false "regression" alarms later.
+**No document states a suite size.** A count changes in every PR that adds a test, so a written
+one is stale by the time it is read — and a stale one reads as a regression that never happened.
+`make check` is the gate; `pytest --collect-only -q <path> | tail -1` is how you read a count.
 
 ---
 
@@ -158,7 +157,7 @@ after touching docs and it names the stale sentence.
 |------|----------|-------------|
 | Hunt counts and names | `agent/*_hunts.yaml` | `tests/test_doc_counts.py` |
 | Chart counts and names | `dashboard/assets/<bundle>/charts/` | `tests/test_doc_counts.py` |
-| Suite sizes | the suites | `tests/test_doc_counts.py` (cross-file agreement) |
+| Suite sizes | the suites — never quoted in prose | `tests/test_doc_counts.py` |
 | The five front-page commands | `Makefile` | `tests/test_doc_structure.py` |
 | Repository layout | the working tree | `tests/test_doc_structure.py` |
 | Locale coverage | `website/mkdocs.yml` | `tests/test_docs.py` |

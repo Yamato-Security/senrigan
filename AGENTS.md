@@ -81,14 +81,12 @@ cd ../../docker && docker compose run --rm superset-init   # re-import into Supe
 ```
 
 Per-module loops — Rust (`ingester/`): `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt`.
-Python (`agent/`, `config_viz/` (67 backend tests), `dashboard/` (1368 dashboard tests)): `pytest`,
-`ruff check .`, `black .`. TypeScript (`config_viz/frontend/`): `npm test -- --run`
-(114 frontend tests), `npm run build` (Vite → `../static/`).
+Python (`agent/`, `config_viz/`, `dashboard/`): `pytest`, `ruff check .`, `black .`.
+TypeScript (`config_viz/frontend/`): `npm test -- --run`, `npm run build` (Vite → `../static/`).
 
-Approximate test totals: ingester ≈ 187 (Rust), agent ≈ 2240 (pytest), config_viz ≈ 67 backend +
-114 frontend, dashboard ≈ 1368, root `tests/` ≈ 238 (Makefile / compose / docs / Suzaku selection
-and lifecycle). Test count must not decrease in a PR, and a PR that changes one updates this line
-and [CLAUDE.md](CLAUDE.md) together.
+Suite sizes are not written down anywhere, and `tests/test_doc_counts.py` fails if they reappear:
+they change in every PR that adds a test, and a stale one reads as a regression that never
+happened. To read one, `pytest --collect-only -q <path> | tail -1`.
 
 ---
 
