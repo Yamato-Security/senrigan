@@ -34,10 +34,8 @@ Break one of these and nothing fails loudly — that is why they are here rather
   a profile that reaches the chat pipeline raises rather than prompting with an empty schema.
 - **Dashboard YAML is compiled, not read.** Superset imports the ZIPs, so an edit under
   `dashboard/assets/` is inert until it is rebuilt *and* re-imported — the one change in this
-  repository that fails by looking like it worked. Commands:
-  [AGENTS.md](AGENTS.md#essential-commands). `cloudtrail_rare` is a derived subset: only charts
-  declaring `params.order_desc` have an ordering to invert, so KPI cards, time series, the world
-  map and the heatmaps have no mirrored twin and an emptied tab is dropped.
+  repository that fails by looking like it worked. `/rebuild-dashboard` has both steps and what
+  derives from what.
 
 ## TDD (non-negotiable)
 
@@ -90,12 +88,8 @@ EXISTS` so an existing database migrates itself on the next ingest. The LLM is s
 subset of the table (`agent/schema.py`) — a column that is not there cannot appear in generated
 SQL, however plainly the question asks for it. Hunt SQL may still use the rest.
 
-**Adding or exposing a column** touches four places: the Rust schema and its migration,
-`agent/schema.py` together with the idioms in `agent/prompts/system_prompt.py`, the schema table in
-[AGENTS.md](AGENTS.md#duckdb-schema), and the dataset YAML under
-`dashboard/assets/cloudtrail_default/datasets/` — which then needs the rebuild, the re-import and
-`make resync`. Stopping after the first two produces a column the UI can query and the dashboard
-cannot see.
+**Adding or exposing a column touches four layers**, and stopping after the first two produces
+a column the chat page can query and the dashboard cannot see. `/add-column` walks them.
 
 Three guards run before any generated SQL executes, in `agent/query.py` and again in
 `config_viz/backend/query.py`: a keyword blocklist, `EXPLAIN` validation on the read-only
@@ -106,12 +100,9 @@ with no API key at all; IP columns in a result set are geo-enriched best-effort 
 
 ## OpenAI models
 
-The model lineup is spread across six places, and moving fewer than all six leaves the UI offering
-a model the API rejects: `MODEL_OPTIONS` in `agent/app.py`, the default in `agent/session.py`,
-`_NO_TEMPERATURE_MODELS` in `agent/llm.py` (models that refuse an explicit temperature), the
-compose defaults, and the tables in [AGENTS.md](AGENTS.md#environment-variables) and
-[agent/AGENTS.md](agent/AGENTS.md). Everything else about the API surface is a code detail — read
-`agent/llm.py`.
+The model lineup is spread across six files, and moving fewer than all six leaves the sidebar
+offering a model the API rejects. `/update-model-lineup` lists them. Everything else about the API
+surface is a code detail — read `agent/llm.py`.
 
 ---
 
@@ -133,8 +124,8 @@ after touching docs and it names the stale sentence.
 | Everything else in `AGENTS.md` | `AGENTS.md` | `tests/test_doc_structure.py` |
 
 `doc/` is internal, `website/docs/` is the product — a user-facing change needs the site page in
-all 15 locales, since a missing locale silently serves English. `PRD_*` are point-in-time records:
-update their `Status:` line, never rewrite them. `OLD-README.md` is frozen.
+every locale, since a missing one silently serves English (`/add-locale-doc`). `PRD_*` are
+point-in-time records: update their `Status:` line, never rewrite them. `OLD-README.md` is frozen.
 
 ## Security
 

@@ -14,6 +14,7 @@ on stdin, the exit code and stderr as the only outputs that matter.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from tests.conftest import REPO_ROOT
 CLAUDE_DIR = REPO_ROOT / ".claude"
 SETTINGS = CLAUDE_DIR / "settings.json"
 RULES_DIR = CLAUDE_DIR / "rules"
+SKILLS_DIR = CLAUDE_DIR / "skills"
 
 
 def settings() -> dict:
@@ -213,3 +215,39 @@ def test_every_rule_is_scoped_to_files_that_exist(rule: Path):
     assert patterns, f"{rule.name} has no `paths`, so it loads unconditionally"
     for pattern in patterns:
         assert list(REPO_ROOT.glob(pattern)), f"{rule.name}: {pattern} matches nothing"
+
+
+def skill_files() -> list[Path]:
+    """Return every skill definition."""
+    return sorted(SKILLS_DIR.glob("*/SKILL.md"))
+
+
+def skill_frontmatter(skill: Path) -> dict:
+    """Return the YAML header of a skill definition."""
+    _, _, body = skill.read_text(encoding="utf-8").partition("---\n")
+    front, _, _ = body.partition("---\n")
+    return yaml.safe_load(front)
+
+
+@pytest.mark.parametrize("skill", skill_files(), ids=lambda p: p.parent.name)
+def test_every_skill_declares_a_name_matching_its_directory(skill: Path):
+    """The directory name is what `/name` invokes; a mismatch is unreachable."""
+    front = skill_frontmatter(skill)
+
+    assert front["name"] == skill.parent.name
+    assert front["description"].strip(), f"{skill.parent.name} has no description"
+
+
+def test_every_skill_claude_md_points_at_exists():
+    """A `/skill` in the always-loaded file is a promise about what is there."""
+    referenced = set(
+        re.findall(
+            r"`/([a-z][a-z0-9-]*)`", (REPO_ROOT / "CLAUDE.md").read_text("utf-8")
+        )
+    )
+    available = {skill.parent.name for skill in skill_files()}
+
+    assert referenced, "CLAUDE.md points at no skill"
+    assert (
+        referenced <= available
+    ), f"CLAUDE.md points at missing skills: {referenced - available}"
