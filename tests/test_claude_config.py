@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -122,22 +124,44 @@ def test_editing_an_unguarded_document_stays_silent():
     assert result.returncode == 0
 
 
-def test_python_edits_are_formatted_in_place(tmp_path: Path):
+@contextmanager
+def python_file_in_repo(source: str):
+    """Yield a temporary ``.py`` file inside the repository, then remove it."""
+    with tempfile.NamedTemporaryFile(
+        dir=REPO_ROOT, suffix=".py", mode="w", encoding="utf-8"
+    ) as handle:
+        handle.write(source)
+        handle.flush()
+        yield Path(handle.name)
+
+
+def test_python_edits_are_formatted_in_place():
     """`black --check .` is a CI gate; a hook keeps it from ever being hit."""
-    unformatted = tmp_path / "sample.py"
-    unformatted.write_text("x = {'a':1,  'b':2}\n", encoding="utf-8")
+    with python_file_in_repo("x = {'a':1,  'b':2}\n") as sample:
+        run_hook("format_edited_file.py", str(sample))
 
-    run_hook("format_edited_file.py", str(unformatted))
-
-    assert unformatted.read_text(encoding="utf-8") == 'x = {"a": 1, "b": 2}\n'
+        assert sample.read_text(encoding="utf-8") == 'x = {"a": 1, "b": 2}\n'
 
 
-def test_formatting_a_file_black_cannot_parse_does_not_fail_the_turn(tmp_path: Path):
+def test_a_file_outside_the_repository_is_left_alone(tmp_path: Path):
+    """This project's formatting rules stop at this project's boundary.
+
+    An agent working with `--add-dir`, or editing a file in the user's own
+    dotfiles, must not have those files silently rewritten to this
+    repository's black and ruff configuration.
+    """
+    outside = tmp_path / "someone_elses.py"
+    outside.write_text("x = {'a':1,  'b':2}\n", encoding="utf-8")
+
+    run_hook("format_edited_file.py", str(outside))
+
+    assert outside.read_text(encoding="utf-8") == "x = {'a':1,  'b':2}\n"
+
+
+def test_formatting_a_file_black_cannot_parse_does_not_fail_the_turn():
     """A syntax error mid-edit is normal; the hook must not turn it into noise."""
-    broken = tmp_path / "broken.py"
-    broken.write_text("def f(\n", encoding="utf-8")
-
-    assert run_hook("format_edited_file.py", str(broken)).returncode == 0
+    with python_file_in_repo("def f(\n") as broken:
+        assert run_hook("format_edited_file.py", str(broken)).returncode == 0
 
 
 def is_ignored(relative: str) -> bool:

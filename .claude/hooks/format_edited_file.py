@@ -36,18 +36,24 @@ def run(*command: str, timeout: int = 60) -> None:
 
 
 def main() -> None:
-    """Dispatch on the edited file's language."""
+    """Dispatch on the edited file's language, inside this repository only.
+
+    An agent can edit files outside the working tree — another checkout added
+    with `--add-dir`, or the user's own dotfiles. Those are not this project's
+    to reformat, so the boundary is checked before any formatter runs.
+    """
     path = edited_path()
     if path is None or not path.is_file():
+        return
+
+    relative = relative_path(path)
+    if relative is None:
         return
 
     if path.suffix == ".py":
         run("black", "--quiet", str(path))
         run("ruff", "check", "--quiet", "--fix", str(path))
-        return
-
-    relative = relative_path(path)
-    if path.suffix == ".rs" and relative and relative.startswith("ingester/"):
+    elif path.suffix == ".rs" and relative.startswith("ingester/"):
         # rustfmt is per-crate, not per-file; this is the crate that owns it.
         run("cargo", "fmt", "--manifest-path", "ingester/Cargo.toml", timeout=180)
 
