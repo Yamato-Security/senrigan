@@ -7,10 +7,18 @@ Superset v1 import requires the following ZIP structure (NO top-level subdir):
   charts/<slice_name>.yaml
   datasets/<db_name>/<table_name>.yaml
   databases/<db_name>.yaml
+
+Packaging goes through ``zip_builder.build_zip``, the same deterministic
+packager the Suzaku bundles use: entries carry a pinned timestamp and mode
+rather than whatever the filesystem happened to hold. Without that, every
+rebuild is a diff — the committed ZIP changed whenever the test suite ran —
+and "is this ZIP stale?" cannot be answered by comparing bytes.
 """
 
 import os
 import zipfile
+
+from zip_builder import build_zip
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SOURCE_DIR = os.path.join(BASE, "cloudtrail_default")
@@ -170,21 +178,14 @@ FILE_MAP = {
 
 
 def main() -> None:
-    """Rebuild cloudtrail_default.zip from the FILE_MAP sources."""
-    if os.path.exists(OUTPUT_ZIP):
-        os.remove(OUTPUT_ZIP)
-        print(f"Removed old: {OUTPUT_ZIP}")
+    """Rebuild cloudtrail_default.zip from the FILE_MAP sources.
 
-    with zipfile.ZipFile(OUTPUT_ZIP, "w", zipfile.ZIP_DEFLATED) as zf:
-        for src_rel, arc_name in FILE_MAP.items():
-            abs_path = os.path.join(SOURCE_DIR, src_rel)
-            if not os.path.exists(abs_path):
-                print(f"  MISSING: {abs_path}")
-                continue
-            zf.write(abs_path, arc_name)
-            print(f"  Added: {arc_name}")
-
-    print(f"\nCreated: {OUTPUT_ZIP}")
+    A mapped source that does not exist raises rather than being skipped: a
+    silently dropped chart imports a dashboard that references a chart the
+    bundle does not contain, which Superset renders as "There is no chart
+    definition associated with this component".
+    """
+    build_zip(SOURCE_DIR, OUTPUT_ZIP, FILE_MAP)
 
     # Verify structure
     with zipfile.ZipFile(OUTPUT_ZIP) as zf:
