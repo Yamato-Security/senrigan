@@ -199,12 +199,28 @@ links to it. The root suite asserts the ones that must appear in prose anyway, s
 `make test-repo` after touching docs. Ownership table and the `doc/` vs `website/docs/` rules:
 [CLAUDE.md](CLAUDE.md).
 
+## Coding-Agent Configuration
+
+`.claude/` is committed, so every contributor's agent behaves the same way.
+
+| Path | What it does |
+|------|--------------|
+| `settings.json` | Pre-approves the test and lint loops; denies edits to generated or frozen paths, and reads of any `.env` |
+| `hooks/` | On every edit: formats the file, and speaks up on the two changes that otherwise fail in silence — an unbuilt dashboard bundle, and a document the root suite asserts |
+| `rules/` | Symlinks the two module guides, each scoped by a `paths:` header so it loads only when that module is being worked on |
+| `skills/` | `/add-column`, `/rebuild-dashboard`, `/update-model-lineup`, `/add-locale-doc` |
+
+`tests/test_claude_config.py` drives the hooks the way Claude Code drives them — event JSON on
+stdin, exit code and stderr as the only outputs — and checks the rule globs, the deny paths and
+the skill names against the working tree, because each of them fails by going quiet.
+
 ---
 
 ## File Structure
 
 ```
 senrigan/
+├── .claude/                   # Claude Code config: permissions, hooks, path rules, skills
 ├── .github/                   # AGENTS.md pointer, copilot-instructions.md, workflows
 ├── ingester/                  # Rust ingestion engine (see ingester/AGENTS.md)
 │   └── src/                   # main.rs (CLI) · parser.rs · db.rs · ingest.rs · enrich.rs
@@ -243,10 +259,10 @@ senrigan/
 ├── docker/                    # docker-compose.yml (6 services + ingest/resync profiles)
 ├── sample/                    # sample/suzaku: trimmed fixtures + generate_fixtures.py
 ├── tests/                     # Repository-level consistency suite (Makefile / compose / docs)
-├── website/                   # Material for MkDocs site, 15 locales
+├── website/                   # Material for MkDocs site; `mkdocs.yml` owns the locale list
 ├── Makefile                   # The command surface
 ├── ruff.toml                  # Lint rule set, pinned so a Ruff release cannot change it
-├── CLAUDE.md                  # Working rules for coding agents
+├── CLAUDE.md                  # Working rules for coding agents (loaded every session)
 ├── README.md                  # Landing page → the documentation site
 └── OLD-README.md              # Frozen pre-site single-page README
 ```

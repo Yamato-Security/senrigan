@@ -98,22 +98,23 @@ agent/
 
 ## Implemented Tests
 
-825 tests across 24 test files (counts below are approximate — run
-`python3 -m pytest <file> --collect-only -q` for exact numbers). Key coverage areas per module:
+One test file per module, named after it. No count is written down here — it would be stale
+before it was read; `python3 -m pytest agent/tests/<file> --collect-only -q` prints the current
+one. What follows is what each file covers, and why.
 
-### config.py (`test_config.py` — 10 tests)
+### config.py (`test_config.py`)
 - `test_get_duckdb_path_returns_env_var` — Config loads `DUCKDB_PATH` from environment.
 - `test_get_duckdb_path_returns_default_when_unset` — Default constant used when unset.
 - `test_get_duckdb_path_for_variant_full_returns_full_path` — `full` variant resolves full path.
 - `test_get_duckdb_path_for_variant_lite_returns_lite_path` — `lite` variant resolves lite path.
 - `test_get_duckdb_path_for_variant_lite_falls_back_to_full` — falls back to full when lite unset.
-- Plus 5 additional edge cases for empty env vars and lite-only paths.
+- Plus edge cases for empty env vars and lite-only paths.
 
-### schema.py (`test_schema.py` — 2 tests)
+### schema.py (`test_schema.py`)
 - `test_get_schema_description_returns_string` — Returns a human-readable schema description.
 - `test_get_column_names_returns_list` — Returns the expected column name list.
 
-### query.py (`test_query.py` — 30 tests)
+### query.py (`test_query.py`)
 - `test_connect_duckdb_readonly` — Opens DuckDB in read-only mode.
 - `test_execute_select_query` — Executes `SELECT` and returns a `pd.DataFrame`.
 - `test_execute_query_returns_empty_dataframe_for_no_results` — Empty result → empty DataFrame.
@@ -129,9 +130,9 @@ agent/
 - `test_execute_with_retry_does_not_retry_on_timeout` — Timeout errors are not retried.
 - `test_execute_with_retry_forwards_row_limit` — row_limit passed through retry path.
 - `test_default_row_limit_is_500` — `DEFAULT_ROW_LIMIT` constant equals 500.
-- Plus 2 additional execute_query_large_row_limit and forwarding tests.
+- Plus the large row-limit and argument-forwarding cases.
 
-### llm.py (`test_llm.py` — 51 tests)
+### llm.py (`test_llm.py`)
 - `test_build_system_prompt_includes_schema` — System prompt includes schema description.
 - `test_build_system_prompt_includes_duckdb_dialect` — DuckDB dialect note included.
 - `test_generate_sql_returns_sql_string` — Mocked OpenAI response → SQL string returned.
@@ -146,9 +147,9 @@ agent/
 - `test_fix_sql_with_llm_returns_corrected_sql` — Broken SQL + error → corrected SQL.
 - `test_fix_sql_with_llm_strips_markdown_fences` — Markdown fences stripped from fix response.
 - `test_fix_sql_with_llm_handles_api_error` — API error during fix handled gracefully.
-- Plus 2 client-caching tests (`test_create_client_reuses_same_instance`, etc.).
+- Plus client caching (`test_create_client_reuses_same_instance`, etc.).
 
-### prompts/ (`test_prompts.py` — 23 tests)
+### prompts/ (`test_prompts.py`)
 - `test_system_prompt_is_nonempty` / `test_system_prompt_contains_schema_placeholder`
 - `test_system_prompt_contains_duckdb_rule` / `test_system_prompt_contains_mitre_tactics`
 - `test_system_prompt_contains_no_write_rule` / `test_system_prompt_contains_json_extraction_guidance`
@@ -156,7 +157,7 @@ agent/
 - `test_analysis_system_prompt_is_nonempty` / `test_analysis_system_prompt_fact_based_rule`
 - `test_analysis_user_template_has_sql_placeholder` / `test_analysis_user_template_renders_correctly`
 
-### report.py (`test_report.py` — 27 tests)
+### report.py (`test_report.py`)
 - `test_generate_report_markdown` — Session produces Markdown report.
 - `test_report_includes_timestamp` — Report header contains generation timestamp.
 - `test_report_includes_all_queries` — All query/result/analysis triples included.
@@ -173,7 +174,7 @@ agent/
 - **UI-02:** `test_generate_report_includes_label_in_heading` — Label in query section heading.
 - **UI-02:** `test_generate_report_includes_category_when_set` — Category in report section.
 
-### geo.py (`test_geo.py` — 11 tests; handler integration in `test_app.py`)
+### geo.py (`test_geo.py`; handler integration in `test_app.py`)
 - `test_find_ip_columns_*` — IP column detection by name pattern + value shape
   (rejects service domains like "cloudformation.amazonaws.com").
 - `test_enrich_appends_geo_columns_after_ip_column` — geo columns inserted next to the IP.
@@ -188,7 +189,7 @@ agent/
   label/category metadata.
 - **#GEO:** `_maybe_enrich_geo` integration for all three execution paths.
 
-### app.py (`test_app.py` — 49 tests)
+### app.py (`test_app.py`)
 - Model options, built-in hunt YAML validation
 - Direct SQL execution (no API key path, date filter application)
 - Conversation context retention and `MAX_CONTEXT_TURNS` enforcement
@@ -201,7 +202,7 @@ agent/
 - **UI-02:** `_handle_direct_sql()` stores label/category in ReportEntry
 - **UI-BADGE / UI-FILTER:** result badges, expander titles, entry filtering
 
-### session.py (`test_session.py` — 20 tests)
+### session.py (`test_session.py`)
 - Session state initialisation, idempotency and per-profile isolation
 - Defaults for `date_start`/`date_end`, `conversation_context`, `row_limit`
 - `_load_builtin_prompts()` shape and fallback
@@ -209,11 +210,11 @@ agent/
 - **UI-01:** `analyst_notes` default (`{}`) and `_export_session()` `analyst_note`
 - **UI-04:** `bulk_progress` default (`None`)
 
-### views/charts.py (`test_charts.py` — 7 tests)
+### views/charts.py (`test_charts.py`)
 - Chart rendering (bar, timeseries, auto modes) and the `type='none'` opt-out
 - Time-series skips: unparseable timestamps, a single bucket, no time column
 
-### suzaku_summary_queries.py (`test_suzaku_summary_queries.py` — 26 tests)
+### suzaku_summary_queries.py (`test_suzaku_summary_queries.py`)
 - Identity triage: 22 rows, one per identity, abused-first ordering
 - Abuse counts and KPI row checked against hand-written control queries
 - `IsAbused` x `Outcome` is a partition: the four quadrants sum to the identity's rows
@@ -222,7 +223,7 @@ agent/
 - `compare_identities()` partitions into shared / only-A / only-B, NULL excluded
 - Robustness: an unknown ARN returns empty frames; a value carrying a quote is bound, not SQL
 
-### suzaku_metrics_queries.py (`test_suzaku_metrics_queries.py` — 14 tests)
+### suzaku_metrics_queries.py (`test_suzaku_metrics_queries.py`)
 - Every statement is parameterized on `Field`; a field name with a quote returns empty
 - Live controls (`limit`, `min_count`, `max_count`, `search`, `seen_after`) compose
 - `share_of_filtered` re-derives the share over the filtered subset and sums to 100%
@@ -230,7 +231,7 @@ agent/
 - `has_geo_data()` is **False** for the fixture — its geo columns exist but are all NULL —
   and True for a synthetic file with values, so the page never draws blank geo charts
 
-### views/ (`test_suzaku_explorer_views.py` — 19 tests)
+### views/ (`test_suzaku_explorer_views.py`)
 - Navigation exposes four pages; CloudTrail stays the default
 - Both explorer pages render their empty state without opening a database
 - Both render end-to-end against the committed fixtures (every panel's SQL runs)

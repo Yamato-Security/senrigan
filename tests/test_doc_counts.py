@@ -181,10 +181,13 @@ def test_every_locale_ships_a_reference_page():
     assert {page.name for page in REFERENCE_PAGES} == expected
 
 
-_SUITE_SIZE_RE = re.compile(r"≈\s*\d+|\(\d+ \w+ tests\)")
+_SUITE_SIZE_RE = re.compile(r"≈\s*\d+|\b\d+\s+tests?\b")
 
 
-@pytest.mark.parametrize("name", ("CLAUDE.md", "AGENTS.md"))
+@pytest.mark.parametrize(
+    "name",
+    ("CLAUDE.md", "AGENTS.md", "agent/AGENTS.md", "ingester/AGENTS.md"),
+)
 def test_agent_context_files_state_no_suite_size(name: str):
     """The suites own their own size, and nothing else may quote it.
 
@@ -194,6 +197,11 @@ def test_agent_context_files_state_no_suite_size(name: str):
     same paragraph told the reader a count "must not decrease in a PR". An
     agent following that rule would open a session by concluding a regression
     had already happened.
+
+    The module guides had the same problem one level down: `agent/AGENTS.md`
+    annotated every heading with a per-file count and opened with "825 tests
+    across 24 test files" against a suite of 2213, and no test checked any of
+    it.
 
     A suite size changes in every PR that adds a test, which makes it exactly
     the kind of fact that cannot survive being written down. `make check` is
