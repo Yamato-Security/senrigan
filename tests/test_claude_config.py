@@ -18,11 +18,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tests.conftest import REPO_ROOT
 
 CLAUDE_DIR = REPO_ROOT / ".claude"
 SETTINGS = CLAUDE_DIR / "settings.json"
+RULES_DIR = CLAUDE_DIR / "rules"
 
 
 def settings() -> dict:
@@ -171,3 +173,43 @@ def test_every_anchored_deny_rule_names_a_real_path(rule: str):
     assert (REPO_ROOT / literal).exists() or is_ignored(
         literal
     ), f"{rule} points at {literal}, which neither exists nor is git-ignored"
+
+
+def rule_files() -> list[Path]:
+    """Return every path-scoped rule, following the symlinks into the modules."""
+    return sorted(RULES_DIR.glob("*.md"))
+
+
+def rule_paths(rule: Path) -> list[str]:
+    """Return the glob patterns a rule scopes itself to."""
+    _, _, body = rule.read_text(encoding="utf-8").partition("---\n")
+    front, _, _ = body.partition("---\n")
+    return yaml.safe_load(front)["paths"]
+
+
+def test_both_module_guides_load_as_rules():
+    """Claude Code reads CLAUDE.md, not AGENTS.md.
+
+    Without these links `ingester/AGENTS.md` and `agent/AGENTS.md` are never
+    loaded in a session — an agent reaches them only by choosing to follow a
+    link from the root file, which is not something to rely on.
+    """
+    linked = {file.resolve() for file in rule_files()}
+
+    assert (REPO_ROOT / "ingester" / "AGENTS.md").resolve() in linked
+    assert (REPO_ROOT / "agent" / "AGENTS.md").resolve() in linked
+
+
+@pytest.mark.parametrize("rule", rule_files(), ids=lambda p: p.name)
+def test_every_rule_is_scoped_to_files_that_exist(rule: Path):
+    """An unscoped rule loads every session; a mis-scoped one loads never.
+
+    Both failures are silent, and a renamed directory produces the second one,
+    so the patterns are checked against the working tree the same way the
+    repository tree in AGENTS.md is.
+    """
+    patterns = rule_paths(rule)
+
+    assert patterns, f"{rule.name} has no `paths`, so it loads unconditionally"
+    for pattern in patterns:
+        assert list(REPO_ROOT.glob(pattern)), f"{rule.name}: {pattern} matches nothing"

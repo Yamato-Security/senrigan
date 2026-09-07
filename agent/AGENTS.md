@@ -1,8 +1,16 @@
+---
+paths:
+  - "agent/**/*.py"
+  - "agent/*.yaml"
+---
+
 # AGENTS.md — Agent Module (Python / Streamlit)
 
 > Module-specific TDD context for the `agent` module.
 > For project-wide instructions, see the root [AGENTS.md](../AGENTS.md).
 > For feature requirements, see [doc/PRD.md](../doc/PRD.md).
+> Linked from `.claude/rules/agent.md`, so Claude Code loads it on demand when
+> a file under `agent/` is opened — the `paths:` header above is what scopes it.
 
 ## Module Purpose
 
