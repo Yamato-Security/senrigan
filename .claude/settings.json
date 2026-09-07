@@ -32,5 +32,28 @@
       "Edit(/docker/data/**)",
       "Read(**/.env)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format_edited_file.py",
+            "timeout": 180,
+            "statusMessage": "Formatting the edited file"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/dashboard_assets_reminder.py"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/doc_consistency_reminder.py"
+          }
+        ]
+      }
+    ]
   }
 }

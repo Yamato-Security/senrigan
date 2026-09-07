@@ -1,0 +1,173 @@
+"""Tests for the committed Claude Code configuration.
+
+``.claude/settings.json`` is where rules that CLAUDE.md can only *state* become
+rules the client *enforces*. That distinction is the whole point of the file,
+and it fails quietly: a hook naming a script that was renamed, or a script that
+stops exiting 2 on the path it guards, produces no error — the agent simply
+never hears about it, and the dashboard ZIP goes un-rebuilt exactly the way it
+did before the hook existed.
+
+So these tests run the hooks the way Claude Code runs them: the event payload
+on stdin, the exit code and stderr as the only outputs that matter.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from tests.conftest import REPO_ROOT
+
+CLAUDE_DIR = REPO_ROOT / ".claude"
+SETTINGS = CLAUDE_DIR / "settings.json"
+
+
+def settings() -> dict:
+    """Return the parsed project settings file."""
+    return json.loads(SETTINGS.read_text(encoding="utf-8"))
+
+
+def hook_commands() -> list[str]:
+    """Return the ``command`` of every hook the settings file declares."""
+    commands = []
+    for matchers in settings().get("hooks", {}).values():
+        for matcher in matchers:
+            commands += [hook["command"] for hook in matcher["hooks"]]
+    return commands
+
+
+def hook_script(name: str) -> Path:
+    """Return the path of a hook script by file name."""
+    return CLAUDE_DIR / "hooks" / name
+
+
+def run_hook(name: str, file_path: str) -> subprocess.CompletedProcess[str]:
+    """Invoke a hook the way Claude Code does: the event payload on stdin."""
+    payload = {
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Edit",
+        "cwd": str(REPO_ROOT),
+        "tool_input": {"file_path": file_path},
+    }
+    return subprocess.run(
+        [str(hook_script(name))],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+
+def test_settings_is_valid_json_with_the_expected_top_level_keys():
+    """A malformed settings file is ignored, taking every rule down with it."""
+    assert set(settings()) >= {"permissions", "hooks"}
+
+
+@pytest.mark.parametrize("command", hook_commands(), ids=lambda c: Path(c).name)
+def test_every_hook_command_points_at_an_executable_script(command: str):
+    """A hook naming a missing script is a rule that silently does nothing."""
+    script = Path(command.replace("${CLAUDE_PROJECT_DIR}", str(REPO_ROOT)))
+
+    assert script.is_file(), f"{command} does not exist"
+    assert script.stat().st_mode & 0o111, f"{command} is not executable"
+
+
+def test_editing_a_dashboard_asset_tells_the_agent_to_rebuild():
+    """Editing YAML under `dashboard/assets/` changes nothing on its own.
+
+    Superset applies the compiled ZIPs, so the edit is inert until both the
+    rebuild and the re-import run. Nothing fails; the dashboard just keeps
+    serving the old chart. That is what this hook exists to interrupt.
+    """
+    result = run_hook(
+        "dashboard_assets_reminder.py",
+        str(REPO_ROOT / "dashboard/assets/cloudtrail_default/charts/foo.yaml"),
+    )
+
+    assert result.returncode == 2, "the reminder must reach the agent"
+    assert "rebuild_zip.py" in result.stderr
+    assert "superset-init" in result.stderr
+
+
+def test_editing_anything_else_stays_silent():
+    """A hook that speaks on every edit is a hook that gets tuned out."""
+    result = run_hook("dashboard_assets_reminder.py", str(REPO_ROOT / "agent/app.py"))
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+
+
+def test_editing_a_guarded_document_names_the_target_that_checks_it():
+    """The consistency suite only helps if the agent knows to run it."""
+    result = run_hook("doc_consistency_reminder.py", str(REPO_ROOT / "AGENTS.md"))
+
+    assert result.returncode == 2
+    assert "make test-repo" in result.stderr
+
+
+def test_editing_an_unguarded_document_stays_silent():
+    """`doc/` prose is not asserted by the root suite, so it needs no nudge."""
+    result = run_hook(
+        "doc_consistency_reminder.py", str(REPO_ROOT / "doc/ARCHITECTURE.md")
+    )
+
+    assert result.returncode == 0
+
+
+def test_python_edits_are_formatted_in_place(tmp_path: Path):
+    """`black --check .` is a CI gate; a hook keeps it from ever being hit."""
+    unformatted = tmp_path / "sample.py"
+    unformatted.write_text("x = {'a':1,  'b':2}\n", encoding="utf-8")
+
+    run_hook("format_edited_file.py", str(unformatted))
+
+    assert unformatted.read_text(encoding="utf-8") == 'x = {"a": 1, "b": 2}\n'
+
+
+def test_formatting_a_file_black_cannot_parse_does_not_fail_the_turn(tmp_path: Path):
+    """A syntax error mid-edit is normal; the hook must not turn it into noise."""
+    broken = tmp_path / "broken.py"
+    broken.write_text("def f(\n", encoding="utf-8")
+
+    assert run_hook("format_edited_file.py", str(broken)).returncode == 0
+
+
+def is_ignored(relative: str) -> bool:
+    """Return whether git deliberately keeps a path out of the working tree.
+
+    The trailing slash matters: `.gitignore` spells build output as a directory
+    pattern, and `git check-ignore` only matches one against a directory path.
+    """
+    return (
+        subprocess.run(
+            ["git", "check-ignore", "-q", f"{relative}/"],
+            cwd=REPO_ROOT,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+@pytest.mark.parametrize(
+    "rule",
+    [r for r in settings()["permissions"]["deny"] if "(/" in r],
+    ids=lambda r: r,
+)
+def test_every_anchored_deny_rule_names_a_real_path(rule: str):
+    """A deny rule for a renamed path protects nothing and reads as protection.
+
+    Build output — the Vite bundle, the DuckDB file — is legitimately absent
+    from a fresh checkout, so being git-ignored counts as existing on purpose.
+    """
+    pattern = rule.split("(", 1)[1].rstrip(")").lstrip("/")
+    literal = "/".join(
+        part for part in pattern.split("/") if "*" not in part and part != "**"
+    )
+
+    assert (REPO_ROOT / literal).exists() or is_ignored(
+        literal
+    ), f"{rule} points at {literal}, which neither exists nor is git-ignored"
