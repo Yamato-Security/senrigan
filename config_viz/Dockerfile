@@ -6,7 +6,7 @@
 
 # Pinned by digest for supply chain integrity.
 # To update: docker pull node:24-slim && docker inspect --format '{{index .RepoDigests 0}}'
-FROM node:26-slim@sha256:14bf3eac4bf209d906d3c41256597d3ab1f926b2e93a79e9bdfe1efd32454239 AS frontend-builder
+FROM node:26-slim@sha256:ec7758ee051e457b468b32bde57b0879010b325bb9862718e9615225ce4aaae1 AS frontend-builder
 
 ARG CUSTOM_CA_CERT_BASE64=""
 RUN if [ -n "$CUSTOM_CA_CERT_BASE64" ]; then \
