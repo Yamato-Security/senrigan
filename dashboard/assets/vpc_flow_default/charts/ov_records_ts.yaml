@@ -1,0 +1,36 @@
+# VFL-12: Flow Records by Action
+uuid: f10f1004-0000-4000-8000-000000000012
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Flow Records by Action
+viz_type: echarts_timeseries_bar
+description: Hourly observations split by ACCEPT and REJECT. A REJECT spike is usually scanning; an ACCEPT
+  spike needs the Egress and Inbound tabs. (VFL-12)
+query_context: ''
+params:
+  x_axis: start_time
+  time_grain_sqla: PT1H
+  time_range: No filter
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  groupby:
+  - action
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Hour (UTC)
+  y_axis_title: Records
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+  granularity_sqla: start_time
+cache_timeout: null

@@ -10,7 +10,7 @@ use clap::{Parser, Subcommand};
 use duckdb::Connection;
 use ingester::config_import::{ImportOptions, import_config};
 use ingester::date_filter::DateFilter;
-use ingester::enrich::enrich_existing;
+use ingester::enrich::{enrich_existing, enrich_flow_addresses};
 use ingester::field_filter::FieldFilter;
 use ingester::geoip::{GeoipConfig, GeoipEnricher};
 use ingester::ingest::{IngestOptions, ingest};
@@ -54,7 +54,7 @@ fn resolve_geoip_paths(
     )
 }
 
-/// Senrigan ingester — ingest AWS CloudTrail logs into DuckDB.
+/// Senrigan ingester — ingest AWS CloudTrail logs and VPC Flow Logs into DuckDB.
 #[derive(Debug, Parser)]
 #[command(name = "ingester", version, about)]
 struct Cli {
@@ -64,9 +64,13 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Ingest CloudTrail log files into DuckDB.
+    /// Ingest CloudTrail and VPC Flow Logs files into DuckDB.
+    ///
+    /// Point it at a verbatim S3 copy of `AWSLogs/`: each file is routed by
+    /// its AWS object name, and digests, Config, Parquet and other services'
+    /// files are skipped and counted.
     Ingest {
-        /// Path to a file or directory containing CloudTrail log files.
+        /// Path to a file or directory containing CloudTrail and/or VPC Flow Logs files.
         #[arg(short, long)]
         path: PathBuf,
 
@@ -300,6 +304,9 @@ fn run() -> Result<()> {
                 "Ingestion complete: files_processed={} records_inserted={} errors={} elapsed_secs={:.2}",
                 stats.files_processed, stats.records_inserted, stats.errors, stats.elapsed_secs,
             );
+            for line in stats.summary_lines() {
+                println!("{line}");
+            }
             if perf_log {
                 let pt = &stats.phase_timings;
                 eprintln!(
@@ -355,6 +362,11 @@ fn run() -> Result<()> {
                 "Enrichment complete: enriched_count={} skipped_count={} elapsed_secs={:.2}",
                 stats.enriched_count, stats.skipped_count, stats.elapsed_secs,
             );
+            if let Some(added) = enrich_flow_addresses(&conn, &enricher)
+                .context("Failed to enrich VPC Flow Logs addresses")?
+            {
+                println!("Flow addresses added to ip_geo: {added}");
+            }
             Ok(())
         }
 

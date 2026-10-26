@@ -1,0 +1,34 @@
+# VFL-34: Unusual IP Protocols
+uuid: f10f1004-0000-4000-8000-000000000034
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Unusual IP Protocols
+viz_type: dist_bar
+description: Anything other than TCP, UDP, ICMP and ICMPv6 — GRE, IP-in-IP and ESP are tunnels. (VFL-34)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  groupby:
+  - protocol_name
+  columns: []
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK' AND protocol NOT IN (1, 6, 17, 58)
+    filterOptionName: filter_10234154
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Records
+  y_axis_label: Protocol
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

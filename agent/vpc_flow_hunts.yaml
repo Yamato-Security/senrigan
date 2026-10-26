@@ -1,0 +1,751 @@
+# Built-in Hunt Queries for VPC Flow Logs (`vpc_flow_logs`)
+#
+# Schema (shared with builtin_hunts.yaml so the sidebar and report code are shared):
+#   category:    Sidebar grouping label
+#   label:       Display name shown in the UI
+#   description: One-line explanation of what this query surfaces and why it matters
+#   severity:    P1..P4, as in builtin_hunts.yaml
+#   techniques:  Optional MITRE ATT&CK mappings (tid / name / summary / url)
+#   chart:       Optional chart config (type: bar|timeseries, x/y/bucket)
+#   prompt:      Natural language prompt sent to the AI agent (requires API key)
+#   sql:         Pre-built DuckDB SQL for direct execution (no API key needed)
+#
+# The hunt contract (PRD_VPC_FLOW_LOGS §7) — every hunt declares all of these:
+#   requires:    Columns that must be populated. When no record in the selected
+#                window carries one, the page reports insufficient coverage
+#                instead of running the hunt and showing an empty result.
+#   optional:    Columns that improve the result when present.
+#   protocols:   Protocols the hunt is meaningful for.
+#   ip_versions: 4, 6 or both.
+#   min_span:    Shortest observation period the hunt needs.
+#   limitations: Shown with the result and carried into the exported report.
+#
+# SQL conventions for this dataset:
+#   - Table: vpc_flow_logs (one row = one flow observed on one interface in one
+#     aggregation window — never a connection). GeoIP: LEFT JOIN ip_geo. Never
+#     query the vpc_flow_logs_geo view: the date filter only rewrites vpc_flow_logs.
+#   - local_addr / remote_addr / flow_direction only with direction_source = 'record'.
+#   - Bytes: CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END (BPA has none).
+#   - traffic_path = 2 is IGW *or* gateway endpoint: never count it as either.
+#   - Every query has ORDER BY and LIMIT.
+#   - Every hunt has a planted positive and near-miss in the fixture
+#     (tests/test_vpc_flow_hunts.py).
+
+# ===========================================================================
+# Coverage
+# ===========================================================================
+
+- category: "\U0001f9ed Coverage"
+  label: "\U0001f9ed Flow Log Sources and Field Coverage"
+  description: "Run first: which subscriptions are in the selected window, and which optional fields each one logs."
+  severity: "P4"
+  requires: [flow_log_id]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Capture scope (VPC/subnet/ENI, ALL/ACCEPT/REJECT) is not in the records; see the Coverage tab of the dashboard for CreateFlowLogs from CloudTrail."
+  prompt: >-
+    For each flow_log_id show the number of records, the first and last start_time,
+    NODATA and SKIPDATA counts, and the share of OK records with a recorded direction
+    (direction_source = 'record') or carrying pkt_srcaddr, tcp_flags, bytes and traffic_path.
+  sql: |
+    SELECT
+        flow_log_id,
+        count(*) FILTER (WHERE log_status = 'OK')                              AS records,
+        count(*) FILTER (WHERE log_status = 'NODATA')                          AS nodata,
+        count(*) FILTER (WHERE log_status = 'SKIPDATA')                        AS skipdata,
+        min(start_time)                                                        AS first_seen,
+        max(end_time)                                                          AS last_seen,
+        round(avg((direction_source = 'record')::INT) FILTER (WHERE log_status = 'OK'), 3) AS recorded_direction_share,
+        round(avg((pkt_srcaddr IS NOT NULL)::INT)    FILTER (WHERE log_status = 'OK'), 3) AS packet_address_share,
+        round(avg((tcp_flags IS NOT NULL)::INT)      FILTER (WHERE log_status = 'OK'), 3) AS tcp_flags_share,
+        round(avg((bytes IS NOT NULL)::INT)          FILTER (WHERE log_status = 'OK'), 3) AS bytes_share,
+        round(avg((traffic_path IS NOT NULL)::INT)   FILTER (WHERE log_status = 'OK'), 3) AS traffic_path_share
+    FROM vpc_flow_logs
+    GROUP BY flow_log_id
+    ORDER BY records DESC
+    LIMIT 100
+
+- category: "\U0001f9ed Coverage"
+  label: "\U0001f9ed SKIPDATA Gaps by Interface"
+  description: "Windows in which AWS dropped records, per interface, with the addresses that interface normally carries — evidence gaps, not quiet periods."
+  severity: "P3"
+  requires: [log_status, interface_id]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "A SKIPDATA window can hide any traffic; findings that depend on the gap's interval should be treated as incomplete."
+  prompt: >-
+    List interfaces with SKIPDATA windows: how many, the first and last, and the
+    local addresses seen on that interface in OK records.
+  sql: |
+    WITH gaps AS (
+        SELECT interface_id,
+               count(*)        AS skipdata_windows,
+               min(start_time) AS first_gap,
+               max(end_time)   AS last_gap
+        FROM vpc_flow_logs
+        WHERE log_status = 'SKIPDATA'
+        GROUP BY interface_id
+    ),
+    hosts AS (
+        SELECT interface_id,
+               string_agg(DISTINCT coalesce(pkt_srcaddr, srcaddr), ', ') AS local_addresses
+        FROM vpc_flow_logs
+        WHERE log_status = 'OK' AND src_scope = 'private'
+        GROUP BY interface_id
+    )
+    SELECT g.interface_id, h.local_addresses, g.skipdata_windows, g.first_gap, g.last_gap
+    FROM gaps g
+    LEFT JOIN hosts h USING (interface_id)
+    ORDER BY g.skipdata_windows DESC
+    LIMIT 100
+
+# ===========================================================================
+# Inbound / Recon
+# ===========================================================================
+
+- category: "\U0001f50d Recon"
+  label: "\U0001f50d Vertical Port Scans"
+  description: "External sources that probed 20 or more ports on one host."
+  severity: "P3"
+  requires: [flow_direction, dstport]
+  optional: [tcp_flags]
+  protocols: [TCP, UDP]
+  ip_versions: [4, 6]
+  min_span: "1 hour"
+  limitations: "Scans slower than the selected window, or spread across many sources, fall below the threshold. Rejected probes only show if the subscription captures REJECT."
+  techniques:
+    - tid: "T1046"
+      name: "Network Service Discovery"
+      summary: "Adversaries probe hosts for listening services to find an entry point."
+      url: "https://attack.mitre.org/techniques/T1046/"
+  chart:
+    type: bar
+    x: remote_addr
+    y: distinct_ports
+  prompt: >-
+    Find external sources (remote_scope = 'public') that hit 20 or more distinct
+    destination ports on a single host, using recorded direction only.
+  sql: |
+    SELECT remote_addr,
+           local_addr,
+           count(DISTINCT dstport)                    AS distinct_ports,
+           count(*) FILTER (WHERE action = 'REJECT')  AS rejected,
+           count(*) FILTER (WHERE tcp_flags = 2)      AS syn_only,
+           min(start_time)                            AS first_seen,
+           max(end_time)                              AS last_seen
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'ingress'
+      AND remote_scope = 'public'
+    GROUP BY remote_addr, local_addr
+    HAVING count(DISTINCT dstport) >= 20
+    ORDER BY distinct_ports DESC
+    LIMIT 100
+
+- category: "\U0001f50d Recon"
+  label: "\U0001f50d Horizontal Sweeps"
+  description: "External sources that probed one port across 10 or more hosts."
+  severity: "P3"
+  requires: [flow_direction, dstport]
+  protocols: [TCP, UDP]
+  ip_versions: [4, 6]
+  min_span: "1 hour"
+  limitations: "Only hosts covered by the selected subscriptions are counted; a sweep across unmonitored subnets is undercounted."
+  techniques:
+    - tid: "T1046"
+      name: "Network Service Discovery"
+      summary: "Adversaries probe hosts for listening services to find an entry point."
+      url: "https://attack.mitre.org/techniques/T1046/"
+  prompt: >-
+    Find external sources that contacted the same destination port on 10 or more
+    distinct local hosts, using recorded direction only.
+  sql: |
+    SELECT remote_addr,
+           dstport,
+           count(DISTINCT local_addr)                AS distinct_targets,
+           count(*) FILTER (WHERE action = 'REJECT') AS rejected,
+           min(start_time)                           AS first_seen,
+           max(end_time)                             AS last_seen
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'ingress'
+      AND remote_scope = 'public'
+    GROUP BY remote_addr, dstport
+    HAVING count(DISTINCT local_addr) >= 10
+    ORDER BY distinct_targets DESC
+    LIMIT 100
+
+- category: "\U0001f6aa Exposure"
+  label: "\U0001f6aa Internet Access to Admin / DB Ports"
+  description: "Accepted inbound traffic from the internet to SSH, RDP, WinRM, database and container-management ports."
+  severity: "P1"
+  requires: [flow_direction, dstport, action]
+  optional: [tcp_flags, bytes]
+  protocols: [TCP]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "ACCEPT means the security group allowed the packets, not that a session was established; check tcp_flags (2 = SYN only) and bytes."
+  techniques:
+    - tid: "T1133"
+      name: "External Remote Services"
+      summary: "Adversaries use externally reachable remote services to gain or keep access."
+      url: "https://attack.mitre.org/techniques/T1133/"
+  prompt: >-
+    List accepted inbound flows from public addresses to ports 22, 3389, 5985, 5986,
+    3306, 5432, 1433, 6379, 9200, 27017, 2375 and 10250, with geo of the source.
+  sql: |
+    SELECT f.remote_addr,
+           g.country_code,
+           g.org,
+           f.local_addr,
+           f.dstport,
+           count(*)                                                        AS records,
+           max(f.tcp_flags)                                                AS max_tcp_flags,
+           sum(CASE WHEN f.reject_reason = 'BPA' THEN NULL ELSE f.bytes END) AS bytes,
+           min(f.start_time)                                               AS first_seen
+    FROM vpc_flow_logs f
+    LEFT JOIN ip_geo g ON g.ip = f.remote_addr
+    WHERE f.direction_source = 'record'
+      AND f.flow_direction = 'ingress'
+      AND f.remote_scope = 'public'
+      AND f.action = 'ACCEPT'
+      AND f.dstport IN (22, 3389, 5985, 5986, 3306, 5432, 1433, 6379, 9200, 27017, 2375, 10250)
+    GROUP BY f.remote_addr, g.country_code, g.org, f.local_addr, f.dstport
+    ORDER BY first_seen
+    LIMIT 200
+
+- category: "\U0001f6aa Exposure"
+  label: "\U0001f6aa Rejected, Then Accepted"
+  description: "External peers first rejected and later accepted on the same host and port — the network trace of an opened security group or NACL."
+  severity: "P2"
+  requires: [flow_direction, action, dstport]
+  protocols: [TCP, UDP]
+  ip_versions: [4, 6]
+  min_span: "1 day"
+  limitations: "Needs a subscription capturing both ACCEPT and REJECT. Correlate with AuthorizeSecurityGroupIngress in CloudTrail before concluding a rule was changed."
+  techniques:
+    - tid: "T1562.007"
+      name: "Impair Defenses: Disable or Modify Cloud Firewall"
+      summary: "Adversaries loosen cloud firewall rules to open a path in."
+      url: "https://attack.mitre.org/techniques/T1562/007/"
+  prompt: >-
+    Find (remote_addr, local_addr, dstport) combinations that were REJECTed and later
+    ACCEPTed, with the first reject and last accept times.
+  sql: |
+    SELECT remote_addr,
+           local_addr,
+           dstport,
+           count(*) FILTER (WHERE action = 'REJECT')       AS rejects,
+           count(*) FILTER (WHERE action = 'ACCEPT')       AS accepts,
+           min(start_time) FILTER (WHERE action = 'REJECT') AS first_reject,
+           max(start_time) FILTER (WHERE action = 'ACCEPT') AS last_accept
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'ingress'
+      AND remote_scope = 'public'
+    GROUP BY remote_addr, local_addr, dstport
+    HAVING count(*) FILTER (WHERE action = 'REJECT') > 0
+       AND max(start_time) FILTER (WHERE action = 'ACCEPT')
+           > min(start_time) FILTER (WHERE action = 'REJECT')
+    ORDER BY last_accept DESC
+    LIMIT 100
+
+# ===========================================================================
+# Egress
+# ===========================================================================
+
+- category: "\U0001f4e4 Egress"
+  label: "\U0001f4e4 Egress Spike vs Host Baseline"
+  description: "Hosts whose accepted egress to the internet on one day is at least 10x the median of their earlier days."
+  severity: "P1"
+  requires: [flow_direction, bytes, action]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "2 days"
+  limitations: "A host with no earlier day in the selected window has no baseline and is not listed. Backups, patching and deployments spike too."
+  techniques:
+    - tid: "T1048"
+      name: "Exfiltration Over Alternative Protocol"
+      summary: "Adversaries move data out over a channel other than their command-and-control."
+      url: "https://attack.mitre.org/techniques/T1048/"
+  prompt: >-
+    For each host and day, compute accepted egress bytes to public addresses, compare it
+    with the median of the same host's earlier days, and list days at least 10x higher.
+  sql: |
+    WITH daily AS (
+        SELECT local_addr,
+               any_value(instance_id)                                        AS instance_id,
+               date_trunc('day', start_time)                                 AS day,
+               sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END) AS egress_bytes,
+               count(DISTINCT remote_addr)                                   AS remote_peers
+        FROM vpc_flow_logs
+        WHERE direction_source = 'record'
+          AND flow_direction = 'egress'
+          AND remote_scope = 'public'
+          AND action = 'ACCEPT'
+        GROUP BY local_addr, date_trunc('day', start_time)
+    ),
+    scored AS (
+        SELECT d.*,
+               (SELECT median(o.egress_bytes) FROM daily o
+                WHERE o.local_addr = d.local_addr AND o.day < d.day) AS baseline_bytes
+        FROM daily d
+    )
+    SELECT local_addr, instance_id, day, egress_bytes, baseline_bytes,
+           round(egress_bytes / baseline_bytes, 1) AS ratio_to_baseline,
+           remote_peers
+    FROM scored
+    WHERE baseline_bytes > 0
+      AND egress_bytes >= 10 * baseline_bytes
+    ORDER BY ratio_to_baseline DESC
+    LIMIT 100
+
+- category: "\U0001f4e4 Egress"
+  label: "\U0001f4e4 Unusual Destination Ports"
+  description: "Egress to ports tied to reverse shells (4444, 1337, 31337), IRC (6667), Tor (9001, 9030) and mining pools (3333, 5555, 7777, 14444)."
+  severity: "P2"
+  requires: [flow_direction, dstport]
+  protocols: [TCP, UDP]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Port numbers are conventions, not proof: a legitimate service may use one of these ports, and attackers often use 443."
+  techniques:
+    - tid: "T1571"
+      name: "Non-Standard Port"
+      summary: "Adversaries communicate over ports not associated with the protocol."
+      url: "https://attack.mitre.org/techniques/T1571/"
+    - tid: "T1496"
+      name: "Resource Hijacking"
+      summary: "Adversaries use compromised compute for cryptocurrency mining."
+      url: "https://attack.mitre.org/techniques/T1496/"
+  prompt: >-
+    List accepted egress to public addresses on ports 4444, 6667, 1337, 31337, 9001,
+    9030, 3333, 5555, 7777 or 14444.
+  sql: |
+    SELECT local_addr,
+           remote_addr,
+           dstport,
+           protocol_name,
+           count(*)        AS records,
+           min(start_time) AS first_seen,
+           max(end_time)   AS last_seen
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'egress'
+      AND remote_scope = 'public'
+      AND action = 'ACCEPT'
+      AND dstport IN (4444, 6667, 1337, 31337, 9001, 9030, 3333, 5555, 7777, 14444)
+    GROUP BY local_addr, remote_addr, dstport, protocol_name
+    ORDER BY first_seen
+    LIMIT 200
+
+- category: "\U0001f4e4 Egress"
+  label: "\U0001f4e4 DNS to Non-Amazon Resolvers"
+  description: "Port-53 egress. Amazon DNS is never logged, so every row went to some other resolver — the baseline is your own DNS servers."
+  severity: "P3"
+  requires: [flow_direction, dstport]
+  protocols: [UDP, TCP]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Flow logs carry no query names; confirm tunnelling with Route 53 Resolver query logs or the resolver's own logs."
+  techniques:
+    - tid: "T1071.004"
+      name: "Application Layer Protocol: DNS"
+      summary: "Adversaries tunnel command-and-control or data through DNS."
+      url: "https://attack.mitre.org/techniques/T1071/004/"
+  prompt: >-
+    List hosts sending traffic to destination port 53, with the resolver, protocol,
+    record count and time range.
+  sql: |
+    SELECT local_addr,
+           remote_addr,
+           remote_scope,
+           protocol_name,
+           count(*)        AS records,
+           min(start_time) AS first_seen,
+           max(end_time)   AS last_seen
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'egress'
+      AND dstport = 53
+    GROUP BY local_addr, remote_addr, remote_scope, protocol_name
+    ORDER BY records DESC
+    LIMIT 200
+
+- category: "\U0001f4e4 Egress"
+  label: "\U0001f4e4 Outbound SMTP"
+  description: "Hosts sending mail directly to the internet — the footprint of a spam relay."
+  severity: "P3"
+  requires: [flow_direction, dstport]
+  protocols: [TCP]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Mail servers and relays do this by design; compare against the hosts that are supposed to send mail."
+  techniques:
+    - tid: "T1496"
+      name: "Resource Hijacking"
+      summary: "Adversaries use compromised resources for their own ends, such as sending spam."
+      url: "https://attack.mitre.org/techniques/T1496/"
+  prompt: >-
+    List accepted egress to public addresses on ports 25, 465 or 587.
+  sql: |
+    SELECT local_addr,
+           count(DISTINCT remote_addr) AS mail_servers,
+           count(*)                    AS records,
+           min(start_time)             AS first_seen,
+           max(end_time)               AS last_seen
+    FROM vpc_flow_logs
+    WHERE direction_source = 'record'
+      AND flow_direction = 'egress'
+      AND remote_scope = 'public'
+      AND action = 'ACCEPT'
+      AND dstport IN (25, 465, 587)
+    GROUP BY local_addr
+    ORDER BY records DESC
+    LIMIT 100
+
+# ===========================================================================
+# Periodicity
+# ===========================================================================
+
+- category: "⏱️ Periodicity"
+  label: "⏱️ Periodic Observations to External Peers"
+  description: "Flows to external peers seen at a regular interval for 12 hours or more — beaconing candidates, computed over aggregated observations."
+  severity: "P2"
+  requires: [flow_direction, dstport, start_time]
+  optional: [bytes, duration_secs]
+  protocols: [TCP, UDP]
+  ip_versions: [4, 6]
+  min_span: "12 hours"
+  limitations: "Records are aggregation windows, not connections: periods at or below the window (1 or 10 minutes) are dropped because they reproduce the logging cadence, and SKIPDATA lowers confidence. Updaters, health checks and NTP are periodic too."
+  techniques:
+    - tid: "T1071"
+      name: "Application Layer Protocol"
+      summary: "Adversaries blend command-and-control into ordinary protocols, often on a fixed schedule."
+      url: "https://attack.mitre.org/techniques/T1071/"
+  prompt: >-
+    For each (local_addr, remote_addr, dstport) to a public peer, bucket observations by
+    minute and report the median gap between active buckets, its jitter and the span,
+    for tuples observed over at least 12 hours in 20 or more buckets.
+  sql: |
+    WITH obs AS (
+        SELECT local_addr, remote_addr, dstport, interface_id,
+               time_bucket(INTERVAL 1 minute, start_time) AS bucket,
+               max(duration_secs)                         AS duration
+        FROM vpc_flow_logs
+        WHERE direction_source = 'record'
+          AND remote_scope = 'public'
+          AND log_status = 'OK'
+        GROUP BY ALL
+    ),
+    gaps AS (
+        SELECT *,
+               epoch(bucket - lag(bucket) OVER (
+                   PARTITION BY local_addr, remote_addr, dstport ORDER BY bucket)) AS gap
+        FROM obs
+    ),
+    stats AS (
+        SELECT local_addr, remote_addr, dstport,
+               list(DISTINCT interface_id) AS interfaces,
+               min(bucket)                 AS first_seen,
+               max(bucket)                 AS last_seen,
+               count(*)                    AS active_buckets,
+               median(gap)                 AS period_secs,
+               max(duration)               AS max_duration
+        FROM gaps
+        GROUP BY local_addr, remote_addr, dstport
+    ),
+    jitter AS (
+        SELECT g.local_addr, g.remote_addr, g.dstport,
+               median(abs(g.gap - s.period_secs)) / nullif(s.period_secs, 0) AS jitter
+        FROM gaps g
+        JOIN stats s USING (local_addr, remote_addr, dstport)
+        WHERE g.gap IS NOT NULL
+        GROUP BY g.local_addr, g.remote_addr, g.dstport, s.period_secs
+    ),
+    skips AS (
+        SELECT s.local_addr, s.remote_addr, s.dstport, count(k.start_time) AS skipdata_overlaps
+        FROM stats s
+        CROSS JOIN LATERAL (SELECT unnest(s.interfaces) AS interface_id) i
+        LEFT JOIN vpc_flow_logs k
+               ON k.interface_id = i.interface_id
+              AND k.log_status = 'SKIPDATA'
+              AND k.start_time BETWEEN s.first_seen AND s.last_seen
+        GROUP BY s.local_addr, s.remote_addr, s.dstport
+    )
+    SELECT s.local_addr, s.remote_addr, s.dstport,
+           s.period_secs,
+           s.active_buckets,
+           round(j.jitter, 3)                                  AS jitter,
+           k.skipdata_overlaps,
+           round(epoch(s.last_seen - s.first_seen) / 3600.0, 1) AS span_hours,
+           CASE
+               WHEN j.jitter <= 0.1 AND k.skipdata_overlaps = 0 THEN 'high'
+               WHEN j.jitter <= 0.25                            THEN 'medium'
+               ELSE 'low'
+           END                                                 AS confidence
+    FROM stats s
+    JOIN jitter j USING (local_addr, remote_addr, dstport)
+    JOIN skips  k USING (local_addr, remote_addr, dstport)
+    WHERE s.active_buckets >= 20
+      AND epoch(s.last_seen - s.first_seen) >= 12 * 3600
+      AND s.period_secs > CASE WHEN s.max_duration > 60 THEN 600 ELSE 60 END
+    ORDER BY confidence, jitter, active_buckets DESC
+    LIMIT 100
+
+# ===========================================================================
+# Lateral movement
+# ===========================================================================
+
+- category: "↔️ Lateral Movement"
+  label: "↔️ New Internal Admin-Port Pairs"
+  description: "Internal source → destination pairs on SSH, RPC, SMB, RDP or WinRM first seen at least a day after the data begins."
+  severity: "P1"
+  requires: [dstport, src_scope, dst_scope]
+  protocols: [TCP]
+  ip_versions: [4, 6]
+  min_span: "2 days"
+  limitations: "The first day of data is the baseline and can never be new; an admin path that existed before the window is not flagged. Intra-VPC flows are observed on both interfaces."
+  techniques:
+    - tid: "T1021"
+      name: "Remote Services"
+      summary: "Adversaries move between hosts with SSH, SMB, RDP or WinRM."
+      url: "https://attack.mitre.org/techniques/T1021/"
+  chart:
+    type: bar
+    x: flow_src
+    y: new_destinations
+  prompt: >-
+    Among private-to-private flows on ports 22, 135, 139, 445, 3389, 5985 and 5986,
+    find source/destination/port pairs whose first observation is at least one day after
+    the earliest record, grouped by source.
+  sql: |
+    WITH flows AS (
+        SELECT coalesce(pkt_srcaddr, srcaddr) AS flow_src,
+               coalesce(pkt_dstaddr, dstaddr) AS flow_dst,
+               dstport,
+               start_time
+        FROM vpc_flow_logs
+        WHERE log_status = 'OK'
+          AND src_scope = 'private'
+          AND dst_scope = 'private'
+    ),
+    first_seen AS (
+        SELECT flow_src, flow_dst, dstport, min(start_time) AS first_seen
+        FROM flows
+        GROUP BY flow_src, flow_dst, dstport
+    ),
+    history AS (
+        SELECT min(start_time) AS history_start FROM vpc_flow_logs
+    )
+    SELECT f.flow_src,
+           count(DISTINCT f.flow_dst)         AS new_destinations,
+           list(DISTINCT f.dstport)           AS ports,
+           min(f.first_seen)                  AS first_seen
+    FROM first_seen f, history h
+    WHERE f.first_seen >= h.history_start + INTERVAL 1 day
+      AND f.dstport IN (22, 135, 139, 445, 3389, 5985, 5986)
+    GROUP BY f.flow_src
+    ORDER BY new_destinations DESC
+    LIMIT 100
+
+- category: "↔️ Lateral Movement"
+  label: "↔️ Internal Inbound, Then External Egress"
+  description: "Hosts that received internal traffic and afterwards sent accepted traffic to the internet — data staged, then moved out."
+  severity: "P2"
+  requires: [flow_direction, bytes]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Proxies, NAT instances and build servers do this by design; the byte columns say how much moved each way."
+  techniques:
+    - tid: "T1074"
+      name: "Data Staged"
+      summary: "Adversaries collect data in one place before exfiltrating it."
+      url: "https://attack.mitre.org/techniques/T1074/"
+  prompt: >-
+    Find hosts that received traffic from private addresses and later sent accepted
+    traffic to public addresses, with bytes each way.
+  sql: |
+    WITH inbound AS (
+        SELECT local_addr AS host,
+               sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END) AS internal_in_bytes,
+               min(start_time)                                               AS first_internal_in
+        FROM vpc_flow_logs
+        WHERE direction_source = 'record'
+          AND flow_direction = 'ingress'
+          AND remote_scope = 'private'
+        GROUP BY local_addr
+    ),
+    outbound AS (
+        SELECT local_addr AS host,
+               sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END) AS external_out_bytes,
+               max(start_time)                                               AS last_external_out,
+               count(DISTINCT remote_addr)                                   AS external_peers
+        FROM vpc_flow_logs
+        WHERE direction_source = 'record'
+          AND flow_direction = 'egress'
+          AND remote_scope = 'public'
+          AND action = 'ACCEPT'
+        GROUP BY local_addr
+    )
+    SELECT i.host, i.internal_in_bytes, o.external_out_bytes,
+           i.first_internal_in, o.last_external_out, o.external_peers
+    FROM inbound i
+    JOIN outbound o USING (host)
+    WHERE o.last_external_out > i.first_internal_in
+    ORDER BY o.external_out_bytes DESC
+    LIMIT 100
+
+# ===========================================================================
+# Protocols & IPv6
+# ===========================================================================
+
+- category: "\U0001f9ea Protocols"
+  label: "\U0001f9ea Unusual IP Protocols"
+  description: "Traffic that is neither TCP, UDP, ICMP nor ICMPv6 — GRE, IP-in-IP and ESP are tunnels."
+  severity: "P3"
+  requires: [protocol]
+  protocols: [other]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "VPN appliances and transit networks use these protocols legitimately."
+  techniques:
+    - tid: "T1095"
+      name: "Non-Application Layer Protocol"
+      summary: "Adversaries tunnel traffic below the application layer to avoid inspection."
+      url: "https://attack.mitre.org/techniques/T1095/"
+  prompt: >-
+    List flows whose protocol is not 1, 6, 17 or 58, by packet-level source and destination.
+  sql: |
+    SELECT coalesce(pkt_srcaddr, srcaddr) AS flow_src,
+           coalesce(pkt_dstaddr, dstaddr) AS flow_dst,
+           protocol_name,
+           count(*)                       AS records,
+           min(start_time)                AS first_seen
+    FROM vpc_flow_logs
+    WHERE log_status = 'OK'
+      AND protocol NOT IN (1, 6, 17, 58)
+    GROUP BY ALL
+    ORDER BY records DESC
+    LIMIT 100
+
+- category: "\U0001f9ea Protocols"
+  label: "\U0001f9ea UDP Fan-Out to External Hosts"
+  description: "Sources sending UDP to 20 or more external hosts — reflection, amplification or C2 over UDP."
+  severity: "P3"
+  requires: [protocol, dst_scope]
+  protocols: [UDP]
+  ip_versions: [4, 6]
+  min_span: "1 hour"
+  limitations: "Resolvers, NTP clients and media servers fan out over UDP by design."
+  techniques:
+    - tid: "T1095"
+      name: "Non-Application Layer Protocol"
+      summary: "Adversaries tunnel traffic below the application layer to avoid inspection."
+      url: "https://attack.mitre.org/techniques/T1095/"
+  prompt: >-
+    Find packet-level sources sending UDP to 20 or more distinct public destinations.
+  sql: |
+    SELECT coalesce(pkt_srcaddr, srcaddr)                 AS flow_src,
+           count(DISTINCT coalesce(pkt_dstaddr, dstaddr)) AS external_destinations,
+           list(DISTINCT dstport)                         AS ports,
+           count(*)                                       AS records
+    FROM vpc_flow_logs
+    WHERE log_status = 'OK'
+      AND protocol = 17
+      AND dst_scope = 'public'
+    GROUP BY flow_src
+    HAVING count(DISTINCT coalesce(pkt_dstaddr, dstaddr)) >= 20
+    ORDER BY external_destinations DESC
+    LIMIT 100
+
+- category: "\U0001f9ea Protocols"
+  label: "\U0001f9ea ICMP and ICMPv6 Peers"
+  description: "ICMP and ICMPv6 flows with their byte volume — large ICMP is a tunnelling sign."
+  severity: "P4"
+  requires: [protocol]
+  optional: [bytes]
+  protocols: [ICMP, ICMPv6]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Flow logs record ICMP with ports 0, so the ICMP type and code (echo, unreachable …) are not available."
+  prompt: >-
+    List ICMP and ICMPv6 flows by packet-level source and destination with bytes.
+  sql: |
+    SELECT coalesce(pkt_srcaddr, srcaddr)                                AS flow_src,
+           coalesce(pkt_dstaddr, dstaddr)                                AS flow_dst,
+           protocol_name,
+           count(*)                                                      AS records,
+           sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END) AS bytes
+    FROM vpc_flow_logs
+    WHERE log_status = 'OK'
+      AND protocol IN (1, 58)
+    GROUP BY ALL
+    ORDER BY bytes DESC NULLS LAST
+    LIMIT 100
+
+# ===========================================================================
+# GeoIP & posture
+# ===========================================================================
+
+- category: "\U0001f30d GeoIP"
+  label: "\U0001f30d Accepted Inbound by Country"
+  description: "Countries reaching your hosts, with how many sources and ports — needs GeoLite2."
+  severity: "P4"
+  requires: [flow_direction, action]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Country is the registration of the address, not the attacker's location; VPNs, proxies and cloud providers blur it."
+  chart:
+    type: bar
+    x: country_code
+    y: records
+  prompt: >-
+    Count accepted inbound records from public addresses per country (join ip_geo on
+    remote_addr), with distinct sources and ports.
+  sql: |
+    SELECT g.country_code,
+           any_value(g.country_name)      AS country_name,
+           count(*)                       AS records,
+           count(DISTINCT f.remote_addr)  AS sources,
+           list(DISTINCT f.dstport)       AS ports
+    FROM vpc_flow_logs f
+    JOIN ip_geo g ON g.ip = f.remote_addr
+    WHERE f.direction_source = 'record'
+      AND f.flow_direction = 'ingress'
+      AND f.remote_scope = 'public'
+      AND f.action = 'ACCEPT'
+      AND g.country_code IS NOT NULL
+      AND g.country_code NOT IN ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
+    GROUP BY g.country_code
+    ORDER BY records DESC
+    LIMIT 100
+
+- category: "\U0001f6e1️ Posture"
+  label: "\U0001f6e1️ BPA and Encryption-Control Rejections"
+  description: "Traffic rejected by VPC Block Public Access (BPA) or VPC Encryption Controls (EC)."
+  severity: "P3"
+  requires: [reject_reason]
+  protocols: [any]
+  ip_versions: [4, 6]
+  min_span: "any"
+  limitations: "Only version-8+ formats log reject_reason; other rejections carry none. BPA records have no byte count."
+  prompt: >-
+    List records with a reject_reason, by reason, interface and packet-level endpoints.
+  sql: |
+    SELECT reject_reason,
+           interface_id,
+           coalesce(pkt_srcaddr, srcaddr) AS flow_src,
+           coalesce(pkt_dstaddr, dstaddr) AS flow_dst,
+           dstport,
+           count(*)                       AS records,
+           min(start_time)                AS first_seen
+    FROM vpc_flow_logs
+    WHERE reject_reason IS NOT NULL
+    GROUP BY ALL
+    ORDER BY records DESC
+    LIMIT 100

@@ -11,6 +11,7 @@ running the suite happens to have GeoLite2 files in docker/data/geoip/.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -152,6 +153,36 @@ def test_no_config_snapshots_means_no_import(geoip_dir: Path, config_dir: Path):
     assert "config-import" not in recipe
 
 
+# ── VPC Flow Logs in the same tree ─────────────────────────────────────────
+#
+# Flow logs are detected when the recipe runs, not when the Makefile is parsed:
+# a parse-time `find` would walk a possibly huge docker/logs/ on every `make`.
+# `make -n` prints the recipe, so these assert on what it would run.
+
+
+def test_ingest_proceeds_on_flow_logs_alone(geoip_dir: Path, config_dir: Path):
+    """A Flow-Logs-only S3 copy must not be refused as "no logs found"."""
+    recipe = ingest_recipe(geoip_dir, config_dir)
+
+    assert "-name '*_vpcflowlogs_*.log.gz'" in recipe
+    assert "No CloudTrail or VPC Flow Logs found" in recipe
+
+
+def test_ingest_announces_flow_logs(geoip_dir: Path, config_dir: Path):
+    """Detection says so, like the GeoIP and Config lines beside it."""
+    recipe = ingest_recipe(geoip_dir, config_dir)
+
+    assert "VPC Flow Logs found in" in recipe
+
+
+def test_no_logs_hint_syncs_the_whole_awslogs_prefix(geoip_dir: Path, config_dir: Path):
+    """The hint copies everything; the ingester routes and skips per file."""
+    recipe = ingest_recipe(geoip_dir, config_dir)
+
+    assert "aws s3 sync s3://<your-bucket>/AWSLogs/" in recipe
+    assert '--include "*.json.gz"' not in recipe
+
+
 # ── Consolidated logs target ───────────────────────────────────────────────
 
 
@@ -172,3 +203,65 @@ def test_per_service_log_targets_delegate_to_logs():
     assert "logs -f agent" in run_make("logs-agent")
     assert "logs -f config-viz" in run_make("logs-config-viz")
     assert "logs -f superset" in run_make("logs-superset")
+
+
+# ── The ingester image must match the source it documents ─────────────────
+#
+# `make ingest` used to run whatever ingester image was already built — by
+# default a downloaded release binary — so a release that predated a feature
+# (VPC Flow Logs) silently skipped its files while the Makefile announced them.
+
+INGESTER_TARGETS = ["ingest", "ingest-full", "ingest-geoip", "ingest-config", "enrich"]
+
+
+@pytest.mark.parametrize("target", INGESTER_TARGETS)
+def test_every_ingester_target_rebuilds_the_image_first(
+    target: str, geoip_dir: Path, config_dir: Path
+):
+    """A build before the first run brings a stale image in line with compose."""
+    recipe = run_make(
+        target,
+        env={"GEOIP_HOST_PATH": str(geoip_dir), "CONFIG_HOST_PATH": str(config_dir)},
+    )
+    lines = recipe.splitlines()
+    builds = [i for i, line in enumerate(lines) if "build ingester" in line]
+    runs = [i for i, line in enumerate(lines) if "run --rm ingester" in line]
+    assert runs, f"`make {target}` runs no ingester"
+    assert builds and builds[0] < runs[0], f"`make {target}` runs before building"
+
+
+def test_ingest_refuses_flow_logs_with_an_ingester_that_cannot_read_them(
+    geoip_dir: Path, config_dir: Path
+):
+    """An older ingester would skip every flow log file and still exit 0."""
+    recipe = ingest_recipe(geoip_dir, config_dir)
+
+    version_lines = [line for line in recipe.splitlines() if "--version" in line]
+    assert version_lines
+    # BuildKit writes its progress to stdout when stdout is captured, which
+    # would bury the version string the guard reads.
+    assert all("--build" not in line for line in version_lines)
+    assert "predates VPC Flow Logs support" in recipe
+    assert "INGESTER_BUILD_TARGET=runtime" in recipe
+
+
+def test_prebuilt_ingester_version_matches_the_crate():
+    """The release the compose file downloads must be the version the source declares."""
+    from tests.conftest import REPO_ROOT
+
+    cargo = (REPO_ROOT / "ingester" / "Cargo.toml").read_text(encoding="utf-8")
+    crate_version = re.search(r'^version\s*=\s*"([^"]+)"', cargo, re.MULTILINE).group(1)
+    compose = (REPO_ROOT / "docker" / "docker-compose.yml").read_text(encoding="utf-8")
+    pinned = re.search(r"INGESTER_VERSION:-(v[\d.]+)\}", compose).group(1)
+
+    assert pinned == f"v{crate_version}"
+
+
+def test_docker_build_context_excludes_cargo_target():
+    """`run --build` sends the context on every ingest; target/ is gigabytes."""
+    from tests.conftest import REPO_ROOT
+
+    ignored = (
+        (REPO_ROOT / "ingester" / ".dockerignore").read_text(encoding="utf-8").split()
+    )
+    assert "target" in ignored or "target/" in ignored

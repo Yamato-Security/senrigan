@@ -1,0 +1,34 @@
+# VFL-42: Inbound Records by Country and Action
+uuid: f10f1004-0000-4000-8000-000000000042
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Inbound Records by Country and Action
+viz_type: table
+description: Inbound observations per country, split by action. A country with an unusually high accept
+  share is reaching exposed services. (VFL-42)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  groupby:
+  - remote_geo_country_code
+  - remote_geo_country_name
+  - action
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND remote_geo_country_code IS NOT NULL AND remote_geo_country_code NOT IN ('PRIVATE', 'LOOPBACK',
+      'LINK-LOCAL', 'SPECIAL')
+    filterOptionName: filter_43102596
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 300
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

@@ -1,0 +1,99 @@
+# Superset dataset: vpc_flow_internal_pairs (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000007
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_internal_pairs
+main_dttm_col: first_seen
+description: Private-to-private (source, destination, port) pairs with their first observation. A pair
+  is new when first seen at least one day after the earliest record, so the first day of data never counts
+  as new.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "WITH flows AS (\n    SELECT\n        coalesce(pkt_srcaddr, srcaddr) AS flow_src,\n        coalesce(pkt_dstaddr,\
+  \ dstaddr) AS flow_dst,\n        dstport,\n        start_time,\n        CASE WHEN reject_reason = 'BPA'\
+  \ THEN NULL ELSE bytes END AS bytes_measured\n    FROM vpc_flow_logs\n    WHERE log_status = 'OK'\n\
+  \      AND src_scope = 'private'\n      AND dst_scope = 'private'\n),\npairs AS (\n    SELECT\n    \
+  \    flow_src,\n        flow_dst,\n        dstport,\n        min(start_time)     AS first_seen,\n  \
+  \      max(start_time)     AS last_seen,\n        count(*)            AS observations,\n        sum(bytes_measured)\
+  \ AS bytes_measured\n    FROM flows\n    GROUP BY flow_src, flow_dst, dstport\n),\nhistory AS (\n  \
+  \  SELECT min(start_time) AS history_start FROM vpc_flow_logs\n)\nSELECT\n    p.*,\n    h.history_start,\n\
+  \    p.first_seen >= h.history_start + INTERVAL 1 day AS is_new_pair\nFROM pairs p, history h\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: flow_src
+  verbose_name: Flow Source
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: flow_dst
+  verbose_name: Flow Destination
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: dstport
+  verbose_name: Destination Port
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: first_seen
+  verbose_name: First Seen
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: last_seen
+  verbose_name: Last Seen
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: observations
+  verbose_name: Observations
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: bytes_measured
+  verbose_name: Bytes (excluding BPA)
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: history_start
+  verbose_name: History Start
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: is_new_pair
+  verbose_name: Is New Pair
+  is_dttm: false
+  is_active: true
+  type: BOOLEAN
+  groupby: true
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

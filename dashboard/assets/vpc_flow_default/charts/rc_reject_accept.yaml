@@ -1,0 +1,46 @@
+# VFL-19: REJECT then ACCEPT — Same Peer, Target and Port
+uuid: f10f1004-0000-4000-8000-000000000019
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000005
+slice_name: REJECT then ACCEPT — Same Peer, Target and Port
+viz_type: table
+description: 'An external peer that was rejected and later accepted on the same target and port — the
+  network trace of an opened security group or NACL. Correlate with AuthorizeSecurityGroupIngress in CloudTrail.
+  A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+  before concluding. (VFL-19)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(rejects)
+    label: rejects
+    hasCustomLabel: true
+    optionName: metric_rejects
+  - expressionType: SQL
+    sqlExpression: SUM(accepts)
+    label: accepts
+    hasCustomLabel: true
+    optionName: metric_accepts
+  - expressionType: SQL
+    sqlExpression: MIN(first_reject)
+    label: first_reject
+    hasCustomLabel: true
+    optionName: metric_first_reject
+  - expressionType: SQL
+    sqlExpression: MAX(last_accept)
+    label: last_accept
+    hasCustomLabel: true
+    optionName: metric_last_accept
+  groupby:
+  - remote_addr
+  - remote_geo_country_code
+  - local_addr
+  - dstport
+  adhoc_filters: []
+  granularity_sqla: first_reject
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

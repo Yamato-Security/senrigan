@@ -1,0 +1,32 @@
+# VFL-39: Inbound Accepted — Origin Map
+uuid: f10f1004-0000-4000-8000-000000000039
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Inbound Accepted — Origin Map
+viz_type: world_map
+description: 'Where accepted inbound traffic comes from. A triage signal, not a finding: confirm with
+  CloudTrail, host evidence and the owner of the workload before concluding. (VFL-39)'
+query_context: ''
+params:
+  entity: remote_geo_country_code
+  country_fieldtype: cca2
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND action = 'ACCEPT' AND remote_geo_country_code IS NOT NULL AND remote_geo_country_code NOT IN
+      ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
+    filterOptionName: filter_98180623
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 300
+  show_bubbles: false
+  linear_color_scheme: superset_seq_1
+  max_bubble_size: '25'
+cache_timeout: null

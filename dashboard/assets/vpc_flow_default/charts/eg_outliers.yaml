@@ -1,0 +1,53 @@
+# VFL-21: Egress Volume vs Host Baseline
+uuid: f10f1004-0000-4000-8000-000000000021
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000006
+slice_name: Egress Volume vs Host Baseline
+viz_type: table
+description: 'Each host''s daily accepted egress to the internet divided by the median of its earlier
+  days. Hosts without history have no ratio and are not listed. A triage signal, not a finding: confirm
+  with CloudTrail, host evidence and the owner of the workload before concluding. (VFL-21)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: MAX(ratio_to_baseline)
+    label: ratio_to_baseline
+    hasCustomLabel: true
+    optionName: metric_ratio_to_baseline
+  - expressionType: SQL
+    sqlExpression: SUM(egress_bytes)
+    label: egress_bytes
+    hasCustomLabel: true
+    optionName: metric_egress_bytes
+  - expressionType: SQL
+    sqlExpression: MAX(baseline_bytes)
+    label: baseline_bytes
+    hasCustomLabel: true
+    optionName: metric_baseline_bytes
+  - expressionType: SQL
+    sqlExpression: MAX(baseline_days)
+    label: baseline_days
+    hasCustomLabel: true
+    optionName: metric_baseline_days
+  - expressionType: SQL
+    sqlExpression: MAX(remote_peers)
+    label: remote_peers
+    hasCustomLabel: true
+    optionName: metric_remote_peers
+  groupby:
+  - local_addr
+  - instance_id
+  - day
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: ratio_to_baseline IS NOT NULL
+    filterOptionName: filter_94869880
+  granularity_sqla: day
+  time_range: No filter
+  row_limit: 50
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

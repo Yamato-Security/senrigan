@@ -1,0 +1,64 @@
+# VFL-27: Periodic Flow-Log Observations
+uuid: f10f1004-0000-4000-8000-000000000027
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000004
+slice_name: Periodic Flow-Log Observations
+viz_type: table
+description: 'Flows to external peers observed at a regular interval over at least 12 hours and 20 active
+  one-minute buckets. Jitter is the median absolute deviation of the gaps divided by the period; confidence
+  drops when SKIPDATA overlaps the interval. Periods at or below the aggregation window are excluded because
+  they only reproduce the logging cadence. Updaters, health checks and NTP are periodic too. A triage
+  signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding.
+  (VFL-27)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: MAX(period_secs)
+    label: period_secs
+    hasCustomLabel: true
+    optionName: metric_period_secs
+  - expressionType: SQL
+    sqlExpression: MAX(active_buckets)
+    label: active_buckets
+    hasCustomLabel: true
+    optionName: metric_active_buckets
+  - expressionType: SQL
+    sqlExpression: MAX(jitter)
+    label: jitter
+    hasCustomLabel: true
+    optionName: metric_jitter
+  - expressionType: SQL
+    sqlExpression: MAX(active_bucket_ratio)
+    label: active_bucket_ratio
+    hasCustomLabel: true
+    optionName: metric_active_bucket_ratio
+  - expressionType: SQL
+    sqlExpression: MAX(bytes_cv)
+    label: bytes_cv
+    hasCustomLabel: true
+    optionName: metric_bytes_cv
+  - expressionType: SQL
+    sqlExpression: MAX(skipdata_overlaps)
+    label: skipdata_overlaps
+    hasCustomLabel: true
+    optionName: metric_skipdata_overlaps
+  - expressionType: SQL
+    sqlExpression: MAX(span_hours)
+    label: span_hours
+    hasCustomLabel: true
+    optionName: metric_span_hours
+  groupby:
+  - local_addr
+  - remote_addr
+  - dstport
+  - protocol_name
+  - confidence
+  adhoc_filters: []
+  granularity_sqla: first_seen
+  time_range: No filter
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

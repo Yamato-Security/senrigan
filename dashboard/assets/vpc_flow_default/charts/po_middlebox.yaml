@@ -1,0 +1,37 @@
+# VFL-49: Middlebox Interfaces
+uuid: f10f1004-0000-4000-8000-000000000049
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Middlebox Interfaces
+viz_type: table
+description: Records captured on NAT gateways, load balancers, transit gateways and endpoints. Their addresses
+  are the middlebox's, not a victim host's — use the packet-level addresses. (VFL-49)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - interface_type
+  - resource_id
+  - interface_id
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK' AND via_middlebox
+    filterOptionName: filter_99339361
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

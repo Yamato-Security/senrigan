@@ -72,6 +72,9 @@ impl DateFilter {
 /// Scan the components of `path` for a consecutive `yyyy / mm / dd` triple and
 /// return the first valid `NaiveDate` found, or `None` if none exists.
 ///
+/// Falls back to Hive-compatible `year=/month=/day=` segments, then to the
+/// `_YYYYMMDDTHHmmZ_` timestamp in a VPC Flow Logs object name.
+///
 /// The function accepts paths such as:
 /// - `2024/01/15/file.json.gz`
 /// - `/AWSLogs/123456789012/CloudTrail/us-east-1/2023/11/30/file.json.gz`
@@ -88,7 +91,25 @@ pub fn extract_date_from_path(path: &Path) -> Option<NaiveDate> {
             return Some(date);
         }
     }
-    None
+
+    // Hive-compatible prefixes: `year=YYYY/month=MM/day=DD`.
+    for window in components.windows(3) {
+        if let [y, m, d] = window
+            && let (Some(y), Some(m), Some(d)) = (
+                y.strip_prefix("year="),
+                m.strip_prefix("month="),
+                d.strip_prefix("day="),
+            )
+        {
+            return NaiveDate::parse_from_str(&format!("{y}-{m}-{d}"), "%Y-%m-%d").ok();
+        }
+    }
+
+    // A flow log object name: `…_YYYYMMDDTHHmmZ_…`.
+    let name = components.last()?;
+    name.split('_')
+        .filter(|t| t.len() == 14 && t.as_bytes()[8] == b'T' && t.ends_with('Z'))
+        .find_map(|t| NaiveDate::parse_from_str(&t[..8], "%Y%m%d").ok())
 }
 
 // ── Unit tests ────────────────────────────────────────────────────────────────
@@ -251,5 +272,39 @@ mod tests {
     fn test_date_filter_from_strs_invalid_calendar_date() {
         let result = DateFilter::from_strs(Some("20241301"), None);
         assert!(result.is_err(), "month 13 is not a valid calendar date");
+    }
+
+    // ── VPC Flow Logs layouts ─────────────────────────────────────────────
+
+    // DF-H1: Hive-compatible prefixes carry the date as key=value segments.
+    #[test]
+    fn test_extract_date_hive_prefixes() {
+        let path = PathBuf::from(
+            "/AWSLogs/aws-account-id=123456789012/aws-service=vpcflowlogs/aws-region=us-east-1/year=2024/month=01/day=16/x.log.gz",
+        );
+        assert_eq!(extract_date_from_path(&path), Some(date(2024, 1, 16)));
+    }
+
+    // DF-H2: hourly Hive partitions still resolve to the day.
+    #[test]
+    fn test_extract_date_hive_hourly() {
+        let path = PathBuf::from("/x/year=2024/month=02/day=03/hour=17/x.log.gz");
+        assert_eq!(extract_date_from_path(&path), Some(date(2024, 2, 3)));
+    }
+
+    // DF-H3: a flow log object name carries `_YYYYMMDDTHHmmZ_`.
+    #[test]
+    fn test_extract_date_flow_log_file_name() {
+        let path = PathBuf::from(
+            "/flat/123456789012_vpcflowlogs_us-east-1_fl-1234abcd_20240620T1620Z_fe123456.log.gz",
+        );
+        assert_eq!(extract_date_from_path(&path), Some(date(2024, 6, 20)));
+    }
+
+    // DF-H4: an invalid Hive date is not a date.
+    #[test]
+    fn test_extract_date_hive_invalid() {
+        let path = PathBuf::from("/x/year=2024/month=13/day=01/x.log.gz");
+        assert_eq!(extract_date_from_path(&path), None);
     }
 }

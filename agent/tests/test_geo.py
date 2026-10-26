@@ -224,3 +224,78 @@ def test_enrich_drops_columns_when_db_has_no_geo_data(no_geo_conn):
     enriched = enrich_with_geo(no_geo_conn, df)
 
     pd.testing.assert_frame_equal(enriched, df)
+
+
+# ---------------------------------------------------------------------------
+# VPC Flow Logs: explicit address columns and the ip_geo lookup
+# ---------------------------------------------------------------------------
+
+VPC_FLOW_FIXTURE = (
+    __import__("pathlib").Path(__file__).resolve().parents[2]
+    / "sample"
+    / "vpc_flow"
+    / "fixtures"
+    / "vpc-flow-fixture.duckdb"
+)
+
+
+def test_find_ip_columns_includes_declared_address_columns():
+    """Test G-F1: flow address names match no IP name pattern, so profiles declare them."""
+    df = pd.DataFrame({"remote_addr": ["81.2.69.160"], "dstport": [443]})
+
+    assert find_ip_columns(df) == []
+    assert find_ip_columns(df, extra_names=("remote_addr", "srcaddr")) == [
+        "remote_addr"
+    ]
+
+
+def test_declared_column_still_needs_ip_shaped_values():
+    """Test G-F2: a declared name holding non-addresses is not enriched."""
+    df = pd.DataFrame({"remote_addr": ["-", None]})
+
+    assert find_ip_columns(df, extra_names=("remote_addr",)) == []
+
+
+def test_enrich_from_ip_geo():
+    """Test G-F3: the flow page looks geo up in ip_geo, not cloudtrail_events."""
+    df = pd.DataFrame({"remote_addr": ["81.2.69.160", "10.0.2.5"]})
+    conn = duckdb.connect(str(VPC_FLOW_FIXTURE), read_only=True)
+    try:
+        out = enrich_with_geo(conn, df, ip_columns=("remote_addr",), lookup="ip_geo")
+    finally:
+        conn.close()
+
+    assert list(out.columns[:2]) == ["remote_addr", "geo_country_code"]
+    assert out.loc[0, "geo_country_code"] == "GB"
+    assert out.loc[1, "geo_country_code"] == "PRIVATE"
+
+
+def test_ip_geo_lookup_falls_back_to_cloudtrail(tmp_duckdb_geo):
+    """Test G-F4: an address only CloudTrail knows still gets its geo."""
+    conn = duckdb.connect(tmp_duckdb_geo)
+    conn.execute(
+        "CREATE TABLE ip_geo (ip VARCHAR, country_code VARCHAR, country_name VARCHAR,"
+        " city VARCHAR, latitude DOUBLE, longitude DOUBLE, asn VARCHAR, org VARCHAR)"
+    )
+    conn.execute(
+        "INSERT INTO ip_geo (ip, country_code, city) VALUES ('192.0.2.1', 'SE', 'Lund')"
+    )
+    df = pd.DataFrame({"remote_addr": ["192.0.2.1", "198.51.100.7"]})
+    try:
+        out = enrich_with_geo(conn, df, ip_columns=("remote_addr",), lookup="ip_geo")
+    finally:
+        conn.close()
+
+    assert out["geo_country_code"].tolist() == ["SE", "JP"]
+    assert out["geo_city"].tolist() == ["Lund", "Tokyo"]
+
+
+def test_unknown_lookup_source_is_rejected(tmp_duckdb_geo):
+    """Test G-F5: a typo in a profile must fail loudly, not enrich from nowhere."""
+    df = pd.DataFrame({"ip": ["203.0.113.10"]})
+    conn = duckdb.connect(tmp_duckdb_geo)
+    try:
+        with pytest.raises(ValueError, match="lookup"):
+            enrich_with_geo(conn, df, lookup="nowhere")
+    finally:
+        conn.close()

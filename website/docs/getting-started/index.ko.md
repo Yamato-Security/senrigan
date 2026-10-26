@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (macOS에는 기본 설치됨)                    |
 | **Resources**                         | 최소 16 GB RAM, SSD 권장                            |
 | **CloudTrail logs**                   | AWS에서 내보낸 `.json` 또는 `.json.gz` 파일         |
+| *(Optional)* **VPC Flow Logs** | S3로 전송된 일반 텍스트 `.log.gz` 파일 |
 | *(Optional)* **AWS Config snapshots** | AWS 리소스 그래프용 `.json` 또는 `.json.gz` 파일    |
 | *(Optional)* **OpenAI API key**       | AI 쿼리 생성에 필요                                 |
 | *(Optional)* **MaxMind GeoLite2**     | GeoIP 보강용 `.mmdb` 파일                           |
@@ -16,10 +17,10 @@
 
 ## 빠른 시작
 
-**1단계.** S3에서 CloudTrail 로그를 다운로드합니다.
+**1단계.** S3에서 `AWSLogs/` 접두사 전체를 다운로드합니다. CloudTrail 로그와 (있다면) VPC Flow Logs가 포함되며, 다른 서비스의 파일은 수집 시 건너뜁니다.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **2단계.** 저장소를 복제하고 데이터를 배치합니다.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | 명령 | 설명 |
 |---|---|
-| `make ingest` | `docker/logs/`의 CloudTrail 로그를 DuckDB로 수집 |
+| `make ingest` | `docker/logs/`의 CloudTrail 로그와 VPC Flow Logs를 DuckDB로 수집 |
 | `make up` | UI, 대시보드, 리소스 그래프 시작 |
 | `make down` | 모두 중지 |
 | `make logs` | 서비스 로그 확인 (하나만 보려면 `SERVICE=agent`) |

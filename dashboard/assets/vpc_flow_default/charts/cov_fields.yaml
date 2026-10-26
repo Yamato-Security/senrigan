@@ -1,0 +1,56 @@
+# VFL-05: Field Availability by Source
+uuid: f10f1004-0000-4000-8000-000000000005
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Field Availability by Source
+viz_type: table
+description: Share of records carrying each optional field, per subscription. A hunt that depends on a
+  field this source does not log cannot find anything there — that is insufficient coverage, not a clean
+  result. (VFL-05)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN direction_source = 'record' THEN 1.0 ELSE 0 END)
+    label: recorded_direction_share
+    hasCustomLabel: true
+    optionName: metric_recorded_direction_share
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN pkt_srcaddr IS NOT NULL THEN 1.0 ELSE 0 END)
+    label: packet_address_share
+    hasCustomLabel: true
+    optionName: metric_packet_address_share
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN tcp_flags IS NOT NULL THEN 1.0 ELSE 0 END)
+    label: tcp_flags_share
+    hasCustomLabel: true
+    optionName: metric_tcp_flags_share
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN bytes_measured IS NOT NULL THEN 1.0 ELSE 0 END)
+    label: bytes_share
+    hasCustomLabel: true
+    optionName: metric_bytes_share
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN traffic_path_label IS NOT NULL THEN 1.0 ELSE 0 END)
+    label: traffic_path_share
+    hasCustomLabel: true
+    optionName: metric_traffic_path_share
+  - expressionType: SQL
+    sqlExpression: AVG(CASE WHEN encryption_status IS NOT NULL THEN 1.0 ELSE 0 END)
+    label: encryption_status_share
+    hasCustomLabel: true
+    optionName: metric_encryption_status_share
+  groupby:
+  - flow_log_id
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

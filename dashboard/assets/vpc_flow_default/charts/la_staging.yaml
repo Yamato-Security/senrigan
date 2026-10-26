@@ -1,0 +1,47 @@
+# VFL-31: Internal Inbound Followed by External Egress
+uuid: f10f1004-0000-4000-8000-000000000031
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000008
+slice_name: Internal Inbound Followed by External Egress
+viz_type: table
+description: 'Hosts that received internal traffic and afterwards sent accepted traffic to the internet:
+  the staging-then-exfiltration shape. A triage signal, not a finding: confirm with CloudTrail, host evidence
+  and the owner of the workload before concluding. (VFL-31)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(internal_in_bytes)
+    label: internal_in_bytes
+    hasCustomLabel: true
+    optionName: metric_internal_in_bytes
+  - expressionType: SQL
+    sqlExpression: SUM(external_out_bytes)
+    label: external_out_bytes
+    hasCustomLabel: true
+    optionName: metric_external_out_bytes
+  - expressionType: SQL
+    sqlExpression: MIN(first_internal_in)
+    label: first_internal_in
+    hasCustomLabel: true
+    optionName: metric_first_internal_in
+  - expressionType: SQL
+    sqlExpression: MAX(last_external_out)
+    label: last_external_out
+    hasCustomLabel: true
+    optionName: metric_last_external_out
+  - expressionType: SQL
+    sqlExpression: MAX(external_peers)
+    label: external_peers
+    hasCustomLabel: true
+    optionName: metric_external_peers
+  groupby:
+  - host
+  adhoc_filters: []
+  granularity_sqla: first_internal_in
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

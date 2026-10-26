@@ -1,0 +1,51 @@
+# VFL-23: Unusual Destination Ports
+uuid: f10f1004-0000-4000-8000-000000000023
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Unusual Destination Ports
+viz_type: table
+description: 'Egress to ports associated with reverse shells (4444, 1337, 31337), IRC (6667), Tor (9001,
+  9030) and mining pools (3333, 5555, 7777, 14444). A triage signal, not a finding: confirm with CloudTrail,
+  host evidence and the owner of the workload before concluding. (VFL-23)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: MAX(start_time)
+    label: last_seen
+    hasCustomLabel: true
+    optionName: metric_last_seen
+  groupby:
+  - local_addr
+  - remote_addr
+  - dstport
+  - protocol_name
+  - remote_geo_country_code
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND dstport IN (4444, 6667, 1337, 31337, 9001, 9030, 3333, 5555, 7777, 14444)
+    filterOptionName: filter_98912807
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

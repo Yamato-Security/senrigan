@@ -16,6 +16,7 @@ import pandas as pd
 import pytest
 
 from profiles import (
+    VPC_FLOW_PROFILE,
     CLOUDTRAIL_PROFILE,
     SUZAKU_METRICS_PROFILE,
     SUZAKU_SUMMARY_PROFILE,
@@ -43,8 +44,8 @@ def _clear_discovery_cache():
 # ---------------------------------------------------------------------------
 
 
-def test_navigation_exposes_all_four_pages() -> None:
-    """Test 24: both explorers must be reachable, CloudTrail still default."""
+def test_navigation_exposes_every_page() -> None:
+    """Test 24: both explorers and the flow page must be reachable, CloudTrail still default."""
     from app import build_pages
 
     with patch("streamlit.Page") as mock_page:
@@ -56,17 +57,19 @@ def test_navigation_exposes_all_four_pages() -> None:
 
     assert titles == [
         CLOUDTRAIL_PROFILE.label,
+        VPC_FLOW_PROFILE.label,
         SUZAKU_TIMELINE_PROFILE.label,
         SUZAKU_SUMMARY_PROFILE.label,
         SUZAKU_METRICS_PROFILE.label,
     ]
     assert url_paths == [
         "senrigan",
+        "vpc-flow",
         "suzaku-timeline",
         "suzaku-summary",
         "suzaku-metrics",
     ]
-    assert defaults == [True, False, False, False]
+    assert defaults == [True, False, False, False, False]
 
 
 # ---------------------------------------------------------------------------

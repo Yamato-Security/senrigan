@@ -1,0 +1,36 @@
+# VFL-22: Egress Bytes by Traffic Path
+uuid: f10f1004-0000-4000-8000-000000000022
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Egress Bytes by Traffic Path
+viz_type: dist_bar
+description: Where egress leaves the VPC. Path 2 means internet gateway OR gateway endpoint and is shown
+  as ambiguous rather than counted as either. (VFL-22)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - traffic_path_label
+  columns: []
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND traffic_path_label IS
+      NOT NULL
+    filterOptionName: filter_3126659
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Bytes
+  y_axis_label: Path
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

@@ -21,6 +21,7 @@ REBUILD_SCRIPTS: dict[str, str] = {
     "rebuild_suzaku_timeline_zip.py": "suzaku_timeline",
     "rebuild_suzaku_summary_zip.py": "suzaku_summary",
     "rebuild_suzaku_metrics_zip.py": "suzaku_metrics",
+    "rebuild_vpc_flow_zip.py": "vpc_flow_default",
 }
 
 EXISTING_SCRIPTS = [name for name in REBUILD_SCRIPTS if (ASSETS / name).exists()]
@@ -39,6 +40,12 @@ def _load_script(name: str):
         return module
     finally:
         sys.path.remove(str(ASSETS))
+
+
+def test_every_mapped_rebuild_script_exists() -> None:
+    """A mapping to a missing script would silently skip every check below."""
+    missing = [name for name in REBUILD_SCRIPTS if not (ASSETS / name).exists()]
+    assert not missing, f"mapped but missing: {missing}"
 
 
 def test_every_bundle_has_a_rebuild_script() -> None:

@@ -1,0 +1,28 @@
+# VFL-09: Distinct External Peers
+uuid: f10f1004-0000-4000-8000-000000000009
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Distinct External Peers
+viz_type: big_number_total
+description: Distinct public addresses seen as the remote endpoint of a flow with a recorded direction.
+  (VFL-09)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT remote_addr)
+    label: external_peers
+    hasCustomLabel: true
+    optionName: metric_external_peers
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND remote_scope = 'public' AND log_status = 'OK'
+    filterOptionName: filter_43567515
+  subheader: public remote addresses
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

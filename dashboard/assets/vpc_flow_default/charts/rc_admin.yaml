@@ -1,0 +1,52 @@
+# VFL-17: Internet to Admin / DB Ports — Accepted
+uuid: f10f1004-0000-4000-8000-000000000017
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Internet to Admin / DB Ports — Accepted
+viz_type: table
+description: 'Accepted inbound traffic from the internet to administration and database ports (SSH, RDP,
+  WinRM, MySQL, Postgres, MSSQL, Redis, Elasticsearch, MongoDB, Docker, kubelet). ACCEPT means the security
+  group allowed it, not that a session was established — check tcp_flags and bytes. A triage signal, not
+  a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding. (VFL-17)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: MAX(start_time)
+    label: last_seen
+    hasCustomLabel: true
+    optionName: metric_last_seen
+  groupby:
+  - remote_addr
+  - remote_geo_country_code
+  - local_addr
+  - dstport
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND action = 'ACCEPT' AND dstport IN (22, 3389, 5985, 5986, 3306, 5432, 1433, 6379, 9200, 27017,
+      2375, 10250)
+    filterOptionName: filter_377613
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

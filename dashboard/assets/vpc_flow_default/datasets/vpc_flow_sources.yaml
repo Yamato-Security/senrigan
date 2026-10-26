@@ -1,0 +1,136 @@
+# Superset dataset: vpc_flow_sources (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000002
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_sources
+main_dttm_col: first_observation
+description: 'One row per flow log subscription: field set, files, parse health, NODATA / SKIPDATA counts
+  and interfaces seen. Read this before trusting an empty chart.'
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "SELECT\n    s.flow_log_id,\n    s.account_ids,\n    s.regions,\n    s.header_variants,\n    s.header,\n\
+  \    s.files,\n    s.rows_total,\n    s.rows_valid,\n    s.rows_with_issues,\n    s.rows_rejected,\n\
+  \    s.nodata_rows,\n    s.skipdata_rows,\n    s.first_observation,\n    s.last_observation,\n    i.interfaces_seen\n\
+  FROM vpc_flow_sources s\nLEFT JOIN (\n    SELECT flow_log_id, count(DISTINCT interface_id) AS interfaces_seen\n\
+  \    FROM vpc_flow_logs\n    GROUP BY flow_log_id\n) i USING (flow_log_id)\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: flow_log_id
+  verbose_name: Flow Log Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: account_ids
+  verbose_name: Account Ids
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: regions
+  verbose_name: Regions
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: header_variants
+  verbose_name: Header Variants
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: header
+  verbose_name: Header
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: files
+  verbose_name: Files
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: rows_total
+  verbose_name: Rows Total
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: rows_valid
+  verbose_name: Rows Valid
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: rows_with_issues
+  verbose_name: Rows With Issues
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: rows_rejected
+  verbose_name: Rows Rejected
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: nodata_rows
+  verbose_name: Nodata Rows
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: skipdata_rows
+  verbose_name: Skipdata Rows
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: first_observation
+  verbose_name: First Observation
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: last_observation
+  verbose_name: Last Observation
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: interfaces_seen
+  verbose_name: Interfaces Seen
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

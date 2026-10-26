@@ -8,7 +8,7 @@ without a second copy of it.
 Every parameterized function keeps :data:`CLOUDTRAIL_PROFILE` as its default, so
 existing callers — and the existing tests — behave exactly as before.
 
-Two of the four profiles describe **explorer** pages rather than chat pages:
+Two of the five profiles describe **explorer** pages rather than chat pages:
 Suzaku's ``aws-ct-summary`` and ``aws-ct-metrics`` output is already aggregated,
 so those pages run reviewed, parameterized SQL and never generate any. They are
 marked :attr:`DatasetProfile.chat_enabled` ``False``, and the chat-only members
@@ -22,9 +22,11 @@ from pathlib import Path
 
 from prompts.suzaku_timeline_prompt import SUZAKU_TIMELINE_SYSTEM_PROMPT
 from prompts.system_prompt import SYSTEM_PROMPT
+from prompts.vpc_flow_prompt import VPC_FLOW_SYSTEM_PROMPT
 from schema import (
     CLOUDTRAIL_COLUMNS,
     SUZAKU_TIMELINE_COLUMNS,
+    VPC_FLOW_COLUMNS,
     get_schema_description,
 )
 from suzaku_db import SuzakuKind
@@ -71,6 +73,10 @@ class DatasetProfile:
                              and lives in the repository.
         suzaku_kind:         The Suzaku command whose output this profile reads,
                              or None for Senrigan's own database.
+        ip_columns:          Address columns to geo-enrich even though their
+                             names match no IP-like pattern (``geo.py``).
+        geo_lookup:          Where ``geo.py`` looks geo up: ``"cloudtrail"`` or
+                             ``"ip_geo"``.
     """
 
     key: str
@@ -92,6 +98,13 @@ class DatasetProfile:
     filter_alias: str = ""
     chat_enabled: bool = True
     suzaku_kind: SuzakuKind | None = None
+    ip_columns: tuple[str, ...] = ()
+    geo_lookup: str = "cloudtrail"
+
+    @property
+    def reads_senrigan_db(self) -> bool:
+        """True when queries run against threat_hunting.db rather than a Suzaku file."""
+        return self.suzaku_kind is None
 
     def __post_init__(self) -> None:
         """Derive the CTE alias and state prefix when the caller omitted them.
@@ -195,6 +208,33 @@ CLOUDTRAIL_PROFILE = DatasetProfile(
     system_prompt=SYSTEM_PROMPT,
 )
 
+# VPC Flow Logs live in the same threat_hunting.db as CloudTrail, written by the
+# same ingester, so this page uses the Full/Lite selector rather than a file picker.
+VPC_FLOW_PROFILE = DatasetProfile(
+    key="vpc_flow",
+    label="VPC Flow",
+    icon="🌊",
+    table="vpc_flow_logs",
+    time_column="start_time",
+    columns=VPC_FLOW_COLUMNS,
+    hunts_filename="vpc_flow_hunts.yaml",
+    state_prefix="vf_",
+    default_row_limit=200,
+    system_prompt=VPC_FLOW_SYSTEM_PROMPT,
+    filter_alias="_vf_filtered",
+    ip_columns=(
+        "srcaddr",
+        "dstaddr",
+        "pkt_srcaddr",
+        "pkt_dstaddr",
+        "local_addr",
+        "remote_addr",
+        "flow_src",
+        "flow_dst",
+    ),
+    geo_lookup="ip_geo",
+)
+
 SUZAKU_TIMELINE_PROFILE = DatasetProfile(
     key="suzaku_timeline",
     label="Suzaku Timeline",
@@ -254,6 +294,7 @@ SUZAKU_METRICS_PROFILE = DatasetProfile(
 
 PROFILES: dict[str, DatasetProfile] = {
     CLOUDTRAIL_PROFILE.key: CLOUDTRAIL_PROFILE,
+    VPC_FLOW_PROFILE.key: VPC_FLOW_PROFILE,
     SUZAKU_TIMELINE_PROFILE.key: SUZAKU_TIMELINE_PROFILE,
     SUZAKU_SUMMARY_PROFILE.key: SUZAKU_SUMMARY_PROFILE,
     SUZAKU_METRICS_PROFILE.key: SUZAKU_METRICS_PROFILE,

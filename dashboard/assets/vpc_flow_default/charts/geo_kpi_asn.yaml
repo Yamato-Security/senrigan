@@ -1,0 +1,27 @@
+# VFL-38: External ASNs
+uuid: f10f1004-0000-4000-8000-000000000038
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: External ASNs
+viz_type: big_number_total
+description: Distinct ASNs of external peers. Needs GeoLite2-ASN. (VFL-38)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT remote_geo_asn)
+    label: external_asns
+    hasCustomLabel: true
+    optionName: metric_external_asns
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND remote_scope = 'public'
+    filterOptionName: filter_36907839
+  subheader: autonomous systems
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

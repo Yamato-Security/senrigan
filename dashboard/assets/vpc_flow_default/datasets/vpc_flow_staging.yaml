@@ -1,0 +1,79 @@
+# Superset dataset: vpc_flow_staging (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000008
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_staging
+main_dttm_col: first_internal_in
+description: Hosts that received internal traffic and later sent accepted traffic to external peers —
+  the shape of data staging before exfiltration.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "WITH inbound AS (\n    SELECT\n        local_addr      AS host,\n        sum(bytes)      AS internal_in_bytes,\n\
+  \        min(start_time) AS first_internal_in\n    FROM vpc_flow_logs\n    WHERE direction_source =\
+  \ 'record'\n      AND flow_direction = 'ingress'\n      AND remote_scope = 'private'\n    GROUP BY local_addr\n\
+  ),\noutbound AS (\n    SELECT\n        local_addr                                                  \
+  \  AS host,\n        sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END) AS external_out_bytes,\n\
+  \        max(start_time)                                               AS last_external_out,\n     \
+  \   count(DISTINCT remote_addr)                                   AS external_peers\n    FROM vpc_flow_logs\n\
+  \    WHERE direction_source = 'record'\n      AND flow_direction = 'egress'\n      AND remote_scope\
+  \ = 'public'\n      AND action = 'ACCEPT'\n    GROUP BY local_addr\n)\nSELECT\n    i.host,\n    i.internal_in_bytes,\n\
+  \    o.external_out_bytes,\n    i.first_internal_in,\n    o.last_external_out,\n    o.external_peers\n\
+  FROM inbound i\nJOIN outbound o USING (host)\nWHERE o.last_external_out > i.first_internal_in\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: host
+  verbose_name: Host
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: internal_in_bytes
+  verbose_name: Internal In Bytes
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: external_out_bytes
+  verbose_name: External Out Bytes
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: first_internal_in
+  verbose_name: First Internal In
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: last_external_out
+  verbose_name: Last External Out
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: external_peers
+  verbose_name: External Peers
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

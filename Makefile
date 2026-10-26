@@ -11,6 +11,13 @@
 .DEFAULT_GOAL := help
 
 DC            := cd docker && DOCKER_CLI_HINTS=false docker compose
+# Every ingester target builds before it runs: that brings an image made for an
+# older INGESTER_VERSION (or older source) in line with the compose file, and is
+# a cache hit when nothing changed. Without it a stale release binary silently
+# skips newer log types. The build is a separate step, not `run --build`, so
+# BuildKit's progress never lands in captured stdout (the version guard reads it).
+INGESTER_BUILD := $(DC) --profile ingest build ingester
+INGESTER_RUN   := $(DC) --profile ingest run --rm ingester
 
 # Container-side paths to the GeoLite2 databases (docker/data/geoip is mounted
 # at /data/geoip). These are file paths, not a directory: the ingester passes
@@ -76,14 +83,26 @@ GEOIP_FLAGS := $(strip \
 
 ##@ Getting started
 
-ingest: ensure-secret          ## Load CloudTrail logs from docker/logs/ into DuckDB
-	@if [ -z "$$(find $(LOG_HOST_DIR) \( -name '*.json' -o -name '*.json.gz' \) -print -quit 2>/dev/null)" ]; then \
-	    printf '\n  No CloudTrail logs found in %s/\n\n' '$(LOG_HOST_DIR)'; \
-	    printf '  Export them from S3 first:\n'; \
-	    printf '    aws s3 cp s3://<your-bucket-prefix> %s/ --recursive --include "*.json.gz"\n\n' '$(LOG_HOST_DIR)'; \
+ingest: ensure-secret          ## Load CloudTrail + VPC Flow Logs from docker/logs/ into DuckDB
+	@if [ -z "$$(find $(LOG_HOST_DIR) \( -name '*.json' -o -name '*.json.gz' -o -name '*_vpcflowlogs_*.log.gz' \) -print -quit 2>/dev/null)" ]; then \
+	    printf '\n  No CloudTrail or VPC Flow Logs found in %s/\n\n' '$(LOG_HOST_DIR)'; \
+	    printf '  Copy them from S3 first — the whole prefix; other files are skipped:\n'; \
+	    printf '    aws s3 sync s3://<your-bucket>/AWSLogs/ %s/AWSLogs/\n\n' '$(LOG_HOST_DIR)'; \
 	    exit 1; \
 	fi
 	@printf '\n'
+	$(INGESTER_BUILD)
+	@if [ -n "$$(find $(LOG_HOST_DIR) -name '*_vpcflowlogs_*.log.gz' -print -quit 2>/dev/null)" ]; then \
+	    printf '  ✓ VPC Flow Logs found in %s/ — ingesting alongside CloudTrail\n' '$(LOG_HOST_DIR)'; \
+	    version="$$($(INGESTER_RUN) --version)" || exit 1; \
+	    case "$$version" in \
+	        "ingester 0."*|"ingester 1.0."*) \
+	            printf '\n  ✗ %s predates VPC Flow Logs support and would skip every flow log file.\n' "$$version"; \
+	            printf '    Use a release that supports them (INGESTER_VERSION), or build from source:\n'; \
+	            printf '      INGESTER_BUILD_TARGET=runtime make ingest\n\n'; \
+	            exit 1 ;; \
+	    esac; \
+	fi
 ifneq ($(GEOIP_FLAGS),)
 	@printf '  ✓ GeoIP database found in %s/ — IP enrichment enabled\n' '$(GEOIP_HOST_DIR)'
 else
@@ -95,10 +114,10 @@ else
 	@printf '  · No AWS Config snapshots in %s/ — resource graph will be empty\n' '$(CONFIG_HOST_DIR)'
 endif
 	@printf '\n'
-	$(DC) --profile ingest run --rm ingester ingest \
+	$(INGESTER_RUN) ingest \
 	    --path /data/logs $(GEOIP_FLAGS) --strip-raw-event --strip-fields
 ifneq ($(CONFIG_SNAPSHOTS),)
-	$(DC) --profile ingest run --rm ingester config-import \
+	$(INGESTER_RUN) config-import \
 	    --path /data/config
 endif
 	@printf '\n  Next: \033[36mmake up\033[0m\n'
@@ -148,25 +167,29 @@ endif
 ##@ Advanced ingest
 
 ingest-full: ensure-secret     ## Force: keep raw_event, skip option detection
-	$(DC) --profile ingest run --rm ingester ingest \
+	$(INGESTER_BUILD)
+	$(INGESTER_RUN) ingest \
 	    --path /data/logs --strip-fields
 
 ingest-geoip: ensure-secret    ## Force: GeoIP enrichment (City + ASN), ignoring detection
-	$(DC) --profile ingest run --rm ingester ingest \
+	$(INGESTER_BUILD)
+	$(INGESTER_RUN) ingest \
 	    --path /data/logs \
 	    --geoip-city $(GEOIP_CITY) \
 	    --geoip-asn $(GEOIP_ASN) \
 	    --strip-raw-event --strip-fields
 
 ingest-config: ensure-secret   ## Import AWS Config snapshots only
-	$(DC) --profile ingest run --rm ingester config-import \
+	$(INGESTER_BUILD)
+	$(INGESTER_RUN) config-import \
 	    --path /data/config
 
 # Kept for compatibility: `config-import` was the original target name.
 config-import: ingest-config
 
 enrich: ensure-secret          ## Back-fill GeoIP on existing DB rows
-	$(DC) --profile ingest run --rm ingester enrich \
+	$(INGESTER_BUILD)
+	$(INGESTER_RUN) enrich \
 	    --geoip-city $(GEOIP_CITY) \
 	    --geoip-asn $(GEOIP_ASN)
 
@@ -261,7 +284,7 @@ build-ingester:  ## Build ingester release binary
 
 help:            ## Show the handful of commands you need
 	@printf '\n  \033[1mSenrigan\033[0m — offline AWS CloudTrail threat hunting\n\n'
-	@printf '  1.  \033[36mmake ingest\033[0m     Load CloudTrail logs from docker/logs/ into DuckDB\n'
+	@printf '  1.  \033[36mmake ingest\033[0m     Load CloudTrail + VPC Flow Logs from docker/logs/ into DuckDB\n'
 	@printf '  2.  \033[36mmake up\033[0m         Start the UI, dashboard, and resource graph\n'
 	@printf '  3.  \033[36mmake down\033[0m       Stop everything\n'
 	@printf '      \033[36mmake logs\033[0m       Tail logs from the running services\n'

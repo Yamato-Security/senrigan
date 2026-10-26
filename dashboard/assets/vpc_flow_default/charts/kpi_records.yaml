@@ -1,0 +1,28 @@
+# VFL-06: Flow Records
+uuid: f10f1004-0000-4000-8000-000000000006
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Flow Records
+viz_type: big_number_total
+description: Flow log records with traffic. Each is one observation of a flow on one interface in one
+  aggregation window — not a connection count. (VFL-06)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  subheader: observations (5-tuple × interface × window)
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

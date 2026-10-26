@@ -54,6 +54,15 @@ else
   echo "    Rare Events dashboard ZIP not found — skipping import."
 fi
 
+# VPC Flow Logs live in threat_hunting.db alongside CloudTrail, but only when the
+# ingester found some. The ZIP is committed, so the guard is the table's content.
+echo "==> Importing VPC Flow Logs dashboard (if flow logs were ingested)..."
+if python3 /app/vpc_flow_present.py; then
+  DASHBOARD_ZIP=/app/dashboards/vpc_flow_default.zip python3 /app/import_dashboard.py
+else
+  echo "    No VPC Flow Logs in the database — skipping."
+fi
+
 # Suzaku dashboards — the ZIPs are always present (they are committed), so the
 # guard is which Suzaku databases were actually detected. Importing a bundle
 # whose database was never copied in would register a connection pointing at a

@@ -183,6 +183,26 @@ def _build_all_hunt_queries(prompts: list[dict]) -> list[dict]:
     ]
 
 
+def _with_limitations(hunt: dict) -> dict:
+    """Fold a hunt's ``limitations`` into its description.
+
+    The description already travels to the sidebar, the result card and the
+    exported report, so the caveat goes everywhere the finding goes without
+    another field threaded through each of them.
+
+    Args:
+        hunt: One hunt entry from a hunts YAML.
+
+    Returns:
+        The entry, with ``description`` extended when ``limitations`` is set.
+    """
+    limitations = (hunt.get("limitations") or "").strip()
+    if not limitations:
+        return hunt
+    description = (hunt.get("description") or "").strip()
+    return {**hunt, "description": f"{description}\n\n⚠️ Limitations: {limitations}"}
+
+
 def _load_builtin_prompts(
     profile: DatasetProfile = CLOUDTRAIL_PROFILE,
 ) -> list[dict]:
@@ -200,7 +220,7 @@ def _load_builtin_prompts(
         with open(path, encoding="utf-8") as f:
             prompts = yaml.safe_load(f)
         if isinstance(prompts, list):
-            return prompts
+            return [_with_limitations(p) for p in prompts]
     except FileNotFoundError:
         logger.warning("hunts YAML not found at %s", path)
     except yaml.YAMLError as exc:

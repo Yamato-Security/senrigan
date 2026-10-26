@@ -1,0 +1,90 @@
+# Superset dataset: vpc_flow_reject_accept (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000005
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_reject_accept
+main_dttm_col: first_reject
+description: External peer, target and port first REJECTed and later ACCEPTed — for example after a security
+  group change. ACCEPT does not prove an established session.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "SELECT\n    remote_addr,\n    any_value(remote_geo_country_code)                         AS remote_geo_country_code,\n\
+  \    local_addr,\n    dstport,\n    count(*) FILTER (WHERE action = 'REJECT')                   AS rejects,\n\
+  \    count(*) FILTER (WHERE action = 'ACCEPT')                   AS accepts,\n    min(start_time) FILTER\
+  \ (WHERE action = 'REJECT')            AS first_reject,\n    max(start_time) FILTER (WHERE action =\
+  \ 'ACCEPT')            AS last_accept\nFROM vpc_flow_logs_geo\nWHERE direction_source = 'record'\n \
+  \ AND flow_direction = 'ingress'\n  AND remote_scope = 'public'\nGROUP BY remote_addr, local_addr, dstport\n\
+  HAVING count(*) FILTER (WHERE action = 'REJECT') > 0\n   AND max(start_time) FILTER (WHERE action =\
+  \ 'ACCEPT')\n       > min(start_time) FILTER (WHERE action = 'REJECT')\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: remote_addr
+  verbose_name: Remote Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_geo_country_code
+  verbose_name: Remote Country Code
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: local_addr
+  verbose_name: Local Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: dstport
+  verbose_name: Destination Port
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: rejects
+  verbose_name: Rejects
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: accepts
+  verbose_name: Accepts
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: first_reject
+  verbose_name: First Reject
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: last_accept
+  verbose_name: Last Accept
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

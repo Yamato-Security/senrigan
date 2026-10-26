@@ -1,0 +1,31 @@
+# VFL-40: Inbound Rejected — Origin Map
+uuid: f10f1004-0000-4000-8000-000000000040
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Inbound Rejected — Origin Map
+viz_type: world_map
+description: Where rejected inbound traffic comes from — mostly internet background scanning. (VFL-40)
+query_context: ''
+params:
+  entity: remote_geo_country_code
+  country_fieldtype: cca2
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND action = 'REJECT' AND remote_geo_country_code IS NOT NULL AND remote_geo_country_code NOT IN
+      ('PRIVATE', 'LOOPBACK', 'LINK-LOCAL', 'SPECIAL')
+    filterOptionName: filter_11481872
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 300
+  show_bubbles: false
+  linear_color_scheme: superset_seq_1
+  max_bubble_size: '25'
+cache_timeout: null

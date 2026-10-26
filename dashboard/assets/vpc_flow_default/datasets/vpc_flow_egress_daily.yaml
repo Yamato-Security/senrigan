@@ -1,0 +1,93 @@
+# Superset dataset: vpc_flow_egress_daily (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000006
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_egress_daily
+main_dttm_col: day
+description: Accepted egress bytes to external peers per host and day, against the median of the same
+  host's earlier days. No baseline means no ratio.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "WITH daily AS (\n    SELECT\n        local_addr,\n        any_value(instance_id)               \
+  \                           AS instance_id,\n        date_trunc('day', start_time)                 \
+  \                  AS day,\n        sum(CASE WHEN reject_reason = 'BPA' THEN NULL ELSE bytes END)  \
+  \ AS egress_bytes,\n        count(DISTINCT remote_addr)                                     AS remote_peers\n\
+  \    FROM vpc_flow_logs\n    WHERE direction_source = 'record'\n      AND flow_direction = 'egress'\n\
+  \      AND remote_scope = 'public'\n      AND action = 'ACCEPT'\n    GROUP BY local_addr, date_trunc('day',\
+  \ start_time)\n)\nSELECT\n    d.local_addr,\n    d.instance_id,\n    d.day,\n    d.egress_bytes,\n \
+  \   d.remote_peers,\n    b.baseline_bytes,\n    b.baseline_days,\n    d.egress_bytes / nullif(b.baseline_bytes,\
+  \ 0) AS ratio_to_baseline\nFROM daily d\nLEFT JOIN LATERAL (\n    SELECT median(o.egress_bytes) AS baseline_bytes,\
+  \ count(*) AS baseline_days\n    FROM daily o\n    WHERE o.local_addr = d.local_addr AND o.day < d.day\n\
+  ) b ON TRUE\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: local_addr
+  verbose_name: Local Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: instance_id
+  verbose_name: Instance Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: day
+  verbose_name: Day
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: egress_bytes
+  verbose_name: Egress Bytes
+  is_dttm: false
+  is_active: true
+  type: HUGEINT
+  groupby: false
+  filterable: true
+- column_name: remote_peers
+  verbose_name: Remote Peers
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: baseline_bytes
+  verbose_name: Baseline Bytes
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: baseline_days
+  verbose_name: Baseline Days
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: ratio_to_baseline
+  verbose_name: Ratio To Baseline
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

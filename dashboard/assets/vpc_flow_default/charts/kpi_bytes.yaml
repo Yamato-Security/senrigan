@@ -1,0 +1,28 @@
+# VFL-07: Bytes Observed
+uuid: f10f1004-0000-4000-8000-000000000007
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Bytes Observed
+viz_type: big_number_total
+description: Bytes across all observations. Intra-VPC traffic is observed on both interfaces, so this
+  over-counts internal volume; BPA records carry no bytes and are excluded. (VFL-07)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  subheader: excluding BPA records (no byte count)
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

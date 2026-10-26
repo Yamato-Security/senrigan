@@ -322,6 +322,50 @@ def apply_date_filter(
     return apply_filters(sql, profile=profile, start_date=start_date, end_date=end_date)
 
 
+NO_RECORDS_GAP = "(no records in the selected window)"
+
+
+def coverage_gaps(
+    conn: duckdb.DuckDBPyConnection,
+    profile: DatasetProfile,
+    columns: Sequence[str],
+    *,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    levels: Sequence[str] | None = None,
+) -> list[str]:
+    """Return the *columns* that no record in the filtered table carries.
+
+    A hunt over a field the source never logs returns zero rows that mean
+    "not observed", not "nothing happened". Checking first lets the page say
+    which (PRD_VPC_FLOW_LOGS §4.2). An empty window is itself a gap.
+
+    Args:
+        conn:       Open read-only connection.
+        profile:    Dataset profile naming the table.
+        columns:    Columns the hunt requires.
+        start_date: Active lower date bound, as in :func:`apply_filters`.
+        end_date:   Active upper date bound.
+        levels:     Active severities, as in :func:`apply_filters`.
+
+    Returns:
+        The missing columns in the order given, ``[NO_RECORDS_GAP]`` when the
+        window holds no records at all, or ``[]`` when the data covers them.
+    """
+    counts = ", ".join(f"count({profile.quote(column)})" for column in columns)
+    sql = apply_filters(
+        f"SELECT count(*), {counts} FROM {profile.table}",
+        profile=profile,
+        start_date=start_date,
+        end_date=end_date,
+        levels=levels,
+    )
+    total, *present = conn.execute(sql).fetchone()
+    if not total:
+        return [NO_RECORDS_GAP]
+    return [column for column, n in zip(columns, present, strict=True) if not n]
+
+
 def apply_row_limit(sql: str, limit: int) -> str:
     """Apply *limit* to *sql*, always honouring the caller's value.
 

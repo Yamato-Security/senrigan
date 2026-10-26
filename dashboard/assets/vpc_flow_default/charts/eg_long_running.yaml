@@ -1,0 +1,50 @@
+# VFL-26: Long-Running and Low-and-Slow Flows
+uuid: f10f1004-0000-4000-8000-000000000026
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Long-Running and Low-and-Slow Flows
+viz_type: table
+description: 'The same flow seen across many aggregation windows, with its average rate. A long span at
+  a low rate is the low-and-slow pattern. A triage signal, not a finding: confirm with CloudTrail, host
+  evidence and the owner of the workload before concluding. (VFL-26)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(DISTINCT time_bucket(INTERVAL 1 minute, start_time))
+    label: observed_windows
+    hasCustomLabel: true
+    optionName: metric_observed_windows
+  - expressionType: SQL
+    sqlExpression: (epoch(MAX(end_time)) - epoch(MIN(start_time))) / 3600.0
+    label: span_hours
+    hasCustomLabel: true
+    optionName: metric_span_hours
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured) / nullif(epoch(MAX(end_time)) - epoch(MIN(start_time)), 0)
+    label: bytes_per_second
+    hasCustomLabel: true
+    optionName: metric_bytes_per_second
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - local_addr
+  - remote_addr
+  - dstport
+  - protocol_name
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND log_status = 'OK'
+    filterOptionName: filter_54806525
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

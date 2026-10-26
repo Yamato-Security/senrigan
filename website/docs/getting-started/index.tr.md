@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (macOS'ta önceden yüklü)                  |
 | **Kaynaklar**                         | En az 16 GB RAM, SSD önerilir                      |
 | **CloudTrail günlükleri**             | AWS'den dışa aktarılan `.json` veya `.json.gz` dosyaları |
+| *(İsteğe bağlı)* **VPC Flow Logs** | S3'e teslim edilen düz metin `.log.gz` dosyaları |
 | *(İsteğe bağlı)* **AWS Config anlık görüntüleri** | AWS kaynak grafiği için `.json` veya `.json.gz` dosyaları |
 | *(İsteğe bağlı)* **OpenAI API anahtarı** | AI sorgu üretimi için gereklidir                |
 | *(İsteğe bağlı)* **MaxMind GeoLite2** | GeoIP zenginleştirmesi için `.mmdb` dosyaları      |
@@ -16,10 +17,10 @@
 
 ## Hızlı Başlangıç
 
-**Adım 1.** CloudTrail günlüklerini S3'ten indirin.
+**Adım 1.** `AWSLogs/` önekinin tamamını S3'ten indirin — CloudTrail günlükleri ve varsa VPC Flow Logs. Diğer servislerin dosyaları içe aktarma sırasında atlanır.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Adım 2.** Depoyu klonlayın ve verilerinizi yerleştirin.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ Argümansız `make` bu listeyi yazdırır. `make help-all` tüm hedefleri göste
 
 | Komut | İşlevi |
 |---|---|
-| `make ingest` | `docker/logs/` içindeki CloudTrail günlüklerini DuckDB'ye yükler |
+| `make ingest` | `docker/logs/` içindeki CloudTrail günlüklerini ve VPC Flow Logs'u DuckDB'ye yükler |
 | `make up` | Arayüzü, panoyu ve kaynak grafiğini başlatır |
 | `make down` | Her şeyi durdurur |
 | `make logs` | Hizmet günlüklerini izler (tek hizmet için `SERVICE=agent`) |

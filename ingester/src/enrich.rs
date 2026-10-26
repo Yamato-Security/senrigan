@@ -14,6 +14,7 @@ use anyhow::{Context, Result};
 use duckdb::Connection;
 
 use crate::db::ensure_geo_columns;
+use crate::flow_ingest::populate_ip_geo;
 use crate::geoip::GeoipEnricher;
 
 /// Statistics returned after a completed enrichment run.
@@ -88,6 +89,26 @@ pub fn enrich_existing(conn: &Connection, geoip: &GeoipEnricher) -> Result<Enric
 
     stats.elapsed_secs = start.elapsed().as_secs_f64();
     Ok(stats)
+}
+
+/// Back-fill `ip_geo` for VPC Flow Logs addresses ingested without GeoIP.
+///
+/// Returns `None` when the database holds no flow logs (no table is created),
+/// otherwise the number of addresses added. Unlike the CloudTrail path above,
+/// nothing in the flow table is updated: geo lives once per address in
+/// `ip_geo`, so the back-fill is an append of the addresses still missing.
+pub fn enrich_flow_addresses(conn: &Connection, geoip: &GeoipEnricher) -> Result<Option<usize>> {
+    let has_flow_table: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM information_schema.tables WHERE table_name = 'vpc_flow_logs'",
+            [],
+            |r| r.get(0),
+        )
+        .context("Failed to look up vpc_flow_logs")?;
+    if has_flow_table == 0 {
+        return Ok(None);
+    }
+    populate_ip_geo(conn, geoip).map(Some)
 }
 
 /// Return all distinct non-NULL `source_ip_address` values whose
@@ -341,5 +362,42 @@ mod tests {
             cc.is_none(),
             "geo_country_code should be NULL for non-IP source address like 'AWS'"
         );
+    }
+
+    // EN-F1: a database without flow logs is left alone — no flow tables appear.
+    #[test]
+    fn test_enrich_flow_addresses_without_flow_table() {
+        let conn = temp_db();
+        ensure_table(&conn).unwrap();
+        assert_eq!(
+            enrich_flow_addresses(&conn, &make_enricher()).unwrap(),
+            None
+        );
+        let tables: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM information_schema.tables WHERE table_name = 'vpc_flow_logs'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(tables, 0);
+    }
+
+    // EN-F2: flow addresses ingested without GeoIP are back-filled once.
+    #[test]
+    fn test_enrich_flow_addresses_back_fills_ip_geo() {
+        let conn = temp_db();
+        ensure_table(&conn).unwrap();
+        crate::flow_db::ensure_flow_tables(&conn).unwrap();
+        let parsed = crate::flow_parser::parse_flow_log(
+            "srcaddr dstaddr flow-direction log-status\n10.0.0.1 81.2.69.160 egress OK",
+        )
+        .unwrap();
+        let meta = crate::flow_db::FlowFileMeta::from_path(std::path::Path::new("/f"));
+        crate::flow_db::append_flow_file(&conn, &meta, &parsed).unwrap();
+
+        let enricher = make_enricher();
+        assert_eq!(enrich_flow_addresses(&conn, &enricher).unwrap(), Some(2));
+        assert_eq!(enrich_flow_addresses(&conn, &enricher).unwrap(), Some(0));
     }
 }

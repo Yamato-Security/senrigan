@@ -18,7 +18,7 @@ DuckDB is always opened in **`READ_ONLY`** mode.
 - [SQL Safety Guards](#sql-safety-guards)
 - [Date-Range Filter](#date-range-filter)
 - [Built-in Hunts](#built-in-hunts)
-- [Suzaku Pages](#suzaku-pages)
+- [Pages](#pages)
 - [Report Generation](#report-generation)
 - [Module Structure](#module-structure)
 - [Configuration](#configuration)
@@ -211,20 +211,27 @@ Each entry has:
 
 ---
 
-## Suzaku Pages
+## Pages
 
-The app has four pages, selected in the sidebar navigation:
+The app has five pages, selected in the sidebar navigation:
 
 | Page | Shape | Table | Data source |
 |------|-------|-------|-------------|
 | 🔭 **Senrigan** | chat | `cloudtrail_events` | `threat_hunting.db`, written by the ingester |
+| 🌊 **VPC Flow** | chat | `vpc_flow_logs` | `threat_hunting.db`, written by the ingester |
 | 🕒 **Suzaku Timeline** | chat | `timeline` | a `*.duckdb` from [Suzaku](https://github.com/Yamato-Security/suzaku) `aws-ct-timeline` |
 | 👤 **Suzaku Summary** | explorer | `summary*` | a `*.duckdb` from `aws-ct-summary` |
 | 📊 **Suzaku Metrics** | explorer | `metrics` | a `*.duckdb` from `aws-ct-metrics` |
 
-The two **chat** pages run the same machinery — built-in hunts, date range, result
+The three **chat** pages run the same machinery — built-in hunts, date range, result
 filters, AI chat, AI analysis, Markdown/HTML report, session export — driven by a
 `DatasetProfile` (`profiles.py`) that describes the table.
+
+The **VPC Flow** page adds two things on top. Its address columns (`srcaddr`, `remote_addr` …)
+are geo-enriched from the ingester's one-row-per-address `ip_geo` table. Its hunts
+(`vpc_flow_hunts.yaml`) declare the fields they `require` and their `limitations`: when no record
+in the selected window carries a required field, the page reports *insufficient coverage* rather
+than an empty result, and the limitations travel with the hunt's description into the report.
 
 The two **explorer** pages read files Suzaku has already aggregated, so they never
 generate SQL: every query is a reviewed statement in `suzaku_summary_queries.py` /

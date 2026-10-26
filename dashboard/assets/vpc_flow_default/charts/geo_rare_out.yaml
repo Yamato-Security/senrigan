@@ -1,0 +1,44 @@
+# VFL-45: Rare Outbound Countries
+uuid: f10f1004-0000-4000-8000-000000000045
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Rare Outbound Countries
+viz_type: table
+description: 'Destination countries with the fewest egress observations, rarest first. A triage signal,
+  not a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding.
+  (VFL-45)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: MAX(start_time)
+    label: last_seen
+    hasCustomLabel: true
+    optionName: metric_last_seen
+  groupby:
+  - remote_geo_country_code
+  - remote_geo_country_name
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND remote_geo_country_code IS NOT NULL AND remote_geo_country_code NOT IN ('PRIVATE', 'LOOPBACK',
+      'LINK-LOCAL', 'SPECIAL')
+    filterOptionName: filter_65139830
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 50
+  order_desc: false
+  page_size: 25
+  include_time: false
+cache_timeout: null

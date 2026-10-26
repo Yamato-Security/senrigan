@@ -18,6 +18,7 @@ import duckdb
 import pytest
 
 from profiles import (
+    VPC_FLOW_PROFILE,
     CLOUDTRAIL_PROFILE,
     PROFILES,
     SHARED_STATE_KEYS,
@@ -132,6 +133,7 @@ def test_profiles_registry_is_keyed_by_profile_key() -> None:
     """The registry is what the navigation and tests iterate over."""
     assert set(PROFILES) == {
         "cloudtrail",
+        "vpc_flow",
         "suzaku_timeline",
         "suzaku_summary",
         "suzaku_metrics",
@@ -143,7 +145,7 @@ def test_profiles_registry_is_keyed_by_profile_key() -> None:
 
 
 def test_state_prefixes_are_unique_across_profiles() -> None:
-    """Test 2: four pages share one ``st.session_state``."""
+    """Test 2: every page shares one ``st.session_state``."""
     prefixes = [profile.state_prefix for profile in PROFILES.values()]
     assert len(set(prefixes)) == len(prefixes)
 
@@ -408,3 +410,72 @@ def test_dataset_profile_is_constructible_for_tests() -> None:
     )
     assert profile.filter_alias == "_tmp_filtered"
     assert profile.state_key("messages") == "tmp_messages"
+
+
+# ── VPC Flow Logs ───────────────────────────────────────────────────────────
+
+VPC_FLOW_FIXTURE = (
+    Path(__file__).resolve().parents[2]
+    / "sample"
+    / "vpc_flow"
+    / "fixtures"
+    / "vpc-flow-fixture.duckdb"
+)
+
+
+def test_vpc_flow_profile_reads_senrigans_own_database() -> None:
+    """VF-P1: a chat page over threat_hunting.db, not a Suzaku file."""
+    profile = VPC_FLOW_PROFILE
+    assert profile.table == "vpc_flow_logs"
+    assert profile.time_column == "start_time"
+    assert profile.chat_enabled is True
+    assert profile.suzaku_kind is None
+    assert profile.reads_senrigan_db is True
+    assert SUZAKU_TIMELINE_PROFILE.reads_senrigan_db is False
+    assert profile.hunts_path.name == "vpc_flow_hunts.yaml"
+
+
+def test_vpc_flow_profile_geo_settings() -> None:
+    """VF-P2: flow addresses match no IP name pattern, so they are declared."""
+    profile = VPC_FLOW_PROFILE
+    assert profile.geo_lookup == "ip_geo"
+    assert {
+        "srcaddr",
+        "dstaddr",
+        "pkt_srcaddr",
+        "pkt_dstaddr",
+        "local_addr",
+        "remote_addr",
+    } <= set(profile.ip_columns)
+    assert CLOUDTRAIL_PROFILE.geo_lookup == "cloudtrail"
+    assert CLOUDTRAIL_PROFILE.ip_columns == ()
+
+
+def test_vpc_flow_llm_columns_exist_in_the_table() -> None:
+    """VF-P3: a column shown to the LLM but absent from the table yields broken SQL."""
+    conn = duckdb.connect(str(VPC_FLOW_FIXTURE), read_only=True)
+    try:
+        actual = {row[0] for row in conn.execute("DESCRIBE vpc_flow_logs").fetchall()}
+    finally:
+        conn.close()
+    shown = {column["name"] for column in VPC_FLOW_PROFILE.columns}
+    assert shown <= actual, sorted(shown - actual)
+    assert {"direction_source", "remote_scope", "start_time", "bytes"} <= shown
+    assert not shown & {"ecs_task_arn", "instance_tag", "next_hop_interface_id"}
+
+
+def test_vpc_flow_prompt_states_the_evidence_limits() -> None:
+    """VF-P4: the prompt must stop generated SQL from overstating flow evidence."""
+    prompt = VPC_FLOW_PROFILE.build_system_prompt()
+    for phrase in (
+        "not connections",
+        "ACCEPT",
+        "direction_source = 'record'",
+        "traffic_path = 2",
+        "BPA",
+        "ip_geo",
+        "remote_scope",
+    ):
+        assert phrase in prompt, phrase
+    assert "vpc_flow_logs" in prompt
+    assert "{schema}" not in prompt

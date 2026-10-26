@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (préinstallé sur macOS)                  |
 | **Ressources**                        | 16 Go de RAM minimum, SSD recommandé                 |
 | **Journaux CloudTrail**               | Fichiers `.json` ou `.json.gz` exportés depuis AWS      |
+| *(Optionnel)* **VPC Flow Logs** | Fichiers `.log.gz` en texte brut livrés dans S3 |
 | *(Optionnel)* **Instantanés AWS Config** | Fichiers `.json` ou `.json.gz` pour le graphe de ressources AWS |
 | *(Optionnel)* **Clé API OpenAI**       | Requise pour la génération de requêtes par IA                   |
 | *(Optionnel)* **MaxMind GeoLite2**     | Fichiers `.mmdb` pour l'enrichissement GeoIP                 |
@@ -16,10 +17,10 @@
 
 ## Démarrage rapide
 
-**Étape 1.** Téléchargez les journaux CloudTrail depuis S3.
+**Étape 1.** Téléchargez tout le préfixe `AWSLogs/` depuis S3 — journaux CloudTrail et, le cas échéant, VPC Flow Logs. Les fichiers des autres services sont ignorés à l'ingestion.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Étape 2.** Clonez le dépôt et mettez vos données en place.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | Commande | Rôle |
 |---|---|
-| `make ingest` | Charger les journaux CloudTrail de `docker/logs/` dans DuckDB |
+| `make ingest` | Charger les journaux CloudTrail et les VPC Flow Logs de `docker/logs/` dans DuckDB |
 | `make up` | Démarrer l'interface, le tableau de bord et le graphe de ressources |
 | `make down` | Tout arrêter |
 | `make logs` | Suivre les journaux des services (`SERVICE=agent` pour un seul) |

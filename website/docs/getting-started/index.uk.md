@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (попередньо встановлено на macOS)         |
 | **Ресурси**                           | мінімум 16 ГБ оперативної пам'яті, рекомендовано SSD |
 | **Журнали CloudTrail**                | файли `.json` або `.json.gz`, експортовані з AWS   |
+| *(Необов'язково)* **VPC Flow Logs** | текстові файли `.log.gz`, доставлені в S3 |
 | *(Необов'язково)* **Знімки AWS Config** | файли `.json` або `.json.gz` для графу ресурсів AWS |
 | *(Необов'язково)* **Ключ API OpenAI** | потрібен для генерації запитів за допомогою ШІ      |
 | *(Необов'язково)* **MaxMind GeoLite2** | файли `.mmdb` для збагачення GeoIP                 |
@@ -16,10 +17,10 @@
 
 ## Швидкий старт
 
-**Крок 1.** Завантажте журнали CloudTrail з S3.
+**Крок 1.** Завантажте з S3 увесь префікс `AWSLogs/` — журнали CloudTrail і, якщо є, VPC Flow Logs. Файли інших сервісів під час імпорту пропускаються.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Крок 2.** Клонуйте репозиторій і розмістіть свої дані.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | Команда | Призначення |
 |---|---|
-| `make ingest` | Завантажити журнали CloudTrail з `docker/logs/` у DuckDB |
+| `make ingest` | Завантажити журнали CloudTrail і VPC Flow Logs з `docker/logs/` у DuckDB |
 | `make up` | Запустити інтерфейс, інформаційну панель і граф ресурсів |
 | `make down` | Зупинити все |
 | `make logs` | Стежити за журналами служб (`SERVICE=agent` для однієї) |

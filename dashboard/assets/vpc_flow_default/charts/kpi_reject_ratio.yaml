@@ -1,0 +1,28 @@
+# VFL-08: REJECT Ratio
+uuid: f10f1004-0000-4000-8000-000000000008
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: REJECT Ratio
+viz_type: big_number_total
+description: 'Share of observations rejected by a security group, network ACL, BPA or encryption controls.
+  Read alongside Capture Scope: a REJECT-only subscription is 100%. (VFL-08)'
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: AVG(CASE WHEN action = 'REJECT' THEN 1.0 ELSE 0 END)
+    label: reject_ratio
+    hasCustomLabel: true
+    optionName: metric_reject_ratio
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  subheader: of observations
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: .1%
+  granularity_sqla: start_time
+cache_timeout: null

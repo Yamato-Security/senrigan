@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (sudah terpasang di macOS)                |
 | **Sumber Daya**                       | RAM minimum 16 GB, SSD direkomendasikan            |
 | **CloudTrail logs**                   | File `.json` atau `.json.gz` yang diekspor dari AWS |
+| *(Opsional)* **VPC Flow Logs** | File `.log.gz` teks biasa yang dikirim ke S3 |
 | *(Opsional)* **AWS Config snapshots** | File `.json` atau `.json.gz` untuk grafik sumber daya AWS |
 | *(Opsional)* **OpenAI API key**       | Diperlukan untuk pembuatan kueri AI                |
 | *(Opsional)* **MaxMind GeoLite2**     | File `.mmdb` untuk pengayaan GeoIP                 |
@@ -16,10 +17,10 @@
 
 ## Mulai Cepat
 
-**Langkah 1.** Unduh CloudTrail logs dari S3.
+**Langkah 1.** Unduh seluruh prefix `AWSLogs/` dari S3 — CloudTrail logs dan, jika ada, VPC Flow Logs. File dari layanan lain dilewati saat ingest.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Langkah 2.** Klon repositori dan tempatkan data Anda.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ Menjalankan `make` tanpa argumen akan menampilkan daftar ini. `make help-all` me
 
 | Perintah | Fungsi |
 |---|---|
-| `make ingest` | Memuat CloudTrail logs dari `docker/logs/` ke DuckDB |
+| `make ingest` | Memuat CloudTrail logs dan VPC Flow Logs dari `docker/logs/` ke DuckDB |
 | `make up` | Menjalankan UI, dashboard, dan grafik sumber daya |
 | `make down` | Menghentikan semuanya |
 | `make logs` | Memantau log layanan (`SERVICE=agent` untuk satu layanan) |

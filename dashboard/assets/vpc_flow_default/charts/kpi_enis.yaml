@@ -1,0 +1,23 @@
+# VFL-10: Interfaces Observed
+uuid: f10f1004-0000-4000-8000-000000000010
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Interfaces Observed
+viz_type: big_number_total
+description: Distinct network interfaces with at least one record, NODATA and SKIPDATA included. (VFL-10)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT interface_id)
+    label: interfaces
+    hasCustomLabel: true
+    optionName: metric_interfaces
+  adhoc_filters: []
+  subheader: network interfaces
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

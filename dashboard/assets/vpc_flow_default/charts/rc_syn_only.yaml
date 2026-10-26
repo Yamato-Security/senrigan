@@ -1,0 +1,37 @@
+# VFL-18: SYN-Only Records from External Sources
+uuid: f10f1004-0000-4000-8000-000000000018
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: SYN-Only Records from External Sources
+viz_type: dist_bar
+description: 'Inbound observations whose only TCP flag was SYN: handshakes that never completed in the
+  window, typical of SYN scans. Flags are OR-ed per window, so a completed short session shows 3 or 19
+  instead. (VFL-18)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: syn_only_records
+    hasCustomLabel: true
+    optionName: metric_syn_only_records
+  groupby:
+  - remote_addr
+  columns: []
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND tcp_flags = 2
+    filterOptionName: filter_78486079
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: SYN-only records
+  y_axis_label: Source
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

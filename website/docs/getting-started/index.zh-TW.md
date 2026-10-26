@@ -8,6 +8,7 @@
 | **make**                              | GNU Make（macOS 已預先安裝）                       |
 | **資源**                              | 至少 16 GB RAM，建議使用 SSD                       |
 | **CloudTrail 日誌**                   | 從 AWS 匯出的 `.json` 或 `.json.gz` 檔案           |
+| *(選用)* **VPC Flow Logs** | 傳送至 S3 的純文字 `.log.gz` 檔案 |
 | *(選用)* **AWS Config 快照**          | 用於 AWS 資源圖的 `.json` 或 `.json.gz` 檔案       |
 | *(選用)* **OpenAI API 金鑰**          | AI 查詢產生功能所需                                 |
 | *(選用)* **MaxMind GeoLite2**         | 用於 GeoIP 強化的 `.mmdb` 檔案                     |
@@ -16,10 +17,10 @@
 
 ## 快速開始
 
-**步驟 1.** 從 S3 下載 CloudTrail 日誌。
+**步驟 1.** 從 S3 下載整個 `AWSLogs/` 前綴——包含 CloudTrail 日誌，以及（若有）VPC Flow Logs。其他服務的檔案會在匯入時略過。
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **步驟 2.** 複製儲存庫並放置您的資料。
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | 指令 | 作用 |
 |---|---|
-| `make ingest` | 將 `docker/logs/` 的 CloudTrail 日誌匯入 DuckDB |
+| `make ingest` | 將 `docker/logs/` 的 CloudTrail 日誌與 VPC Flow Logs 匯入 DuckDB |
 | `make up` | 啟動 UI、儀表板與資源圖 |
 | `make down` | 停止所有服務 |
 | `make logs` | 追蹤服務日誌（只看單一服務用 `SERVICE=agent`） |

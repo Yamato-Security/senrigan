@@ -1,0 +1,37 @@
+# VFL-48: Egress to AWS Services by Path
+uuid: f10f1004-0000-4000-8000-000000000048
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Egress to AWS Services by Path
+viz_type: dist_bar
+description: Egress bytes to AWS service ranges, split by path. S3 through the internet gateway instead
+  of a gateway endpoint costs money and leaves the VPC; the ambiguous path is shown separately. (VFL-48)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - pkt_dst_aws_service
+  columns:
+  - traffic_path_label
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND pkt_dst_aws_service IS
+      NOT NULL AND traffic_path_label IS NOT NULL
+    filterOptionName: filter_37618793
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Bytes
+  y_axis_label: AWS service
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: true
+cache_timeout: null

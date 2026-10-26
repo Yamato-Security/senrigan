@@ -400,6 +400,210 @@ SUZAKU_TIMELINE_COLUMNS: list[dict] = [
 ]
 
 
+# Columns of `vpc_flow_logs` shown to the LLM. ECS, tag and next-hop columns are
+# withheld to keep the prompt small; hunt SQL may still use them.
+VPC_FLOW_COLUMNS: list[dict] = [
+    {
+        "name": "start_time",
+        "type": "TIMESTAMP",
+        "nullable": True,
+        "description": "Start of the aggregation window that holds the first packet (UTC)",
+    },
+    {
+        "name": "end_time",
+        "type": "TIMESTAMP",
+        "nullable": True,
+        "description": "End of the aggregation window that holds the last packet (UTC)",
+    },
+    {
+        "name": "account_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Owner account of the observing network interface",
+    },
+    {
+        "name": "interface_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Network interface the flow was observed on",
+    },
+    {
+        "name": "vpc_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "VPC of the observing interface (NULL in version-2 formats)",
+    },
+    {
+        "name": "subnet_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Subnet of the observing interface (NULL in version-2 formats)",
+    },
+    {
+        "name": "instance_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Instance owning the interface; NULL for NAT gateways and other requester-managed interfaces",
+    },
+    {
+        "name": "srcaddr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Source address as seen by the interface (may be a middlebox's own address)",
+    },
+    {
+        "name": "dstaddr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Destination address as seen by the interface (may be a middlebox's own address)",
+    },
+    {
+        "name": "pkt_srcaddr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Original packet source address",
+    },
+    {
+        "name": "pkt_dstaddr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Original packet destination address",
+    },
+    {
+        "name": "srcport",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "Source port (0 for ICMP)",
+    },
+    {
+        "name": "dstport",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "Destination port (0 for ICMP)",
+    },
+    {
+        "name": "protocol",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "IANA protocol number (6 TCP, 17 UDP, 1 ICMP, 58 ICMPv6)",
+    },
+    {
+        "name": "protocol_name",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "TCP, UDP, ICMP, ICMPv6, or the number for anything else",
+    },
+    {
+        "name": "ip_version",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "4 or 6",
+    },
+    {
+        "name": "packets",
+        "type": "BIGINT",
+        "nullable": True,
+        "description": "Packets in the window",
+    },
+    {
+        "name": "bytes",
+        "type": "BIGINT",
+        "nullable": True,
+        "description": "Bytes in the window; NULL for BPA records, which carry none",
+    },
+    {
+        "name": "action",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "ACCEPT or REJECT — what the security group / NACL decided, not whether a session was established",
+    },
+    {
+        "name": "log_status",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "OK, NODATA (no traffic in the window) or SKIPDATA (records dropped)",
+    },
+    {
+        "name": "tcp_flags",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "TCP flags OR-ed over the window: FIN 1, SYN 2, RST 4, SYN-ACK 18",
+    },
+    {
+        "name": "flow_direction",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "ingress or egress relative to the observing interface",
+    },
+    {
+        "name": "traffic_path",
+        "type": "INTEGER",
+        "nullable": True,
+        "description": "Egress path: 8 internet gateway, 7 gateway endpoint, 2 either (ambiguous), 1 same VPC",
+    },
+    {
+        "name": "pkt_src_aws_service",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "AWS service range of the packet source (e.g. S3), else NULL",
+    },
+    {
+        "name": "pkt_dst_aws_service",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "AWS service range of the packet destination, else NULL",
+    },
+    {
+        "name": "reject_reason",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "BPA (Block Public Access) or EC (Encryption Controls), else NULL",
+    },
+    {
+        "name": "local_addr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "The observing side's address; definitive only when direction_source = 'record'",
+    },
+    {
+        "name": "remote_addr",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "The peer's address; definitive only when direction_source = 'record'",
+    },
+    {
+        "name": "direction_source",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "record (from flow-direction), heuristic (address class only) or unknown",
+    },
+    {
+        "name": "src_scope",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Address class of the packet source: public, private, loopback, link-local, special",
+    },
+    {
+        "name": "dst_scope",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Address class of the packet destination",
+    },
+    {
+        "name": "remote_scope",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Address class of remote_addr; 'public' means an external peer",
+    },
+    {
+        "name": "flow_log_id",
+        "type": "VARCHAR",
+        "nullable": True,
+        "description": "Flow log subscription the record came from",
+    },
+]
+
+
 def get_column_names(columns: list[dict] | tuple[dict, ...] | None = None) -> list[str]:
     """Return the column names of a table's schema definition.
 

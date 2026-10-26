@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (unter macOS vorinstalliert)              |
 | **Ressourcen**                        | mindestens 16 GB RAM, SSD empfohlen                |
 | **CloudTrail-Logs**                   | aus AWS exportierte `.json`- oder `.json.gz`-Dateien |
+| *(Optional)* **VPC Flow Logs** | In S3 abgelegte `.log.gz`-Dateien im Textformat |
 | *(Optional)* **AWS Config-Snapshots** | `.json`- oder `.json.gz`-Dateien für den AWS-Ressourcengraphen |
 | *(Optional)* **OpenAI-API-Schlüssel** | Erforderlich für die KI-gestützte Abfragegenerierung |
 | *(Optional)* **MaxMind GeoLite2**     | `.mmdb`-Dateien für die GeoIP-Anreicherung         |
@@ -16,10 +17,10 @@
 
 ## Schnellstart
 
-**Schritt 1.** Laden Sie die CloudTrail-Logs aus S3 herunter.
+**Schritt 1.** Laden Sie das komplette `AWSLogs/`-Präfix aus S3 herunter – CloudTrail-Logs und, falls vorhanden, VPC Flow Logs. Dateien anderer Dienste werden beim Import übersprungen.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Schritt 2.** Klonen Sie das Repository und legen Sie Ihre Daten ab.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | Befehl | Funktion |
 |---|---|
-| `make ingest` | CloudTrail-Logs aus `docker/logs/` in DuckDB laden |
+| `make ingest` | CloudTrail-Logs und VPC Flow Logs aus `docker/logs/` in DuckDB laden |
 | `make up` | UI, Dashboard und Ressourcengraph starten |
 | `make down` | Alles stoppen |
 | `make logs` | Dienst-Logs verfolgen (`SERVICE=agent` für einen einzelnen) |

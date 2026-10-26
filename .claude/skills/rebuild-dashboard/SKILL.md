@@ -18,6 +18,8 @@ python3 rebuild_zip.py          # cloudtrail_default.zip
 python3 rebuild_rare_zip.py     # cloudtrail_rare.zip, derived from cloudtrail_default/
 # or, for a Suzaku bundle:
 python3 rebuild_suzaku_timeline_zip.py    # _summary_ / _metrics_ likewise
+# or, for the VPC Flow Logs bundle:
+python3 rebuild_vpc_flow_zip.py
 
 cd ../../docker
 docker compose run --rm superset-init     # re-import; idempotent

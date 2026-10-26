@@ -1,0 +1,43 @@
+# VFL-24: DNS to Non-Amazon Resolvers
+uuid: f10f1004-0000-4000-8000-000000000024
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: DNS to Non-Amazon Resolvers
+viz_type: table
+description: Port-53 flows. Traffic to the Amazon-provided resolver is never logged, so every row here
+  went to another resolver — legitimate internal DNS servers become the baseline, anything else is DNS
+  bypass or tunnelling worth a look. (VFL-24)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: MAX(start_time)
+    label: last_seen
+    hasCustomLabel: true
+    optionName: metric_last_seen
+  groupby:
+  - local_addr
+  - remote_addr
+  - protocol_name
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND dstport = 53
+    filterOptionName: filter_40632111
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

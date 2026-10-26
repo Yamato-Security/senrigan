@@ -194,3 +194,65 @@ def test_bootstrap_imports_a_suzaku_bundle_only_when_detected() -> None:
     text = _bootstrap_text()
     assert "--list" in text, "bootstrap must ask which commands were detected"
     assert "SUZAKU_DETECTED" in text
+
+
+# ── VPC Flow Logs bundle ────────────────────────────────────────────────────
+
+VPC_FLOW_PRESENT_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "init", "vpc_flow_present.py"
+)
+COMPOSE_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "docker", "docker-compose.yml"
+)
+
+
+def _vpc_flow_present():
+    """Import init/vpc_flow_present.py by path (it is not a package module)."""
+    import importlib.util  # noqa: PLC0415
+
+    spec = importlib.util.spec_from_file_location(
+        "vpc_flow_present", VPC_FLOW_PRESENT_PATH
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_vpc_flow_presence_check(tmp_path) -> None:
+    """The bundle is imported only when the database actually holds flow records."""
+    import duckdb  # noqa: PLC0415
+
+    has_flow_logs = _vpc_flow_present().has_flow_logs
+    db = tmp_path / "threat_hunting.db"
+    assert has_flow_logs(str(db)) is False, "missing file"
+
+    conn = duckdb.connect(str(db))
+    conn.execute("CREATE TABLE cloudtrail_events (event_time TIMESTAMP)")
+    conn.close()
+    assert has_flow_logs(str(db)) is False, "CloudTrail-only database"
+
+    conn = duckdb.connect(str(db))
+    conn.execute("CREATE TABLE vpc_flow_logs (start_time TIMESTAMP)")
+    conn.close()
+    assert has_flow_logs(str(db)) is False, "empty flow table"
+
+    conn = duckdb.connect(str(db))
+    conn.execute("INSERT INTO vpc_flow_logs VALUES (TIMESTAMP '2024-01-15 00:00:00')")
+    conn.close()
+    assert has_flow_logs(str(db)) is True
+
+
+def test_bootstrap_imports_vpc_flow_bundle_only_when_present() -> None:
+    """Importing it on a CloudTrail-only install would leave 50 erroring charts."""
+    text = _bootstrap_text()
+    assert "vpc_flow_present.py" in text
+    assert "vpc_flow_default.zip" in text
+    assert text.index("vpc_flow_present.py") < text.index("vpc_flow_default.zip")
+
+
+def test_compose_mounts_the_vpc_flow_presence_check() -> None:
+    with open(COMPOSE_PATH, encoding="utf-8") as fh:
+        compose = fh.read()
+    assert (
+        "../dashboard/init/vpc_flow_present.py:/app/vpc_flow_present.py:ro" in compose
+    )
