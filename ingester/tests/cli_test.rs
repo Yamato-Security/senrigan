@@ -445,3 +445,65 @@ fn test_cli_enrich_prints_enriched_count() {
         // Output must contain "enriched_count=1" for the one ingested row.
         .stdout(predicate::str::contains("enriched_count=1"));
 }
+
+/// Returns the committed miniature `AWSLogs/` tree (see `generate_awslogs_fixtures.py`).
+fn awslogs_fixture() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/testdata_awslogs")
+}
+
+// CLI-F1: one `ingest` over a verbatim S3 copy loads CloudTrail and flow logs
+//         and prints the per-kind summary.
+#[test]
+fn test_cli_ingest_mixed_awslogs_tree_prints_summary() {
+    let db_dir = TempDir::new().unwrap();
+    let db_path = db_dir.path().join("test.db");
+
+    cargo_bin_cmd!("ingester")
+        .args([
+            "ingest",
+            "--path",
+            awslogs_fixture().to_str().unwrap(),
+            "--db",
+            db_path.to_str().unwrap(),
+            "--no-progress",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("CloudTrail: 1 files / 1 records"))
+        .stdout(predicate::str::contains("VPC Flow:   5 files / 15 records"))
+        .stdout(predicate::str::contains(
+            "Skipped:    Parquet 1, CloudTrail-Digest 1, Config 1, other 1",
+        ))
+        .stdout(predicate::str::contains("Failed:"));
+}
+
+// CLI-F2: `enrich` back-fills ip_geo for flow addresses ingested without GeoIP.
+#[test]
+fn test_cli_enrich_back_fills_flow_addresses() {
+    let db_dir = TempDir::new().unwrap();
+    let db_path = db_dir.path().join("test.db");
+
+    cargo_bin_cmd!("ingester")
+        .args([
+            "ingest",
+            "--path",
+            awslogs_fixture().to_str().unwrap(),
+            "--db",
+            db_path.to_str().unwrap(),
+            "--no-progress",
+        ])
+        .assert()
+        .success();
+
+    cargo_bin_cmd!("ingester")
+        .args([
+            "enrich",
+            "--db",
+            db_path.to_str().unwrap(),
+            "--geoip-city",
+            test_city_db_path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Flow addresses added to ip_geo:"));
+}

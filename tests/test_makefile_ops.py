@@ -95,7 +95,7 @@ def test_ingest_checks_for_logs_before_starting_a_container():
     recipe = run_make("ingest")
 
     assert "docker/logs" in recipe
-    assert "aws s3 cp" in recipe, "the fast-fail does not say how to get logs"
+    assert "aws s3 sync" in recipe, "the fast-fail does not say how to get logs"
 
 
 # ── status and check ───────────────────────────────────────────────────────

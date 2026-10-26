@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (macOS တွင် ကြိုတင်ထည့်သွင်းပြီးသား)                  |
 | **အရင်းအမြစ်များ**                         | အနည်းဆုံး RAM 16 GB၊ SSD ကို အကြံပြုသည်                 |
 | **CloudTrail logs**                   | AWS မှ ထုတ်ယူထားသော `.json` သို့မဟုတ် `.json.gz` ဖိုင်များ      |
+| *(ရွေးချယ်နိုင်)* **VPC Flow Logs** | S3 သို့ ပို့ထားသော plain-text `.log.gz` ဖိုင်များ |
 | *(ရွေးချယ်နိုင်)* **AWS Config snapshots** | AWS resource graph အတွက် `.json` သို့မဟုတ် `.json.gz` ဖိုင်များ |
 | *(ရွေးချယ်နိုင်)* **OpenAI API key**       | AI query generation အတွက် လိုအပ်သည်                   |
 | *(ရွေးချယ်နိုင်)* **MaxMind GeoLite2**     | GeoIP enrichment အတွက် `.mmdb` ဖိုင်များ                 |
@@ -16,10 +17,10 @@
 
 ## အမြန်စတင်ခြင်း
 
-**အဆင့် 1.** S3 မှ CloudTrail logs များကို ဒေါင်းလုဒ်လုပ်ပါ။
+**အဆင့် 1.** S3 မှ `AWSLogs/` prefix တစ်ခုလုံးကို ဒေါင်းလုဒ်လုပ်ပါ — CloudTrail logs နှင့် ရှိပါက VPC Flow Logs။ အခြား service များ၏ ဖိုင်များကို ingest လုပ်ချိန်တွင် ကျော်သွားပါမည်။
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **အဆင့် 2.** repository ကို clone လုပ်ပြီး သင့်ဒေတာများကို နေရာချပါ။
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | Command | လုပ်ဆောင်ချက် |
 |---|---|
-| `make ingest` | `docker/logs/` မှ CloudTrail logs များကို DuckDB သို့ ထည့်သွင်းသည် |
+| `make ingest` | `docker/logs/` မှ CloudTrail logs နှင့် VPC Flow Logs များကို DuckDB သို့ ထည့်သွင်းသည် |
 | `make up` | UI၊ dashboard နှင့် resource graph ကို စတင်သည် |
 | `make down` | အားလုံးကို ရပ်တန့်သည် |
 | `make logs` | ဝန်ဆောင်မှု logs များကို စောင့်ကြည့်သည် (တစ်ခုတည်းအတွက် `SERVICE=agent`) |

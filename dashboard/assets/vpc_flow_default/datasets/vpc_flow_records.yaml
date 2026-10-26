@@ -1,0 +1,403 @@
+# Superset dataset: vpc_flow_records (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000001
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_records
+main_dttm_col: start_time
+description: One row per VPC Flow Logs observation (a 5-tuple on one interface in one aggregation window),
+  with remote-endpoint GeoIP, address scopes, a BPA-safe byte column and a labelled traffic path.
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "SELECT\n    f.start_time,\n    f.end_time,\n    f.duration_secs,\n    f.flow_log_id,\n    f.account_id,\n\
+  \    f.region,\n    f.vpc_id,\n    f.subnet_id,\n    f.interface_id,\n    f.instance_id,\n    f.interface_type,\n\
+  \    f.resource_id,\n    f.srcaddr,\n    f.dstaddr,\n    f.pkt_srcaddr,\n    f.pkt_dstaddr,\n    coalesce(f.pkt_srcaddr,\
+  \ f.srcaddr) AS flow_src,\n    coalesce(f.pkt_dstaddr, f.dstaddr) AS flow_dst,\n    f.src_scope,\n \
+  \   f.dst_scope,\n    f.local_addr,\n    f.remote_addr,\n    f.remote_scope,\n    f.direction_source,\n\
+  \    f.flow_direction,\n    f.srcport,\n    f.dstport,\n    f.protocol,\n    f.protocol_name,\n    f.ip_version,\n\
+  \    f.packets,\n    -- BPA records carry no byte count; NULL keeps them out of sums instead of\n  \
+  \  -- reading as zero.\n    CASE WHEN f.reject_reason = 'BPA' THEN NULL ELSE f.bytes END AS bytes_measured,\n\
+  \    f.action,\n    f.log_status,\n    f.tcp_flags,\n    f.traffic_path,\n    -- Value 2 is \"internet\
+  \ gateway OR gateway endpoint\"; the label keeps that\n    -- ambiguity visible instead of counting\
+  \ it as either.\n    CASE f.traffic_path\n        WHEN 1 THEN 'Same VPC / Outpost LGW'\n        WHEN\
+  \ 2 THEN 'IGW or gateway endpoint (ambiguous)'\n        WHEN 3 THEN 'Virtual private gateway'\n    \
+  \    WHEN 4 THEN 'Intra-region peering'\n        WHEN 5 THEN 'Inter-region peering'\n        WHEN 6\
+  \ THEN 'Local / Wavelength Zone'\n        WHEN 7 THEN 'Gateway endpoint'\n        WHEN 8 THEN 'Internet\
+  \ gateway'\n    END AS traffic_path_label,\n    f.pkt_src_aws_service,\n    f.pkt_dst_aws_service,\n\
+  \    coalesce(f.pkt_src_aws_service, f.pkt_dst_aws_service) IS NOT NULL AS aws_service_peer,\n    f.reject_reason,\n\
+  \    f.encryption_status,\n    (f.interface_type IS NOT NULL OR f.resource_id IS NOT NULL) AS via_middlebox,\n\
+  \    f.has_parse_issue,\n    f.remote_geo_country_code,\n    f.remote_geo_country_name,\n    f.remote_geo_city,\n\
+  \    f.remote_geo_latitude,\n    f.remote_geo_longitude,\n    f.remote_geo_asn,\n    f.remote_geo_org\n\
+  FROM vpc_flow_logs_geo f\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: start_time
+  verbose_name: Start Time
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: end_time
+  verbose_name: End Time
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: duration_secs
+  verbose_name: Duration Secs
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: false
+  filterable: true
+- column_name: flow_log_id
+  verbose_name: Flow Log Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: account_id
+  verbose_name: Account Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: region
+  verbose_name: Region
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: vpc_id
+  verbose_name: Vpc Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: subnet_id
+  verbose_name: Subnet Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: interface_id
+  verbose_name: Interface Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: instance_id
+  verbose_name: Instance Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: interface_type
+  verbose_name: Interface Type
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: resource_id
+  verbose_name: Resource Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: srcaddr
+  verbose_name: Interface Source Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: dstaddr
+  verbose_name: Interface Destination Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: pkt_srcaddr
+  verbose_name: Packet Source Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: pkt_dstaddr
+  verbose_name: Packet Destination Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: flow_src
+  verbose_name: Flow Source
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: flow_dst
+  verbose_name: Flow Destination
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: src_scope
+  verbose_name: Src Scope
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: dst_scope
+  verbose_name: Dst Scope
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: local_addr
+  verbose_name: Local Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_addr
+  verbose_name: Remote Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_scope
+  verbose_name: Remote Scope
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: direction_source
+  verbose_name: Direction Source
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: flow_direction
+  verbose_name: Flow Direction
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: srcport
+  verbose_name: Source Port
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: dstport
+  verbose_name: Destination Port
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: protocol
+  verbose_name: Protocol
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: protocol_name
+  verbose_name: Protocol Name
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: ip_version
+  verbose_name: Ip Version
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: packets
+  verbose_name: Packets
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: bytes_measured
+  verbose_name: Bytes (excluding BPA)
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: action
+  verbose_name: Action
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: log_status
+  verbose_name: Log Status
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: tcp_flags
+  verbose_name: Tcp Flags
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: traffic_path
+  verbose_name: Traffic Path
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: traffic_path_label
+  verbose_name: Traffic Path Label
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: pkt_src_aws_service
+  verbose_name: Pkt Src Aws Service
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: pkt_dst_aws_service
+  verbose_name: Pkt Dst Aws Service
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: aws_service_peer
+  verbose_name: Aws Service Peer
+  is_dttm: false
+  is_active: true
+  type: BOOLEAN
+  groupby: true
+  filterable: true
+- column_name: reject_reason
+  verbose_name: Reject Reason
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: encryption_status
+  verbose_name: Encryption Status
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: via_middlebox
+  verbose_name: Via Middlebox
+  is_dttm: false
+  is_active: true
+  type: BOOLEAN
+  groupby: true
+  filterable: true
+- column_name: has_parse_issue
+  verbose_name: Has Parse Issue
+  is_dttm: false
+  is_active: true
+  type: BOOLEAN
+  groupby: true
+  filterable: true
+- column_name: remote_geo_country_code
+  verbose_name: Remote Country Code
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_geo_country_name
+  verbose_name: Remote Country
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_geo_city
+  verbose_name: Remote City
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_geo_latitude
+  verbose_name: Remote Geo Latitude
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: remote_geo_longitude
+  verbose_name: Remote Geo Longitude
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: remote_geo_asn
+  verbose_name: Remote ASN
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_geo_org
+  verbose_name: Remote Organisation
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

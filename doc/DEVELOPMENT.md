@@ -370,6 +370,24 @@ executes. Run `make check` before opening a PR rather than relying on CI alone.
 No job builds Docker images; image builds are exercised by `release.yml`, and the docs site
 by `docs.yml`.
 
+## Releasing the ingester
+
+By default the ingester image does not compile anything: the `prebuilt-runtime` target
+downloads the release binary named by `INGESTER_VERSION` (default in
+`docker/docker-compose.yml`). A feature that has not been released is therefore invisible to
+`make ingest` until a release exists. The order is:
+
+1. In the feature PR, bump `version` in `ingester/Cargo.toml` **and** the `INGESTER_VERSION`
+   default in `docker/docker-compose.yml` together — `tests/test_makefile_ingest.py` fails
+   when they differ.
+2. Merge, then push the tag `v<version>`. `release.yml` builds and publishes the binaries.
+3. Until the release exists, the default `make ingest` fails at the download (a 404 from
+   `curl`), loudly. Use `INGESTER_BUILD_TARGET=runtime make ingest` to compile from source.
+
+Every ingester target runs `docker compose build ingester` first, so a changed version or
+source reaches the image without a manual rebuild. When flow logs are present, `make ingest`
+also refuses an ingester older than 1.1.0, which would skip them silently.
+
 ## Useful Commands
 
 ```bash

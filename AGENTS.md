@@ -26,9 +26,12 @@ Four containers share one DuckDB file (`docker/data/db/threat_hunting.db`) via a
 mount (not a named volume) is intentional — Docker Engine on Linux/WSL2 misresolves relative
 paths for named-volume `driver_opts`, so each service declares its own `volumes:` entry.
 
-**The agent's four pages** (`st.navigation`, one `DatasetProfile` from `agent/profiles.py` each):
-🔭 Senrigan (`cloudtrail_events`) and 🕒 Suzaku Timeline (the `timeline` table of an
-`aws-ct-timeline` export) are *chat* pages sharing one pipeline, with the LLM writing the SQL.
+**The agent's five pages** (`st.navigation`, one `DatasetProfile` from `agent/profiles.py` each):
+🔭 Senrigan (`cloudtrail_events`), 🌊 VPC Flow (`vpc_flow_logs`) and 🕒 Suzaku Timeline (the
+`timeline` table of an `aws-ct-timeline` export) are *chat* pages sharing one pipeline, with the
+LLM writing the SQL. VPC Flow reads `threat_hunting.db` like Senrigan, geo-enriches results from
+`ip_geo`, and its hunts declare the fields they `require`: a hunt the selected data cannot answer
+reports insufficient coverage instead of an empty result.
 👤 Suzaku Summary and 📊 Suzaku Metrics are *explorer* pages (`chat_enabled=False`) running only
 reviewed, parameterized SQL from `agent/suzaku_{summary,metrics}_queries.py`; a profile reaching
 the chat pipeline raises rather than sending an empty prompt to OpenAI. Generating SQL over
@@ -54,7 +57,7 @@ Run from the repository root. `make` with no arguments prints the five user-faci
 commands; `make help-all` lists every target grouped by section.
 
 ```bash
-make ingest    # Load CloudTrail logs from docker/logs/ into DuckDB
+make ingest    # Load CloudTrail + VPC Flow Logs from docker/logs/ into DuckDB
 make up        # Start agent + dashboard + config_viz
 make down      # Stop everything
 make logs      # Tail service logs (SERVICE=agent|superset|config-viz for one)
@@ -76,7 +79,7 @@ imported by the one-shot `superset-init` container, so every edit under
 `dashboard/assets/<bundle>/` ends with both steps:
 
 ```bash
-cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # or rebuild_suzaku_<name>_zip.py
+cd dashboard/assets && python3 rebuild_zip.py && python3 rebuild_rare_zip.py   # or rebuild_{suzaku_<name>,vpc_flow}_zip.py
 cd ../../docker && docker compose run --rm superset-init   # re-import into Superset (idempotent)
 ```
 
@@ -132,6 +135,17 @@ Other tables: `ingested_files` (`file_path` PK, `sha256`, `ingested_at`) drives 
 deduplication for both `ingest` and `config-import`; `config_snapshots`, `config_resources` and
 `config_edges` are written by `config-import` and read by `config_viz`.
 
+**VPC Flow Logs** (written by `ingest` when the walk finds `*_vpcflowlogs_*.log.gz`;
+`ingester/src/flow_db.rs` is the authority): `vpc_flow_logs` holds one row per observation — every
+AWS field up to version 11 under its snake_case name (`start`/`end`/`type` become
+`start_unix`/`end_unix`/`traffic_type`), plus derived `start_time`/`end_time`, `local_addr`,
+`remote_addr`, `direction_source` (`record`/`heuristic`/`unknown`), `src_scope`/`dst_scope`/
+`remote_scope` and provenance (`flow_log_id`, `source_file`, `line_no`, `has_parse_issue`,
+`extra` for unknown fields). `vpc_flow_files` and `vpc_flow_parse_issues` record per-file health;
+`ip_geo` holds one GeoIP row per distinct address. Views: `vpc_flow_sources`, `vpc_flow_unique`,
+`vpc_flow_logs_geo`, `vpc_flow_log_configs` (CreateFlowLogs from CloudTrail). Design and evidence
+rules: [doc/PRD_VPC_FLOW_LOGS.md](doc/PRD_VPC_FLOW_LOGS.md).
+
 **Access rules:** `ingester` is the sole `READ_WRITE` opener; every other service passes
 `read_only=True`; tests use temporary databases (`tempfile` in Rust, `tmp_path` in pytest).
 SSD/NVMe storage is strongly recommended for the bind mount.
@@ -163,9 +177,14 @@ ingester ingest --path <dir>
                 [--strip-fields]                # drop low-signal request/response keys
                 [--strip-raw-event]             # write NULL for raw_event
 
-ingester enrich [--db <path>] [--geoip-city|--geoip-country|--geoip-asn <path>]
+ingester enrich [--db <path>] [--geoip-city|--geoip-country|--geoip-asn <path>]   # also fills ip_geo
 ingester config-import --path <dir> [--db <path>] [--no-progress]
 ```
+
+`ingest` walks once and routes each file by its AWS object name: CloudTrail `.json(.gz)` and
+VPC Flow Logs `.log.gz` are loaded; digests, Config, Parquet and other services' files are skipped
+and counted in the summary. Dates are read from `yyyy/mm/dd`, Hive `year=/month=/day=` segments or
+the object name's `YYYYMMDDTHHmmZ` stamp.
 
 Files without a recognisable `yyyy/mm/dd` segment in their path are always included by the
 `--from` / `--to` filter.
@@ -185,6 +204,7 @@ Files without a recognisable `yyyy/mm/dd` segment in their path are always inclu
 | `CUSTOM_CA_CERT_BASE64` | docker build | empty | Base64 CA for TLS-inspecting proxies |
 | `SSL_CERT_FILE` / `REQUESTS_CA_BUNDLE` | agent | — | CA bundle for a corporate TLS proxy |
 | `RAYON_NUM_THREADS` | ingester | CPU count | Limits the rayon thread pool |
+| `INGESTER_VERSION` / `INGESTER_BUILD_TARGET` | docker build | crate version / `prebuilt-runtime` | Release binary to download, or `runtime` to compile from source; release order in [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md) |
 
 ## Security
 
@@ -224,25 +244,28 @@ senrigan/
 ├── .github/                   # AGENTS.md pointer, copilot-instructions.md, workflows
 ├── ingester/                  # Rust ingestion engine (see ingester/AGENTS.md)
 │   └── src/                   # main.rs (CLI) · parser.rs · db.rs · ingest.rs · enrich.rs
+│                              #   log_kind.rs · flow_{parser,db,ingest}.rs (VPC Flow Logs)
 │                              #   geoip.rs · field_filter.rs · date_filter.rs · path_filter.rs
 │                              #   progress.rs · config_{parser,db,import}.rs · test_util.rs
-├── agent/                     # Streamlit UI — 2 chat + 2 explorer pages (see agent/AGENTS.md)
-│   ├── app.py                 # Entry point: st.navigation over the four pages
+├── agent/                     # Streamlit UI — 3 chat + 2 explorer pages (see agent/AGENTS.md)
+│   ├── app.py                 # Entry point: st.navigation over the five pages
 │   ├── handlers.py            # Stateful handler functions
 │   ├── session.py             # Per-profile session state + built-in hunt loading
 │   ├── llm.py                 # OpenAI calls: SQL generation, analysis, SQL fix
 │   ├── query.py               # Execution, validation, date filter, row limit, retry
 │   ├── report.py              # Chat-session Markdown / PDF report
-│   ├── schema.py              # Columns the LLM sees (17 core + 6 extended + 7 GeoIP)
+│   ├── schema.py              # Columns the LLM sees, per chat page
 │   ├── profiles.py            # DatasetProfile: chat pages vs explorer pages
 │   ├── suzaku_db.py           # Suzaku file detection, fitness and selection
 │   ├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
 │   ├── geo.py                 # Best-effort geo enrichment of IP result columns
 │   ├── config.py              # Env-var configuration helpers
-│   ├── views/                 # charts.py · db_selector.py · explorer.py · one file per Suzaku page
-│   ├── prompts/               # system_prompt.py · suzaku_timeline_prompt.py · analysis_prompt.py
+│   ├── views/                 # charts.py · db_selector.py · explorer.py · vpc_flow.py
+│   │                          #   · one file per Suzaku page
+│   ├── prompts/               # system_prompt.py · vpc_flow_prompt.py · suzaku_timeline_prompt.py
+│   │                          #   · analysis_prompt.py
 │   └── tests/                 # pytest suite
-│                              # plus builtin_hunts.yaml, suzaku_timeline_hunts.yaml,
+│                              # plus builtin_hunts.yaml, vpc_flow_hunts.yaml, suzaku_timeline_hunts.yaml,
 │                              #   suzaku_{summary,metrics}_queries.py (reviewed SQL)
 ├── config_viz/                # AWS Config resource graph
 │   ├── backend/               # FastAPI, READ_ONLY DuckDB, SQL keyword blocklist
@@ -250,14 +273,17 @@ senrigan/
 │   ├── static/                # Vite build output, served by FastAPI
 │   └── tests/                 # Backend tests (BA-* series)
 ├── dashboard/                 # Apache Superset
-│   ├── assets/                # cloudtrail_{default,rare} + suzaku_{timeline,summary,metrics}
-│   │                          #   bundles, their ZIPs, and the rebuild scripts
-│   ├── init/                  # bootstrap.sh, register_duckdb.py, register_suzaku_dbs.py
+│   ├── assets/                # cloudtrail_{default,rare} + vpc_flow_default
+│   │                          #   + suzaku_{timeline,summary,metrics} bundles, their ZIPs,
+│   │                          #   and the rebuild scripts
+│   ├── init/                  # bootstrap.sh, register_duckdb.py, register_suzaku_dbs.py,
+│   │                          #   vpc_flow_present.py
 │   └── tests/                 # YAML/asset/config validation suite
 ├── doc/                       # ARCHITECTURE, DEVELOPMENT, TESTING, TDD_GUIDE, PRD,
-│                              #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW (point-in-time)
+│                              #   PRD_SUZAKU_SUMMARY, PRD_DASHBOARD_REVIEW,
+│                              #   PRD_VPC_FLOW_LOGS(_REVIEW) (point-in-time)
 ├── docker/                    # docker-compose.yml (6 services + ingest/resync profiles)
-├── sample/                    # sample/suzaku: trimmed fixtures + generate_fixtures.py
+├── sample/                    # suzaku/ and vpc_flow/: test fixtures + generate_fixtures.py
 ├── tests/                     # Repository-level consistency suite (Makefile / compose / docs)
 ├── website/                   # Material for MkDocs site; `mkdocs.yml` owns the locale list
 ├── Makefile                   # The command surface

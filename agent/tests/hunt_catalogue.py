@@ -1,4 +1,4 @@
-"""The two built-in hunt catalogues, described once for the tests that span both.
+"""The built-in hunt catalogues, described once for the tests that span them.
 
 ``builtin_hunts.yaml`` and ``suzaku_timeline_hunts.yaml`` are the same kind of
 artifact: a list of hunts, each carrying reviewed SQL that the page runs without
@@ -32,6 +32,9 @@ REPO_ROOT = AGENT_DIR.parent
 
 TIMELINE_FIXTURE = (
     REPO_ROOT / "sample" / "suzaku" / "fixtures" / "suzaku-aws-ct-timeline.duckdb"
+)
+VPC_FLOW_FIXTURE = (
+    REPO_ROOT / "sample" / "vpc_flow" / "fixtures" / "vpc-flow-fixture.duckdb"
 )
 
 # The full cloudtrail_events schema (17 core + 7 GeoIP + 24 extended). Hunt SQL
@@ -136,6 +139,10 @@ class Catalogue:
             columns = CORE_COLUMNS + GEO_COLUMNS + EXTENDED_COLUMNS
             conn.execute(f"CREATE TABLE {self.table} ({', '.join(columns)})")
             return conn
+        if self.key == "vpc_flow":
+            # Built by the real ingester, so it carries the derived columns,
+            # views and ip_geo table the hunts join against.
+            return duckdb.connect(str(VPC_FLOW_FIXTURE), read_only=True)
         return duckdb.connect(str(TIMELINE_FIXTURE), read_only=True)
 
 
@@ -143,6 +150,7 @@ CATALOGUES: tuple[Catalogue, ...] = (
     Catalogue(
         key="cloudtrail", filename="builtin_hunts.yaml", table="cloudtrail_events"
     ),
+    Catalogue(key="vpc_flow", filename="vpc_flow_hunts.yaml", table="vpc_flow_logs"),
     Catalogue(
         key="suzaku_timeline",
         filename="suzaku_timeline_hunts.yaml",

@@ -14,10 +14,18 @@ paths:
 
 ## Module Purpose
 
-The ingester reads AWS CloudTrail log files (JSON and `.json.gz`) from the local filesystem,
-parses them, and inserts the records into a DuckDB database.
+The ingester reads a verbatim S3 copy of `AWSLogs/` from the local filesystem — AWS CloudTrail
+files (JSON and `.json.gz`) and VPC Flow Logs (plain-text `.log.gz`) — parses them, and inserts
+the records into a DuckDB database. Every file is routed by its AWS object name
+(`log_kind.rs`); anything that is neither is skipped and counted.
 It is the **only** component that opens DuckDB in `READ_WRITE` mode.
-Optional GeoIP enrichment populates 7 geo columns using MaxMind GeoLite2 databases.
+Optional GeoIP enrichment populates 7 geo columns on CloudTrail events and one `ip_geo` row per
+distinct flow address, using MaxMind GeoLite2 databases.
+
+VPC Flow Logs design and evidence rules: [doc/PRD_VPC_FLOW_LOGS.md](../doc/PRD_VPC_FLOW_LOGS.md).
+Three rules matter when changing that code: a flow chunk's rows, file metadata, parse issues and
+`ingested_files` marks commit in **one transaction**; AWS's `-` and a malformed value must stay
+distinguishable; and `remote_addr` is definitive only when `direction_source = 'record'`.
 
 ## Technology Stack
 
@@ -39,8 +47,12 @@ ingester/
 │   ├── lib.rs             # Public API re-exports
 │   ├── parser.rs          # CloudTrail JSON parsing (serde_json)
 │   ├── db.rs              # DuckDB schema, batch insert (Appender), geo columns
-│   ├── ingest.rs          # Pipeline: walk → filter → parallel parse → insert
-│   │                      # gz decompression is done inline in parse_file_content()
+│   ├── ingest.rs          # Pipeline: walk → filter → classify → parallel parse → insert
+│   │                      # read_log_file(): SHA-256 + gz decompression, shared by both pipelines
+│   ├── log_kind.rs        # Route a file: CloudTrail / VPC Flow text / skipped (by kind)
+│   ├── flow_parser.rs     # Header-driven flow log parser; FLOW_FIELDS owns the column layout
+│   ├── flow_db.rs         # vpc_flow_* tables, ip_geo, views; appender_with_columns writes
+│   ├── flow_ingest.rs     # Flow pipeline: byte-capped chunks, one transaction each, ip_geo pass
 │   ├── enrich.rs          # Geo back-fill for existing rows (enrich subcommand)
 │   ├── geoip.rs           # MaxMind GeoLite2 lookup + private-IP classification
 │   ├── field_filter.rs    # --strip-fields: recursive JSON key removal (FieldFilter)
@@ -60,8 +72,11 @@ ingester/
     │   ├── multi_event.json      # 3 CloudTrail events
     │   ├── single_event.json.gz  # 1 event, gzip-compressed
     │   └── malformed.json        # Invalid JSON (error handling)
-    └── testdata_config/
-        └── config_snapshot_mini.json  # 2-resource AWS Config snapshot fixture
+    ├── testdata_config/
+    │   └── config_snapshot_mini.json  # 2-resource AWS Config snapshot fixture
+    ├── testdata_awslogs/              # Miniature AWSLogs/ tree: every LogKind, flow formats,
+    │                                  #   corrupt / header-only files (generated)
+    └── generate_awslogs_fixtures.py   # Regenerates testdata_awslogs/ deterministically
 ```
 
 ## Key Data Structures
@@ -234,10 +249,35 @@ Integration and CLI tests are in `ingester/tests/`.
 - `test_config_db_*` — create Config tables, insert snapshots/resources/edges
 - `test_config_import_*` — walk → SHA dedup → parse → insert pipeline
 
+### log_kind.rs
+- `LK-01..13` — one case per routing rule: default, Hive and Organization-trail layouts,
+  Parquet / Digest / Insight / Config / ELB skips, renamed files, plain `.json` fallback
+
+### flow_parser.rs
+- `FP-01..13` — header mapping (reordered, unknown field → `extra`, duplicates rejected),
+  headerless v2 fallback, `-` vs malformed values, row rejection, bounded issue capture
+- `FP-14..20` — endpoint derivation per `direction_source`, protocol name, IP version, scopes
+
+### flow_db.rs
+- `FD-01..11` — object-name provenance, idempotent create and migration, views, Appender
+  round trip, file/issue rows, delete-and-replace, header variants, de-duplication, CloudTrail
+  capture scope
+
+### flow_ingest.rs
+- `FI-01..09` — write and mark, dedup, changed-file replacement, failed files unmarked,
+  **chunk rollback when marking fails and a single write on retry**, reject-ratio warning,
+  `ip_geo` distinct/idempotent, byte-capped chunking
+
+### ingest.rs (mixed trees)
+- `IN-01..05` — one walk routes every kind; date filter reaches Hive paths; fixture totals;
+  CLI summary lines
+
 ### CLI (tests/cli_test.rs)
 - `test_cli_ingest_command` — `ingester ingest --path <dir>` exits 0
 - `test_cli_missing_path_shows_error` — missing `--path` produces usage error
 - `test_cli_enrich_requires_geoip_arg` — `enrich` without GeoIP arg exits non-zero
+- `test_cli_ingest_mixed_awslogs_tree_prints_summary` — the committed `AWSLogs/` fixture end to end
+- `test_cli_enrich_back_fills_flow_addresses` — `enrich` fills `ip_geo`
 
 ### CLI (tests/config_import_test.rs)
 - `test_cli_config_import_succeeds_and_prints_summary` — `ingester config-import --path <file>` exits 0 and prints summary (CLI-CI-01)

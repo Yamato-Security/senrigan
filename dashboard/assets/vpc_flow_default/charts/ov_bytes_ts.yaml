@@ -1,0 +1,36 @@
+# VFL-13: Bytes by Direction
+uuid: f10f1004-0000-4000-8000-000000000013
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Bytes by Direction
+viz_type: echarts_timeseries_bar
+description: Hourly bytes by ingress and egress, recorded direction only. Sustained egress growth on a
+  quiet host is the classic exfiltration shape. (VFL-13)
+query_context: ''
+params:
+  x_axis: start_time
+  time_grain_sqla: PT1H
+  time_range: No filter
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - flow_direction
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND log_status = 'OK'
+    filterOptionName: filter_93725142
+  row_limit: 10000
+  order_desc: true
+  stack: true
+  x_axis_title: Hour (UTC)
+  y_axis_title: Bytes
+  color_scheme: supersetColors
+  rich_tooltip: true
+  zoomable: true
+  granularity_sqla: start_time
+cache_timeout: null

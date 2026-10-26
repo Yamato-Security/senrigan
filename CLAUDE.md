@@ -29,7 +29,7 @@ Break one of these and nothing fails loudly — that is why they are here rather
   made with `--geo-ip`. `make status` prints the winner and every loser.
 - **The bind mount is deliberate.** Docker on Linux and WSL2 misresolves relative paths in
   named-volume `driver_opts`, so each service declares its own `volumes:` entry instead.
-- **Two of the four agent pages never reach the LLM.** The explorer pages carry
+- **Two of the five agent pages never reach the LLM.** The explorer pages carry
   `chat_enabled=False` and run only the reviewed SQL in `agent/suzaku_{summary,metrics}_queries.py`;
   a profile that reaches the chat pipeline raises rather than prompting with an empty schema.
 - **Dashboard YAML is compiled, not read.** Superset imports the ZIPs, so an edit under

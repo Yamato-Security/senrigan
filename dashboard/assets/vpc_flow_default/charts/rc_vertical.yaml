@@ -1,0 +1,48 @@
+# VFL-15: Vertical Scan Candidates
+uuid: f10f1004-0000-4000-8000-000000000015
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Vertical Scan Candidates
+viz_type: table
+description: 'One external source probing many ports on one host. Sorted by distinct destination ports.
+  A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+  before concluding. (VFL-15)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(DISTINCT dstport)
+    label: distinct_ports
+    hasCustomLabel: true
+    optionName: metric_distinct_ports
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: MAX(start_time)
+    label: last_seen
+    hasCustomLabel: true
+    optionName: metric_last_seen
+  groupby:
+  - remote_addr
+  - local_addr
+  - remote_geo_country_code
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+    filterOptionName: filter_25189684
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 50
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

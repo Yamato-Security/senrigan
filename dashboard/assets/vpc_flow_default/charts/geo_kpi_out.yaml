@@ -1,0 +1,29 @@
+# VFL-37: Outbound Countries
+uuid: f10f1004-0000-4000-8000-000000000037
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Outbound Countries
+viz_type: big_number_total
+description: Countries of external destinations with a recorded direction. Needs GeoLite2. (VFL-37)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(DISTINCT remote_geo_country_code)
+    label: outbound_countries
+    hasCustomLabel: true
+    optionName: metric_outbound_countries
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND remote_geo_country_code IS NOT NULL AND remote_geo_country_code NOT IN ('PRIVATE', 'LOOPBACK',
+      'LINK-LOCAL', 'SPECIAL')
+    filterOptionName: filter_65139830
+  subheader: countries receiving traffic
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

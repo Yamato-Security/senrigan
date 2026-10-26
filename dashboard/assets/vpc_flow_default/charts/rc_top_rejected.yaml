@@ -1,0 +1,37 @@
+# VFL-14: Top Rejected External Sources
+uuid: f10f1004-0000-4000-8000-000000000014
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Top Rejected External Sources
+viz_type: dist_bar
+description: 'External sources with the most rejected inbound observations — scanners and blocked brute
+  force. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+  before concluding. (VFL-14)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: rejected_records
+    hasCustomLabel: true
+    optionName: metric_rejected_records
+  groupby:
+  - remote_addr
+  columns: []
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'ingress' AND remote_scope = 'public'
+      AND action = 'REJECT'
+    filterOptionName: filter_40364578
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Rejected records
+  y_axis_label: Source
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

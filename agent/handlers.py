@@ -27,6 +27,7 @@ from geo import enrich_with_geo
 from llm import MAX_CONTEXT_TURNS, generate_analysis, generate_sql
 from profiles import CLOUDTRAIL_PROFILE, DatasetProfile
 from query import (
+    coverage_gaps,
     QueryValidationError,
     apply_filters,
     apply_row_limit,
@@ -111,7 +112,12 @@ def _maybe_enrich_geo(
     if not st.session_state.get("geo_enrich", True):
         return results
     try:
-        return enrich_with_geo(conn, results)
+        return enrich_with_geo(
+            conn,
+            results,
+            ip_columns=profile.ip_columns,
+            lookup=profile.geo_lookup,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Geo enrichment failed, returning raw results: %s", exc)
         return results
@@ -147,6 +153,60 @@ def _execute_sql_safely(
         return pd.DataFrame(), "⏱ Query timed out (30 s limit exceeded)."
     except Exception as exc:  # noqa: BLE001
         return pd.DataFrame(), f"❌ Query execution error: {exc}"
+
+
+def _hunt_coverage_gaps(db_path: str, profile: DatasetProfile, label: str) -> list[str]:
+    """Return the required fields the selected data lacks for the hunt *label*.
+
+    Only built-in hunts declaring ``requires`` are checked. The check is
+    best-effort: any failure returns ``[]`` and the hunt simply runs.
+
+    Args:
+        db_path: Path to the DuckDB database file.
+        profile: Dataset profile whose hunts YAML declares the requirement.
+        label:   The hunt's label, as passed to :func:`_handle_direct_sql`.
+
+    Returns:
+        The coverage gaps from :func:`query.coverage_gaps`, or ``[]``.
+    """
+    if not label or not profile.chat_enabled:
+        return []
+    from session import _load_builtin_prompts  # noqa: PLC0415 — page-level import
+
+    required = next(
+        (
+            hunt.get("requires") or []
+            for hunt in _load_builtin_prompts(profile)
+            if hunt.get("label") == label
+        ),
+        [],
+    )
+    if not required:
+        return []
+    try:
+        with duckdb_connection(db_path) as conn:
+            return coverage_gaps(
+                conn,
+                profile,
+                required,
+                start_date=_get(profile, "date_start"),
+                end_date=_get(profile, "date_end"),
+                levels=_get(profile, "levels") or (),
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Coverage check failed, running the hunt anyway: %s", exc)
+        return []
+
+
+def _insufficient_coverage_message(gaps: list[str]) -> str:
+    """The chat message for a hunt the selected data cannot answer."""
+    return (
+        "⚠️ **Insufficient coverage** — this hunt needs "
+        + ", ".join(f"`{gap}`" for gap in gaps)
+        + ", which no record in the selected window carries. An empty result here "
+        "would mean *not observed*, not *nothing happened*: check the flow log "
+        "format and the date range (Coverage tab of the VPC Flow Logs dashboard)."
+    )
 
 
 def _handle_direct_sql(
@@ -195,8 +255,14 @@ def _handle_direct_sql(
     row_limit = st.session_state.row_limit
     effective_sql = apply_row_limit(sql, row_limit)
 
-    with st.spinner("⚡ Running direct SQL…"):
-        results, error_message = _execute_sql_safely(db_path, sql, row_limit, profile)
+    gaps = _hunt_coverage_gaps(db_path, profile, label)
+    if gaps:
+        results, error_message = pd.DataFrame(), _insufficient_coverage_message(gaps)
+    else:
+        with st.spinner("⚡ Running direct SQL…"):
+            results, error_message = _execute_sql_safely(
+                db_path, sql, row_limit, profile
+            )
 
     _set(profile, "last_sql", effective_sql)
     _set(profile, "last_results", results if error_message is None else None)

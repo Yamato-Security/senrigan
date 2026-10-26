@@ -3,7 +3,7 @@
 //! This is the top-level entry point for the ingestion pipeline.
 //! It ties together [`crate::parser`] and [`crate::db`].
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -22,7 +22,11 @@ use crate::db::{
     batch_mark_ingested, ensure_table, fetch_ingested_files_map, insert_events_with_geo,
 };
 use crate::field_filter::FieldFilter;
+use crate::flow_ingest::{
+    FlowIngestOptions, FlowStats, REJECTED_ROW_WARNING_RATIO, ingest_flow_files,
+};
 use crate::geoip::GeoipEnricher;
+use crate::log_kind::{LogKind, SkipKind, classify};
 use crate::parser::{CloudTrailEvent, parse_cloudtrail_log};
 use crate::path_filter::PathFilter;
 use crate::progress::ProgressReporter;
@@ -97,6 +101,77 @@ pub struct IngestStats {
     pub elapsed_secs: f64,
     /// Per-phase timing breakdown (populated when `IngestOptions::perf_log` is `true`).
     pub phase_timings: PhaseTimings,
+    /// VPC Flow Logs found in the same walk (see [`crate::flow_ingest`]).
+    pub flow: FlowStats,
+    /// Files that belong to neither pipeline, counted by kind.
+    pub skipped: BTreeMap<SkipKind, usize>,
+}
+
+/// Failed flow files listed individually in the summary before it says "and N more".
+const MAX_LISTED_FAILURES: usize = 10;
+
+impl IngestStats {
+    /// Human-readable per-kind summary printed by the CLI after a run.
+    ///
+    /// The flow and skip lines appear only when such files were seen, so a
+    /// CloudTrail-only run prints exactly what it printed before flow support.
+    pub fn summary_lines(&self) -> Vec<String> {
+        let mut lines = vec![format!(
+            "CloudTrail: {} files / {} records",
+            self.files_processed, self.records_inserted
+        )];
+
+        let f = &self.flow;
+        if f.files_ingested + f.files_unchanged + f.failed_files.len() > 0 {
+            let notes: Vec<String> = [
+                ("field issues", f.rows_with_issues, "rows"),
+                ("rejected", f.rows_rejected, "rows"),
+                ("failed", f.failed_files.len(), "files"),
+                ("unchanged", f.files_unchanged, "files"),
+            ]
+            .into_iter()
+            .filter(|(_, n, _)| *n > 0)
+            .map(|(label, n, unit)| format!("{label} {n} {unit}"))
+            .collect();
+            let notes = if notes.is_empty() {
+                String::new()
+            } else {
+                format!(" ({})", notes.join(", "))
+            };
+            lines.push(format!(
+                "VPC Flow:   {} files / {} records{notes}",
+                f.files_ingested, f.records_inserted
+            ));
+        }
+
+        if !self.skipped.is_empty() {
+            let kinds: Vec<String> = self
+                .skipped
+                .iter()
+                .map(|(kind, n)| format!("{} {n}", kind.label()))
+                .collect();
+            lines.push(format!("Skipped:    {}", kinds.join(", ")));
+        }
+
+        if !f.files_over_reject_threshold.is_empty() {
+            lines.push(format!(
+                "Warning:    {} flow files exceed {}% rejected rows — see vpc_flow_files",
+                f.files_over_reject_threshold.len(),
+                REJECTED_ROW_WARNING_RATIO * 100.0
+            ));
+        }
+
+        for (path, reason) in f.failed_files.iter().take(MAX_LISTED_FAILURES) {
+            lines.push(format!("Failed:     {path}: {reason}"));
+        }
+        if f.failed_files.len() > MAX_LISTED_FAILURES {
+            lines.push(format!(
+                "Failed:     … and {} more",
+                f.failed_files.len() - MAX_LISTED_FAILURES
+            ));
+        }
+        lines
+    }
 }
 
 /// Options controlling the ingestion pipeline.
@@ -138,6 +213,32 @@ pub struct IngestOptions<'a> {
     pub perf_log: bool,
 }
 
+/// Read a log file once: SHA-256 of the bytes on disk, then the text, gunzipped
+/// when the extension is `.gz`. Shared by the CloudTrail and flow log pipelines.
+pub(crate) fn read_log_file(path: &Path) -> Result<(String, String)> {
+    let bytes =
+        std::fs::read(path).with_context(|| format!("Failed to read {}", path.display()))?;
+    let sha256 = hex::encode(Sha256::digest(&bytes));
+
+    let content = if path.extension().and_then(|e| e.to_str()) == Some("gz") {
+        use flate2::read::GzDecoder;
+        use std::io::Read;
+        // Pre-allocate ~5× the compressed size to minimise reallocation.
+        // Typical gz compression ratio for these logs is 4–8×.
+        // BufReader is not needed here because the source is already an
+        // in-memory slice, not a system call per byte.
+        let mut s = String::with_capacity(bytes.len() * 5);
+        GzDecoder::new(bytes.as_slice())
+            .read_to_string(&mut s)
+            .with_context(|| format!("Failed to decompress {}", path.display()))?;
+        s
+    } else {
+        String::from_utf8(bytes)
+            .with_context(|| format!("File is not valid UTF-8: {}", path.display()))?
+    };
+    Ok((sha256, content))
+}
+
 /// Read a file, compute its SHA-256 digest, and parse the CloudTrail records.
 ///
 /// Returns `(sha256_hex, records)`. This function is CPU/IO-bound and is
@@ -152,26 +253,7 @@ pub fn parse_file_content(
     path: &Path,
     field_filter: &FieldFilter,
 ) -> Result<(String, Vec<CloudTrailEvent>)> {
-    let bytes =
-        std::fs::read(path).with_context(|| format!("Failed to read {}", path.display()))?;
-    let sha256 = hex::encode(Sha256::digest(&bytes));
-
-    let content = if path.extension().and_then(|e| e.to_str()) == Some("gz") {
-        use flate2::read::GzDecoder;
-        use std::io::Read;
-        // Pre-allocate ~5× the compressed size to minimise reallocation.
-        // Typical CloudTrail gz compression ratio is 4–8×.
-        // BufReader is not needed here because the source is already an
-        // in-memory slice, not a system call per byte.
-        let mut s = String::with_capacity(bytes.len() * 5);
-        GzDecoder::new(bytes.as_slice())
-            .read_to_string(&mut s)
-            .with_context(|| format!("Failed to decompress {}", path.display()))?;
-        s
-    } else {
-        String::from_utf8(bytes)
-            .with_context(|| format!("File is not valid UTF-8: {}", path.display()))?
-    };
+    let (sha256, content) = read_log_file(path)?;
 
     let log = parse_cloudtrail_log(&content)
         .with_context(|| format!("Failed to parse {}", path.display()))?;
@@ -248,16 +330,24 @@ pub fn ingest(path: &Path, conn: &Connection, options: IngestOptions<'_>) -> Res
 
     // ── Phase 1: file discovery ───────────────────────────────────────────────
     let t_discovery = Instant::now();
-    let mut files: Vec<PathBuf> = WalkDir::new(path)
+    // One walk serves every pipeline: each file is classified, then routed.
+    let mut files: Vec<PathBuf> = Vec::new();
+    let mut flow_files: Vec<PathBuf> = Vec::new();
+    for entry in WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .filter(|e| is_cloudtrail_file(e.path()))
         .filter(|e| date_filter.matches(e.path()))
         .filter(|e| path_filter.matches(e.path()))
-        .map(|e| e.path().to_path_buf())
-        .collect();
+    {
+        match classify(entry.path()) {
+            LogKind::CloudTrail => files.push(entry.path().to_path_buf()),
+            LogKind::VpcFlowText => flow_files.push(entry.path().to_path_buf()),
+            LogKind::Skipped(kind) => *stats.skipped.entry(kind).or_default() += 1,
+        }
+    }
     files.sort();
+    flow_files.sort();
     if perf_log {
         stats.phase_timings.discovery_secs = t_discovery.elapsed().as_secs_f64();
     }
@@ -380,21 +470,22 @@ pub fn ingest(path: &Path, conn: &Connection, options: IngestOptions<'_>) -> Res
 
     insert_result?; // propagate DB insertion error after the bar is finalized
 
+    // Flow logs run after CloudTrail on the same connection — still one writer.
+    // `ingested_map` already holds this run's CloudTrail marks.
+    if !flow_files.is_empty() {
+        stats.flow = ingest_flow_files(
+            conn,
+            flow_files,
+            &mut ingested_map,
+            FlowIngestOptions {
+                show_progress,
+                geoip,
+            },
+        )?;
+    }
+
     stats.elapsed_secs = start.elapsed().as_secs_f64();
     Ok(stats)
-}
-
-/// Returns `true` if `path` has an extension that indicates a CloudTrail log.
-fn is_cloudtrail_file(path: &Path) -> bool {
-    match path.extension().and_then(|e| e.to_str()) {
-        Some("json") => true,
-        Some("gz") => path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .map(|n| n.ends_with(".json.gz"))
-            .unwrap_or(false),
-        _ => false,
-    }
 }
 
 #[cfg(test)]
@@ -1024,7 +1115,10 @@ mod tests {
         service: &str,
         region: &str,
     ) -> std::path::PathBuf {
-        let dir = root.join(service).join(region);
+        // `svc-` keeps these CloudTrail fixtures out of the service routing in
+        // `log_kind`: a bare `Config` or `vpcflowlogs` directory now means that
+        // service's own output, which these path-filter tests are not about.
+        let dir = root.join(format!("svc-{service}")).join(region);
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join("event.json");
         std::fs::write(&p, SINGLE_EVENT_JSON).unwrap();
@@ -1446,5 +1540,204 @@ mod tests {
         .expect("ingest() with show_progress=true should not error");
 
         assert_eq!(stats.records_inserted, 1);
+    }
+
+    // ── Mixed AWSLogs/ trees (VPC Flow Logs support) ─────────────────────
+
+    const FLOW_V2: &str = "version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n\
+        2 123456789012 eni-1 10.0.0.1 10.0.0.2 40000 443 6 10 900 1705276800 1705276860 ACCEPT OK\n\
+        2 123456789012 eni-1 10.0.0.1 10.0.0.3 40000 443 6 10 900 1705276800 1705276860 ACCEPT OK";
+
+    fn put(root: &Path, rel: &str, body: &[u8]) {
+        let path = root.join(rel);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        if rel.ends_with(".gz") {
+            let mut enc = flate2::write::GzEncoder::new(
+                std::fs::File::create(&path).unwrap(),
+                flate2::Compression::fast(),
+            );
+            enc.write_all(body).unwrap();
+            enc.finish().unwrap();
+        } else {
+            std::fs::write(path, body).unwrap();
+        }
+    }
+
+    /// A miniature verbatim S3 copy holding every kind `classify` distinguishes.
+    fn mixed_awslogs_tree() -> TempDir {
+        let dir = TempDir::new().unwrap();
+        let root = dir.path();
+        put(
+            root,
+            "AWSLogs/123456789012/CloudTrail/us-east-1/2024/01/15/123456789012_CloudTrail_us-east-1_20240115T0000Z_a.json.gz",
+            SINGLE_EVENT_JSON.as_bytes(),
+        );
+        put(
+            root,
+            "AWSLogs/123456789012/vpcflowlogs/us-east-1/2024/01/15/123456789012_vpcflowlogs_us-east-1_fl-0abc_20240115T0000Z_h1.log.gz",
+            FLOW_V2.as_bytes(),
+        );
+        put(
+            root,
+            "AWSLogs/aws-account-id=123456789012/aws-service=vpcflowlogs/aws-region=us-east-1/year=2024/month=01/day=16/123456789012_vpcflowlogs_us-east-1_fl-0def_20240116T0000Z_h2.log.gz",
+            FLOW_V2.as_bytes(),
+        );
+        put(
+            root,
+            "AWSLogs/123456789012/vpcflowlogs/us-east-1/2024/01/15/123456789012_vpcflowlogs_us-east-1_fl-0abc_20240115T0005Z_h3.log.parquet",
+            b"PAR1",
+        );
+        put(
+            root,
+            "AWSLogs/123456789012/CloudTrail-Digest/us-east-1/2024/01/15/123456789012_CloudTrail-Digest_us-east-1_t_us-east-1_20240115T000000Z.json.gz",
+            br#"{"digestStartTime":"x"}"#,
+        );
+        put(
+            root,
+            "AWSLogs/123456789012/Config/us-east-1/2024/1/15/ConfigSnapshot/123456789012_Config_us-east-1_ConfigSnapshot_20240115T000000Z_fx01.json.gz",
+            br#"{"configurationItems":[]}"#,
+        );
+        put(
+            root,
+            "AWSLogs/123456789012/elasticloadbalancing/us-east-1/2024/01/15/123456789012_elasticloadbalancing_us-east-1_app.lb.1_20240115T0000Z_10.0.0.1_x.log.gz",
+            b"https 2024-01-15T00:00:00Z app/lb/1 1.2.3.4:5 10.0.0.1:80",
+        );
+        dir
+    }
+
+    // IN-01: one walk routes every kind; digests and Config are skips, not errors.
+    #[test]
+    fn test_ingest_routes_mixed_awslogs_tree() {
+        let dir = mixed_awslogs_tree();
+        let conn = setup_db();
+        let stats = ingest(dir.path(), &conn, IngestOptions::default()).unwrap();
+
+        assert_eq!(stats.files_processed, 1);
+        assert_eq!(stats.records_inserted, 1);
+        assert_eq!(stats.errors, 0);
+        assert_eq!(stats.flow.files_ingested, 2);
+        assert_eq!(stats.flow.records_inserted, 4);
+        assert_eq!(stats.skipped.get(&SkipKind::VpcFlowParquet), Some(&1));
+        assert_eq!(stats.skipped.get(&SkipKind::CloudTrailDigest), Some(&1));
+        assert_eq!(stats.skipped.get(&SkipKind::Config), Some(&1));
+        assert_eq!(stats.skipped.get(&SkipKind::Other), Some(&1));
+        let flow_rows: i64 = conn
+            .query_row("SELECT count(*) FROM vpc_flow_logs", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(flow_rows, 4);
+    }
+
+    // IN-02: --from / --to apply to flow logs, including Hive-prefixed paths.
+    #[test]
+    fn test_date_filter_applies_to_flow_logs() {
+        let dir = mixed_awslogs_tree();
+        let conn = setup_db();
+        let stats = ingest(
+            dir.path(),
+            &conn,
+            IngestOptions {
+                date_filter: DateFilter::from_strs(Some("20240116"), None).unwrap(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            stats.flow.files_ingested, 1,
+            "only the Hive-prefixed 01/16 file"
+        );
+        assert_eq!(
+            stats.files_processed, 0,
+            "the CloudTrail file is dated 01/15"
+        );
+
+        // The upper bound must exclude the Hive file too, not include it as undated.
+        let conn = setup_db();
+        let stats = ingest(
+            dir.path(),
+            &conn,
+            IngestOptions {
+                date_filter: DateFilter::from_strs(None, Some("20240115")).unwrap(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            stats.flow.files_ingested, 1,
+            "only the 01/15 default-layout file"
+        );
+    }
+
+    fn awslogs_fixture() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/testdata_awslogs")
+    }
+
+    // IN-03: the committed AWSLogs/ fixture yields the documented per-kind totals.
+    #[test]
+    fn test_awslogs_fixture_totals() {
+        let conn = setup_db();
+        let stats = ingest(&awslogs_fixture(), &conn, IngestOptions::default()).unwrap();
+        assert_eq!(
+            (stats.files_processed, stats.records_inserted, stats.errors),
+            (1, 1, 0)
+        );
+        let f = &stats.flow;
+        assert_eq!(f.files_ingested, 5, "v2, v8, hive, bad, header-only");
+        assert_eq!(f.failed_files.len(), 1, "the non-gzip file");
+        assert_eq!(f.records_inserted, 15);
+        assert_eq!((f.rows_with_issues, f.rows_rejected), (1, 1));
+        assert_eq!(f.files_over_reject_threshold.len(), 1);
+        let skipped: Vec<(SkipKind, usize)> = stats.skipped.clone().into_iter().collect();
+        assert_eq!(
+            skipped,
+            vec![
+                (SkipKind::VpcFlowParquet, 1),
+                (SkipKind::CloudTrailDigest, 1),
+                (SkipKind::Config, 1),
+                (SkipKind::Other, 1),
+            ]
+        );
+    }
+
+    // IN-04: the summary names every kind, the flow problems and the warning.
+    #[test]
+    fn test_summary_lines_for_fixture() {
+        let conn = setup_db();
+        let stats = ingest(&awslogs_fixture(), &conn, IngestOptions::default()).unwrap();
+        let lines = stats.summary_lines();
+        assert_eq!(lines[0], "CloudTrail: 1 files / 1 records");
+        assert_eq!(
+            lines[1],
+            "VPC Flow:   5 files / 15 records (field issues 1 rows, rejected 1 rows, failed 1 files)"
+        );
+        assert_eq!(
+            lines[2],
+            "Skipped:    Parquet 1, CloudTrail-Digest 1, Config 1, other 1"
+        );
+        assert_eq!(
+            lines[3],
+            "Warning:    1 flow files exceed 1% rejected rows — see vpc_flow_files"
+        );
+        assert!(lines[4].starts_with("Failed:     "), "{}", lines[4]);
+        assert!(lines[4].contains("corrupt.log.gz"), "{}", lines[4]);
+        assert_eq!(lines.len(), 5);
+    }
+
+    // IN-05: a re-run reports unchanged flow files; CloudTrail-only runs print no flow line.
+    #[test]
+    fn test_summary_lines_rerun_and_cloudtrail_only() {
+        let conn = setup_db();
+        ingest(&awslogs_fixture(), &conn, IngestOptions::default()).unwrap();
+        let stats = ingest(&awslogs_fixture(), &conn, IngestOptions::default()).unwrap();
+        assert_eq!(
+            stats.summary_lines()[1],
+            "VPC Flow:   0 files / 0 records (failed 1 files, unchanged 5 files)"
+        );
+
+        let tmp = write_json_file(SINGLE_EVENT_JSON);
+        let stats = ingest(tmp.path(), &setup_db(), IngestOptions::default()).unwrap();
+        assert_eq!(
+            stats.summary_lines(),
+            vec!["CloudTrail: 1 files / 1 records"]
+        );
     }
 }

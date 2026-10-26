@@ -215,13 +215,129 @@ def _remove_retired_charts() -> None:
         print("    No retired charts to clean up.")
 
 
+# Chart types whose parameters name one `metric` rather than a `metrics` list.
+_SINGLE_METRIC_KEY = "metric"
+
+
+def _adhoc_filters_to_query(adhoc_filters: list) -> tuple[list, str, str]:
+    """Translate adhoc filters into what the chart-data API actually applies.
+
+    The API reads ``filters`` (structured column filters) and
+    ``extras.where`` / ``extras.having`` (free SQL); an ``adhoc_filters`` key
+    inside a query object is ignored, which is how stored contexts used to run
+    unfiltered.
+
+    Returns:
+        ``(filters, where, having)``.
+    """
+    filters: list = []
+    where: list[str] = []
+    having: list[str] = []
+    for f in adhoc_filters or []:
+        if f.get("expressionType") == "SIMPLE":
+            filters.append(
+                {"col": f["subject"], "op": f["operator"], "val": f.get("comparator")}
+            )
+        elif f.get("clause") == "HAVING":
+            having.append(f"({f['sqlExpression']})")
+        else:
+            where.append(f"({f['sqlExpression']})")
+    return filters, " AND ".join(where), " AND ".join(having)
+
+
+def build_query_context(
+    params: dict,
+    viz_type: str,
+    datasource_id: int,
+    default_time_column: str | None = None,
+) -> dict:
+    """Build the stored query_context for one chart from its parameters.
+
+    Mirrors what the frontend asks for, per the shapes Superset holds after an
+    import: a singular ``metric`` (big number, pie, world map, heatmap), the
+    ``entity`` of a world map, ``x_axis`` + ``groupby`` for ECharts (the legacy
+    ``columns`` key left by the dist_bar migration is ignored), and the table's
+    ``timeseries_limit_metric`` as its sort key.
+
+    Args:
+        params:              The chart's form data.
+        viz_type:            Its visualization type.
+        datasource_id:       Id of the chart's dataset.
+        default_time_column: The dataset's ``main_dttm_col``, used when the
+                             chart declares no ``granularity_sqla``.
+
+    Returns:
+        The query_context dict; its ``form_data`` is *params* with the time
+        column and time range filled in.
+    """
+    form_data = dict(params)
+    if not form_data.get("granularity_sqla") and default_time_column:
+        form_data["granularity_sqla"] = default_time_column
+    form_data.setdefault("time_range", "No filter")
+
+    if form_data.get(_SINGLE_METRIC_KEY):
+        metrics = [form_data[_SINGLE_METRIC_KEY]]
+    else:
+        metrics = list(form_data.get("metrics") or ["count"])
+
+    columns: list = []
+    for key in ("x_axis", "entity"):
+        if form_data.get(key):
+            columns.append(form_data[key])
+    for column in form_data.get("groupby") or []:
+        if column not in columns:
+            columns.append(column)
+    if not viz_type.startswith("echarts"):
+        for column in form_data.get("columns") or []:
+            if column not in columns:
+                columns.append(column)
+
+    order_desc = form_data.get("order_desc", True)
+    sort_metric = form_data.get("timeseries_limit_metric")
+    if viz_type in ("pie", "sunburst"):
+        orderby: list = []
+    elif sort_metric:
+        orderby = [[sort_metric, not order_desc]]
+    else:
+        orderby = _first_orderby(metrics, order_desc)
+
+    filters, where, having = _adhoc_filters_to_query(form_data.get("adhoc_filters"))
+
+    return {
+        "datasource": {"id": datasource_id, "type": "table"},
+        "force": False,
+        "queries": [
+            {
+                "filters": filters,
+                "extras": {"having": having, "where": where},
+                "applied_time_extras": {},
+                "columns": columns,
+                "metrics": metrics,
+                "orderby": orderby,
+                "row_limit": form_data.get("row_limit", 10000),
+                "series_limit": 0,
+                "order_desc": order_desc,
+                "granularity": form_data.get("granularity_sqla"),
+                "time_range": form_data["time_range"],
+                "url_params": {},
+                "custom_params": {},
+                "custom_form_data": {},
+            }
+        ],
+        "form_data": form_data,
+        "result_format": "json",
+        "result_type": "full",
+    }
+
+
 def _generate_query_contexts() -> None:
     """Generate query_context for charts that lack one or hold a stale one.
 
     Superset requires a stored query_context to render charts on dashboards.
-    The v1 ZIP import does not populate it, so we build a minimal one from
-    each chart's params.  Contexts whose first query has metrics but an
-    empty orderby (the old adhoc-metric code path) are rebuilt as well.
+    The v1 ZIP import does not populate it, so one is built from each chart's
+    params by :func:`build_query_context`.  Contexts whose first query has
+    metrics but an empty orderby (the old adhoc-metric code path) are rebuilt
+    as well.
     """
     from superset.extensions import db  # noqa: PLC0415
     from superset.models.slice import Slice  # noqa: PLC0415
@@ -233,59 +349,11 @@ def _generate_query_contexts() -> None:
             continue
 
         params = json.loads(c.params) if c.params else {}
-        metrics = params.get("metrics", ["count"])
-        groupby = params.get("groupby", [])
-        columns = groupby.copy()
-
-        x_axis = params.get("x_axis")
-        if x_axis and x_axis not in columns:
-            columns = [x_axis] + columns
-
-        # Ensure granularity_sqla is set — required by many chart types.
-        if "granularity_sqla" not in params:
-            params["granularity_sqla"] = "event_time"
-        if "time_range" not in params:
-            params["time_range"] = "No filter"
-        c.params = json.dumps(params)
-
-        # Carry adhoc_filters into the query so WHERE clauses are applied.
-        adhoc_filters = params.get("adhoc_filters", [])
-
-        # Pie/sunburst charts sort via sort_by_metric — orderby must be empty.
-        # For all other chart types, order by the first metric in the
-        # direction given by params.order_desc (default descending).
-        viz_type = c.viz_type or ""
-        order_desc = params.get("order_desc", True)
-        orderby = (
-            []
-            if viz_type in ("pie", "sunburst")
-            else _first_orderby(metrics, order_desc)
+        default_time_column = getattr(c.datasource, "main_dttm_col", None)
+        query_context = build_query_context(
+            params, c.viz_type or "", c.datasource_id, default_time_column
         )
-
-        query_context = {
-            "datasource": {"id": c.datasource_id, "type": "table"},
-            "force": False,
-            "queries": [
-                {
-                    "filters": [],
-                    "extras": {"having": "", "where": ""},
-                    "applied_time_extras": {},
-                    "columns": columns,
-                    "metrics": metrics,
-                    "orderby": orderby,
-                    "row_limit": params.get("row_limit", 10000),
-                    "series_limit": 0,
-                    "order_desc": order_desc,
-                    "url_params": {},
-                    "custom_params": {},
-                    "custom_form_data": {},
-                    "adhoc_filters": adhoc_filters,
-                }
-            ],
-            "form_data": params,
-            "result_format": "json",
-            "result_type": "full",
-        }
+        c.params = json.dumps(query_context["form_data"])
         c.query_context = json.dumps(query_context)
         fixed += 1
 

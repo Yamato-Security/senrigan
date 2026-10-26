@@ -1,9 +1,9 @@
 # ingester
 
-AWS CloudTrail log and AWS Config snapshot ingestion module for Senrigan.
+AWS CloudTrail, VPC Flow Logs and AWS Config snapshot ingestion module for Senrigan.
 
-- **`ingest`** — Reads CloudTrail log files (`.json` / `.json.gz`), optionally enriches each event with GeoIP data, and inserts all records into DuckDB via high-throughput batch appends.
-- **`enrich`** — Back-fills GeoIP columns on an existing database without re-ingesting.
+- **`ingest`** — Walks a verbatim S3 copy of `AWSLogs/` once and routes each file by its AWS object name: CloudTrail log files (`.json` / `.json.gz`) and VPC Flow Logs (plain-text `.log.gz`, any custom format) are parsed, optionally GeoIP-enriched, and inserted into DuckDB via high-throughput batch appends; digests, Config, Parquet and other services' files are skipped and counted in the summary. Flow logs commit one transaction per chunk, so a failed run can be retried without duplicates ([design](../doc/PRD_VPC_FLOW_LOGS.md)).
+- **`enrich`** — Back-fills GeoIP on an existing database without re-ingesting: CloudTrail's geo columns and the `ip_geo` table for flow addresses.
 - **`config-import`** — Reads AWS Config snapshot JSON files and populates the `config_snapshots`, `config_resources`, and `config_edges` tables.
 
 This is the **only** component that opens DuckDB in `READ_WRITE` mode.
@@ -431,11 +431,15 @@ ingester/
 │   ├── lib.rs             # Public API re-exports
 │   ├── parser.rs          # CloudTrail JSON parsing (serde_json)
 │   ├── db.rs              # DuckDB schema management + batch insert (Appender) + geo columns
-│   ├── ingest.rs          # CloudTrail pipeline (walk → filter → parallel parse → insert)
-│   ├── enrich.rs          # GeoIP back-fill for existing rows (UPDATE per unique IP)
+│   ├── ingest.rs          # Walk → filter → classify; CloudTrail pipeline (parallel parse → insert)
+│   ├── log_kind.rs        # Route a file: CloudTrail / VPC Flow text / skipped (by kind)
+│   ├── flow_parser.rs     # Header-driven VPC Flow Logs parser (FLOW_FIELDS = column layout)
+│   ├── flow_db.rs         # vpc_flow_* tables, ip_geo, views
+│   ├── flow_ingest.rs     # Flow pipeline: byte-capped chunks, one transaction each, ip_geo pass
+│   ├── enrich.rs          # GeoIP back-fill: CloudTrail rows (UPDATE per unique IP) + ip_geo
 │   ├── geoip.rs           # MaxMind GeoLite2 lookup + private-IP classification
 │   ├── field_filter.rs    # --strip-fields: recursive JSON key removal (FieldFilter)
-│   ├── date_filter.rs     # --from / --to filter (extracts yyyy/mm/dd from path)
+│   ├── date_filter.rs     # --from / --to filter (yyyy/mm/dd, Hive year=/month=/day=, object-name stamp)
 │   ├── path_filter.rs     # --include / --exclude glob filter
 │   ├── progress.rs        # Progress bar wrapper (indicatif)
 │   ├── config_parser.rs   # Config snapshot JSON → ParsedSnapshot / ParsedResource / ParsedEdge
@@ -446,7 +450,9 @@ ingester/
     ├── config_import_test.rs    # CLI integration tests (config-import)
     ├── integration_test.rs      # End-to-end ingest tests with a real DuckDB
     ├── testdata/                # CloudTrail JSON / gz fixtures + malformed sample
-    └── testdata_config/         # Config snapshot JSON fixtures
+    ├── testdata_config/         # Config snapshot JSON fixtures
+    ├── testdata_awslogs/        # Miniature AWSLogs/ tree (CloudTrail, flow logs, skipped kinds)
+    └── generate_awslogs_fixtures.py
 ```
 
 ---

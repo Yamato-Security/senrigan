@@ -1,0 +1,99 @@
+# Superset dataset: vpc_flow_log_configs (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000003
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_log_configs
+main_dttm_col: event_time
+description: 'CreateFlowLogs / DeleteFlowLogs as recorded by CloudTrail: the capture scope (resource,
+  ALL/ACCEPT/REJECT, format) the flow records themselves do not carry.'
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "SELECT\n    event_time,\n    event_name,\n    account_id,\n    region,\n    user_identity_arn,\n\
+  \    flow_log_id,\n    traffic_type,\n    array_to_string(resource_ids, ', ') AS resource_ids,\n   \
+  \ log_format,\n    error_code\nFROM vpc_flow_log_configs\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: event_time
+  verbose_name: Event Time
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: event_name
+  verbose_name: Event Name
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: account_id
+  verbose_name: Account Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: region
+  verbose_name: Region
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: user_identity_arn
+  verbose_name: User Identity Arn
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: flow_log_id
+  verbose_name: Flow Log Id
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: traffic_type
+  verbose_name: Traffic Type
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: resource_ids
+  verbose_name: Resource Ids
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: log_format
+  verbose_name: Log Format
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: error_code
+  verbose_name: Error Code
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

@@ -1,0 +1,171 @@
+# Superset dataset: vpc_flow_periodicity (VPC Flow Logs bundle).
+# VIRTUAL (sql:) over the tables and views the ingester creates in
+# threat_hunting.db; tests/test_vpc_flow_bundle.py runs it against the fixture.
+uuid: f10f1002-0000-4000-8000-000000000004
+version: 1.0.0
+database_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+table_name: vpc_flow_periodicity
+main_dttm_col: first_seen
+description: 'Periodic flow-log observations to external peers (PRD §6.1). Records are aggregated windows,
+  not connections: periods at or below the aggregation window are dropped because they reproduce the logging
+  cadence, and SKIPDATA overlapping the interval lowers confidence.'
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: null
+sql: "WITH obs AS (\n    SELECT local_addr, remote_addr, dstport, protocol_name, interface_id,\n     \
+  \      time_bucket(INTERVAL 1 minute, start_time) AS bucket,\n           sum(bytes)        AS bytes,\n\
+  \           max(duration_secs) AS duration\n    FROM vpc_flow_logs\n    WHERE direction_source = 'record'\n\
+  \      AND remote_scope = 'public'\n      AND log_status = 'OK'\n    GROUP BY ALL\n),\ngaps AS (\n \
+  \   SELECT *,\n           epoch(bucket - lag(bucket) OVER (\n               PARTITION BY local_addr,\
+  \ remote_addr, dstport ORDER BY bucket)) AS gap\n    FROM obs\n),\nstats AS (\n    SELECT local_addr,\
+  \ remote_addr, dstport,\n           any_value(protocol_name)             AS protocol_name,\n       \
+  \    list(DISTINCT interface_id)          AS interfaces,\n           min(bucket)                   \
+  \       AS first_seen,\n           max(bucket)                          AS last_seen,\n           count(*)\
+  \                             AS active_buckets,\n           median(gap)                          AS\
+  \ period_secs,\n           max(duration)                        AS max_duration,\n           stddev_pop(bytes)\
+  \ / nullif(avg(bytes), 0) AS bytes_cv\n    FROM gaps\n    GROUP BY local_addr, remote_addr, dstport\n\
+  ),\njitter AS (\n    SELECT g.local_addr, g.remote_addr, g.dstport,\n           median(abs(g.gap - s.period_secs))\
+  \ / nullif(s.period_secs, 0) AS jitter\n    FROM gaps g\n    JOIN stats s USING (local_addr, remote_addr,\
+  \ dstport)\n    WHERE g.gap IS NOT NULL\n    GROUP BY g.local_addr, g.remote_addr, g.dstport, s.period_secs\n\
+  ),\nskips AS (\n    SELECT s.local_addr, s.remote_addr, s.dstport, count(k.start_time) AS skipdata_overlaps\n\
+  \    FROM stats s\n    CROSS JOIN LATERAL (SELECT unnest(s.interfaces) AS interface_id) i\n    LEFT\
+  \ JOIN vpc_flow_logs k\n           ON k.interface_id = i.interface_id\n          AND k.log_status =\
+  \ 'SKIPDATA'\n          AND k.start_time BETWEEN s.first_seen AND s.last_seen\n    GROUP BY s.local_addr,\
+  \ s.remote_addr, s.dstport\n)\nSELECT s.local_addr, s.remote_addr, s.dstport, s.protocol_name,\n   \
+  \    array_to_string(s.interfaces, ', ')                       AS interface_ids,\n       s.first_seen,\
+  \ s.last_seen,\n       epoch(s.last_seen - s.first_seen) / 3600.0                AS span_hours,\n  \
+  \     s.active_buckets,\n       s.period_secs,\n       CASE WHEN s.max_duration > 60 THEN 600 ELSE 60\
+  \ END        AS aggregation_window_secs,\n       s.active_buckets / (epoch(s.last_seen - s.first_seen)\
+  \ / s.period_secs + 1)\n                                                                  AS active_bucket_ratio,\n\
+  \       j.jitter,\n       s.bytes_cv,\n       k.skipdata_overlaps,\n       CASE\n           WHEN j.jitter\
+  \ <= 0.1 AND k.skipdata_overlaps = 0 THEN 'high'\n           WHEN j.jitter <= 0.25                 \
+  \           THEN 'medium'\n           ELSE 'low'\n       END                                       \
+  \                 AS confidence\nFROM stats s\nJOIN jitter j USING (local_addr, remote_addr, dstport)\n\
+  JOIN skips  k USING (local_addr, remote_addr, dstport)\nWHERE s.active_buckets >= 20\n  AND epoch(s.last_seen\
+  \ - s.first_seen) >= 12 * 3600\n  AND s.period_secs > CASE WHEN s.max_duration > 60 THEN 600 ELSE 60\
+  \ END\n"
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+columns:
+- column_name: local_addr
+  verbose_name: Local Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: remote_addr
+  verbose_name: Remote Address
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: dstport
+  verbose_name: Destination Port
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: true
+  filterable: true
+- column_name: protocol_name
+  verbose_name: Protocol Name
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: interface_ids
+  verbose_name: Interface Ids
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+- column_name: first_seen
+  verbose_name: First Seen
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: last_seen
+  verbose_name: Last Seen
+  is_dttm: true
+  is_active: true
+  type: TIMESTAMP
+  groupby: true
+  filterable: true
+- column_name: span_hours
+  verbose_name: Span Hours
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: active_buckets
+  verbose_name: Active Buckets
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: period_secs
+  verbose_name: Period Secs
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: aggregation_window_secs
+  verbose_name: Aggregation Window Secs
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  groupby: false
+  filterable: true
+- column_name: active_bucket_ratio
+  verbose_name: Active Bucket Ratio
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: jitter
+  verbose_name: Jitter
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: bytes_cv
+  verbose_name: Bytes Cv
+  is_dttm: false
+  is_active: true
+  type: DOUBLE
+  groupby: false
+  filterable: true
+- column_name: skipdata_overlaps
+  verbose_name: Skipdata Overlaps
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+- column_name: confidence
+  verbose_name: Confidence
+  is_dttm: false
+  is_active: true
+  type: VARCHAR
+  groupby: true
+  filterable: true
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: Number of rows

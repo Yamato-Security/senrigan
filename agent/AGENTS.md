@@ -43,8 +43,9 @@ agent/
 ├── llm.py                 # OpenAI API integration (SQL generation, analysis, SQL fix)
 ├── query.py               # DuckDB query execution, validation, date filter, row limit, retry
 ├── geo.py                 # Automatic GeoIP enrichment of IP columns in query results
+│                          #   (cloudtrail_events columns, or ip_geo for VPC Flow Logs)
 ├── report.py              # Threat hunting report generation (Markdown + sensitive data redaction)
-├── schema.py              # Column metadata for cloudtrail_events and Suzaku's timeline
+├── schema.py              # Column metadata for cloudtrail_events, vpc_flow_logs and Suzaku's timeline
 ├── profiles.py            # DatasetProfile — table, filters, prompt, state namespace per page
 ├── suzaku_db.py           # Discovery + suzaku_meta-based detection of Suzaku *.duckdb files
 ├── suzaku_queries.py      # QueryResult, bound-parameter helpers, timeline pivot SQL
@@ -54,16 +55,20 @@ agent/
 ├── builtin_hunts.yaml     # Pre-built threat hunting queries (categorised; each maps to
 │                          #   Threat Technique Catalog for AWS techniques via `techniques:`)
 ├── suzaku_timeline_hunts.yaml  # 15 pre-built hunts for Suzaku's timeline table (same schema)
+├── vpc_flow_hunts.yaml    # Hunts over vpc_flow_logs; each declares requires / limitations
+│                          #   and has a planted positive + near-miss in the fixture
 ├── views/
 │   ├── __init__.py
 │   ├── explorer.py        # Panel kit for the explorer pages: pin-to-report, CSV,
 │   │                      #   AI explain, run info, empty state, timeline pivot
+│   ├── vpc_flow.py        # Chat page: hunting over vpc_flow_logs (empty state without flow logs)
 │   ├── suzaku_timeline.py # Chat page: hunting over Suzaku aws-ct-timeline output
 │   ├── suzaku_summary.py  # Explorer page: identity triage over aws-ct-summary
 │   └── suzaku_metrics.py  # Explorer page: field explorer over aws-ct-metrics
 ├── prompts/
 │   ├── __init__.py
 │   ├── system_prompt.py   # System prompt template for cloudtrail_events
+│   ├── vpc_flow_prompt.py # System prompt for vpc_flow_logs: the four ways flow evidence misleads
 │   ├── suzaku_timeline_prompt.py  # System prompt template for Suzaku's timeline
 │   └── analysis_prompt.py # System prompt + user template for analysis
 ├── requirements.txt
@@ -174,6 +179,16 @@ one. What follows is what each file covers, and why.
 - **UI-02:** `test_generate_report_includes_label_in_heading` — Label in query section heading.
 - **UI-02:** `test_generate_report_includes_category_when_set` — Category in report section.
 
+### VPC Flow Logs (`test_vpc_flow_page.py`, `test_vpc_flow_hunts.py`)
+- The page reads `threat_hunting.db` (Full/Lite), never the Suzaku picker; empty state when
+  `vpc_flow_logs` has no rows
+- Flow address columns are geo-enriched from `ip_geo` through the handler
+- `query.coverage_gaps()` names required fields no selected record carries; a hunt with gaps
+  reports **insufficient coverage** instead of an empty result; `limitations` reach the report
+- Every hunt: contract keys, real columns, ORDER BY + LIMIT, recorded direction, BPA-safe bytes,
+  `traffic_path = 2` never counted as IGW, and its planted positive in / near-miss out against
+  `sample/vpc_flow/fixtures/vpc-flow-fixture.duckdb`
+
 ### geo.py (`test_geo.py`; handler integration in `test_app.py`)
 - `test_find_ip_columns_*` — IP column detection by name pattern + value shape
   (rejects service domains like "cloudformation.amazonaws.com").
@@ -232,7 +247,7 @@ one. What follows is what each file covers, and why.
   and True for a synthetic file with values, so the page never draws blank geo charts
 
 ### views/ (`test_suzaku_explorer_views.py`)
-- Navigation exposes four pages; CloudTrail stays the default
+- Navigation exposes five pages; CloudTrail stays the default
 - Both explorer pages render their empty state without opening a database
 - Both render end-to-end against the committed fixtures (every panel's SQL runs)
 - 📌 Pin adds exactly one `ReportEntry`, which both report renderers then emit

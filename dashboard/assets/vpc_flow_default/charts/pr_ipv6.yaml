@@ -1,0 +1,43 @@
+# VFL-35: IPv6 Flows
+uuid: f10f1004-0000-4000-8000-000000000035
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: IPv6 Flows
+viz_type: table
+description: All IPv6 observations. IPv4-centric views miss these; an unexpected IPv6 path to the internet
+  bypasses IPv4 egress controls. (VFL-35)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  - expressionType: SQL
+    sqlExpression: MIN(start_time)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  groupby:
+  - flow_src
+  - flow_dst
+  - dstport
+  - protocol_name
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK' AND ip_version = 6
+    filterOptionName: filter_48553892
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

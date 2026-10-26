@@ -27,6 +27,7 @@ from profiles import (
     SUZAKU_METRICS_PROFILE,
     SUZAKU_SUMMARY_PROFILE,
     SUZAKU_TIMELINE_PROFILE,
+    VPC_FLOW_PROFILE,
     DatasetProfile,
 )
 from query import DEFAULT_ROW_LIMIT
@@ -82,7 +83,7 @@ def _get_duckdb_path(profile: DatasetProfile = CLOUDTRAIL_PROFILE) -> str:
     Returns:
         The DuckDB file path, or ``""`` when no Suzaku database was selected.
     """
-    if profile.key != CLOUDTRAIL_PROFILE.key:
+    if not profile.reads_senrigan_db:
         return str(st.session_state.get(profile.state_key("suzaku_db"), "") or "")
     variant = st.session_state.get("db_variant", DB_VARIANT_FULL)
     return get_duckdb_path_for_variant(variant)
@@ -147,7 +148,7 @@ def _render_db_variant_section(profile: DatasetProfile) -> None:
     Args:
         profile: Dataset profile the page is querying.
     """
-    if profile.key != CLOUDTRAIL_PROFILE.key:
+    if not profile.reads_senrigan_db:
         return
 
     # The Lite variant points at a DuckDB file produced by
@@ -1013,6 +1014,13 @@ def _chat_page() -> None:
     render_chat(CLOUDTRAIL_PROFILE)
 
 
+def _vpc_flow_page() -> None:
+    """Render the VPC Flow Logs hunting page."""
+    from views.vpc_flow import render
+
+    render()
+
+
 def _suzaku_timeline_page() -> None:
     """Render the Suzaku ``aws-ct-timeline`` hunting page."""
     from views.suzaku_timeline import render
@@ -1044,9 +1052,9 @@ PAGES: dict[str, object] = {}
 def build_pages() -> list:
     """Return the navigation pages, CloudTrail first.
 
-    The first two are chat pages sharing the hunting UI, differing only in their
-    :class:`~profiles.DatasetProfile`. The last two are explorer pages over
-    Suzaku's pre-aggregated output, which generate no SQL at all.
+    The first three are chat pages sharing the hunting UI, differing only in
+    their :class:`~profiles.DatasetProfile`. The last two are explorer pages
+    over Suzaku's pre-aggregated output, which generate no SQL at all.
 
     Returns:
         A list of ``st.Page`` objects for :func:`st.navigation`.
@@ -1058,6 +1066,12 @@ def build_pages() -> list:
             icon=CLOUDTRAIL_PROFILE.icon,
             url_path="senrigan",
             default=True,
+        ),
+        st.Page(
+            _vpc_flow_page,
+            title=VPC_FLOW_PROFILE.label,
+            icon=VPC_FLOW_PROFILE.icon,
+            url_path="vpc-flow",
         ),
         st.Page(
             _suzaku_timeline_page,
@@ -1083,6 +1097,7 @@ def build_pages() -> list:
         zip(
             (
                 CLOUDTRAIL_PROFILE.key,
+                VPC_FLOW_PROFILE.key,
                 SUZAKU_TIMELINE_PROFILE.key,
                 SUZAKU_SUMMARY_PROFILE.key,
                 SUZAKU_METRICS_PROFILE.key,

@@ -1,0 +1,33 @@
+# VFL-02: Capture Scope from CloudTrail
+uuid: f10f1004-0000-4000-8000-000000000002
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000003
+slice_name: Capture Scope from CloudTrail
+viz_type: table
+description: What each subscription captures (resource, ALL / ACCEPT / REJECT) according to CreateFlowLogs
+  and DeleteFlowLogs in CloudTrail. A subscription missing here was created before the CloudTrail coverage
+  began — its scope is unknown, and a REJECT-only subscription can never show an accepted flow. (VFL-02)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: MIN(event_time)
+    label: recorded_at
+    hasCustomLabel: true
+    optionName: metric_recorded_at
+  groupby:
+  - flow_log_id
+  - event_name
+  - traffic_type
+  - resource_ids
+  - account_id
+  - region
+  - user_identity_arn
+  adhoc_filters: []
+  granularity_sqla: event_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

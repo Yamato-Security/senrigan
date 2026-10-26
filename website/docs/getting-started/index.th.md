@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (ติดตั้งมาแล้วบน macOS)                  |
 | **ทรัพยากร**                         | RAM ขั้นต่ำ 16 GB, แนะนำให้ใช้ SSD                 |
 | **CloudTrail logs**                   | ไฟล์ `.json` หรือ `.json.gz` ที่ส่งออกจาก AWS      |
+| *(ทางเลือก)* **VPC Flow Logs** | ไฟล์ `.log.gz` แบบข้อความธรรมดาที่ส่งไปยัง S3 |
 | *(ทางเลือก)* **AWS Config snapshots** | ไฟล์ `.json` หรือ `.json.gz` สำหรับกราฟทรัพยากร AWS |
 | *(ทางเลือก)* **OpenAI API key**       | จำเป็นสำหรับการสร้างคิวรีด้วย AI                   |
 | *(ทางเลือก)* **MaxMind GeoLite2**     | ไฟล์ `.mmdb` สำหรับการเสริมข้อมูล GeoIP                 |
@@ -16,10 +17,10 @@
 
 ## เริ่มต้นอย่างรวดเร็ว
 
-**ขั้นตอนที่ 1.** ดาวน์โหลด CloudTrail logs จาก S3
+**ขั้นตอนที่ 1.** ดาวน์โหลด prefix `AWSLogs/` ทั้งหมดจาก S3 — CloudTrail logs และ VPC Flow Logs (ถ้ามี) ไฟล์ของบริการอื่นจะถูกข้ามระหว่าง ingest
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **ขั้นตอนที่ 2.** โคลน repository และวางข้อมูลของคุณให้เรียบร้อย
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | คำสั่ง | การทำงาน |
 |---|---|
-| `make ingest` | โหลด CloudTrail logs จาก `docker/logs/` เข้า DuckDB |
+| `make ingest` | โหลด CloudTrail logs และ VPC Flow Logs จาก `docker/logs/` เข้า DuckDB |
 | `make up` | เริ่ม UI แดชบอร์ด และกราฟทรัพยากร |
 | `make down` | หยุดทั้งหมด |
 | `make logs` | ติดตาม logs ของบริการ (ใช้ `SERVICE=agent` สำหรับบริการเดียว) |

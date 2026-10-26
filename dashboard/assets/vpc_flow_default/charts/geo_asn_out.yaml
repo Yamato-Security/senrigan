@@ -1,0 +1,39 @@
+# VFL-44: Top Outbound ASNs by Bytes
+uuid: f10f1004-0000-4000-8000-000000000044
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Top Outbound ASNs by Bytes
+viz_type: table
+description: 'Egress volume per autonomous system. Hosting and VPS providers (DigitalOcean, OVH, Linode,
+  Hetzner, Choopa …) are where attacker infrastructure usually lives; check the organisation column. A
+  triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload before
+  concluding. (VFL-44)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  - expressionType: SQL
+    sqlExpression: COUNT(DISTINCT remote_addr)
+    label: destinations
+    hasCustomLabel: true
+    optionName: metric_destinations
+  groupby:
+  - remote_geo_asn
+  - remote_geo_org
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND action = 'ACCEPT' AND remote_geo_asn IS NOT NULL
+    filterOptionName: filter_53961554
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

@@ -1,0 +1,36 @@
+# VFL-47: Encryption Status
+uuid: f10f1004-0000-4000-8000-000000000047
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Encryption Status
+viz_type: pie
+description: Encryption in transit as reported with VPC Encryption Controls. Application-encrypted is
+  inferred from the port for endpoints, not from the payload. (VFL-47)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  groupby:
+  - expressionType: SQL
+    sqlExpression: CASE encryption_status WHEN 0 THEN 'Not encrypted' WHEN 1 THEN 'Nitro-encrypted' WHEN
+      2 THEN 'Application-encrypted' WHEN 3 THEN 'Nitro + application' END
+    label: encryption
+    hasCustomLabel: true
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: encryption_status IS NOT NULL
+    filterOptionName: filter_71352614
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  color_scheme: supersetColors
+  donut: true
+  show_labels: true
+  label_type: key_percent
+  rich_tooltip: true
+cache_timeout: null

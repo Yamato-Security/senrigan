@@ -1,0 +1,33 @@
+# VFL-04: Records by Direction Source
+uuid: f10f1004-0000-4000-8000-000000000004
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Records by Direction Source
+viz_type: pie
+description: 'How local and remote endpoints were determined: from the record''s own flow-direction (record),
+  from address class alone (heuristic), or not at all (unknown). Direction-based charts use recorded rows
+  only, so a large heuristic or unknown share means they see less. (VFL-04)'
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: records
+    hasCustomLabel: true
+    optionName: metric_records
+  groupby:
+  - direction_source
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK'
+    filterOptionName: filter_13211219
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  color_scheme: supersetColors
+  donut: true
+  show_labels: true
+  label_type: key_percent
+  rich_tooltip: true
+cache_timeout: null

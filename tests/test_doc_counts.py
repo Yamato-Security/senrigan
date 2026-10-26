@@ -33,6 +33,9 @@ REFERENCE_PAGES = sorted((WEBSITE_DOCS / "reference").glob("index*.md"))
 
 SUZAKU_BUNDLES = ["suzaku_timeline", "suzaku_summary", "suzaku_metrics"]
 
+# Bundles whose size dashboard/README.md states in its directory tree.
+README_COUNTED_BUNDLES = [*SUZAKU_BUNDLES, "vpc_flow_default"]
+
 # `aws-ct-<command>` as the reference page names it → the bundle it feeds.
 SUZAKU_COMMAND_BUNDLE = {
     "timeline": "suzaku_timeline",
@@ -73,7 +76,7 @@ def heading_number(text: str, emoji: str) -> int:
     return int(numbers[0])
 
 
-@pytest.mark.parametrize("bundle", SUZAKU_BUNDLES)
+@pytest.mark.parametrize("bundle", README_COUNTED_BUNDLES)
 def test_dashboard_readme_states_the_real_suzaku_chart_count(bundle: str):
     """The module README's directory tree annotates each bundle with its size."""
     text = DASHBOARD_README.read_text(encoding="utf-8")
@@ -83,7 +86,7 @@ def test_dashboard_readme_states_the_real_suzaku_chart_count(bundle: str):
     assert int(match.group(1)) == len(chart_names(bundle))
 
 
-@pytest.mark.parametrize("bundle", SUZAKU_BUNDLES)
+@pytest.mark.parametrize("bundle", README_COUNTED_BUNDLES)
 def test_dashboard_readme_states_the_real_dataset_count(bundle: str):
     """Same tree annotates the asset directories with their dataset count."""
     text = DASHBOARD_README.read_text(encoding="utf-8")
@@ -179,6 +182,44 @@ def test_every_locale_ships_a_reference_page():
     }
 
     assert {page.name for page in REFERENCE_PAGES} == expected
+
+
+# ── VPC Flow Logs reference page ────────────────────────────────────────────
+
+VPC_FLOW_PAGES = sorted((WEBSITE_DOCS / "reference").glob("vpc-flow*.md"))
+
+
+def vpc_flow_halves(page: Path) -> tuple[str, str]:
+    """Split the page at its chart heading: hunts before it, charts after."""
+    hunts, _, charts = page.read_text(encoding="utf-8").partition("\n## 📊")
+    assert charts, f"{page.name} has no `## 📊` heading"
+    return hunts, charts
+
+
+def test_every_locale_ships_a_vpc_flow_page():
+    expected = {"vpc-flow.md"} | {
+        f"vpc-flow.{locale}.md" for locale in site_locales()[1:]
+    }
+
+    assert {page.name for page in VPC_FLOW_PAGES} == expected
+
+
+@pytest.mark.parametrize("page", VPC_FLOW_PAGES, ids=lambda p: p.name)
+def test_vpc_flow_page_headings_state_the_real_counts(page: Path):
+    text = page.read_text(encoding="utf-8")
+
+    assert heading_number(text, "🎯") == len(hunt_labels("vpc_flow_hunts.yaml"))
+    assert heading_number(text, "📊") == len(chart_names("vpc_flow_default"))
+
+
+@pytest.mark.parametrize("page", VPC_FLOW_PAGES, ids=lambda p: p.name)
+def test_vpc_flow_page_lists_every_hunt_and_chart(page: Path):
+    """Names are not translated, so every locale lists the same hunts and charts."""
+    hunts, charts = vpc_flow_halves(page)
+
+    assert numbered_row_names(hunts) == hunt_labels("vpc_flow_hunts.yaml")
+    assert set(numbered_row_names(charts)) == chart_names("vpc_flow_default")
+    assert len(numbered_row_names(charts)) == len(chart_names("vpc_flow_default"))
 
 
 _SUITE_SIZE_RE = re.compile(r"≈\s*\d+|\b\d+\s+tests?\b")

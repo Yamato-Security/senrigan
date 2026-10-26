@@ -1,0 +1,1589 @@
+# VPC Flow Logs Threat Hunting — Dashboard Definition
+#
+# Coverage first: a chart is only meaningful for the subscriptions, fields and
+# windows the Coverage tab shows. Charts VFL-01..VFL-50.
+#
+# Edit charts/*.yaml and this file, then rebuild and re-import:
+#   python3 assets/rebuild_vpc_flow_zip.py
+#   cd docker && docker compose run --rm superset-init
+uuid: f10f1003-0000-4000-8000-000000000001
+version: 1.0.0
+dashboard_title: VPC Flow Logs Threat Hunting
+description: 'Network-layer threat hunting over VPC Flow Logs: coverage first, then inbound reconnaissance,
+  egress, periodicity, lateral movement, protocols, GeoIP and posture. Every count is of flow-log observations,
+  not connections.'
+published: true
+css: ''
+slug: vpc-flow-logs-threat-hunting
+position:
+  DASHBOARD_VERSION_KEY: v2
+  ROOT_ID:
+    type: ROOT
+    id: ROOT_ID
+    children:
+    - GRID_ID
+  GRID_ID:
+    type: GRID
+    id: GRID_ID
+    children:
+    - TABS_ID
+  TABS_ID:
+    type: TABS
+    id: TABS_ID
+    children:
+    - TAB-coverage
+    - TAB-overview
+    - TAB-inbound
+    - TAB-egress
+    - TAB-periodicity
+    - TAB-lateral
+    - TAB-protocols
+    - TAB-geoip
+    - TAB-posture
+  ROW-hdr-coverage:
+    type: ROW
+    id: ROW-hdr-coverage
+    children:
+    - MARKDOWN-coverage
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-coverage:
+    type: MARKDOWN
+    id: MARKDOWN-coverage
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🧭 Coverage
+
+
+        What the flow logs can and cannot show. An empty chart elsewhere means *nothing observed* only
+        if the source below captures that traffic, logs the fields the chart needs and had no SKIPDATA
+        gap at the time.'
+  CHART-cov-sources:
+    type: CHART
+    id: CHART-cov-sources
+    children: []
+    meta:
+      chartId: 1
+      uuid: f10f1004-0000-4000-8000-000000000001
+      sliceName: Flow Log Sources
+      width: 12
+      height: 50
+  ROW-coverage-1:
+    type: ROW
+    id: ROW-coverage-1
+    children:
+    - CHART-cov-sources
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-cov-configs:
+    type: CHART
+    id: CHART-cov-configs
+    children: []
+    meta:
+      chartId: 2
+      uuid: f10f1004-0000-4000-8000-000000000002
+      sliceName: Capture Scope from CloudTrail
+      width: 12
+      height: 50
+  ROW-coverage-2:
+    type: ROW
+    id: ROW-coverage-2
+    children:
+    - CHART-cov-configs
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-cov-status-ts:
+    type: CHART
+    id: CHART-cov-status-ts
+    children: []
+    meta:
+      chartId: 3
+      uuid: f10f1004-0000-4000-8000-000000000003
+      sliceName: NODATA / SKIPDATA Windows
+      width: 6
+      height: 50
+  CHART-cov-direction:
+    type: CHART
+    id: CHART-cov-direction
+    children: []
+    meta:
+      chartId: 4
+      uuid: f10f1004-0000-4000-8000-000000000004
+      sliceName: Records by Direction Source
+      width: 4
+      height: 50
+  ROW-coverage-3:
+    type: ROW
+    id: ROW-coverage-3
+    children:
+    - CHART-cov-status-ts
+    - CHART-cov-direction
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-cov-fields:
+    type: CHART
+    id: CHART-cov-fields
+    children: []
+    meta:
+      chartId: 5
+      uuid: f10f1004-0000-4000-8000-000000000005
+      sliceName: Field Availability by Source
+      width: 12
+      height: 50
+  ROW-coverage-4:
+    type: ROW
+    id: ROW-coverage-4
+    children:
+    - CHART-cov-fields
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-coverage:
+    type: TAB
+    id: TAB-coverage
+    children:
+    - ROW-hdr-coverage
+    - ROW-coverage-1
+    - ROW-coverage-2
+    - ROW-coverage-3
+    - ROW-coverage-4
+    meta:
+      text: 🧭 Coverage
+      defaultText: Coverage
+      tooltip: 'Read first: which subscriptions, fields and windows the other tabs can see'
+  ROW-hdr-overview:
+    type: ROW
+    id: ROW-hdr-overview
+    children:
+    - MARKDOWN-overview
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-overview:
+    type: MARKDOWN
+    id: MARKDOWN-overview
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🚦 Overview
+
+
+        Every count here is of **flow records** — one 5-tuple on one interface in one aggregation window
+        — never of connections.'
+  CHART-kpi-records:
+    type: CHART
+    id: CHART-kpi-records
+    children: []
+    meta:
+      chartId: 6
+      uuid: f10f1004-0000-4000-8000-000000000006
+      sliceName: Flow Records
+      width: 2
+      height: 25
+  CHART-kpi-bytes:
+    type: CHART
+    id: CHART-kpi-bytes
+    children: []
+    meta:
+      chartId: 7
+      uuid: f10f1004-0000-4000-8000-000000000007
+      sliceName: Bytes Observed
+      width: 2
+      height: 25
+  CHART-kpi-reject-ratio:
+    type: CHART
+    id: CHART-kpi-reject-ratio
+    children: []
+    meta:
+      chartId: 8
+      uuid: f10f1004-0000-4000-8000-000000000008
+      sliceName: REJECT Ratio
+      width: 2
+      height: 25
+  CHART-kpi-peers:
+    type: CHART
+    id: CHART-kpi-peers
+    children: []
+    meta:
+      chartId: 9
+      uuid: f10f1004-0000-4000-8000-000000000009
+      sliceName: Distinct External Peers
+      width: 2
+      height: 25
+  CHART-kpi-enis:
+    type: CHART
+    id: CHART-kpi-enis
+    children: []
+    meta:
+      chartId: 10
+      uuid: f10f1004-0000-4000-8000-000000000010
+      sliceName: Interfaces Observed
+      width: 2
+      height: 25
+  CHART-kpi-skipdata:
+    type: CHART
+    id: CHART-kpi-skipdata
+    children: []
+    meta:
+      chartId: 11
+      uuid: f10f1004-0000-4000-8000-000000000011
+      sliceName: SKIPDATA Windows
+      width: 2
+      height: 25
+  ROW-overview-1:
+    type: ROW
+    id: ROW-overview-1
+    children:
+    - CHART-kpi-records
+    - CHART-kpi-bytes
+    - CHART-kpi-reject-ratio
+    - CHART-kpi-peers
+    - CHART-kpi-enis
+    - CHART-kpi-skipdata
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-ov-records-ts:
+    type: CHART
+    id: CHART-ov-records-ts
+    children: []
+    meta:
+      chartId: 12
+      uuid: f10f1004-0000-4000-8000-000000000012
+      sliceName: Flow Records by Action
+      width: 6
+      height: 50
+  CHART-ov-bytes-ts:
+    type: CHART
+    id: CHART-ov-bytes-ts
+    children: []
+    meta:
+      chartId: 13
+      uuid: f10f1004-0000-4000-8000-000000000013
+      sliceName: Bytes by Direction
+      width: 6
+      height: 50
+  ROW-overview-2:
+    type: ROW
+    id: ROW-overview-2
+    children:
+    - CHART-ov-records-ts
+    - CHART-ov-bytes-ts
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-overview:
+    type: TAB
+    id: TAB-overview
+    children:
+    - ROW-hdr-overview
+    - ROW-overview-1
+    - ROW-overview-2
+    meta:
+      text: 🚦 Overview
+      defaultText: Overview
+      tooltip: Volume, rejection rate and external peers at a glance
+  ROW-hdr-inbound:
+    type: ROW
+    id: ROW-hdr-inbound
+    children:
+    - MARKDOWN-inbound
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-inbound:
+    type: MARKDOWN
+    id: MARKDOWN-inbound
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🔍 Inbound / Recon
+
+
+        Scanning, accepted access to admin and database ports, and peers that were rejected before being
+        let in. `ACCEPT` is what the security group decided, not proof of a session.'
+  CHART-rc-top-rejected:
+    type: CHART
+    id: CHART-rc-top-rejected
+    children: []
+    meta:
+      chartId: 14
+      uuid: f10f1004-0000-4000-8000-000000000014
+      sliceName: Top Rejected External Sources
+      width: 6
+      height: 50
+  ROW-inbound-1:
+    type: ROW
+    id: ROW-inbound-1
+    children:
+    - CHART-rc-top-rejected
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rc-vertical:
+    type: CHART
+    id: CHART-rc-vertical
+    children: []
+    meta:
+      chartId: 15
+      uuid: f10f1004-0000-4000-8000-000000000015
+      sliceName: Vertical Scan Candidates
+      width: 12
+      height: 50
+  ROW-inbound-2:
+    type: ROW
+    id: ROW-inbound-2
+    children:
+    - CHART-rc-vertical
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rc-horizontal:
+    type: CHART
+    id: CHART-rc-horizontal
+    children: []
+    meta:
+      chartId: 16
+      uuid: f10f1004-0000-4000-8000-000000000016
+      sliceName: Horizontal Scan Candidates
+      width: 12
+      height: 50
+  ROW-inbound-3:
+    type: ROW
+    id: ROW-inbound-3
+    children:
+    - CHART-rc-horizontal
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rc-admin:
+    type: CHART
+    id: CHART-rc-admin
+    children: []
+    meta:
+      chartId: 17
+      uuid: f10f1004-0000-4000-8000-000000000017
+      sliceName: Internet to Admin / DB Ports — Accepted
+      width: 12
+      height: 50
+  ROW-inbound-4:
+    type: ROW
+    id: ROW-inbound-4
+    children:
+    - CHART-rc-admin
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rc-syn-only:
+    type: CHART
+    id: CHART-rc-syn-only
+    children: []
+    meta:
+      chartId: 18
+      uuid: f10f1004-0000-4000-8000-000000000018
+      sliceName: SYN-Only Records from External Sources
+      width: 6
+      height: 50
+  ROW-inbound-5:
+    type: ROW
+    id: ROW-inbound-5
+    children:
+    - CHART-rc-syn-only
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-rc-reject-accept:
+    type: CHART
+    id: CHART-rc-reject-accept
+    children: []
+    meta:
+      chartId: 19
+      uuid: f10f1004-0000-4000-8000-000000000019
+      sliceName: REJECT then ACCEPT — Same Peer, Target and Port
+      width: 12
+      height: 50
+  ROW-inbound-6:
+    type: ROW
+    id: ROW-inbound-6
+    children:
+    - CHART-rc-reject-accept
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-inbound:
+    type: TAB
+    id: TAB-inbound
+    children:
+    - ROW-hdr-inbound
+    - ROW-inbound-1
+    - ROW-inbound-2
+    - ROW-inbound-3
+    - ROW-inbound-4
+    - ROW-inbound-5
+    - ROW-inbound-6
+    meta:
+      text: 🔍 Inbound / Recon
+      defaultText: Inbound / Recon
+      tooltip: Scans, exposed services and newly opened paths
+  ROW-hdr-egress:
+    type: ROW
+    id: ROW-hdr-egress
+    children:
+    - MARKDOWN-egress
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-egress:
+    type: MARKDOWN
+    id: MARKDOWN-egress
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 📤 Egress
+
+
+        Where data leaves. High volume, odd ports and unusual destinations are triage signals, not findings.'
+  CHART-eg-top-dest:
+    type: CHART
+    id: CHART-eg-top-dest
+    children: []
+    meta:
+      chartId: 20
+      uuid: f10f1004-0000-4000-8000-000000000020
+      sliceName: Top External Destinations by Bytes
+      width: 6
+      height: 50
+  ROW-egress-1:
+    type: ROW
+    id: ROW-egress-1
+    children:
+    - CHART-eg-top-dest
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-outliers:
+    type: CHART
+    id: CHART-eg-outliers
+    children: []
+    meta:
+      chartId: 21
+      uuid: f10f1004-0000-4000-8000-000000000021
+      sliceName: Egress Volume vs Host Baseline
+      width: 12
+      height: 50
+  ROW-egress-2:
+    type: ROW
+    id: ROW-egress-2
+    children:
+    - CHART-eg-outliers
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-by-path:
+    type: CHART
+    id: CHART-eg-by-path
+    children: []
+    meta:
+      chartId: 22
+      uuid: f10f1004-0000-4000-8000-000000000022
+      sliceName: Egress Bytes by Traffic Path
+      width: 6
+      height: 50
+  ROW-egress-3:
+    type: ROW
+    id: ROW-egress-3
+    children:
+    - CHART-eg-by-path
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-unusual-ports:
+    type: CHART
+    id: CHART-eg-unusual-ports
+    children: []
+    meta:
+      chartId: 23
+      uuid: f10f1004-0000-4000-8000-000000000023
+      sliceName: Unusual Destination Ports
+      width: 12
+      height: 50
+  ROW-egress-4:
+    type: ROW
+    id: ROW-egress-4
+    children:
+    - CHART-eg-unusual-ports
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-dns:
+    type: CHART
+    id: CHART-eg-dns
+    children: []
+    meta:
+      chartId: 24
+      uuid: f10f1004-0000-4000-8000-000000000024
+      sliceName: DNS to Non-Amazon Resolvers
+      width: 12
+      height: 50
+  ROW-egress-5:
+    type: ROW
+    id: ROW-egress-5
+    children:
+    - CHART-eg-dns
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-smtp:
+    type: CHART
+    id: CHART-eg-smtp
+    children: []
+    meta:
+      chartId: 25
+      uuid: f10f1004-0000-4000-8000-000000000025
+      sliceName: Outbound SMTP
+      width: 12
+      height: 50
+  ROW-egress-6:
+    type: ROW
+    id: ROW-egress-6
+    children:
+    - CHART-eg-smtp
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-eg-long-running:
+    type: CHART
+    id: CHART-eg-long-running
+    children: []
+    meta:
+      chartId: 26
+      uuid: f10f1004-0000-4000-8000-000000000026
+      sliceName: Long-Running and Low-and-Slow Flows
+      width: 12
+      height: 50
+  ROW-egress-7:
+    type: ROW
+    id: ROW-egress-7
+    children:
+    - CHART-eg-long-running
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-egress:
+    type: TAB
+    id: TAB-egress
+    children:
+    - ROW-hdr-egress
+    - ROW-egress-1
+    - ROW-egress-2
+    - ROW-egress-3
+    - ROW-egress-4
+    - ROW-egress-5
+    - ROW-egress-6
+    - ROW-egress-7
+    meta:
+      text: 📤 Egress
+      defaultText: Egress
+      tooltip: Volume outliers, unusual ports, DNS bypass and paths out
+  ROW-hdr-periodicity:
+    type: ROW
+    id: ROW-hdr-periodicity
+    children:
+    - MARKDOWN-periodicity
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-periodicity:
+    type: MARKDOWN
+    id: MARKDOWN-periodicity
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### ⏱️ Periodicity
+
+
+        Candidates for C2 beaconing, computed over aggregated observations. The logging cadence itself
+        is filtered out; SKIPDATA lowers confidence.'
+  CHART-pe-table:
+    type: CHART
+    id: CHART-pe-table
+    children: []
+    meta:
+      chartId: 27
+      uuid: f10f1004-0000-4000-8000-000000000027
+      sliceName: Periodic Flow-Log Observations
+      width: 12
+      height: 50
+  ROW-periodicity-1:
+    type: ROW
+    id: ROW-periodicity-1
+    children:
+    - CHART-pe-table
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-periodicity:
+    type: TAB
+    id: TAB-periodicity
+    children:
+    - ROW-hdr-periodicity
+    - ROW-periodicity-1
+    meta:
+      text: ⏱️ Periodicity
+      defaultText: Periodicity
+      tooltip: Regular flow-log observations to external peers
+  ROW-hdr-lateral:
+    type: ROW
+    id: ROW-hdr-lateral
+    children:
+    - MARKDOWN-lateral
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-lateral:
+    type: MARKDOWN
+    id: MARKDOWN-lateral
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### ↔️ Lateral Movement
+
+
+        Private-to-private traffic. Intra-VPC flows are observed on both interfaces, so counts here are
+        observations, not unique flows.'
+  CHART-la-admin:
+    type: CHART
+    id: CHART-la-admin
+    children: []
+    meta:
+      chartId: 28
+      uuid: f10f1004-0000-4000-8000-000000000028
+      sliceName: Internal Admin-Port Traffic
+      width: 12
+      height: 50
+  ROW-lateral-1:
+    type: ROW
+    id: ROW-lateral-1
+    children:
+    - CHART-la-admin
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-la-new-pairs:
+    type: CHART
+    id: CHART-la-new-pairs
+    children: []
+    meta:
+      chartId: 29
+      uuid: f10f1004-0000-4000-8000-000000000029
+      sliceName: First-Seen Internal Pairs
+      width: 12
+      height: 50
+  ROW-lateral-2:
+    type: ROW
+    id: ROW-lateral-2
+    children:
+    - CHART-la-new-pairs
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-la-fanout:
+    type: CHART
+    id: CHART-la-fanout
+    children: []
+    meta:
+      chartId: 30
+      uuid: f10f1004-0000-4000-8000-000000000030
+      sliceName: Internal Fan-Out by Source
+      width: 6
+      height: 50
+  ROW-lateral-3:
+    type: ROW
+    id: ROW-lateral-3
+    children:
+    - CHART-la-fanout
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-la-staging:
+    type: CHART
+    id: CHART-la-staging
+    children: []
+    meta:
+      chartId: 31
+      uuid: f10f1004-0000-4000-8000-000000000031
+      sliceName: Internal Inbound Followed by External Egress
+      width: 12
+      height: 50
+  ROW-lateral-4:
+    type: ROW
+    id: ROW-lateral-4
+    children:
+    - CHART-la-staging
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-lateral:
+    type: TAB
+    id: TAB-lateral
+    children:
+    - ROW-hdr-lateral
+    - ROW-lateral-1
+    - ROW-lateral-2
+    - ROW-lateral-3
+    - ROW-lateral-4
+    meta:
+      text: ↔️ Lateral Movement
+      defaultText: Lateral Movement
+      tooltip: Internal admin-port traffic, new pairs and staging
+  ROW-hdr-protocols:
+    type: ROW
+    id: ROW-hdr-protocols
+    children:
+    - MARKDOWN-protocols
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-protocols:
+    type: MARKDOWN
+    id: MARKDOWN-protocols
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🧪 Protocols & IPv6
+
+
+        The blind spots of port-centric, IPv4-only views.'
+  CHART-pr-icmp:
+    type: CHART
+    id: CHART-pr-icmp
+    children: []
+    meta:
+      chartId: 32
+      uuid: f10f1004-0000-4000-8000-000000000032
+      sliceName: ICMP / ICMPv6 Peers
+      width: 6
+      height: 50
+  CHART-pr-udp-fanout:
+    type: CHART
+    id: CHART-pr-udp-fanout
+    children: []
+    meta:
+      chartId: 33
+      uuid: f10f1004-0000-4000-8000-000000000033
+      sliceName: UDP Fan-Out to External Hosts
+      width: 6
+      height: 50
+  ROW-protocols-1:
+    type: ROW
+    id: ROW-protocols-1
+    children:
+    - CHART-pr-icmp
+    - CHART-pr-udp-fanout
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-pr-unusual:
+    type: CHART
+    id: CHART-pr-unusual
+    children: []
+    meta:
+      chartId: 34
+      uuid: f10f1004-0000-4000-8000-000000000034
+      sliceName: Unusual IP Protocols
+      width: 6
+      height: 50
+  CHART-pr-ipv6:
+    type: CHART
+    id: CHART-pr-ipv6
+    children: []
+    meta:
+      chartId: 35
+      uuid: f10f1004-0000-4000-8000-000000000035
+      sliceName: IPv6 Flows
+      width: 6
+      height: 50
+  ROW-protocols-2:
+    type: ROW
+    id: ROW-protocols-2
+    children:
+    - CHART-pr-unusual
+    - CHART-pr-ipv6
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-protocols:
+    type: TAB
+    id: TAB-protocols
+    children:
+    - ROW-hdr-protocols
+    - ROW-protocols-1
+    - ROW-protocols-2
+    meta:
+      text: 🧪 Protocols & IPv6
+      defaultText: Protocols & IPv6
+      tooltip: ICMP, UDP fan-out, tunnels and IPv6
+  ROW-hdr-geoip:
+    type: ROW
+    id: ROW-hdr-geoip
+    children:
+    - MARKDOWN-geoip
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-geoip:
+    type: MARKDOWN
+    id: MARKDOWN-geoip
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🌍 GeoIP
+
+
+        Countries and ASNs of the remote endpoint. Requires GeoLite2 at ingest or a later `ingester enrich`;
+        AWS service ranges resolve to Amazon.'
+  CHART-geo-kpi-in:
+    type: CHART
+    id: CHART-geo-kpi-in
+    children: []
+    meta:
+      chartId: 36
+      uuid: f10f1004-0000-4000-8000-000000000036
+      sliceName: Inbound Countries
+      width: 2
+      height: 25
+  CHART-geo-kpi-out:
+    type: CHART
+    id: CHART-geo-kpi-out
+    children: []
+    meta:
+      chartId: 37
+      uuid: f10f1004-0000-4000-8000-000000000037
+      sliceName: Outbound Countries
+      width: 2
+      height: 25
+  CHART-geo-kpi-asn:
+    type: CHART
+    id: CHART-geo-kpi-asn
+    children: []
+    meta:
+      chartId: 38
+      uuid: f10f1004-0000-4000-8000-000000000038
+      sliceName: External ASNs
+      width: 2
+      height: 25
+  CHART-geo-map-in-acc:
+    type: CHART
+    id: CHART-geo-map-in-acc
+    children: []
+    meta:
+      chartId: 39
+      uuid: f10f1004-0000-4000-8000-000000000039
+      sliceName: Inbound Accepted — Origin Map
+      width: 4
+      height: 50
+  ROW-geoip-1:
+    type: ROW
+    id: ROW-geoip-1
+    children:
+    - CHART-geo-kpi-in
+    - CHART-geo-kpi-out
+    - CHART-geo-kpi-asn
+    - CHART-geo-map-in-acc
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-geo-map-in-rej:
+    type: CHART
+    id: CHART-geo-map-in-rej
+    children: []
+    meta:
+      chartId: 40
+      uuid: f10f1004-0000-4000-8000-000000000040
+      sliceName: Inbound Rejected — Origin Map
+      width: 4
+      height: 50
+  CHART-geo-map-out:
+    type: CHART
+    id: CHART-geo-map-out
+    children: []
+    meta:
+      chartId: 41
+      uuid: f10f1004-0000-4000-8000-000000000041
+      sliceName: Outbound Bytes — Destination Map
+      width: 4
+      height: 50
+  ROW-geoip-2:
+    type: ROW
+    id: ROW-geoip-2
+    children:
+    - CHART-geo-map-in-rej
+    - CHART-geo-map-out
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-geo-country-action:
+    type: CHART
+    id: CHART-geo-country-action
+    children: []
+    meta:
+      chartId: 42
+      uuid: f10f1004-0000-4000-8000-000000000042
+      sliceName: Inbound Records by Country and Action
+      width: 6
+      height: 50
+  CHART-geo-country-port:
+    type: CHART
+    id: CHART-geo-country-port
+    children: []
+    meta:
+      chartId: 43
+      uuid: f10f1004-0000-4000-8000-000000000043
+      sliceName: Inbound Accepted Ports by Country
+      width: 6
+      height: 50
+  ROW-geoip-3:
+    type: ROW
+    id: ROW-geoip-3
+    children:
+    - CHART-geo-country-action
+    - CHART-geo-country-port
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-geo-asn-out:
+    type: CHART
+    id: CHART-geo-asn-out
+    children: []
+    meta:
+      chartId: 44
+      uuid: f10f1004-0000-4000-8000-000000000044
+      sliceName: Top Outbound ASNs by Bytes
+      width: 6
+      height: 50
+  CHART-geo-rare-out:
+    type: CHART
+    id: CHART-geo-rare-out
+    children: []
+    meta:
+      chartId: 45
+      uuid: f10f1004-0000-4000-8000-000000000045
+      sliceName: Rare Outbound Countries
+      width: 6
+      height: 50
+  ROW-geoip-4:
+    type: ROW
+    id: ROW-geoip-4
+    children:
+    - CHART-geo-asn-out
+    - CHART-geo-rare-out
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-geoip:
+    type: TAB
+    id: TAB-geoip
+    children:
+    - ROW-hdr-geoip
+    - ROW-geoip-1
+    - ROW-geoip-2
+    - ROW-geoip-3
+    - ROW-geoip-4
+    meta:
+      text: 🌍 GeoIP
+      defaultText: GeoIP
+      tooltip: Countries and networks of external peers (needs GeoLite2)
+  ROW-hdr-posture:
+    type: ROW
+    id: ROW-hdr-posture
+    children:
+    - MARKDOWN-posture
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  MARKDOWN-posture:
+    type: MARKDOWN
+    id: MARKDOWN-posture
+    children: []
+    meta:
+      width: 12
+      height: 20
+      code: '### 🛡️ Posture
+
+
+        Configuration signals in the flow data: Block Public Access, Encryption Controls, how traffic
+        reaches AWS services, and middlebox interfaces.'
+  CHART-po-reject-reason:
+    type: CHART
+    id: CHART-po-reject-reason
+    children: []
+    meta:
+      chartId: 46
+      uuid: f10f1004-0000-4000-8000-000000000046
+      sliceName: REJECT Reasons (BPA / Encryption Controls)
+      width: 4
+      height: 50
+  CHART-po-encryption:
+    type: CHART
+    id: CHART-po-encryption
+    children: []
+    meta:
+      chartId: 47
+      uuid: f10f1004-0000-4000-8000-000000000047
+      sliceName: Encryption Status
+      width: 4
+      height: 50
+  CHART-po-aws-service:
+    type: CHART
+    id: CHART-po-aws-service
+    children: []
+    meta:
+      chartId: 48
+      uuid: f10f1004-0000-4000-8000-000000000048
+      sliceName: Egress to AWS Services by Path
+      width: 4
+      height: 50
+  ROW-posture-1:
+    type: ROW
+    id: ROW-posture-1
+    children:
+    - CHART-po-reject-reason
+    - CHART-po-encryption
+    - CHART-po-aws-service
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  CHART-po-middlebox:
+    type: CHART
+    id: CHART-po-middlebox
+    children: []
+    meta:
+      chartId: 49
+      uuid: f10f1004-0000-4000-8000-000000000049
+      sliceName: Middlebox Interfaces
+      width: 6
+      height: 50
+  CHART-po-offhours:
+    type: CHART
+    id: CHART-po-offhours
+    children: []
+    meta:
+      chartId: 50
+      uuid: f10f1004-0000-4000-8000-000000000050
+      sliceName: Egress Heatmap (UTC Hour × Weekday)
+      width: 6
+      height: 50
+  ROW-posture-2:
+    type: ROW
+    id: ROW-posture-2
+    children:
+    - CHART-po-middlebox
+    - CHART-po-offhours
+    meta:
+      background: BACKGROUND_TRANSPARENT
+  TAB-posture:
+    type: TAB
+    id: TAB-posture
+    children:
+    - ROW-hdr-posture
+    - ROW-posture-1
+    - ROW-posture-2
+    meta:
+      text: 🛡️ Posture
+      defaultText: Posture
+      tooltip: BPA, encryption controls, AWS service paths and middleboxes
+metadata:
+  cross_filters_enabled: true
+  color_scheme: supersetColors
+  native_filter_configuration:
+  - id: NATIVE_FILTER-timerange
+    name: Date Range
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      filterState:
+        value: No filter
+    controlValues:
+      enableEmptyFilter: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Filter every chart by its time column
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-source
+    name: Flow Log Source
+    filterType: filter_select
+    targets:
+    - column:
+        name: flow_log_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Narrow to one or more subscriptions
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-account
+    name: Account
+    filterType: filter_select
+    targets:
+    - column:
+        name: account_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Owner account of the observing interface
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-region
+    name: Region
+    filterType: filter_select
+    targets:
+    - column:
+        name: region
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Region of the observing interface (v4+ formats)
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-vpc
+    name: VPC
+    filterType: filter_select
+    targets:
+    - column:
+        name: vpc_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: VPC of the observing interface (v3+ formats)
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-subnet
+    name: Subnet
+    filterType: filter_select
+    targets:
+    - column:
+        name: subnet_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Subnet of the observing interface (v3+ formats)
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-interface
+    name: Interface
+    filterType: filter_select
+    targets:
+    - column:
+        name: interface_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Observing network interface
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-instance
+    name: Instance
+    filterType: filter_select
+    targets:
+    - column:
+        name: instance_id
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Instance owning the interface
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-remote
+    name: Remote Address
+    filterType: filter_select
+    targets:
+    - column:
+        name: remote_addr
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Remote endpoint (recorded direction)
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-asn
+    name: Remote ASN
+    filterType: filter_select
+    targets:
+    - column:
+        name: remote_geo_asn
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Autonomous system of the remote endpoint
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-port
+    name: Destination Port
+    filterType: filter_select
+    targets:
+    - column:
+        name: dstport
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: Destination port
+    chartsInScope: []
+    tabsInScope: []
+  - id: NATIVE_FILTER-protocol
+    name: Protocol
+    filterType: filter_select
+    targets:
+    - column:
+        name: protocol_name
+      datasetUuid: f10f1002-0000-4000-8000-000000000001
+    defaultDataMask:
+      filterState:
+        value: null
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: true
+      inverseSelection: false
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    type: NATIVE_FILTER
+    description: IP protocol
+    chartsInScope: []
+    tabsInScope: []
+  charts:
+  - slice_name: Flow Log Sources
+    viz_type: table
+    description: Every flow log subscription found in the ingested files, with parse health and logging
+      gaps. Rows with issues kept a NULL in a malformed field; rejected rows had the wrong token count
+      (raw text in vpc_flow_parse_issues). More than one header variant for one subscription is itself
+      suspicious — AWS cannot change a subscription's format.
+  - slice_name: Capture Scope from CloudTrail
+    viz_type: table
+    description: What each subscription captures (resource, ALL / ACCEPT / REJECT) according to CreateFlowLogs
+      and DeleteFlowLogs in CloudTrail. A subscription missing here was created before the CloudTrail
+      coverage began — its scope is unknown, and a REJECT-only subscription can never show an accepted
+      flow.
+  - slice_name: NODATA / SKIPDATA Windows
+    viz_type: echarts_timeseries_bar
+    description: 'Aggregation windows with no traffic (NODATA) or dropped records (SKIPDATA). A SKIPDATA
+      window is a gap in the evidence: no chart can show what happened inside it.'
+  - slice_name: Records by Direction Source
+    viz_type: pie
+    description: 'How local and remote endpoints were determined: from the record''s own flow-direction
+      (record), from address class alone (heuristic), or not at all (unknown). Direction-based charts
+      use recorded rows only, so a large heuristic or unknown share means they see less.'
+  - slice_name: Field Availability by Source
+    viz_type: table
+    description: Share of records carrying each optional field, per subscription. A hunt that depends
+      on a field this source does not log cannot find anything there — that is insufficient coverage,
+      not a clean result.
+  - slice_name: Flow Records
+    viz_type: big_number_total
+    description: Flow log records with traffic. Each is one observation of a flow on one interface in
+      one aggregation window — not a connection count.
+  - slice_name: Bytes Observed
+    viz_type: big_number_total
+    description: Bytes across all observations. Intra-VPC traffic is observed on both interfaces, so this
+      over-counts internal volume; BPA records carry no bytes and are excluded.
+  - slice_name: REJECT Ratio
+    viz_type: big_number_total
+    description: 'Share of observations rejected by a security group, network ACL, BPA or encryption controls.
+      Read alongside Capture Scope: a REJECT-only subscription is 100%.'
+  - slice_name: Distinct External Peers
+    viz_type: big_number_total
+    description: Distinct public addresses seen as the remote endpoint of a flow with a recorded direction.
+  - slice_name: Interfaces Observed
+    viz_type: big_number_total
+    description: Distinct network interfaces with at least one record, NODATA and SKIPDATA included.
+  - slice_name: SKIPDATA Windows
+    viz_type: big_number_total
+    description: Aggregation windows in which AWS dropped records. Anything inside them is unobserved.
+  - slice_name: Flow Records by Action
+    viz_type: echarts_timeseries_bar
+    description: Hourly observations split by ACCEPT and REJECT. A REJECT spike is usually scanning; an
+      ACCEPT spike needs the Egress and Inbound tabs.
+  - slice_name: Bytes by Direction
+    viz_type: echarts_timeseries_bar
+    description: Hourly bytes by ingress and egress, recorded direction only. Sustained egress growth
+      on a quiet host is the classic exfiltration shape.
+  - slice_name: Top Rejected External Sources
+    viz_type: dist_bar
+    description: 'External sources with the most rejected inbound observations — scanners and blocked
+      brute force. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner
+      of the workload before concluding.'
+  - slice_name: Vertical Scan Candidates
+    viz_type: table
+    description: 'One external source probing many ports on one host. Sorted by distinct destination ports.
+      A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+      before concluding.'
+  - slice_name: Horizontal Scan Candidates
+    viz_type: table
+    description: 'One external source probing one port across many hosts — sweeps for SSH, RDP or a freshly
+      published exploit. A triage signal, not a finding: confirm with CloudTrail, host evidence and the
+      owner of the workload before concluding.'
+  - slice_name: Internet to Admin / DB Ports — Accepted
+    viz_type: table
+    description: 'Accepted inbound traffic from the internet to administration and database ports (SSH,
+      RDP, WinRM, MySQL, Postgres, MSSQL, Redis, Elasticsearch, MongoDB, Docker, kubelet). ACCEPT means
+      the security group allowed it, not that a session was established — check tcp_flags and bytes. A
+      triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+      before concluding.'
+  - slice_name: SYN-Only Records from External Sources
+    viz_type: dist_bar
+    description: 'Inbound observations whose only TCP flag was SYN: handshakes that never completed in
+      the window, typical of SYN scans. Flags are OR-ed per window, so a completed short session shows
+      3 or 19 instead.'
+  - slice_name: REJECT then ACCEPT — Same Peer, Target and Port
+    viz_type: table
+    description: 'An external peer that was rejected and later accepted on the same target and port —
+      the network trace of an opened security group or NACL. Correlate with AuthorizeSecurityGroupIngress
+      in CloudTrail. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner
+      of the workload before concluding.'
+  - slice_name: Top External Destinations by Bytes
+    viz_type: dist_bar
+    description: 'External destinations receiving the most accepted egress bytes. A triage signal, not
+      a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: Egress Volume vs Host Baseline
+    viz_type: table
+    description: 'Each host''s daily accepted egress to the internet divided by the median of its earlier
+      days. Hosts without history have no ratio and are not listed. A triage signal, not a finding: confirm
+      with CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: Egress Bytes by Traffic Path
+    viz_type: dist_bar
+    description: Where egress leaves the VPC. Path 2 means internet gateway OR gateway endpoint and is
+      shown as ambiguous rather than counted as either.
+  - slice_name: Unusual Destination Ports
+    viz_type: table
+    description: 'Egress to ports associated with reverse shells (4444, 1337, 31337), IRC (6667), Tor
+      (9001, 9030) and mining pools (3333, 5555, 7777, 14444). A triage signal, not a finding: confirm
+      with CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: DNS to Non-Amazon Resolvers
+    viz_type: table
+    description: Port-53 flows. Traffic to the Amazon-provided resolver is never logged, so every row
+      here went to another resolver — legitimate internal DNS servers become the baseline, anything else
+      is DNS bypass or tunnelling worth a look.
+  - slice_name: Outbound SMTP
+    viz_type: table
+    description: 'Hosts sending mail directly to the internet — compromised hosts used as spam relays
+      show up here. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner
+      of the workload before concluding.'
+  - slice_name: Long-Running and Low-and-Slow Flows
+    viz_type: table
+    description: 'The same flow seen across many aggregation windows, with its average rate. A long span
+      at a low rate is the low-and-slow pattern. A triage signal, not a finding: confirm with CloudTrail,
+      host evidence and the owner of the workload before concluding.'
+  - slice_name: Periodic Flow-Log Observations
+    viz_type: table
+    description: 'Flows to external peers observed at a regular interval over at least 12 hours and 20
+      active one-minute buckets. Jitter is the median absolute deviation of the gaps divided by the period;
+      confidence drops when SKIPDATA overlaps the interval. Periods at or below the aggregation window
+      are excluded because they only reproduce the logging cadence. Updaters, health checks and NTP are
+      periodic too. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner
+      of the workload before concluding.'
+  - slice_name: Internal Admin-Port Traffic
+    viz_type: table
+    description: 'Private-to-private SSH, RPC, SMB, RDP and WinRM. Uses packet-level addresses, so it
+      includes records without a recorded direction; a flow seen on both ENIs counts twice (observing_interfaces
+      = 2). A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the
+      workload before concluding.'
+  - slice_name: First-Seen Internal Pairs
+    viz_type: table
+    description: 'Internal source → destination → port combinations that first appear at least a day after
+      the data begins. New admin-port pairs are the clearest lateral-movement lead. A triage signal, not
+      a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: Internal Fan-Out by Source
+    viz_type: dist_bar
+    description: Internal hosts talking to the most internal destinations — discovery and spreading look
+      like a fan-out spike.
+  - slice_name: Internal Inbound Followed by External Egress
+    viz_type: table
+    description: 'Hosts that received internal traffic and afterwards sent accepted traffic to the internet:
+      the staging-then-exfiltration shape. A triage signal, not a finding: confirm with CloudTrail, host
+      evidence and the owner of the workload before concluding.'
+  - slice_name: ICMP / ICMPv6 Peers
+    viz_type: table
+    description: ICMP and ICMPv6 observations. Flow logs record ports as 0 for ICMP, so type and code
+      are not available; large byte counts suggest tunnelling.
+  - slice_name: UDP Fan-Out to External Hosts
+    viz_type: dist_bar
+    description: Sources sending UDP to many external hosts — reflection, amplification or C2 over UDP.
+  - slice_name: Unusual IP Protocols
+    viz_type: dist_bar
+    description: Anything other than TCP, UDP, ICMP and ICMPv6 — GRE, IP-in-IP and ESP are tunnels.
+  - slice_name: IPv6 Flows
+    viz_type: table
+    description: All IPv6 observations. IPv4-centric views miss these; an unexpected IPv6 path to the
+      internet bypasses IPv4 egress controls.
+  - slice_name: Inbound Countries
+    viz_type: big_number_total
+    description: Countries of external sources with a recorded direction. Needs GeoLite2.
+  - slice_name: Outbound Countries
+    viz_type: big_number_total
+    description: Countries of external destinations with a recorded direction. Needs GeoLite2.
+  - slice_name: External ASNs
+    viz_type: big_number_total
+    description: Distinct ASNs of external peers. Needs GeoLite2-ASN.
+  - slice_name: Inbound Accepted — Origin Map
+    viz_type: world_map
+    description: 'Where accepted inbound traffic comes from. A triage signal, not a finding: confirm with
+      CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: Inbound Rejected — Origin Map
+    viz_type: world_map
+    description: Where rejected inbound traffic comes from — mostly internet background scanning.
+  - slice_name: Outbound Bytes — Destination Map
+    viz_type: world_map
+    description: 'Where accepted egress bytes go. A triage signal, not a finding: confirm with CloudTrail,
+      host evidence and the owner of the workload before concluding.'
+  - slice_name: Inbound Records by Country and Action
+    viz_type: table
+    description: Inbound observations per country, split by action. A country with an unusually high accept
+      share is reaching exposed services.
+  - slice_name: Inbound Accepted Ports by Country
+    viz_type: table
+    description: 'Which ports each country reaches. Admin ports from unexpected countries come first to
+      mind. A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the
+      workload before concluding.'
+  - slice_name: Top Outbound ASNs by Bytes
+    viz_type: table
+    description: 'Egress volume per autonomous system. Hosting and VPS providers (DigitalOcean, OVH, Linode,
+      Hetzner, Choopa …) are where attacker infrastructure usually lives; check the organisation column.
+      A triage signal, not a finding: confirm with CloudTrail, host evidence and the owner of the workload
+      before concluding.'
+  - slice_name: Rare Outbound Countries
+    viz_type: table
+    description: 'Destination countries with the fewest egress observations, rarest first. A triage signal,
+      not a finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding.'
+  - slice_name: REJECT Reasons (BPA / Encryption Controls)
+    viz_type: pie
+    description: Rejections attributed to VPC Block Public Access (BPA) or VPC Encryption Controls (EC).
+      Other rejections carry no reason.
+  - slice_name: Encryption Status
+    viz_type: pie
+    description: Encryption in transit as reported with VPC Encryption Controls. Application-encrypted
+      is inferred from the port for endpoints, not from the payload.
+  - slice_name: Egress to AWS Services by Path
+    viz_type: dist_bar
+    description: Egress bytes to AWS service ranges, split by path. S3 through the internet gateway instead
+      of a gateway endpoint costs money and leaves the VPC; the ambiguous path is shown separately.
+  - slice_name: Middlebox Interfaces
+    viz_type: table
+    description: Records captured on NAT gateways, load balancers, transit gateways and endpoints. Their
+      addresses are the middlebox's, not a victim host's — use the packet-level addresses.
+  - slice_name: Egress Heatmap (UTC Hour × Weekday)
+    viz_type: heatmap
+    description: 'Accepted egress bytes to the internet by UTC hour and weekday. Volume outside working
+      hours on hosts that are busy only by day deserves a look. A triage signal, not a finding: confirm
+      with CloudTrail, host evidence and the owner of the workload before concluding.'

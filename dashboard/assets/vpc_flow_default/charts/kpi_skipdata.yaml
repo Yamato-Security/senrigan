@@ -1,0 +1,27 @@
+# VFL-11: SKIPDATA Windows
+uuid: f10f1004-0000-4000-8000-000000000011
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: SKIPDATA Windows
+viz_type: big_number_total
+description: Aggregation windows in which AWS dropped records. Anything inside them is unobserved. (VFL-11)
+query_context: ''
+params:
+  metric:
+    expressionType: SQL
+    sqlExpression: COUNT(*)
+    label: skipdata_windows
+    hasCustomLabel: true
+    optionName: metric_skipdata_windows
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'SKIPDATA'
+    filterOptionName: filter_24467355
+  subheader: windows with dropped records
+  time_range: No filter
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: SMART_NUMBER
+  granularity_sqla: start_time
+cache_timeout: null

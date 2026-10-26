@@ -1,0 +1,43 @@
+# VFL-29: First-Seen Internal Pairs
+uuid: f10f1004-0000-4000-8000-000000000029
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000007
+slice_name: First-Seen Internal Pairs
+viz_type: table
+description: 'Internal source → destination → port combinations that first appear at least a day after
+  the data begins. New admin-port pairs are the clearest lateral-movement lead. A triage signal, not a
+  finding: confirm with CloudTrail, host evidence and the owner of the workload before concluding. (VFL-29)'
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: MIN(first_seen)
+    label: first_seen
+    hasCustomLabel: true
+    optionName: metric_first_seen
+  - expressionType: SQL
+    sqlExpression: SUM(observations)
+    label: observations
+    hasCustomLabel: true
+    optionName: metric_observations
+  - expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  groupby:
+  - flow_src
+  - flow_dst
+  - dstport
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: is_new_pair
+    filterOptionName: filter_23954342
+  granularity_sqla: first_seen
+  time_range: No filter
+  row_limit: 200
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null

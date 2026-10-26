@@ -1,0 +1,34 @@
+# VFL-33: UDP Fan-Out to External Hosts
+uuid: f10f1004-0000-4000-8000-000000000033
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: UDP Fan-Out to External Hosts
+viz_type: dist_bar
+description: Sources sending UDP to many external hosts — reflection, amplification or C2 over UDP. (VFL-33)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: COUNT(DISTINCT flow_dst)
+    label: distinct_external_peers
+    hasCustomLabel: true
+    optionName: metric_distinct_external_peers
+  groupby:
+  - flow_src
+  columns: []
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: log_status = 'OK' AND protocol_name = 'UDP' AND dst_scope = 'public'
+    filterOptionName: filter_94711725
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_label: Distinct external destinations
+  y_axis_label: Source
+  color_scheme: supersetColors
+  rich_tooltip: true
+  show_legend: false
+cache_timeout: null

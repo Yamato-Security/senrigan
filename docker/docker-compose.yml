@@ -24,7 +24,7 @@ services:
       # Set INGESTER_BUILD_TARGET=runtime to compile from source (useful for local development / debugging).
       target: ${INGESTER_BUILD_TARGET:-prebuilt-runtime}
       args:
-        INGESTER_VERSION: ${INGESTER_VERSION:-v1.0.0}
+        INGESTER_VERSION: ${INGESTER_VERSION:-v1.1.0}
         <<: *ca-cert-arg
     container_name: threat-hunting-ingester
     volumes:
@@ -133,6 +133,7 @@ services:
       - ../dashboard/init/register_suzaku_dbs.py:/app/register_suzaku_dbs.py:ro
       - ../dashboard/init/register_dataset.py:/app/register_dataset.py:ro
       - ../dashboard/init/import_dashboard.py:/app/import_dashboard.py:ro
+      - ../dashboard/init/vpc_flow_present.py:/app/vpc_flow_present.py:ro
       # Suzaku detection, fitness and selection live in one module so the agent
       # and the dashboard can never disagree about which file is the live one.
       # The Superset image cannot install the agent package, but it can import

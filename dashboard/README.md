@@ -183,6 +183,20 @@ one. Both dashboards share the same database and dataset objects.
 
 ---
 
+## VPC Flow Logs Dashboard
+
+**VPC Flow Logs Threat Hunting** (`vpc_flow_default.zip`) visualizes the flow logs the ingester
+loads into `threat_hunting.db` alongside CloudTrail, through the same `CloudTrail DuckDB`
+connection. `superset-init` imports it only when `vpc_flow_logs` holds records
+(`init/vpc_flow_present.py`), so a CloudTrail-only install gets no dashboard of empty charts.
+
+Tabs: Coverage (read first) / Overview / Inbound & Recon / Egress / Periodicity / Lateral
+Movement / Protocols & IPv6 / GeoIP / Posture. Every count is of flow-log *observations*, never
+connections; byte metrics exclude Block Public Access records, which carry no bytes; and
+`traffic_path = 2` is shown as ambiguous. `tests/test_vpc_flow_bundle.py` runs every dataset and
+chart against `sample/vpc_flow/fixtures/vpc-flow-fixture.duckdb` and checks planted positives
+against near-misses. Design: [doc/PRD_VPC_FLOW_LOGS.md](../doc/PRD_VPC_FLOW_LOGS.md).
+
 ## Suzaku Dashboards
 
 Three further dashboards visualize the output of
@@ -349,15 +363,18 @@ dashboard/
 │   ├── suzaku_timeline.zip             # Suzaku aws-ct-timeline bundle (44 charts)
 │   ├── suzaku_summary.zip              # Suzaku aws-ct-summary bundle (19 charts)
 │   ├── suzaku_metrics.zip              # Suzaku aws-ct-metrics bundle (15 charts)
+│   ├── vpc_flow_default.zip            # VPC Flow Logs bundle (50 charts)
 │   ├── zip_builder.py                  # Shared deterministic ZIP packaging
 │   ├── rebuild_zip.py                  # Regenerate cloudtrail_default.zip from cloudtrail_default/
 │   ├── rebuild_rare_zip.py             # Derive cloudtrail_rare.zip from cloudtrail_default/
 │   ├── rebuild_suzaku_timeline_zip.py  # Regenerate suzaku_timeline.zip
 │   ├── rebuild_suzaku_summary_zip.py   # Regenerate suzaku_summary.zip
 │   ├── rebuild_suzaku_metrics_zip.py   # Regenerate suzaku_metrics.zip
+│   ├── rebuild_vpc_flow_zip.py         # Regenerate vpc_flow_default.zip
 │   ├── suzaku_timeline/                # Suzaku timeline definitions (3 virtual datasets)
 │   ├── suzaku_summary/                 # Suzaku summary definitions (4 virtual datasets)
 │   ├── suzaku_metrics/                 # Suzaku metrics definitions (field-agnostic)
+│   ├── vpc_flow_default/               # VPC Flow Logs definitions (8 virtual datasets)
 │   └── cloudtrail_default/             # Source-of-truth dashboard definitions
 │       ├── dashboard.yaml              # 9-tab layout, 72 CHART position entries
 │       ├── metadata.yaml
@@ -446,6 +463,7 @@ so editing YAML without rebuilding leaves the running dashboard silently stale.
    python3 rebuild_suzaku_timeline_zip.py    # suzaku_timeline.zip
    python3 rebuild_suzaku_summary_zip.py     # suzaku_summary.zip
    python3 rebuild_suzaku_metrics_zip.py     # suzaku_metrics.zip
+   python3 rebuild_vpc_flow_zip.py           # vpc_flow_default.zip
    ```
 3. Re-run initialization to import the updated ZIPs:
    ```bash

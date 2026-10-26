@@ -8,6 +8,7 @@
 | **make**                              | GNU Make (pre-installed on macOS)                  |
 | **Resources**                         | 16 GB RAM minimum, SSD recommended                 |
 | **CloudTrail logs**                   | `.json` or `.json.gz` files exported from AWS      |
+| *(Optional)* **VPC Flow Logs**        | Plain-text `.log.gz` files delivered to S3         |
 | *(Optional)* **AWS Config snapshots** | `.json` or `.json.gz` files for AWS resource graph |
 | *(Optional)* **OpenAI API key**       | Required for AI query generation                   |
 | *(Optional)* **MaxMind GeoLite2**     | `.mmdb` files for GeoIP enrichment                 |
@@ -16,10 +17,10 @@
 
 ## Quick Start
 
-**Step 1.** Download CloudTrail logs from S3.
+**Step 1.** Download the whole `AWSLogs/` prefix from S3 — CloudTrail logs and, if you have them, VPC Flow Logs. Files from other services are skipped at ingest.
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **Step 2.** Clone the repository and put your data in place.
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ Running `make` with no arguments prints this list. `make help-all` shows every t
 
 | Command | What it does |
 |---|---|
-| `make ingest` | Load CloudTrail logs from `docker/logs/` into DuckDB |
+| `make ingest` | Load CloudTrail + VPC Flow Logs from `docker/logs/` into DuckDB |
 | `make up` | Start the UI, dashboard, and resource graph |
 | `make down` | Stop everything |
 | `make logs` | Tail service logs (`SERVICE=agent` for just one) |

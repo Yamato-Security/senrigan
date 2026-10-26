@@ -300,5 +300,6 @@ nav:
   - Getting Started: getting-started/index.md
   - Reference:
       - Hunts & Charts: reference/index.md
+      - VPC Flow Logs: reference/vpc-flow.md
       - Suzaku Integration: reference/suzaku.md
   - Resources: resources/index.md

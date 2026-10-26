@@ -8,6 +8,7 @@
 | **make**                              | GNU Make（macOS にはプリインストール済み）         |
 | **リソース**                          | 最低 16 GB RAM、SSD 推奨                            |
 | **CloudTrail ログ**                   | AWS からエクスポートした `.json` または `.json.gz` ファイル |
+| *(任意)* **VPC Flow Logs** | S3 に配信されたプレーンテキストの `.log.gz` ファイル |
 | *(任意)* **AWS Config スナップショット** | AWS リソースグラフ用の `.json` または `.json.gz` ファイル |
 | *(任意)* **OpenAI API キー**          | AI クエリ生成に必要                                 |
 | *(任意)* **MaxMind GeoLite2**         | GeoIP エンリッチメント用の `.mmdb` ファイル        |
@@ -16,10 +17,10 @@
 
 ## クイックスタート
 
-**ステップ 1.** S3 から CloudTrail ログをダウンロードします。
+**ステップ 1.** S3 から `AWSLogs/` プレフィックスをまるごとダウンロードします。CloudTrail ログと、あれば VPC Flow Logs が含まれます。その他のサービスのファイルは取り込み時にスキップされます。
 
 ```bash
-aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*.json.gz"
+aws s3 sync s3://<your-bucket>/AWSLogs/ <local-output-dir>/AWSLogs/
 ```
 
 **ステップ 2.** リポジトリをクローンし、データを配置します。
@@ -29,7 +30,7 @@ aws s3 cp s3://<your-bucket-prefix> <local-output-dir>/ --recursive --include "*
 git clone https://github.com/Yamato-Security/senrigan.git
 cd senrigan
 
-# Place the downloaded CloudTrail logs here
+# Place the downloaded AWSLogs/ tree here
 cp -r <local-output-dir>/ docker/logs/
 ```
 
@@ -61,7 +62,7 @@ make up
 
 | コマンド | 説明 |
 |---|---|
-| `make ingest` | `docker/logs/` の CloudTrail ログを DuckDB に取り込む |
+| `make ingest` | `docker/logs/` の CloudTrail ログと VPC Flow Logs を DuckDB に取り込む |
 | `make up` | UI・ダッシュボード・リソースグラフを起動する |
 | `make down` | すべて停止する |
 | `make logs` | サービスのログを追跡する（1 つだけなら `SERVICE=agent`） |

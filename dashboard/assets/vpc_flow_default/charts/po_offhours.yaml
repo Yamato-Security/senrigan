@@ -1,0 +1,50 @@
+# VFL-50: Egress Heatmap (UTC Hour × Weekday)
+uuid: f10f1004-0000-4000-8000-000000000050
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000001
+slice_name: Egress Heatmap (UTC Hour × Weekday)
+viz_type: heatmap
+description: 'Accepted egress bytes to the internet by UTC hour and weekday. Volume outside working hours
+  on hosts that are busy only by day deserves a look. A triage signal, not a finding: confirm with CloudTrail,
+  host evidence and the owner of the workload before concluding. (VFL-50)'
+query_context: ''
+params:
+  x_axis:
+    expressionType: SQL
+    sqlExpression: LPAD(CAST(EXTRACT(HOUR FROM start_time) AS VARCHAR), 2, '0')
+    label: hour_utc
+    hasCustomLabel: true
+  groupby:
+  - expressionType: SQL
+    sqlExpression: CASE EXTRACT(DOW FROM start_time) WHEN 0 THEN '0_Sun' WHEN 1 THEN '1_Mon' WHEN 2 THEN
+      '2_Tue' WHEN 3 THEN '3_Wed' WHEN 4 THEN '4_Thu' WHEN 5 THEN '5_Fri' WHEN 6 THEN '6_Sat' END
+    label: day_of_week
+    hasCustomLabel: true
+  metric:
+    expressionType: SQL
+    sqlExpression: SUM(bytes_measured)
+    label: bytes_measured
+    hasCustomLabel: true
+    optionName: metric_bytes_measured
+  adhoc_filters:
+  - clause: WHERE
+    expressionType: SQL
+    sqlExpression: direction_source = 'record' AND flow_direction = 'egress' AND remote_scope = 'public'
+      AND action = 'ACCEPT'
+    filterOptionName: filter_22617559
+  granularity_sqla: start_time
+  time_range: No filter
+  row_limit: 10000
+  normalize_across: heatmap
+  legend_type: continuous
+  linear_color_scheme: fire
+  xscale_interval: 1
+  yscale_interval: 1
+  left_margin: auto
+  bottom_margin: auto
+  sort_x_axis: alpha_asc
+  sort_y_axis: alpha_asc
+  show_legend: true
+  show_values: false
+  show_percentage: false
+cache_timeout: null

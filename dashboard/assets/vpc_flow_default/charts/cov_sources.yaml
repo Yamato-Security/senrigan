@@ -1,0 +1,75 @@
+# VFL-01: Flow Log Sources
+uuid: f10f1004-0000-4000-8000-000000000001
+version: 1.0.0
+dataset_uuid: f10f1002-0000-4000-8000-000000000002
+slice_name: Flow Log Sources
+viz_type: table
+description: Every flow log subscription found in the ingested files, with parse health and logging gaps.
+  Rows with issues kept a NULL in a malformed field; rejected rows had the wrong token count (raw text
+  in vpc_flow_parse_issues). More than one header variant for one subscription is itself suspicious —
+  AWS cannot change a subscription's format. (VFL-01)
+query_context: ''
+params:
+  metrics:
+  - expressionType: SQL
+    sqlExpression: SUM(files)
+    label: files
+    hasCustomLabel: true
+    optionName: metric_files
+  - expressionType: SQL
+    sqlExpression: SUM(rows_total)
+    label: rows_total
+    hasCustomLabel: true
+    optionName: metric_rows_total
+  - expressionType: SQL
+    sqlExpression: SUM(rows_with_issues)
+    label: rows_with_issues
+    hasCustomLabel: true
+    optionName: metric_rows_with_issues
+  - expressionType: SQL
+    sqlExpression: SUM(rows_rejected)
+    label: rows_rejected
+    hasCustomLabel: true
+    optionName: metric_rows_rejected
+  - expressionType: SQL
+    sqlExpression: SUM(nodata_rows)
+    label: nodata_rows
+    hasCustomLabel: true
+    optionName: metric_nodata_rows
+  - expressionType: SQL
+    sqlExpression: SUM(skipdata_rows)
+    label: skipdata_rows
+    hasCustomLabel: true
+    optionName: metric_skipdata_rows
+  - expressionType: SQL
+    sqlExpression: MAX(interfaces_seen)
+    label: interfaces_seen
+    hasCustomLabel: true
+    optionName: metric_interfaces_seen
+  - expressionType: SQL
+    sqlExpression: MAX(header_variants)
+    label: header_variants
+    hasCustomLabel: true
+    optionName: metric_header_variants
+  - expressionType: SQL
+    sqlExpression: MIN(first_observation)
+    label: first_observation
+    hasCustomLabel: true
+    optionName: metric_first_observation
+  - expressionType: SQL
+    sqlExpression: MAX(last_observation)
+    label: last_observation
+    hasCustomLabel: true
+    optionName: metric_last_observation
+  groupby:
+  - flow_log_id
+  - account_ids
+  - regions
+  adhoc_filters: []
+  granularity_sqla: first_observation
+  time_range: No filter
+  row_limit: 100
+  order_desc: true
+  page_size: 25
+  include_time: false
+cache_timeout: null
