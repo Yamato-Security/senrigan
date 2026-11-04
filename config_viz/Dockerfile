@@ -37,7 +37,7 @@ RUN npx --yes @cyclonedx/cyclonedx-npm \
 COPY frontend/ ./
 RUN npm run build
 
-FROM python:3.14-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 ENV PIP_INDEX_URL=https://pypi.flatt.tech/simple/
 ARG CUSTOM_CA_CERT_BASE64=""
